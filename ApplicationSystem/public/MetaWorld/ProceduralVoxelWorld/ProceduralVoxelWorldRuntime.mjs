@@ -17,16 +17,19 @@ export function createProceduralVoxelWorld(THREE, source, colliders, materialOpt
   root.visible = definition.visible !== false && definition.hidden !== true;
   Object.assign(root.userData, { nvType: definition.type, metaWorldLayerId: definition.id, breakable: false });
   let palette = null, disposed = false, lastPosition = null;
-  const origin = () => root.position.toArray();
+  const floorOffset = definition.heightLimits?.min || 0;
+  const originPoint = () => new THREE.Vector3(root.position.x,root.position.y+floorOffset,root.position.z);
+  const origin = () => originPoint().toArray();
   const collider = { type: "expression-heightfield", target: root, layerId: definition.id,
     materialId: "grass", physicsMaterialId: "grass", voxelTerrain: true,
     sampleGroundY(x, z, maxY = Infinity) {
       if (disposed || !root.visible) return NaN;
-      const [vx,,vz] = worldToVoxel([x, root.position.y, z], origin());
-      const h = generator.getSolidHeight(vx,vz,(maxY-root.position.y)/VOXEL_SIZE);
+      const voxelOrigin = origin();
+      const [vx,,vz] = worldToVoxel([x, root.position.y, z], voxelOrigin);
+      const h = generator.getSolidHeight(vx,vz,(maxY-voxelOrigin[1])/VOXEL_SIZE);
       const entry = palette?.entries[generator.getVoxel(vx,h-1,vz)];
       if(entry)Object.assign(collider,{materialId:entry.materialId,physicsMaterialId:entry.physicsMaterialId,materialFile:entry.materialFile,MatterState:entry.matterState,materialDefinition:entry.materialDefinition});
-      return h ? root.position.y + h * VOXEL_SIZE : NaN;
+      return h ? voxelOrigin[1] + h * VOXEL_SIZE : NaN;
     },
     containsPlayer(point, radius) {
       return point.x >= root.position.x+radius && point.z >= root.position.z+radius
@@ -34,6 +37,7 @@ export function createProceduralVoxelWorld(THREE, source, colliders, materialOpt
         && point.z <= root.position.z+definition.size[2]-radius;
     }
   };
+  if (definition.boundaryMode === 'open') delete collider.containsPlayer;
   colliders.push(collider); root.userData.colliderRef = collider;
   const manager = new VoxelChunkManager(generator, definition.chunks.loadRadius, cell => {
     const start = performance.now(), data = generator.generateChunk(...cell), generated = performance.now();
@@ -46,7 +50,7 @@ export function createProceduralVoxelWorld(THREE, source, colliders, materialOpt
       for (const group of result.groups) geometry.addGroup(group.start, group.count, group.materialIndex);
       geometry.setIndex(result.indices); geometry.computeBoundingSphere();
       mesh = new THREE.Mesh(geometry, palette.materials);
-      mesh.position.fromArray(voxelToWorld(chunkToVoxel(cell), [0,0,0]));
+      mesh.position.fromArray(voxelToWorld(chunkToVoxel(cell), [0,floorOffset,0]));
       Object.assign(mesh.userData, { proceduralTerrainId: definition.id, proceduralChunk: cell.slice(),
         runtimeGenerated: true, breakable: false });
       root.add(mesh);
@@ -76,14 +80,15 @@ export function createProceduralVoxelWorld(THREE, source, colliders, materialOpt
     },
     prepareSpawn(position, playerHeight) {
       if (!root.visible) return;
+      if (definition.boundaryMode === 'open' && (position.x < root.position.x || position.z < root.position.z || position.x >= root.position.x+definition.size[0] || position.z >= root.position.z+definition.size[2])) return;
       const requested=worldToVoxel([position.x,position.y,position.z],origin());
       const [x,y,z]=findVoxelSpawn(generator,requested[0],requested[2],playerHeight);
       position.x=root.position.x+(x+.5)*VOXEL_SIZE;position.z=root.position.z+(z+.5)*VOXEL_SIZE;
-      position.y=Math.max(position.y,root.position.y+y*VOXEL_SIZE+playerHeight);
+      position.y=Math.max(position.y,origin()[1]+y*VOXEL_SIZE+playerHeight);
       runtime.update(position);
     },
     serialize() {
-      return { ...structuredClone(definition), position: origin(), visible: root.visible, hidden: !root.visible };
+      return { ...structuredClone(definition), position: root.position.toArray(), visible: root.visible, hidden: !root.visible };
     },
     dispose() {
       if (disposed) return;
@@ -96,8 +101,8 @@ export function createProceduralVoxelWorld(THREE, source, colliders, materialOpt
   runtime.ready = createVoxelMaterialPalette(THREE, materialOptions).then(resolved => {
     if (disposed) { resolved.dispose(); return false; }
     palette = resolved;
-    collider.intersectsPlayer = createFeatureCollision(root, generator, palette.entries, () => disposed);
-    root.userData.waterVolumeRef = createVoxelLiquidVolume(root, runtime, palette.entries, () => disposed);
+    collider.intersectsPlayer = createFeatureCollision(root, generator, palette.entries, () => disposed, originPoint);
+    root.userData.waterVolumeRef = createVoxelLiquidVolume(root, runtime, palette.entries, () => disposed, originPoint);
     const surface = palette.entries[1];
     Object.assign(collider, { materialId: surface.materialId, physicsMaterialId: surface.physicsMaterialId,
       materialFile: surface.materialFile, MatterState: surface.matterState, materialDefinition: surface.materialDefinition });

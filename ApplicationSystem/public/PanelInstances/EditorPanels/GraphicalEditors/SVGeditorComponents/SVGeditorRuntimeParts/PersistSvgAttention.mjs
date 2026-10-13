@@ -2,7 +2,8 @@
 // This module implements persist Svg Attention behavior for the SVGeditorRuntime feature. Its dependencies and instance state are supplied explicitly so other editor instances remain independent.
 
 import { saveEditingContext } from "../../../../../EditorAttentionState.mjs";
-import { createSvgEl, formatPoints } from "../svgDom.mjs";
+import { createSvgEl } from "../svgDom.mjs";
+import { createGeometry, svgGeometry } from "../../../../../VectorDrawing/VectorGeometry.mjs";
 import { SVG_UI_ATTR } from "./CreateBlankSvgRoot.mjs";
 
 // Persist Svg Attention operations.
@@ -57,32 +58,19 @@ export function createCommitLineToolGeometryHandler(owner) {
     const layer = owner.svgSession.lineToolState.layer;
     const points = owner.svgSession.lineToolState.pointsSpace || [];
     if (!layer || !Array.isArray(points) || points.length < 2) return null;
-    if (points.length === 2) {
-      const lastLine = owner.svgSession.lineToolState.placedLines[owner.svgSession.lineToolState.placedLines.length - 1] || null;
-      if (lastLine) owner.svgSession.setSelection([lastLine], {
-        primary: lastLine
-      });
-      return lastLine;
-    }
+    const geometry = createGeometry("line", points.map(([x, y]) => ({ x, y })));
+    if (!geometry) return null;
     const style = owner.svgSession.currentStyleDefaults();
-    const poly = createSvgEl("polygon", {
-      points: formatPoints(points),
-      fill: style.fill,
-      stroke: style.stroke,
-      "stroke-width": style.strokeWidth
-    });
-    try {
-      owner.svgSession.lineToolState.placedLines.forEach(el => {
-        try {
-          el.remove();
-        } catch {
-          // ignore
-        }
+    // Draft segments stay editor-only so save and history never include a preview.
+    owner.svgSession.lineToolState.placedLines.forEach(el => el.remove());
+    const poly = owner.svgSession.runSvgSnapshotOperation("draw-line", () => {
+      const path = createSvgEl("path", {
+        ...svgGeometry(geometry).attributes,
+        fill: "none", stroke: style.stroke, "stroke-width": style.strokeWidth
       });
-      layer.appendChild(poly);
-    } catch {
-      // ignore
-    }
+      layer.appendChild(path);
+      return path;
+    });
     owner.svgSession.setSelection([poly], {
       primary: poly
     });

@@ -1,6 +1,9 @@
 // Nodevision/ApplicationSystem/public/CursorFamilies/ContextualCursorFamilyRegistry.mjs
 // Shared registry and resolver for contextual editor cursor families.
 
+import { activeToolPanel, resolvePanelActiveTool } from "./PanelActiveTool.mjs";
+import { interactionTool } from "./ActiveToolPresentation.mjs";
+import { getSnapshot as getAttentionSnapshot } from "../EditorAttentionState.mjs";
 import { loadModuleMap } from "../PanelInstances/ModuleMapLoader.mjs";
 
 export const SELECTION_CURSOR_FAMILY_ID = "selection";
@@ -43,13 +46,15 @@ export function extensionFromPath(path = "") {
 
 function currentContext(overrides = {}) {
   const state = globalThis.window?.NodevisionState || {};
-  const filePath = overrides.filePath || state.activeEditorFilePath || state.selectedFile || globalThis.window?.currentActiveFilePath || "";
+  const panel = activeToolPanel(), owned = resolvePanelActiveTool(panel);
+  const source = owned?.source || null;
+  const filePath = overrides.filePath || source?.filePath || state.activeEditorFilePath || state.selectedFile || globalThis.window?.currentActiveFilePath || "";
   return {
     familyId: overrides.familyId || SELECTION_CURSOR_FAMILY_ID,
-    currentMode: overrides.currentMode || state.currentMode || "",
+    currentMode: overrides.currentMode || source?.currentMode || state.currentMode || "",
     filePath,
     extension: overrides.extension || extensionFromPath(filePath),
-    state,
+    state, panel, source,
     window: globalThis.window || null,
   };
 }
@@ -60,6 +65,7 @@ function providerUrl(providerFile) {
 
 function defaultProviderPathForContext(context) {
   const mode = String(context.currentMode || "");
+  if (["Virtual World Editing", "VR World Editing", "3D World Viewing", "Virtual World Viewing", "VR World Viewing"].includes(mode)) return providerUrl("WorldCursorProvider.mjs");
   if (mode === "SVG Editing") return providerUrl("SVGCursorProvider.mjs");
   if (mode === "HTMLediting") return providerUrl("HTMLCursorProvider.mjs");
   if (mode === "CSVediting") return providerUrl("CSVCursorProvider.mjs");
@@ -89,7 +95,7 @@ export async function resolveCursorProvider(options = {}) {
   } catch {
     entry = null;
   }
-  const modulePath = options.providerPath || providerPathFromModuleMapEntry(entry, context);
+  const modulePath = options.providerPath || defaultProviderPathForContext(context) || providerPathFromModuleMapEntry(entry, context);
   if (!modulePath) return null;
 
   const cacheKey = `${context.familyId}:${modulePath}`;
@@ -131,8 +137,14 @@ export function chooseFallbackTool(provider, tools = []) {
 export async function snapshotCursorFamily(options = {}) {
   const provider = await resolveCursorProvider(options);
   if (!provider) return { provider: null, tools: [], activeToolId: null };
+  const source=provider.context?.source;
+  const attention=getAttentionSnapshot();
+  const semantic=source ? source.getInteractionTool?.() : (provider.id!=="world-cursor-tools" && attention.filePath===provider.context?.filePath ? attention.activeTool : null);
+  const indicator=interactionTool(semantic);
   const tools = normalizeToolList(provider.getTools?.() || []);
-  const activeToolId = chooseFallbackTool(provider, tools);
+  if(indicator && !tools.some(tool=>tool.id===indicator.id))tools.push(indicator);
+  const ownedId=source?.getActiveToolId?.();
+  const activeToolId = indicator?.id || (tools.some(tool=>tool.id===ownedId) ? ownedId : chooseFallbackTool(provider, tools));
   return { provider, tools, activeToolId };
 }
 

@@ -9,7 +9,7 @@ import { chunkToVoxel, voxelIndex, containsVoxel } from './VoxelCoordinates.mjs'
 const priority=featureMaterialPriority;
 export function createVoxelGenerator(def) {
   const base=createBaseTerrain(def),provider=createTreePlacement(base,def.generator.seed);
-  const features=createFeatureField([provider],priority);
+  const features=createFeatureField(def.generation?.vegetation === false ? [] : [provider],priority);
   const featureStats={lookupMs:0,samplingMs:0,candidates:0};
   function getFeatureVoxel(x,y,z,list) {
     if(!containsVoxel([x,y,z],base.dimensions)||base.getVoxel(x,y,z))return 0;

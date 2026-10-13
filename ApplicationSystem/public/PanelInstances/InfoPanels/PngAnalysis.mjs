@@ -4,6 +4,7 @@ export function createPanel(content, { analysis, displayName }, panel) {
   content.style.padding = '12px'; content.style.overflow = 'auto';
   const title = panel?.querySelector('.panel-title');
   if (title) title.textContent = displayName;
+  const releaseLayers = analysis.mountLayers?.(content);
   const output = document.createElement('div'); output.setAttribute('aria-live', 'polite');
   content.append(output);
   const render = ({ result, message }) => {
@@ -21,6 +22,6 @@ export function createPanel(content, { analysis, displayName }, panel) {
     line('Areas count pixel centers, including transparent pixels. RGB is alpha-weighted in sRGB. Add/Subtract apply in drawing order.');
   };
   analysis.render = render;
-  content.cleanup = () => { if (analysis.render === render) analysis.render = null; };
+  content.cleanup = () => { releaseLayers?.(); if (analysis.render === render) analysis.render = null; };
   render(analysis.latest || {});
 }

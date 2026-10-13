@@ -7,7 +7,7 @@ const positive = angle => ((angle % tau) + tau) % tau;
 export function createGeometry(kind, points, { sweep = 1 } = {}) {
   if ((!vectorTools.includes(kind) && kind !== 'freehand') || !points?.length || points.some(p => !Number.isFinite(p.x) || !Number.isFinite(p.y))) return null;
   const [a, b, c] = points;
-  if (kind === 'freehand') {
+  if (kind === 'freehand' || kind === 'line') {
     const samples = points.filter((p, i) => !i || distance(p, points[i - 1]) > epsilon);
     return samples.length >= 2 ? { kind, points: samples.map(p => ({ x: p.x, y: p.y })) } : null;
   }
@@ -20,7 +20,6 @@ export function createGeometry(kind, points, { sweep = 1 } = {}) {
     return { kind, points: vertices.map(p => ({ x: p.x, y: p.y })) };
   }
   if (!b) return null;
-  if (kind === 'line') return distance(a, b) > epsilon ? { kind, start: { x: a.x, y: a.y }, end: { x: b.x, y: b.y } } : null;
   if (kind === 'circle' || kind === 'arc') {
     const radius = distance(a, b);
     if (radius <= epsilon) return null;
@@ -37,7 +36,7 @@ export function createGeometry(kind, points, { sweep = 1 } = {}) {
 }
 export function svgGeometry(g) {
   switch (g.kind) {
-    case 'line': return { tag: 'line', attributes: { x1: g.start.x, y1: g.start.y, x2: g.end.x, y2: g.end.y } };
+    case 'line': return { tag: 'path', attributes: { d: (g.points || [g.start, g.end]).map((p, i) => `${i ? 'L' : 'M'} ${p.x} ${p.y}`).join(' ') } };
     case 'circle': return { tag: 'circle', attributes: { cx: g.cx, cy: g.cy, r: g.r } };
     case 'ellipse': return { tag: 'ellipse', attributes: { cx: g.cx, cy: g.cy, rx: g.rx, ry: g.ry } };
     case 'rectangle': return { tag: 'rect', attributes: { x: g.x, y: g.y, width: g.width, height: g.height } };
@@ -53,7 +52,7 @@ export function svgGeometry(g) {
 export function geometryMeasurements(g) {
   switch (g.kind) {
     case 'freehand': return { length: g.points.reduce((sum, p, i) => sum + (i ? distance(g.points[i - 1], p) : 0), 0) };
-    case 'line': return { length: distance(g.start, g.end) };
+    case 'line': { const points = g.points || [g.start, g.end]; return { length: points.reduce((sum, p, i) => sum + (i ? distance(points[i - 1], p) : 0), 0) }; }
     case 'circle': return { radius: g.r, diameter: 2 * g.r, perimeter: tau * g.r, area: Math.PI * g.r ** 2 };
     case 'ellipse': return { majorAxis: 2 * Math.max(g.rx, g.ry), minorAxis: 2 * Math.min(g.rx, g.ry), area: Math.PI * g.rx * g.ry };
     case 'arc': return { radius: g.rx, length: g.rx * g.angle, angleDegrees: g.angle * 180 / Math.PI };

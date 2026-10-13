@@ -1,10 +1,10 @@
 // Nodevision/ApplicationSystem/public/MetaWorld/ProceduralVoxelWorld/VoxelFeatureCollision.mjs
 // This adapter tests nearby terrain and feature voxels against the player body using canonical solidity without allocating persistent voxel or tree colliders.
 import { VOXEL_SIZE as S } from './VoxelCoordinates.mjs';
-export function createFeatureCollision(root,generator,entries,isDisposed) {
+export function createFeatureCollision(root,generator,entries,isDisposed,originOf=()=>root.position) {
   return (point,radius,minY,maxY,stepAllowance=0)=>{
     if(isDisposed()||!root.visible)return false;
-    const origin=root.position;
+    const origin=originOf();
     const min=[point.x-radius-origin.x,minY-origin.y,point.z-radius-origin.z].map(v=>Math.floor(v/S));
     const max=[point.x+radius-origin.x,maxY-origin.y,point.z+radius-origin.z].map(v=>Math.floor(v/S));
     const list=generator.features.query(min,max.map(v=>v+1));

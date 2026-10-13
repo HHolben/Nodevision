@@ -107,7 +107,7 @@ export function installConsoleInspectionAbility(ctx) {
   }
 
   function handleInspectAction() {
-    const hit = ctx.api.getInspectHit();
+    const hit = ctx.api.getInspectHit({ includeProceduralTerrain: true });
     if (hit?.object && openInspectTarget(hit.object, hit.distance)) return true;
     const portalHit = ctx.api.getPortalInspectFallbackHit();
     if (portalHit?.object && openInspectTarget(portalHit.object, portalHit.distance)) return true;

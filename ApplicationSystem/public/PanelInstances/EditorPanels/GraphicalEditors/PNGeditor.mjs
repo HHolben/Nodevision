@@ -1,5 +1,6 @@
 // Nodevision/ApplicationSystem/public/PanelInstances/EditorPanels/GraphicalEditors/PNGeditor.mjs
 // This file defines browser-side PNGeditor logic for the Nodevision UI. It renders interface components and handles user interactions.
+import { registerRememberedPanelTool } from "../../../CursorFamilies/RememberedPanelTool.mjs";
 import { registerPanelZoomCapabilities } from "../../../panels/panelZoomCapabilities.mjs";
 import { installRasterEditorAnalysis } from "./PNGeditorComponents/analysisTools.mjs";
 import { History } from "./PNGeditorComponents/history.mjs";
@@ -1384,6 +1385,7 @@ export async function renderRasterEditor(filePath, container, options = {}) {
     state.selectionCurrent = null;
   }
 
+  const releaseActiveTool = registerRememberedPanelTool(container,{currentMode:editorMode,filePath,key:"drawTool",fallback:"brush"});
   const handleToolChange = () => {
     refreshSelectionOverlay();
     if (!["line", "rectangle", "circle"].includes(window.NodevisionState?.drawTool)) {
@@ -1449,6 +1451,7 @@ export async function renderRasterEditor(filePath, container, options = {}) {
     window.NodevisionState.drawColor = color;
     window.NodevisionState.drawAlpha = transparency;
     window.NodevisionState.drawTool = "brush";
+    window.dispatchEvent(new CustomEvent("nv-draw-tool-changed"));
 
     const colorInput = document.getElementById("draw-color-input");
     const colorHex = document.getElementById("draw-color-hex");
@@ -1633,6 +1636,7 @@ export async function renderRasterEditor(filePath, container, options = {}) {
   return {
     api: editorApi,
     destroy: () => {
+      releaseActiveTool();
       analysisTools?.dispose();
       unregisterZoom();
       window.removeEventListener("mousemove", onMove);

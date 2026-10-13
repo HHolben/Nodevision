@@ -94,6 +94,8 @@ function cleanupLegacyGameView(panel, state = {}) {
   if (panel._vrEquationObjectsPanel?.dispose) panel._vrEquationObjectsPanel.dispose();
   panel._vrEquationObjectsPanel = null;
   if (panel._vrEquationColliderController?.dispose) panel._vrEquationColliderController.dispose();
+  panel._vrReleaseActiveTool?.();
+  panel._vrReleaseActiveTool = null;
   panel._vrEquationColliderController = null;
   panel._vrTemporalManipulatorPanel?.dispose();
   panel._vrTemporalManipulatorPanel = null;

@@ -44,14 +44,14 @@ export function installVectorAnalysisTools({ host, svg, bar, status, analysis, s
       return { x: Math.max(0, Math.min(width, p.x)), y: Math.max(0, Math.min(height, p.y)) };
     },
     preview: (geometry, points) => renderVectorPreview(draft, geometry, points),
-    commit(geometry) { annotations.push(geometry); undone.length = 0; selected = annotations.length - 1; describe(geometry); paint(); },
+    commit(geometry) { annotations.push(geometry); undone.length = 0; selected = annotations.length - 1; describe(geometry); paint(); analysis.changed?.(); },
     status: text => { status.textContent = text; }
   });
   for (const kind of [...vectorTools, 'freehand']) {
     const node = button(kind[0].toUpperCase() + kind.slice(1), () => {
       if (!size().width) { status.textContent = 'Wait for the image to load.'; return; }
       beforeStart(); setMode(kind); host.focus({ preventScroll: true });
-      status.textContent = kind === 'arc' ? 'Arc: click center, start, then end; Shift reverses direction.' : kind === 'polygon' ? 'Click vertices; Enter or double-click finishes.' : `${kind}: drag to draw.`;
+      status.textContent = kind === 'arc' ? 'Arc: click center, start, then end; Shift reverses direction.' : ['line', 'polygon'].includes(kind) ? 'Click vertices; Enter or double-click finishes.' : `${kind}: drag to draw.`;
     });
     node.setAttribute('aria-pressed', 'false'); buttons.set(kind, node);
   }
@@ -60,6 +60,7 @@ export function installVectorAnalysisTools({ host, svg, bar, status, analysis, s
   const redo = () => { binding.cancel(); if (undone.length) annotations.push(undone.pop()); selected = annotations.length - 1; refresh(); };
   function refresh() {
     paint();
+    analysis.changed?.();
     if (annotations[selected]) describe(annotations[selected]);
     else { delete analysis.selectedGeometry; delete analysis.measurements; status.textContent = 'No annotation selected.'; }
   }
@@ -75,5 +76,6 @@ export function installVectorAnalysisTools({ host, svg, bar, status, analysis, s
   };
   host.addEventListener('keydown', key, true);
   return { cancel() { setMode(null); }, clear() { setMode(null); annotations.length = undone.length = 0; selected = -1; refresh(); },
+    restore(saved) { annotations.splice(0, annotations.length, ...structuredClone(saved)); undone.length = 0; selected = annotations.length - 1; refresh(); },
     dispose() { binding.dispose(); host.removeEventListener('keydown', key, true); artwork.remove(); draft.remove(); } };
 }

@@ -17,7 +17,7 @@ export function createCursorFamilyProvider() {
       ];
     },
     getActiveToolId() {
-      const remembered = window.NodevisionState?.htmlSelectionTool || "text-select";
+      const remembered = this.context?.source?.getSelectedTool?.() || window.NodevisionState?.htmlSelectionTool || "text-select";
       return VALID.has(remembered) ? remembered : "text-select";
     },
     getFallbackToolId() {
@@ -27,6 +27,7 @@ export function createCursorFamilyProvider() {
       const id = VALID.has(toolId) ? toolId : "text-select";
       window.NodevisionState = window.NodevisionState || {};
       window.NodevisionState.htmlSelectionTool = id;
+      this.context?.source?.activateTool?.(id);
       notifyContextualCursorFamilyChanged({ providerId: "html-cursor-tools", toolId: id });
       return true;
     },

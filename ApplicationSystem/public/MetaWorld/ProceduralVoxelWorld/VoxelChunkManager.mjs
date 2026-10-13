@@ -16,10 +16,7 @@ export class VoxelChunkManager {
       const [width,,depth] = this.generator.dimensions;
       for (let z = Math.max(0, cz-this.radius); z <= Math.min(Math.ceil(depth/CHUNK_SIZE)-1, cz+this.radius); z++) {
         for (let x = Math.max(0, cx-this.radius); x <= Math.min(Math.ceil(width/CHUNK_SIZE)-1, cx+this.radius); x++) {
-          // The generator supplies its vertical occupancy bound; world height is never enumerated.
-          const top = Math.ceil(this.generator.maxSolidHeight/CHUNK_SIZE);
-          const levels=this.generator.getChunkLevels?.(x,z)||Array.from({length:top},(_,y)=>y);
-          for (const y of levels) wanted.push([x,y,z]);
+          wanted.push([x,null,z]);
         }
       }
       for (const [key, entry] of this.loaded) {
@@ -28,11 +25,18 @@ export class VoxelChunkManager {
           this.stats.voxels -= entry.solidVoxels; this.stats.faces -= entry.faceCount;
         }
       }
-      this.queue = wanted.filter(cell => !this.loaded.has(chunkKey(cell)))
-        .sort((a,b) => (a[0]-cx)**2+(a[2]-cz)**2 - ((b[0]-cx)**2+(b[2]-cz)**2) || b[1]-a[1]);
+      this.queue = wanted
+        .sort((a,b) => (a[0]-cx)**2+(a[2]-cz)**2 - ((b[0]-cx)**2+(b[2]-cz)**2));
     }
     // One fixed-size chunk per update; workers can later replace build without changing residency.
-    const cell = this.queue.shift();
+    let cell = this.queue.shift();
+    if (cell && cell[1] === null) {
+      const [x,,z] = cell;
+      const levels = this.generator.getChunkLevels?.(x,z) || Array.from({length:Math.ceil(this.generator.maxSolidHeight/CHUNK_SIZE)},(_,y)=>y);
+      const cells = levels.slice().sort((a,b)=>b-a).map(y=>[x,y,z]).filter(c=>!this.loaded.has(chunkKey(c)));
+      this.queue.unshift(...cells);
+      cell = cells.length ? this.queue.shift() : null;
+    }
     if (cell) {
       const start = performance.now(), entry = this.build(cell);
       this.loaded.set(chunkKey(cell), { ...entry, cell });

@@ -1,10 +1,14 @@
 // Nodevision/ApplicationSystem/public/PanelInstances/EditorPanels/GraphicalEditors/CSVRangeInteraction.mjs
 // This module delegates CSV pointer, keyboard, and clipboard gestures to the editor context and keeps drag previews separate from document mutations.
+import { registerPanelActiveTool, notifyActiveToolChanged } from "/CursorFamilies/PanelActiveTool.mjs";
 import { canMoveCsvSelection, createCsvInteractionCursor } from "./CSVInteractionCursor.mjs";
 export function bindCsvRangeInteraction(wrapper, table, editor, view) {
   const win = wrapper.ownerDocument.defaultView, doc = wrapper.ownerDocument;
   const listeners = [];
-  let drag = null, editing = null;
+  let drag = null, editing = null, selectedTool="cell-select";
+  const releaseActiveTool=registerPanelActiveTool(wrapper,{currentMode:"CSVediting",
+    getInteractionTool:()=>editing ? "text-edit" : null, getSelectedTool:()=>selectedTool,
+    activateTool(id){selectedTool=id;notifyActiveToolChanged(wrapper);}});
   const on = (target, type, callback, options) => { target.addEventListener(type, callback, options); listeners.push(() => target.removeEventListener(type, callback, options)); };
   const cellFor = node => { const cell = node?.closest?.("td,th"); return cell?.closest("table") === table ? cell : null; };
   const position = cell => ({ row: Number(cell.dataset.row), col: Number(cell.dataset.col) });
@@ -13,10 +17,12 @@ export function bindCsvRangeInteraction(wrapper, table, editor, view) {
     if (!editing) return;
     editing.contentEditable = "false";
     editing = null;
+    notifyActiveToolChanged(wrapper);
     cursor.refresh();
   }
   function edit(cell, replace = false) {
     finishEditing(); editing = cell; cell.contentEditable = "true"; cell.focus();
+    notifyActiveToolChanged(wrapper);
     if (replace) cell.textContent = "";
     const range = doc.createRange(); range.selectNodeContents(cell);
     if (!replace) range.collapse(false);
@@ -138,6 +144,6 @@ export function bindCsvRangeInteraction(wrapper, table, editor, view) {
     invalidate: cursor.invalidate,
     layoutChanged: cursor.layoutChanged,
     deactivate,
-    dispose() { deactivate(); cursor.dispose(); listeners.forEach(remove => remove()); },
+    dispose() { deactivate(); releaseActiveTool(); cursor.dispose(); listeners.forEach(remove => remove()); },
   };
 }

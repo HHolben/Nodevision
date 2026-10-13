@@ -1,6 +1,7 @@
 // Nodevision/ApplicationSystem/public/PanelInstances/ViewPanels/GameViewDependencies/initScene.mjs
 // This file builds the scene context and wires input, rendering, and resizing.
 
+import { registerPanelActiveTool } from "../../../CursorFamilies/PanelActiveTool.mjs";
 import { createSceneBase } from "./sceneBase.mjs";
 import { addCrosshair } from "./crosshair.mjs";
 import { createCameraModeController } from "./cameraModes.mjs";
@@ -448,6 +449,7 @@ export function initScene({ THREE, PointerLockControls, panel, canvas, state, lo
     portals,
     spawnPoints
   });
+  panel._vrReleaseActiveTool = registerPanelActiveTool(panel,{currentMode:"3D World Viewing",filePath:state.currentWorldPath});
   panel._vrObjectInspector = objectInspector;
   window.VRWorldContext.objectInspector = objectInspector;
 
@@ -594,12 +596,13 @@ export function initScene({ THREE, PointerLockControls, panel, canvas, state, lo
   panel._vrSaveVirtualWorldFile = saveVirtualWorldFile;
   window.saveVirtualWorldFile = saveVirtualWorldFile;
   window.VRWorldContext.saveVirtualWorldFile = saveVirtualWorldFile;
+  const voxelStreamPosition = new THREE.Vector3();
   const update = () => {
     temporalController.update();
+    objects.forEach(object => object.userData?.proceduralVoxelRuntime?.update((viewController.getActiveCamera() || camera).getWorldPosition(voxelStreamPosition)));
     if (movementState.paused) return;
     consolePanels.updateEnvironmentLighting?.(temporalController.getTimeSeconds?.() ?? 0);
     movementUpdate();
-    objects.forEach(object => object.userData?.proceduralVoxelRuntime?.update(controls.getObject().position));
     viewController.update();
     textWorldConsole.update();
     updateIframeObjectOverlays({

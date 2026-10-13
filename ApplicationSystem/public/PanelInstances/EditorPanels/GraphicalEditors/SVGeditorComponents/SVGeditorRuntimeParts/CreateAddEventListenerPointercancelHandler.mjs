@@ -11,6 +11,7 @@ import { resolveEditorHookSavePath } from "./ParseEditableSvgRoot.mjs";
 export function createAddEventListenerPointercancelHandler(owner) {
   return e => {
     clearSvgMarquee(owner.svgSession, e.pointerId);
+    if (owner.svgSession.toolState.mode === "line") owner.svgSession.cancelLineToolAndDeletePlaced();
     owner.svgSession.quickMenu.cancelLongPress();
     owner.svgSession.cancelEyedropperHold();
     if (owner.svgSession.toolState.mode === "freehand" && owner.svgSession.freehandStrokeState?.pointerId === e.pointerId) {

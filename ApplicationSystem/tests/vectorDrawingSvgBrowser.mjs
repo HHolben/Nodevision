@@ -9,11 +9,14 @@ export async function runSvgTests(passed) {
   const wrapper = host.querySelector('[tabindex]');
   const key = value => wrapper.dispatchEvent(new KeyboardEvent('keydown', {key:value,bubbles:true,cancelable:true}));
   const parsed = () => new DOMParser().parseFromString(ctx.getEditorHTML(),'image/svg+xml');
-  for (const [kind, tag] of [['line','line'],['circle','circle'],['ellipse','ellipse'],['arc','path'],['rectangle','rect'],['polygon','polygon']]) {
+  for (const [kind, tag] of [['line','path'],['circle','circle'],['ellipse','ellipse'],['arc','path'],['rectangle','rect'],['polygon','polygon']]) {
     const callback = await import('/ToolbarCallbacks/draw/svgMode' + kind[0].toUpperCase() + kind.slice(1) + '.mjs'); callback.default();
     gesture(svg,kind); if (kind === 'polygon') key('Enter');
     assert(parsed().querySelector(tag), 'SVG creates ' + tag);
   }
+  const lineData = parsed().querySelector('path').getAttribute('d');
+  const coordinates = lineData.match(/-?\d+(?:\.\d+)?/g).map(Number);
+  assert(coordinates.length === 10 && coordinates.every((v,i) => near(v,[20,20,40,20,40,40,60,40,60,60][i])) && !lineData.includes('Z'), 'SVG open five-vertex path');
   const saved = ctx.getEditorHTML(); assert(!saved.includes('vector-preview'), 'previews excluded from save');
   assert(ctx.undo(), 'SVG undo'); assert(!parsed().querySelector('polygon'), 'polygon removed by undo');
   assert(ctx.redo(), 'SVG redo'); assert(parsed().querySelector('polygon'), 'polygon restored by redo');
@@ -27,8 +30,10 @@ export async function runSvgTests(passed) {
   assert(parsed().querySelectorAll('polygon').length === 2, 'double-click polygon completion');
   ctx.setMode('line'); pointer(svg,'pointerdown',200,200); pointer(svg,'pointerup',200,200);
   assert(ctx.debugLineToolState().active, 'legacy click line chain begins');
-  pointer(svg,'pointerdown',240,200); pointer(svg,'pointerup',240,200); key('Enter');
-  assert(parsed().querySelectorAll('line').length === 2, 'legacy click chain remains usable');
+  pointer(svg,'pointerdown',240,200); pointer(svg,'pointerup',240,200);
+  assert(ctx.debugLineToolState().active, 'second vertex must not terminate Line');
+  key('Enter');
+  assert(parsed().querySelectorAll('path').length === 3, 'legacy click chain remains usable');
   pointer(svg,'pointerdown',260,200); pointer(svg,'pointerup',260,200);
   window.dispatchEvent(new CustomEvent('activePanelChanged'));
   assert(!ctx.debugLineToolState().active, 'panel switch clears legacy Line preview');

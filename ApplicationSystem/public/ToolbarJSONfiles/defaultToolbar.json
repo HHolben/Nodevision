@@ -12,7 +12,12 @@
       "SVG Editing",
       "PNGediting",
       "JPGediting",
-      "JPEGediting"
+      "JPEGediting",
+      "Virtual World Editing",
+      "VR World Editing",
+      "3D World Viewing",
+      "Virtual World Viewing",
+      "VR World Viewing"
     ],
     "preventDropdown": true,
     "preventAutoSubToolbar": true,

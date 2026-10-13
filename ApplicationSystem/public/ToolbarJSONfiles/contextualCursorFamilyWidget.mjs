@@ -1,87 +1,18 @@
 // Nodevision/ApplicationSystem/public/ToolbarJSONfiles/contextualCursorFamilyWidget.mjs
 // Blender-like contextual cursor-family toolbar widget.
 
+import { toolGlyphs } from "/CursorFamilies/ActiveToolPresentation.mjs";
+import { activeToolPanel } from "/CursorFamilies/PanelActiveTool.mjs";
 import { snapshotCursorFamily } from "/CursorFamilies/ContextualCursorFamilyRegistry.mjs";
 
-const STYLE_ID = "nv-contextual-cursor-family-style";
-
-function ensureStyle() {
-  if (document.getElementById(STYLE_ID)) return;
-  const style = document.createElement("style");
-  style.id = STYLE_ID;
-  style.textContent = `
-    .nv-cursor-family-widget {
-      position: relative;
-      display: inline-flex;
-      align-items: stretch;
-      height: 30px;
-      margin: 0 2px;
-      border: 1px solid rgba(70, 92, 75, 0.55);
-      border-radius: 6px;
-      background: #f8faf8;
-      overflow: visible;
-    }
-    .nv-cursor-family-main,
-    .nv-cursor-family-menu-button {
-      border: 0;
-      background: transparent;
-      color: #1f2a24;
-      cursor: pointer;
-      min-width: 28px;
-      height: 28px;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      gap: 5px;
-      font: inherit;
-      padding: 0 7px;
-    }
-    .nv-cursor-family-main:hover,
-    .nv-cursor-family-menu-button:hover { background: rgba(98, 138, 109, 0.16); }
-    .nv-cursor-family-menu-button { width: 20px; min-width: 20px; padding: 0; border-left: 1px solid rgba(70, 92, 75, 0.28); }
-    .nv-cursor-family-glyph { font-weight: 700; min-width: 16px; text-align: center; }
-    .nv-cursor-family-label { max-width: 86px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12px; }
-    .nv-cursor-family-dropdown {
-      position: absolute;
-      top: calc(100% + 3px);
-      left: 0;
-      min-width: 184px;
-      z-index: 10000;
-      display: none;
-      padding: 4px;
-      border: 1px solid rgba(70, 92, 75, 0.45);
-      border-radius: 6px;
-      background: #ffffff;
-      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18);
-    }
-    .nv-cursor-family-widget[data-open="true"] .nv-cursor-family-dropdown { display: block; }
-    .nv-cursor-family-option {
-      width: 100%;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      border: 0;
-      background: transparent;
-      padding: 6px 8px;
-      border-radius: 4px;
-      cursor: pointer;
-      text-align: left;
-      color: #1f2a24;
-      font-size: 12px;
-    }
-    .nv-cursor-family-option:hover { background: rgba(98, 138, 109, 0.14); }
-    .nv-cursor-family-option[aria-checked="true"] { background: rgba(47, 128, 255, 0.15); font-weight: 600; }
-    .nv-cursor-family-option-kind { margin-left: auto; color: #607064; font-size: 11px; }
-  `;
-  document.head.appendChild(style);
-}
+import { ensureStyle } from "/CursorFamilies/ContextualCursorStyle.mjs";
 
 function labelForTool(tool) {
   return String(tool?.label || tool?.id || "Cursor");
 }
 
 function glyphForTool(tool) {
-  return String(tool?.glyph || "P");
+  return String(toolGlyphs[tool?.id] || tool?.glyph || "↖");
 }
 
 function closeAllExcept(widget) {
@@ -101,11 +32,12 @@ function buildOption(tool, activeToolId, provider, refresh) {
   button.className = "nv-cursor-family-option";
   button.setAttribute("role", "menuitemradio");
   button.setAttribute("aria-checked", String(tool.id === activeToolId));
+  button.disabled = tool.readOnly === true;
   button.title = tool.description || labelForTool(tool);
   button.innerHTML = `<span class="nv-cursor-family-glyph"></span><span></span><span class="nv-cursor-family-option-kind"></span>`;
   button.children[0].textContent = glyphForTool(tool);
   button.children[1].textContent = labelForTool(tool);
-  button.children[2].textContent = tool.kind === "drawing" ? "Draw" : "Select";
+  button.children[2].textContent = tool.kind === "drawing" ? "Draw" : tool.kind === "interaction" ? "Mode" : "Select";
   button.addEventListener("click", async (event) => {
     event.preventDefault();
     event.stopPropagation();
@@ -121,6 +53,9 @@ async function renderWidget(host, options = {}) {
   const snapshot = await snapshotCursorFamily({ familyId: "selection" });
   if (host.__nvCursorFamilyRenderToken !== token) return;
   const { provider, tools, activeToolId } = snapshot;
+  const panel=activeToolPanel(), signature=JSON.stringify([provider?.id,activeToolId,tools]);
+  if(host.__nvCursorSignature===signature && host.__nvCursorPanel===panel && options.keepOpen)return;
+  host.__nvCursorSignature=signature;host.__nvCursorPanel=panel;
   if (!provider || !tools.length || !activeToolId) {
     renderEmpty(host);
     return;
@@ -140,8 +75,9 @@ async function renderWidget(host, options = {}) {
   const main = document.createElement("button");
   main.type = "button";
   main.className = "nv-cursor-family-main";
-  main.title = `Activate ${labelForTool(activeTool)}`;
-  main.setAttribute("aria-label", `Activate ${labelForTool(activeTool)}`);
+  main.disabled = activeTool.readOnly === true;
+  main.title = activeTool.readOnly ? labelForTool(activeTool) : `Activate ${labelForTool(activeTool)}`;
+  main.setAttribute("aria-label", main.title);
   main.innerHTML = `<span class="nv-cursor-family-glyph"></span><span class="nv-cursor-family-label"></span>`;
   main.children[0].textContent = glyphForTool(activeTool);
   main.children[1].textContent = labelForTool(activeTool);
@@ -191,10 +127,18 @@ export function initToolbarWidget(hostElement) {
     });
   };
 
+  let attentionKey=null;
+  const attentionChanged=event=>{const state=event.detail || {};const key=JSON.stringify([state.filePath,state.editorMode,state.activeTool]);if(key!==attentionKey){attentionKey=key;refresh();}};
+  const semanticEvents=["nv-active-tool-changed","nv-draw-tool-changed","nv-panel-tab-activated"];
+  semanticEvents.forEach(type=>window.addEventListener(type,refresh));
+  window.addEventListener("nv-editor-attention-changed",attentionChanged);
   window.addEventListener("nv-contextual-cursor-family-changed", refresh);
   window.addEventListener("activePanelChanged", refresh);
   document.addEventListener("click", closeOnDocumentClick);
   hostElement.__nvCleanupCursorFamilyWidget = () => {
+    hostElement.__nvCursorFamilyRenderToken++;
+    semanticEvents.forEach(type=>window.removeEventListener(type,refresh));
+    window.removeEventListener("nv-editor-attention-changed",attentionChanged);
     window.removeEventListener("nv-contextual-cursor-family-changed", refresh);
     window.removeEventListener("activePanelChanged", refresh);
     document.removeEventListener("click", closeOnDocumentClick);

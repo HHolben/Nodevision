@@ -1,5 +1,5 @@
 // Nodevision/ApplicationSystem/public/PanelInstances/EditorPanels/GraphicalEditors/SVGeditorComponents/SVGeditorRuntimeParts/InstallSharedVectorTools.mjs
-// This adapter commits shared vector gestures through the SVG editor's snapshot history and active layer. Legacy line chains remain available after a click while drag gestures use the common vector controller.
+// This adapter commits shared vector gestures through the SVG editor's snapshot history and active layer. The established Line controller retains ownership of its constrained multi-click gestures.
 import { bindVectorInteraction } from '../../../../../VectorDrawing/BindVectorInteraction.mjs';
 import { vectorTools } from '../../../../../VectorDrawing/VectorGeometry.mjs';
 import { createVectorElement, renderVectorPreview } from '../../../../../VectorDrawing/VectorSvgRenderer.mjs';
@@ -15,7 +15,7 @@ export function installSharedVectorTools(session) {
     getTool() {
       session.syncModeFromToolbarState();
       const mode = session.toolState.mode;
-      return vectorTools.includes(mode) && !(mode === 'line' && session.lineToolState.active) ? mode : null;
+      return vectorTools.includes(mode) && mode !== 'line' ? mode : null;
     },
     begin() { layer = session.getActiveLayer() || session.svgRoot; session.clearSelection(); },
     toPoint(event) {
@@ -37,7 +37,6 @@ export function installSharedVectorTools(session) {
       session.setSelection([element], { primary: element });
       session.setStatus(`${geometry.kind} drawn`);
     },
-    clickLine(point) { session.beginLineToolAt(session.elementPointToRootPoint(layer, point.x, point.y), layer); },
     cancelOnDeactivate() { session.cancelLineToolAndDeletePlaced(); return true; },
     status: text => session.setStatus(text)
   });

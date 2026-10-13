@@ -15,11 +15,11 @@ PNG viewing used `ViewPNG` and `ImageViewport`. JPEG already had ModuleMap entri
 Shared modules under `ApplicationSystem/public/VectorDrawing/`:
 
 - `VectorGeometry.mjs`: six tool identifiers, validated native-coordinate geometry, native SVG attributes, and analytic dimensions/area. Arc records include separate radii and rotation for a future elliptical implementation.
-- `VectorInteraction.mjs`: drag gestures, three-click arcs, polygon editing, live previews, and cancellation, independent of the DOM.
+- `VectorInteraction.mjs`: drag gestures, three-click arcs, continuous Line and polygon editing, live previews, and cancellation, independent of the DOM.
 - `BindVectorInteraction.mjs`: pointer capture/release, pointer identity, keyboard routing, panel/window cancellation, and disposable event bindings.
 - `VectorSvgRenderer.mjs`: native SVG elements and disposable draft previews.
 
-`InstallSharedVectorTools.mjs` adapts these modules to SVG active layers, current styles, selection, and snapshot undo/redo. Mode changes, history restoration, and editor disposal cancel unfinished gestures. Preview elements are marked as editor UI and excluded from saved SVG. Line supports drag creation; a stationary click hands off to the established click-chain interaction so its numerical/axis controls remain available. Legacy line segments use the shared geometry validator and SVG attributes.
+`InstallSharedVectorTools.mjs` adapts these modules to SVG active layers, current styles, selection, and snapshot undo/redo. Mode changes, history restoration, and editor disposal cancel unfinished gestures. Preview elements are marked as editor UI and excluded from saved SVG. Line uses its established click-chain controller directly so numerical/axis controls and snapping remain available. Enter or double-click commits one open SVG path through shared geometry serialization and snapshot history; temporary segments are excluded from saved content. See [the continuous Line investigation](continuous-line-regression.md).
 
 Five toolbar callback modules and five entries in `drawToolbar.json` extend the existing registration conventions. The SVG cursor provider and supported-mode set consume the shared tool identifiers. Existing drawing tools remain available. The superseded circle/three-point-arc placement implementations and pointer branches were removed; the Line angle-feedback helper remains.
 
@@ -36,11 +36,11 @@ The displayed image explicitly uses `image-orientation: from-image`. The Electro
 ## Interaction and manual checks
 
 1. Open an SVG in the graphical editor. Choose Draw → Vector Draw and verify Line, Circle, Ellipse, Arc, Rectangle, and Polygon. The contextual cursor family also lists all six.
-2. Drag a line or center-to-edge circle. Drag rectangles and ellipses in each diagonal direction. Check live previews, current stroke/fill settings, selection, and undo/redo.
+2. Click successive Line vertices, then press Enter. Drag a center-to-edge circle. Drag rectangles and ellipses in each diagonal direction. Check live previews, current stroke/fill settings, selection, and undo/redo.
 3. For Arc, click center, radius/start, then end. Move the pointer before the last click. Clockwise is the default; hold Shift at the endpoint for counterclockwise. Try arcs larger and smaller than 180 degrees.
 4. For Polygon, click at least three non-collinear vertices. Backspace removes the latest vertex; Enter or double-click completes it. Escape cancels any unfinished shape. Repeat while switching tools and panels.
-5. For legacy Line, click and release without dragging, then click another endpoint. Confirm numerical/axis controls and Enter completion still work.
-6. Draw in a translated/scaled SVG layer. Save and reopen; inspect native `line`, `circle`, `ellipse`, `path`, `rect`, and `polygon` elements. Confirm drafts are absent from saved markup.
+5. For Line, place at least five vertices, moving between clicks without holding a mouse button. Confirm the live preview, numerical/axis controls, Enter completion, cancellation, and repeated drawing. Repeat continuous clicks in image analysis.
+6. Draw in a translated/scaled SVG layer. Save and reopen; inspect native `circle`, `ellipse`, `path`, `rect`, and `polygon` elements. Confirm drafts are absent from saved markup.
 7. Open PNG, JPG, JPEG, and uppercase-extension variants in File View. Open View → Analysis Tools. Draw each shape, choose Select annotation, click an outline, and inspect pixel measurements.
 8. Choose Analyze annotation for a closed shape. Verify pixel statistics. Also exercise the original Region, Add polygon, Subtract polygon, Undo region, Clear, and Show results controls.
 9. At 50%, 100%, and 400% zoom, pan, rotate, and resize the panel. Check that outlines remain registered to the same pixels and measurements remain unchanged. Test a transparent PNG and an EXIF-rotated JPEG.
@@ -57,7 +57,7 @@ node --test ApplicationSystem/public/PanelInstances/EditorPanels/GraphicalEditor
 env -u ELECTRON_RUN_AS_NODE xvfb-run -a node_modules/.bin/electron --no-sandbox ApplicationSystem/tests/vectorDrawing.electron.cjs
 ```
 
-Geometry/interaction: 12 tests pass, covering radii, axes, all rectangle drag directions, directed arcs and flags, polygon closure/editing, invalid geometry, pointer identity, cancellation, DOMPoint-style coordinates, and freehand sampling/cancellation. Pixel statistics: 8 tests pass, including existing Boolean/alpha regressions and analytic vector ROIs. Existing Line feedback, SVG preservation, panel-context, and contextual cursor-registry regressions pass (eight test files total, including the two focused suites).
+Geometry/interaction: 13 tests pass, covering radii, axes, all rectangle drag directions, directed arcs and flags, polygon closure/editing, invalid geometry, pointer identity, cancellation, DOMPoint-style coordinates, and freehand sampling/cancellation. Pixel statistics: 8 tests pass, including existing Boolean/alpha regressions and analytic vector ROIs. Existing Line feedback, SVG preservation, panel-context, and contextual cursor-registry regressions pass (eight test files total, including the two focused suites).
 
 The Electron harness uses generated in-memory PNG/JPEG fixtures and a temporary profile; it writes no Notebook fixtures. It covers all six tools per format, uppercase dispatch, actual statistics-worker results, original region controls, native dimensions, EXIF orientation, transparency, overlay transforms, annotation history, SVG toolbar callbacks/save/history, transformed layers, legacy Line, panel cancellation, and real mouse pointer capture/Escape release. The complete browser checks, including original region controls and native pointer capture/Escape release, pass.
 
@@ -75,3 +75,9 @@ The Electron harness uses generated in-memory PNG/JPEG fixtures and a temporary 
 View → Analysis Tools now also offers **Freehand** for PNG/JPG/JPEG images and the shared raster-editor analysis overlay. Drag to trace an open stroke; release to commit it. Samples remain in native image coordinates, and the selected annotation reports the total sampled path length in pixels. Each stroke is one annotation undo/redo action. Escape, tool changes, and panel changes cancel unfinished strokes. Stationary clicks do not create empty annotations.
 
 Freehand uses the shared vector controller, renderer, selection, and transient annotation history. It renders as an unfilled SVG polyline with rounded joins. It does not modify source pixels or replace SVG editing's existing freehand brush. Open freehand strokes are not pixel-analysis regions; use a closed shape for Analyze annotation. The geometry suite adds two freehand tests, and the Electron suite checks creation, preview, native path length, transformed coordinates, undo/redo, and cancellation on PNG, JPG, JPEG, and EXIF-oriented JPEG.
+
+## Shared Analysis Tools subtoolbar
+
+View → Analysis Tools mounts its controls in the application's `#sub-toolbar` row through the standard `viewToolbar.json` script-widget registration (`imageAnalysisToolbar.mjs`). Only vector overlays remain inside image panels. Each image retains its own annotations, controls, and measurements; the widget moves the active image's controls into the shared row and releases them on panel changes, toolbar replacement, and disposal. Repeated opening/rebuilding does not duplicate controls. Non-image panels expose no active analysis controls. Freehand is included alongside the six geometry tools.
+
+The Electron regression initializes the real toolbar and verifies external placement, two-image ownership, reopening, switching to an unrelated panel, returning to an image, and removal of disposed controls. Drawing regressions now use the shared subtoolbar for every tested raster format.

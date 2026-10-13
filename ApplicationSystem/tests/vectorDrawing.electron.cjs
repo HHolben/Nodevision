@@ -10,7 +10,7 @@ app.setPath('userData', profile);
 const root = path.resolve('ApplicationSystem/public');
 const assets = new Map();
 const errors = [];
-const timeout = setTimeout(() => { console.error('Browser test timed out', errors.slice(-12)); app.exit(1); }, 60000);
+const timeout = setTimeout(() => { console.error('Browser test timed out', errors.slice(-12)); app.exit(1); }, 120000);
 const server = http.createServer((req, res) => {
   const pathname = decodeURIComponent(new URL(req.url, 'http://localhost').pathname);
   if (assets.has(pathname)) { const asset = assets.get(pathname); res.setHeader('Content-Type', asset.type); res.end(asset.bytes); return; }
@@ -40,9 +40,30 @@ const server = http.createServer((req, res) => {
   // EXIF little-endian orientation 6: display a 120x80 encoded image as 80x120.
   const exif = Buffer.from('ffe1002245786966000049492a0008000000010012010300010000000600000000000000', 'hex');
   assets.set('/Notebook/oriented.JPEG', { type: 'image/jpeg', bytes: Buffer.concat([jpeg.subarray(0,2),exif,jpeg.subarray(2)]) });
-  const result = await win.webContents.executeJavaScript(`import('/tests/vectorDrawingBrowser.mjs').then(m => m.run())`, true);
+  const runScript = process.argv.includes('--svg-only')
+    ? `import('/tests/vectorDrawingSvgBrowser.mjs').then(async m => { const passed=[]; await m.runSvgTests(passed); return {ok:true,passed}; })`
+    : `import('/tests/vectorDrawingBrowser.mjs').then(m => m.run())`;
+  const result = await win.webContents.executeJavaScript(runScript, true);
   console.log(JSON.stringify(result, null, 2));
   if (!result.ok) throw new Error(result.error);
+  await win.webContents.executeJavaScript("import('/tests/continuousLineBrowser.mjs').then(m => m.setupNativeLine())");
+  win.show(); win.focus(); win.webContents.focus();
+  const pause = () => new Promise(resolve => setTimeout(resolve, 60));
+  await new Promise(resolve => setTimeout(resolve, 300));
+  for (let i = 0; i < 5; i++) {
+    const vertices = await win.webContents.executeJavaScript('window.nativeLineCoordinates()');
+    const at = vertices[i];
+    win.webContents.sendInputEvent({type:'mouseMove', ...at});
+    win.webContents.sendInputEvent({type:'mouseDown', ...at, button:'left', clickCount:1});
+    const releaseAt = i === 0 ? {x:at.x+5,y:at.y} : at;
+    win.webContents.sendInputEvent({type:'mouseMove', ...releaseAt});
+    win.webContents.sendInputEvent({type:'mouseUp', ...releaseAt, button:'left', clickCount:1});
+    win.webContents.sendInputEvent({type:'mouseMove', ...vertices[5]});
+    await pause(); await win.webContents.executeJavaScript(`window.checkNativeLine(${i})`);
+  }
+  win.webContents.sendInputEvent({type:'keyDown',keyCode:'Return'}); await pause();
+  await win.webContents.executeJavaScript('window.finishNativeLine()');
+  console.log('PASS native five-click SVG Line, hover, completion, cancellation, history, save/reload');
   // Native input verifies real pointer capture and Escape cleanup, beyond synthetic gestures.
   const point = await win.webContents.executeJavaScript('window.vectorNativeCaptureSetup()');
   win.show(); win.focus(); win.webContents.focus();

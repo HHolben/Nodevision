@@ -1,6 +1,8 @@
 // Nodevision/ApplicationSystem/public/MetaWorld/ProceduralVoxelWorld/VoxelWorldDefinition.mjs
 // This module validates trusted declarative voxel terrain settings before any runtime allocation.
 
+import { validateAuthoringTerrain } from "./VoxelAuthoringDefinition.mjs";
+
 export const PROCEDURAL_VOXEL_TYPE = "procedural-voxel-world";
 export function validateVoxelWorld(def) {
   const fail = message => { throw new Error(`Procedural voxel world: ${message}`); };
@@ -23,6 +25,7 @@ export function validateVoxelWorld(def) {
   const radius = def.chunks.loadRadius;
   if (!Number.isInteger(radius) || radius < 1 || radius > 8) fail("loadRadius must be an integer from 1 to 8");
   if (def.voxelPattern || def.isVoxel || def.voxelPlacer) fail("authored voxel metadata is unsupported");
+  validateAuthoringTerrain(def);
   return { ...def, type: PROCEDURAL_VOXEL_TYPE, id: def.id.trim(), position, size,
     voxelSize: 0.25, generator: { id: g.id, version: 1, seed: g.seed },
     chunks: { voxelsPerAxis: 32, loadRadius: radius }, breakable: false, isSolid: true };

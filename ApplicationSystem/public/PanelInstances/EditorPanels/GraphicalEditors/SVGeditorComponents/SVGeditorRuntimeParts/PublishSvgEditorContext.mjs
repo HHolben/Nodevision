@@ -1,6 +1,7 @@
 // Nodevision/ApplicationSystem/public/PanelInstances/EditorPanels/GraphicalEditors/SVGeditorComponents/SVGeditorRuntimeParts/PublishSvgEditorContext.mjs
 // This module implements publish Svg Editor Context behavior for the SVGeditorRuntime feature. Its dependencies and instance state are supplied explicitly so other editor instances remain independent.
 
+import { registerPanelActiveTool } from "../../../../../CursorFamilies/PanelActiveTool.mjs";
 import { installEditorHorizontalScroll } from "../../../../../panels/editorHorizontalScroll.mjs";
 import { registerPanelZoomCapabilities } from "../../../../../panels/panelZoomCapabilities.mjs";
 import { createSaveWYSIWYGFileHandler } from "./CreateAddEventListenerPointercancelHandler.mjs";
@@ -56,6 +57,7 @@ export function publishSvgEditorContext(scope) {
       }
     })()
   };
+  const releaseActiveTool = registerPanelActiveTool(scope.container, {currentMode:"SVG Editing",filePath:scope.filePath,editorContext:window.SVGEditorContext});
   const releaseScroll = installEditorHorizontalScroll(scope.svgSession.svgViewport);
   const releaseZoom = registerPanelZoomCapabilities(scope.container, {
     metadata: { geometric: { actions: ["zoom", "set", "reset"], unit: "canvas scale" } },
@@ -66,7 +68,7 @@ export function publishSvgEditorContext(scope) {
       return true;
     }
   });
-  scope.svgSession.unregisterZoom = () => { releaseScroll(); releaseZoom(); };
+  scope.svgSession.unregisterZoom = () => { releaseScroll(); releaseZoom(); releaseActiveTool(); };
   scope.svgSession.svgEditorContext = window.SVGEditorContext;
   scope.container.__nvSvgEditorContext = scope.svgSession.svgEditorContext;
   scope.svgSession.svgEditorCell = scope.container?.closest?.(".panel-cell") || null;

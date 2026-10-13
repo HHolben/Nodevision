@@ -33,7 +33,7 @@ export function createCursorFamilyProvider() {
       ];
     },
     getActiveToolId() {
-      const drawTool = window.NodevisionState?.drawTool || "brush";
+      const drawTool = this.context?.source?.getSelectedTool?.() || window.NodevisionState?.drawTool || "brush";
       return DRAW_TOOL_TO_TOOL[drawTool] || "brush-draw";
     },
     getFallbackToolId() {
@@ -43,6 +43,7 @@ export function createCursorFamilyProvider() {
       const drawTool = TOOL_TO_DRAW_TOOL[toolId] || "rectselect";
       window.NodevisionState = window.NodevisionState || {};
       window.NodevisionState.drawTool = drawTool;
+      this.context?.source?.activateTool?.(drawTool);
       window.dispatchEvent?.(new CustomEvent("nv-draw-tool-changed", { detail: { tool: drawTool } }));
       notifyContextualCursorFamilyChanged({ providerId: "raster-cursor-tools", toolId, drawTool });
       return true;

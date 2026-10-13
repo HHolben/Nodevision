@@ -77,8 +77,8 @@ test('arc requires center, nonzero radius, then end angle', () => {
 test('DOMPoint-style prototype coordinates survive preview and commits', () => {
   class Point { get x() { return 4; } get y() { return 3; } }
   const { controller: c, commits, previews } = fixture('line');
-  c.down(p(0,0)); c.move(new Point()); assert.equal(previews.at(-1).end.x,4);
-  c.up(new Point()); assert.deepEqual(commits[0].end,p(4,3));
+  c.down(p(0,0)); c.move(new Point()); assert.equal(previews.at(-1).points.at(-1).x,4);
+  c.down(new Point()); c.key('Enter'); assert.deepEqual(commits[0].points.at(-1),p(4,3));
 });
 test('freehand preserves the sampled path and measures its open length', () => {
   const { controller: c, commits, previews } = fixture('freehand');
@@ -100,4 +100,22 @@ test('freehand rejects stationary clicks and discards canceled strokes', () => {
   const loop = createGeometry('freehand',[p(0,0),p(3,4),p(0,0)]);
   assert.equal(geometryMeasurements(loop).length,10);
   assert.equal(createGeometry('freehand',[p(0,0),p(NaN,4)]),null);
+});
+
+test('Line stays active after two and five clicks; hover is never committed', () => {
+  const { controller: c, commits, previews } = fixture('line');
+  for (let i = 0; i < 5; i++) {
+    c.down(p(i * 10, 0)); c.up(p(i * 10, 0));
+    assert.equal(c.active, true); assert.equal(commits.length, 0);
+    c.move(p(i * 10 + 5, 5));
+    assert.equal(previews.at(-1).points.length, i + 2);
+  }
+  c.key('Enter'); assert.equal(commits.length, 1);
+  assert.equal(commits[0].points.length, 5);
+  assert.equal(geometryMeasurements(commits[0]).length, 40);
+  assert.equal(svgGeometry(commits[0]).attributes.d, 'M 0 0 L 10 0 L 20 0 L 30 0 L 40 0');
+  assert.equal(c.active, false); assert.equal(previews.at(-1), null);
+  c.down(p(0,0)); c.down(p(10,0)); c.key('Escape');
+  c.down(p(0,0)); c.down(p(10,0)); c.setTool('circle');
+  assert.equal(commits.length, 1); assert.equal(previews.at(-1), null);
 });

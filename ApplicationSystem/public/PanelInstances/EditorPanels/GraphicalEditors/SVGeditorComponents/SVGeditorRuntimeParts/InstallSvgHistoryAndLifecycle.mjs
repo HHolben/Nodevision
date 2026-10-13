@@ -74,9 +74,11 @@ export function installSvgHistoryAndLifecycle(scope) {
     return true;
   };
   scope.svgSession.undoSvgHistory = function () {
+    if (scope.svgSession.cancelLineToolAndDeletePlaced()) return true;
     return scope.svgSession.applySvgHistoryResult(scope.svgSession.history.undo(), "undo");
   };
   scope.svgSession.redoSvgHistory = function () {
+    scope.svgSession.cancelLineToolAndDeletePlaced();
     return scope.svgSession.applySvgHistoryResult(scope.svgSession.history.redo(), "redo");
   };
   scope.svgSession.runSvgSnapshotOperationAsync = createRunSvgSnapshotOperationAsyncHandler({

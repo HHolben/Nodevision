@@ -22,7 +22,7 @@ export function createVectorInteraction({ preview, commit, status = () => {} }) 
     down(point, event = {}) {
       if (pointer !== null) return;
       cursor = null; sweep = event.shiftKey ? 0 : 1;
-      if (kind === 'polygon') {
+      if (['line', 'polygon'].includes(kind)) {
         if (event.detail >= 2) { finish(); return; }
         if (!points.length || Math.hypot(point.x - points.at(-1).x, point.y - points.at(-1).y) > 1e-6) points.push({ x: point.x, y: point.y });
         status('Click vertices; Enter or double-click finishes, Backspace removes a vertex, Escape cancels.');
@@ -50,8 +50,8 @@ export function createVectorInteraction({ preview, commit, status = () => {} }) 
     key(key) {
       if (!points.length) return false;
       if (key === 'Escape') cancel();
-      else if (key === 'Enter' && kind === 'polygon') finish();
-      else if (key === 'Backspace' && kind === 'polygon') { points.pop(); render(); }
+      else if (key === 'Enter' && ['line', 'polygon'].includes(kind)) finish();
+      else if (key === 'Backspace' && ['line', 'polygon'].includes(kind)) { points.pop(); render(); }
       else return false;
       return true;
     }

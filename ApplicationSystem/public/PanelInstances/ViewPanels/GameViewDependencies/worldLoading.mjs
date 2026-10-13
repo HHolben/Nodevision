@@ -1,6 +1,8 @@
 // Nodevision/ApplicationSystem/public/PanelInstances/ViewPanels/GameViewDependencies/worldLoading.mjs
 // This file loads a world definition from the server and builds its scene objects. The loader registers live MetaWorld layer data for side panels.
 
+import { installVoxelWorldAuthoring } from "../../../MetaWorld/ProceduralVoxelWorld/VoxelWorldAuthoringBridge.mjs";
+import { selectMetaWorldObject } from "../../../MetaWorld/MetaWorldLayerState.mjs";
 import { createProceduralVoxelWorld } from "../../../MetaWorld/ProceduralVoxelWorld/ProceduralVoxelWorldRuntime.mjs";
 import { validateVoxelWorld } from "../../../MetaWorld/ProceduralVoxelWorld/VoxelWorldDefinition.mjs";
 import { guardWorldLayerBridge } from "/MetaWorld/WorldAuthoringPermissions.mjs";
@@ -1853,6 +1855,10 @@ export function registerMetaWorldLayerBridge({ state, filePath, worldData, layer
     },
   };
 
+  installVoxelWorldAuthoring(bridge, { THREE, scene, objects, colliders, waterVolumes, layerEntries, worldData, camera,
+    select: selectMetaWorldObject,
+    changed(objectId) { markMetaWorldLayersDirty(worldData); syncBridgeWorldState(state,worldData); notifyMetaWorldLayersChanged({reason:"voxelWorldUpdated",objectId}); }
+  });
   if (window.VRWorldContext) window.VRWorldContext.recordObjectTransform = mesh => bridge.recordObjectTransform(mesh);
   layerEntries.forEach(attachLayerBreakHandler);
   setActiveMetaWorldLayerBridge(guardWorldLayerBridge(bridge, window.VRWorldContext?.movementState));

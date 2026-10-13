@@ -4,7 +4,12 @@ import { getActivePanelElement } from '../panels/panelZoomPanParts/ownership.mjs
 const contexts = new Map();
 export function registerAnalysisTools(host, context) {
   contexts.set(host, context);
-  return () => { if (contexts.get(host) === context) contexts.delete(host); };
+  window.dispatchEvent(new CustomEvent('nv-analysis-tools-changed'));
+  return () => {
+    if (contexts.get(host) !== context) return;
+    contexts.delete(host);
+    window.dispatchEvent(new CustomEvent('nv-analysis-tools-changed'));
+  };
 }
 export function getActiveAnalysisTools() {
   const active = getActivePanelElement();

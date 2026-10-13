@@ -11,7 +11,7 @@ const stubs = {
   '/TemplateSystem/NodevisionOverlayPanel.mjs': 'export function openNodevisionOverlayPanel(){}',
   '/ToolbarJSONfiles/insertMediaPanel.mjs': 'export function registerSvgEditorContextForInsertMedia(){return {dispose(){}}}',
 };
-if (['sandbox-session-browser.mjs','astronomy-sandbox-browser.mjs'].includes(browserModule)) {
+if (['sandbox-session-browser.mjs','astronomy-sandbox-browser.mjs','voxel-world-sandbox-browser.mjs'].includes(browserModule)) {
   stubs['/panels/workspace.mjs'] = `
     export { ensureSvgEditingSplit } from '/panels/workspaceParts/workspaceSvgSplit.mjs';
     export function ensureSvgEditorModeLayout(){}

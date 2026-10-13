@@ -13,7 +13,7 @@ function rasterRow(points, y, width) {
   return row;
 }
 // Closed vector ROIs share the same pixel-center coverage and Boolean accumulation.
-function regionRow(region, y, width) {
+export function regionRow(region, y, width) {
   const g = region.geometry;
   if (!g) return rasterRow(region.points, y, width);
   if (g.kind === 'polygon') return rasterRow(g.points.map(p => [p.x, p.y]), y, width);

@@ -36,7 +36,7 @@ export function createCursorFamilyProvider() {
       ];
     },
     getActiveToolId() {
-      const remembered = window.NodevisionState?.csvSelectionTool || "cell-select";
+      const remembered = this.context?.source?.getSelectedTool?.() || window.NodevisionState?.csvSelectionTool || "cell-select";
       return VALID.has(remembered) ? remembered : "cell-select";
     },
     getFallbackToolId() {
@@ -46,6 +46,7 @@ export function createCursorFamilyProvider() {
       const id = VALID.has(toolId) ? toolId : "cell-select";
       window.NodevisionState = window.NodevisionState || {};
       window.NodevisionState.csvSelectionTool = id;
+      this.context?.source?.activateTool?.(id);
       notifyContextualCursorFamilyChanged({ providerId: "csv-cursor-tools", toolId: id });
       return true;
     },

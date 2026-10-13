@@ -13,7 +13,7 @@ const TOOL_TO_MODE = {
   "eyedropper": "eyedropper",
   "eraser": "eraser",
 };
-const MODE_TO_TOOL = Object.fromEntries(Object.entries(TOOL_TO_MODE).map(([tool, mode]) => [mode, tool]));
+const MODE_TO_TOOL = { ...Object.fromEntries(Object.entries(TOOL_TO_MODE).map(([tool, mode]) => [mode, tool])), select: "object-select" };
 
 export function createCursorFamilyProvider() {
   return {
@@ -34,7 +34,7 @@ export function createCursorFamilyProvider() {
       ];
     },
     getActiveToolId() {
-      const mode = window.SVGEditorContext?.getMode?.() || window.NodevisionState?.svgDrawTool || "select";
+      const mode = (this.context?.source?.editorContext || window.SVGEditorContext)?.getMode?.() || window.NodevisionState?.svgDrawTool || "select";
       return MODE_TO_TOOL[mode] || "object-select";
     },
     getFallbackToolId() {
@@ -44,7 +44,7 @@ export function createCursorFamilyProvider() {
       const mode = TOOL_TO_MODE[toolId] || "select";
       window.NodevisionState = window.NodevisionState || {};
       window.NodevisionState.svgDrawTool = mode;
-      window.SVGEditorContext?.setMode?.(mode);
+      (this.context?.source?.editorContext || window.SVGEditorContext)?.setMode?.(mode);
       notifyContextualCursorFamilyChanged({ providerId: "svg-cursor-tools", toolId, mode });
       return true;
     },

@@ -1,25 +1,29 @@
 // Nodevision/ApplicationSystem/public/RasterAnalysis/PngAnalysisTools.mjs
-// This module attaches transient polygon analysis to a PNG viewport and opens results through the existing floating panel factory. Image-local SVG coordinates preserve region alignment under native pan, rotation, and zoom; source pixels remain unchanged.
+// This module attaches composable region and grayscale analysis to a raster viewport and opens results through the existing floating panel factory. Image-local coordinates preserve alignment under pan, rotation, and zoom, while the editing-context store preserves analysis without changing source pixels.
+import { createImageAnalysisWorkerClient } from './ImageAnalysisWorkerClient.mjs';
+import { installAnalysisSessionState } from './AnalysisSessionState.mjs';
+import { installGrayscaleAnalysis } from './GrayscaleAnalysisSession.mjs';
 import { installVectorAnalysisTools } from './VectorAnalysisTools.mjs';
 import { registerAnalysisTools } from './AnalysisToolsContext.mjs';
-import { updateToolbarState } from '../panels/createToolbar.mjs';
+import { updateToolbarState, showToolbarSubToolbar, hideToolbarSubToolbar } from '../panels/createToolbar.mjs';
 import { paintAnalysisRegions } from './AnalysisRegionOverlay.mjs';
 import { createAnalysisPolygonTool } from './AnalysisPolygonTool.mjs';
 const ns = 'http://www.w3.org/2000/svg';
 const defaultPanel = async (...args) => (await import('../panels/panelFactory.mjs')).createPanelDOM(...args);
 export function installPngAnalysisTools(host, viewport, filename, createPanel = defaultPanel) {
-  const img = viewport.image, regions = [], analysis = { regions }, controls = viewport.controls;
+  const img = viewport.image, regions = [], analysis = { regions };
   const width = () => img.naturalWidth ?? img.width;
   const height = () => img.naturalHeight ?? img.height;
   const maskId = `png-analysis-mask-${crypto.randomUUID()}`;
-  let operation = 'base', drawing = false, panel = null, opening = null, worker = null, revision = 0, disposed = false;
+  let operation = 'base', drawing = false, panel = null, opening = null, disposed = false;
   const menu = document.createElement('div'), bar = document.createElement('div');
   menu.hidden = true; menu.id = `png-analysis-tools-${crypto.randomUUID()}`;
   menu.dataset.pngAnalysis = ''; bar.setAttribute('role', 'toolbar'); bar.setAttribute('aria-label', 'Image analysis');
-  Object.assign(menu.style, { background: 'var(--panel-background, Canvas)', color: 'var(--panel-color, CanvasText)', padding: '6px', maxWidth: '360px' });
+  Object.assign(menu.style, { background: 'var(--panel-background, Canvas)', color: 'var(--panel-color, CanvasText)', padding: '0', width: '100%' });
   Object.assign(bar.style, { display: 'flex', flexWrap: 'wrap', gap: '4px' });
   const status = document.createElement('p'); status.setAttribute('role', 'status'); status.textContent = 'Select Region, then click polygon vertices.';
-  menu.append(bar, status); controls.append(menu);
+  status.style.margin = '4px 0 0';
+  menu.append(bar, status);
   const svg = document.createElementNS(ns, 'svg'), shapes = document.createElementNS(ns, 'g');
   svg.dataset.pngAnalysisOverlay = ''; svg.setAttribute('aria-label', 'Image analysis paths'); svg.append(shapes);
   Object.assign(svg.style, { position: 'absolute', left: '50%', top: '50%', transformOrigin: 'center', pointerEvents: 'none', color: 'var(--selection-color, #0078d7)', zIndex: '1' });
@@ -41,28 +45,23 @@ export function installPngAnalysisTools(host, viewport, filename, createPanel = 
         // Mount and remove together so the factory's removal observer releases shell resources.
         if (disposed) { document.body.append(created.panel); created.panel.remove(); return; }
         panel = created.panel; document.body.append(panel); panel.__nvSetLayout?.('floating');
-        Object.assign(panel.style, { left: `${Math.max(8, window.innerWidth - 440)}px`, top: '80px', width: '420px', height: '360px' });
+        Object.assign(panel.style, { left: `${Math.max(8, window.innerWidth - 440)}px`, top: '80px', width: '420px', maxWidth: 'calc(100vw - 16px)', height: '360px', maxHeight: 'calc(100vh - 96px)', boxSizing: 'border-box' });
       } catch (error) { status.textContent = `Could not open analysis: ${error.message}`; }
       finally { opening = null; }
     })();
     return opening;
   }
+  const pixels = createImageAnalysisWorkerClient(img, () => ({ width: width(), height: height() }), data => {
+    publish(data.result ? { result: data.result } : { message: 'Draw a region to analyze.' });
+    grayscale.receive(data.layers);
+  }, message => { publish({ message }); status.textContent = message; });
+  const request = () => pixels.request(regions, analysis.layers);
+  const grayscale = installGrayscaleAnalysis({ analysis, svg, viewport, request, showPanel });
   function calculate() {
-    const id = ++revision;
-    if (!regions.length) { publish({ message: 'Draw a region to analyze.' }); return; }
-    publish({ message: 'Calculating original-pixel statistics…' }); showPanel();
-    try {
-      if (!worker) {
-        const canvas = document.createElement('canvas'); canvas.width = width(); canvas.height = height();
-        const context = canvas.getContext('2d', { willReadFrequently: true }); context.drawImage(img, 0, 0);
-        const pixels = context.getImageData(0, 0, canvas.width, canvas.height);
-        worker = new Worker(new URL('./PolygonStatisticsWorker.mjs', import.meta.url), { type: 'module' });
-        worker.onmessage = ({ data }) => { if (!disposed && data.id === revision) publish(data.error ? { message: data.error } : { result: data.result }); };
-        worker.onerror = () => { if (disposed) return; publish({ message: 'Pixel analysis failed. Try clearing the selection.' }); worker?.terminate(); worker = null; };
-        worker.postMessage({ pixels }, [pixels.data.buffer]); canvas.width = canvas.height = 0;
-      }
-      worker.postMessage({ id, regions });
-    } catch (error) { publish({ message: `Cannot read image pixels: ${error.message}` }); }
+    analysis.changed?.();
+    if (regions.length) { publish({ message: 'Calculating original-pixel statistics…' }); showPanel(); }
+    else publish({ message: 'Draw a region to analyze.' });
+    request();
   }
   function paint() {
     paintAnalysisRegions(shapes, regions, width(), height(), maskId);
@@ -70,6 +69,7 @@ export function installPngAnalysisTools(host, viewport, filename, createPanel = 
   }
   function setDrawing(value) { drawing = value; svg.style.pointerEvents = value ? 'auto' : 'none'; svg.style.cursor = value ? 'crosshair' : ''; }
   const tool = createAnalysisPolygonTool(svg, points => {
+    grayscale.ensureRegion();
     if (operation === 'base') regions.length = 0;
     regions.push({ operation, points }); setDrawing(false); paint(); calculate(); status.textContent = 'Region complete. Add or subtract another polygon, or select a new region.';
   }, text => { status.textContent = text; });
@@ -82,19 +82,20 @@ export function installPngAnalysisTools(host, viewport, filename, createPanel = 
   const secondaryButtons = [button('Add polygon', () => start('add')), button('Subtract polygon', () => start('subtract'))];
   button('Finish path', () => { if (drawing) tool.finish(); });
   button('Undo region', () => { vectors.cancel(); tool.cancel(); setDrawing(false); regions.pop(); paint(); calculate(); });
-  button('Clear', () => { vectors.cancel(); tool.cancel(); setDrawing(false); regions.length = 0; paint(); calculate(); worker?.terminate(); worker = null; });
+  button('Clear', () => { vectors.cancel(); tool.cancel(); setDrawing(false); regions.length = 0; paint(); calculate();  });
   button('Show results', showPanel); paint();
-  const vectors = installVectorAnalysisTools({ host, svg, bar, status, analysis, isVisible: () => !menu.hidden,
+  const vectors = installVectorAnalysisTools({ host, svg, bar, status, analysis, isVisible: () => menu.isConnected && !menu.hidden && menu.getClientRects().length > 0,
     size: () => ({ width: width(), height: height() }),
     beforeStart() { tool.cancel(); setDrawing(false); },
     useRegion(geometry) {
+      grayscale.ensureRegion();
       tool.cancel(); setDrawing(false); regions.length = 0;
       regions.push({ operation: 'base', geometry }); paint(); calculate();
     }
   });
   const unwatchPixels = viewport.subscribePixels?.(() => {
     if (disposed) return;
-    revision++; worker?.terminate(); worker = null;
+    pixels.invalidate(); grayscale.invalidate();
     if (width() !== sourceWidth || height() !== sourceHeight) {
       tool.cancel(); setDrawing(false); regions.length = 0;
       vectors.clear();
@@ -102,8 +103,9 @@ export function installPngAnalysisTools(host, viewport, filename, createPanel = 
       status.textContent = 'Canvas dimensions changed. Draw a new reference region.';
     }
     align();
-    if (regions.length) calculate(); else publish({ message: 'Draw a region to analyze.' });
+    calculate();
   });
+  const session = installAnalysisSessionState({ filename, viewport, analysis, vectors, paint, calculate });
   const point = event => {
     const matrix = svg.getScreenCTM(); if (!matrix) return null;
     return new DOMPoint(event.clientX, event.clientY).matrixTransform(matrix.inverse());
@@ -134,13 +136,28 @@ export function installPngAnalysisTools(host, viewport, filename, createPanel = 
   window.addEventListener('activePanelChanged', deactivate);
   svg.addEventListener('dblclick', doubleClick);
   const unregisterTools = registerAnalysisTools(host, {
-    id: menu.id, get visible() { return !menu.hidden; },
-    toggle() { menu.hidden = !menu.hidden; if (menu.hidden) { vectors.cancel(); tool.cancel(); setDrawing(false); } }
+    analysis,
+    openGrayscale: () => grayscale.open(),
+    id: menu.id, get visible() { return menu.isConnected && !menu.hidden && menu.getClientRects().length > 0; },
+    mount(container) {
+      if (disposed) return () => {};
+      container.append(menu); menu.hidden = false;
+      return () => {
+        if (menu.parentElement !== container) return;
+        menu.hidden = true; menu.remove(); vectors.cancel(); tool.cancel(); setDrawing(false);
+      };
+    },
+    toggle() {
+      if (this.visible) {
+        menu.hidden = true; vectors.cancel(); tool.cancel(); setDrawing(false);
+        hideToolbarSubToolbar('Analysis Tools');
+      } else showToolbarSubToolbar('Analysis Tools', { force: true, toggle: false });
+    }
   });
   updateToolbarState({});
   svg.addEventListener('pointerdown', down); svg.addEventListener('pointermove', move); host.addEventListener('keydown', key, true);
   return () => {
-    if (disposed) return; disposed = true; unregisterTools(); revision++; worker?.terminate(); unwatch(); unwatchPixels?.(); vectors.dispose(); tool.dispose();
+    if (disposed) return; disposed = true; session.dispose(); unregisterTools(); pixels.dispose(); grayscale.dispose(); unwatch(); unwatchPixels?.(); vectors.dispose(); tool.dispose();
     window.removeEventListener('activePanelChanged', deactivate);
     host.removeEventListener('keydown', key, true); svg.remove(); menu.remove(); panel?.remove(); analysis.render = null;
   };

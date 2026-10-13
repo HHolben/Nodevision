@@ -8,6 +8,19 @@
   },
   {
     "ToolbarCategory": "View",
+    "parentHeading": "Analysis Tools",
+    "heading": "Grayscale Analysis",
+    "callbackKey": "GrayscaleAnalysis",
+    "conditions": { "activeAnalysisToolsAvailable": true }
+  },
+  {
+    "heading": "Image Analysis Controls",
+    "parentHeading": "Analysis Tools",
+    "script": "imageAnalysisToolbar.mjs",
+    "conditions": { "activeAnalysisToolsAvailable": true }
+  },
+  {
+    "ToolbarCategory": "View",
     "heading": "HTML Properties",
     "script": "htmlPropertiesButton.mjs",
     "modes": ["HTMLediting"]

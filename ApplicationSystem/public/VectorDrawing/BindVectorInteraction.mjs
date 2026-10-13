@@ -1,10 +1,10 @@
 // Nodevision/ApplicationSystem/public/VectorDrawing/BindVectorInteraction.mjs
 // This binding owns pointer capture and keyboard cleanup for a shared vector controller. Host adapters supply coordinate conversion and activation so document and image surfaces use identical event semantics.
 import { createVectorInteraction } from './VectorInteraction.mjs';
-export function bindVectorInteraction({ surface, keyboardHost, getTool, toPoint, preview, commit, status, begin = () => {}, clickLine, cancelOnDeactivate = () => true }) {
+export function bindVectorInteraction({ surface, keyboardHost, getTool, toPoint, preview, commit, status, begin = () => {}, cancelOnDeactivate = () => true }) {
   const controller = createVectorInteraction({ preview, commit, status });
   const doc = surface.ownerDocument, win = doc.defaultView;
-  let captured = null, startClient = null, startPoint = null;
+  let captured = null;
   const listeners = [];
   function listen(target, name, handler, capture = true) { target.addEventListener(name, handler, capture); listeners.push(() => target.removeEventListener(name, handler, capture)); }
   function release() {
@@ -20,7 +20,6 @@ export function bindVectorInteraction({ surface, keyboardHost, getTool, toPoint,
     if (!controller.active) begin(event);
     const point = toPoint(event); if (!point) return;
     keyboardHost.focus({ preventScroll: true });
-    startClient = { x: event.clientX, y: event.clientY }; startPoint = point;
     controller.down(point, event);
     if (controller.pointerId !== null) {
       captured = event.pointerId;
@@ -36,12 +35,11 @@ export function bindVectorInteraction({ surface, keyboardHost, getTool, toPoint,
   listen(surface, 'pointerup', event => {
     if (controller.pointerId !== event.pointerId) return;
     const point = toPoint(event);
-    if (clickLine && getTool() === 'line' && Math.hypot(event.clientX - startClient.x, event.clientY - startClient.y) < 3) {
-      cancel(); clickLine(startPoint, event);
-    } else { if (point) controller.up(point, event); else controller.cancel(); release(); }
+    if (point) controller.up(point, event); else controller.cancel();
+    release();
     consume(event);
   });
-  listen(surface, 'dblclick', event => { if (sync() === 'polygon') { controller.finish(); consume(event); } });
+  listen(surface, 'dblclick', event => { if (['line', 'polygon'].includes(sync())) { controller.finish(); consume(event); } });
   listen(surface, 'pointercancel', cancel);
   listen(surface, 'lostpointercapture', () => { if (captured !== null) cancel(); });
   listen(keyboardHost, 'keydown', event => {

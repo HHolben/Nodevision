@@ -1,6 +1,7 @@
 // Nodevision/ApplicationSystem/public/PanelInstances/ViewPanels/GameViewDependencies/objectInspector.mjs
 // This file defines browser-side object Inspector logic for the Nodevision UI. It renders interface components and handles user interactions.
 
+import { createVoxelWorldProperties } from "../../../MetaWorld/ProceduralVoxelWorld/VoxelWorldProperties.mjs";
 import { createFloatingInventoryPanel } from "/PanelInstances/InfoPanels/PlayerInventory.mjs";
 import { getActiveMetaWorldLayerBridge, notifyMetaWorldLayersChanged } from "/MetaWorld/MetaWorldLayerState.mjs";
 import { updateToolbarState } from "/panels/createToolbar.mjs";
@@ -168,6 +169,7 @@ export function createObjectInspector({ THREE, panel, scene, sceneObjects, colli
     closeBehavior: "hide",
     onRequestClose: () => {
       stopPreviewLoop();
+      terrainProperties.hide();
       floatingPanel.setVisible(false);
     }
   });
@@ -179,6 +181,7 @@ export function createObjectInspector({ THREE, panel, scene, sceneObjects, colli
   root.style.gap = "10px";
   root.style.font = "12px/1.3 monospace";
   floatingPanel.content.appendChild(root);
+  const terrainProperties = createVoxelWorldProperties(floatingPanel.content, root);
 
   const previewHost = document.createElement("div");
   previewHost.style.height = "220px";
@@ -1235,7 +1238,12 @@ export function createObjectInspector({ THREE, panel, scene, sceneObjects, colli
 
   return {
     inspectTarget(target, distance = null) {
-      if (target?.userData?.proceduralVoxelRuntime || target?.userData?.proceduralTerrainId) return false;
+      if (target?.userData?.proceduralTerrainId) target = sceneObjects.find(object=>object.userData?.metaWorldLayerId===target.userData.proceduralTerrainId);
+      if (target?.userData?.proceduralVoxelRuntime) {
+        activeTarget=target; stopPreviewLoop(); terrainProperties.show(target);
+        floatingPanel.setVisible(true); floatingPanel.undock(); return true;
+      }
+      terrainProperties.hide();
       const resolvedTarget = resolveInspectableTarget(target);
       if (!resolvedTarget) return false;
       activeTarget = resolvedTarget;
@@ -1247,6 +1255,7 @@ export function createObjectInspector({ THREE, panel, scene, sceneObjects, colli
       return true;
     },
     hide() {
+      terrainProperties.hide();
       activeTarget = null;
       stopPreviewLoop();
       floatingPanel.setVisible(false);
@@ -1260,6 +1269,7 @@ export function createObjectInspector({ THREE, panel, scene, sceneObjects, colli
     },
     refreshActiveTarget() {
       if (!activeTarget) return false;
+      if (activeTarget.userData?.proceduralVoxelRuntime) return terrainProperties.show(activeTarget);
       syncTargetCollider(THREE, colliders, activeTarget);
       loadPreviewFromTarget(activeTarget);
       populateFormFromTarget(activeTarget);
@@ -1267,6 +1277,7 @@ export function createObjectInspector({ THREE, panel, scene, sceneObjects, colli
       return true;
     },
     dispose() {
+      terrainProperties.dispose();
       activeTarget = null;
       stopPreviewLoop();
       resizeObserver.disconnect();

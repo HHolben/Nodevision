@@ -1,5 +1,6 @@
 // Nodevision/ApplicationSystem/public/PanelInstances/EditorPanels/GraphicalEditors/HTMLeditorComponents/HtmlAttentionReporting.mjs
 // This module reports the owning HTML editor's semantic selection and persists scroll context while suppressing equivalent attention publications during repeated keyboard input.
+import { registerRememberedPanelTool } from "/CursorFamilies/RememberedPanelTool.mjs";
 import { getSnapshot, setEditorContext, setSelectionContext, getEditingContext, saveEditingContext, clearEditorContext } from '/EditorAttentionState.mjs';
 import { findCircuitReferenceElement } from '../CircuitEditorComponents/CircuitReferenceElement.mjs';
 
@@ -26,6 +27,7 @@ function describeHtmlAttentionSelection(target) {
 
 export function installHtmlAttentionReporting(filePath, root) {
   setEditorContext({ filePath, fileFamily: "html", fileFamilyLabel: "HTML", editorMode: "HTMLediting", editorModeLabel: "HTML Editing", activeTool: "selection", activeToolLabel: "Selection Tool" });
+  const releaseActiveTool = registerRememberedPanelTool(root,{currentMode:"HTMLediting",filePath,key:"htmlSelectionTool",fallback:"text-select"});
   const saved = getEditingContext(filePath);
   requestAnimationFrame(() => {
     if (saved?.scroll && root) {
@@ -49,6 +51,7 @@ export function installHtmlAttentionReporting(filePath, root) {
   root?.addEventListener("mouseup", report, true);
   root?.addEventListener("scroll", persistScroll, { passive: true });
   return () => {
+    releaseActiveTool();
     root?.removeEventListener("input", report);
     root?.removeEventListener("click", report, true);
     root?.removeEventListener("keyup", report, true);

@@ -1,5 +1,6 @@
 // Nodevision/ApplicationSystem/tests/vectorDrawingBrowser.mjs
 // These browser regressions exercise all raster vector commands on PNG and JPEG using native-coordinate gestures. They check overlay alignment, EXIF orientation, annotation history, and the existing statistics worker.
+import { checkRasterLineDraft } from './continuousLineBrowser.mjs';
 import { runSvgTests } from './vectorDrawingSvgBrowser.mjs';
 export function assert(value, message) { if (!value) throw new Error(message); }
 export const near = (a, b) => Math.abs(a - b) < 1e-5;
@@ -8,6 +9,11 @@ export function pointer(svg, type, x, y, options = {}) {
   svg.dispatchEvent(new PointerEvent(type, { bubbles: true, cancelable: true, clientX: p.x, clientY: p.y, pointerId: 1, button: 0, ...options }));
 }
 export function gesture(svg, kind) {
+  if (kind === 'line') {
+    for (const [x,y] of [[20,20],[40,20],[40,40],[60,40],[60,60]]) { pointer(svg,'pointerdown',x,y); pointer(svg,'pointerup',x,y); }
+    pointer(svg,'pointermove',70,70);
+    svg.parentElement.dispatchEvent(new KeyboardEvent('keydown',{key:'Enter',bubbles:true,cancelable:true})); return;
+  }
   pointer(svg, 'pointerdown', 20, 20); pointer(svg, 'pointermove', 40, 30);
   if (kind === 'polygon' || kind === 'arc') {
     pointer(svg, 'pointerup', 20, 20); pointer(svg, 'pointerdown', 40, 20); pointer(svg, 'pointerup', 40, 20);
@@ -26,6 +32,15 @@ export async function run() {
     const { installPngAnalysisTools } = await import('/RasterAnalysis/PngAnalysisTools.mjs');
     const { resolveExtension } = await import('/PanelInstances/ViewPanels/FileViewParts/GetViewPanelElement.mjs');
     const { getActiveAnalysisTools } = await import('/RasterAnalysis/AnalysisToolsContext.mjs');
+    const globalToolbar = document.createElement('div'); globalToolbar.id = 'global-toolbar'; globalToolbar.style.display = 'none';
+    const subToolbar = document.createElement('div'); subToolbar.id = 'sub-toolbar'; document.body.append(globalToolbar, subToolbar);
+    const { createToolbar } = await import('/panels/createToolbar.mjs'); await createToolbar();
+    await (await import('./analysisToolbarBrowser.mjs')).checkAnalysisToolbar();
+    passed.push('Analysis Tools: shared subtoolbar, active-image ownership, no duplicates, replacement/disposal');
+    const toggleAnalysis = async () => {
+      const context = getActiveAnalysisTools(), opening = !context.visible;
+      context.toggle(); if (opening) await until(() => context.visible);
+    };
     for (const filename of ['test.PNG', 'test.JPG', 'test.jpeg', 'oriented.JPEG']) {
       console.log('VECTOR TEST ' + filename);
       const host = document.createElement('div'); host.className = 'panel'; host.style.cssText = 'width:700px;height:550px;position:relative'; document.body.append(host);
@@ -35,19 +50,22 @@ export async function run() {
       const viewport = host.__nvImageViewport, img = viewport.image;
       await img.decode(); await frame();
       assert(getActiveAnalysisTools(), 'viewer registers analysis for ' + filename);
-      getActiveAnalysisTools().toggle();
+      if (!getActiveAnalysisTools().visible) await toggleAnalysis();
       const originalOverlay = host.querySelector('[data-png-analysis-overlay]');
-      assert(originalOverlay && host.querySelector('[data-png-analysis]'), 'viewer analysis overlay present');
+      assert(originalOverlay && subToolbar.querySelector('[data-png-analysis]'), 'viewer analysis overlay present');
+      assert(!host.querySelector('[data-png-analysis]'), 'analysis controls are outside the image panel');
       // Replace only analysis with an injected result panel factory to inspect worker output.
       host._dispose(); host.replaceChildren();
       const { mountImageViewport } = await import('/PanelInstances/ViewPanels/FileViewers/ImageViewport.mjs');
       const view = mountImageViewport(host, img); let analysis;
       const dispose = installPngAnalysisTools(host, view, filename, async (_name, _id, _type, vars) => { analysis = vars.analysis; return { panel: document.createElement('div') }; });
-      getActiveAnalysisTools().toggle();
+      if (!getActiveAnalysisTools().visible) await toggleAnalysis();
       const svg = host.querySelector('[data-png-analysis-overlay]');
-      const click = label => { const button = [...host.querySelectorAll('button')].find(b => b.textContent === label); assert(button, label); button.click(); };
+      const click = label => { const button = [...subToolbar.querySelectorAll('button')].find(b => b.textContent === label); assert(button, label); button.click(); };
       for (const kind of ['line','circle','ellipse','arc','rectangle','polygon']) { click(kind[0].toUpperCase() + kind.slice(1)); gesture(svg, kind); }
       const artwork = svg.children[2]; assert(artwork.children.length === 6, 'all six tools committed for ' + filename);
+      assert(artwork.firstChild.getAttribute('d') === 'M 20 20 L 40 20 L 40 40 L 60 40 L 60 60', 'five committed Line vertices without hover');
+      checkRasterLineDraft(svg, host, artwork, click);
       click('Analyze annotation'); await until(() => analysis?.latest?.result);
       assert(analysis.annotations.length === 6, 'analysis exposes geometry');
       assert(near(analysis.measurements.area, 200), 'native polygon area');
@@ -61,9 +79,9 @@ export async function run() {
       assert(analysis.annotations.length === 6, 'region gesture does not duplicate annotations');
       click('Add polygon'); pointer(svg,'pointerdown',1,1); host.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',bubbles:true,cancelable:true}));
       assert(analysis.regions.length === 1, 'cancel region preserves selection');
-      getActiveAnalysisTools().toggle();
+      await toggleAnalysis();
       const undoEvent = new KeyboardEvent('keydown',{key:'z',ctrlKey:true,bubbles:true,cancelable:true}); host.dispatchEvent(undoEvent);
-      assert(!undoEvent.defaultPrevented, 'hidden analysis does not consume raster undo'); getActiveAnalysisTools().toggle();
+      assert(!undoEvent.defaultPrevented, 'hidden analysis does not consume raster undo'); await toggleAnalysis();
       const coordinates = JSON.stringify(analysis.annotations);
       for (const zoom of [.5, 1, 4]) {
         view.command({ action:'set', zoom }); view.command({action:'pan',dx:31,dy:-19}); host.style.width = `${650 - zoom * 10}px`; await frame();
@@ -101,6 +119,7 @@ export async function run() {
       assert(img.src.includes(filename), 'source URL unchanged');
       dispose(); host._dispose(); host.remove(); passed.push(filename + ': seven analysis tools, ROI worker, transforms, history, cleanup, decoding');
     }
+    globalToolbar.remove(); subToolbar.remove();
     console.log('VECTOR TEST SVG');
     await runSvgTests(passed);
     return { ok: true, passed };

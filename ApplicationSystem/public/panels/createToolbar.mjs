@@ -1296,6 +1296,10 @@ function showSubToolbar(panelHeading, options = {}) {
   currentSubToolbarHeading = panelHeading;
 }
 
+export function hideToolbarSubToolbar(panelHeading) {
+  if (currentSubToolbarHeading === panelHeading) hideCurrentSubToolbar();
+}
+
 export function showToolbarSubToolbar(panelHeading, options = {}) {
   showSubToolbar(panelHeading, options);
 }
