@@ -60,6 +60,14 @@ export function createProceduralVoxelWorld(THREE, source, colliders, materialOpt
   }, entry => { entry.mesh?.geometry.dispose(); entry.mesh?.removeFromParent(); });
   const runtime = {
     generator, manager, definition, stats: manager.stats,
+    setPathConstraints(paths,bounds) {
+      generator.setPathOrigin(root.position.toArray());
+      generator.setPathConstraints(paths);
+      const margin=generator.pathFeatureReach+1;
+      if(bounds)manager.invalidateBounds({minX:(bounds.minX-root.position.x)/.25-margin,maxX:(bounds.maxX-root.position.x)/.25+margin,
+        minZ:(bounds.minZ-root.position.z)/.25-margin,maxZ:(bounds.maxZ-root.position.z)/.25+margin});
+      if(lastPosition)runtime.update(lastPosition);
+    },
     get renderDistance() { return manager.radius * 32 * VOXEL_SIZE; },
     setRenderDistance(metres) {
       if (disposed || !Number.isFinite(metres)) return;

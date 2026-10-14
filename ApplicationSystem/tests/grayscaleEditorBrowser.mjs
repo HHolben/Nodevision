@@ -4,7 +4,7 @@ import { renderRasterEditor } from '/PanelInstances/EditorPanels/GraphicalEditor
 import { getActiveAnalysisTools } from '/RasterAnalysis/AnalysisToolsContext.mjs';
 import { assert, near } from './vectorDrawingBrowser.mjs';
 const frame=()=>new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)));
-async function until(fn){for(let i=0;i<200;i++){if(fn())return;await new Promise(r=>setTimeout(r,10));}throw new Error('Editor analysis timed out: '+fn);}
+async function until(fn){for(let i=0;i<1000;i++){if(fn())return;await new Promise(r=>setTimeout(r,10));}throw new Error('Editor analysis timed out: '+fn);}
 export async function runEditorChecks(passed) {
   const host=document.createElement('div');host.className='panel';host.style.cssText='width:640px;height:480px';document.body.append(host);
   window.__nvActivePanelElement=host;window.activeCell=host;

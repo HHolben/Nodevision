@@ -76,6 +76,27 @@
 #sub-toolbar .nv-subtoolbar-widget .nv-mono {
   font-family: var(--nv-ui-mono-font-family, monospace);
 }
+
+/* Analysis commands share the real toolbar's wrapping rows instead of a fixed-height widget box. */
+#sub-toolbar .nv-subtoolbar-widget.nv-image-analysis-toolbar,
+#sub-toolbar .nv-image-analysis-toolbar [data-png-analysis]:not([hidden]),
+#sub-toolbar .nv-image-analysis-toolbar [data-png-analysis] > [role="toolbar"] {
+  display: contents;
+}
+
+#sub-toolbar .nv-image-analysis-toolbar button {
+  flex: 0 0 auto;
+  height: 30px;
+  box-sizing: border-box;
+  white-space: nowrap;
+}
+
+#sub-toolbar .nv-image-analysis-toolbar [role="status"] {
+  flex: 1 1 100%;
+  padding: 2px 0;
+  font-size: 12px;
+}
+
 #sub-toolbar .nv-subtoolbar-widget.nv-subtoolbar-widget--compact-script.nv-terrain-insert-toolbar {
   gap: 8px;
   height: auto;

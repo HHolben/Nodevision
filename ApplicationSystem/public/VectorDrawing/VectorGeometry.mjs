@@ -36,7 +36,7 @@ export function createGeometry(kind, points, { sweep = 1 } = {}) {
 }
 export function svgGeometry(g) {
   switch (g.kind) {
-    case 'line': return { tag: 'path', attributes: { d: (g.points || [g.start, g.end]).map((p, i) => `${i ? 'L' : 'M'} ${p.x} ${p.y}`).join(' ') } };
+    case 'line': return { tag: 'path', attributes: { d: (g.points || [g.start, g.end]).map((p, i) => `${i ? 'L' : 'M'} ${p.x} ${p.y}`).join(' ') + (g.closed ? ' Z' : '') } };
     case 'circle': return { tag: 'circle', attributes: { cx: g.cx, cy: g.cy, r: g.r } };
     case 'ellipse': return { tag: 'ellipse', attributes: { cx: g.cx, cy: g.cy, rx: g.rx, ry: g.ry } };
     case 'rectangle': return { tag: 'rect', attributes: { x: g.x, y: g.y, width: g.width, height: g.height } };
@@ -52,7 +52,7 @@ export function svgGeometry(g) {
 export function geometryMeasurements(g) {
   switch (g.kind) {
     case 'freehand': return { length: g.points.reduce((sum, p, i) => sum + (i ? distance(g.points[i - 1], p) : 0), 0) };
-    case 'line': { const points = g.points || [g.start, g.end]; return { length: points.reduce((sum, p, i) => sum + (i ? distance(points[i - 1], p) : 0), 0) }; }
+    case 'line': { const points = g.points || [g.start, g.end]; return { length: points.reduce((sum, p, i) => sum + (i ? distance(points[i - 1], p) : 0), 0) + (g.closed ? distance(points.at(-1), points[0]) : 0) }; }
     case 'circle': return { radius: g.r, diameter: 2 * g.r, perimeter: tau * g.r, area: Math.PI * g.r ** 2 };
     case 'ellipse': return { majorAxis: 2 * Math.max(g.rx, g.ry), minorAxis: 2 * Math.min(g.rx, g.ry), area: Math.PI * g.rx * g.ry };
     case 'arc': return { radius: g.rx, length: g.rx * g.angle, angleDegrees: g.angle * 180 / Math.PI };

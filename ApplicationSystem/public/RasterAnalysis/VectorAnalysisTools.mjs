@@ -1,5 +1,6 @@
 // Nodevision/ApplicationSystem/public/RasterAnalysis/VectorAnalysisTools.mjs
 // This adapter keeps transient vector annotations in native image coordinates and exposes analytic dimensions and closed regions to the existing pixel analysis pipeline. Its history is local to annotations and never enters raster editing history.
+import { findActivePathVertex, isPathVertexVisible } from '../VectorDrawing/ActivePathVertexSnap.mjs';
 import { vectorTools, geometryMeasurements } from '../VectorDrawing/VectorGeometry.mjs';
 import { createVectorElement, renderVectorPreview } from '../VectorDrawing/VectorSvgRenderer.mjs';
 import { bindVectorInteraction } from '../VectorDrawing/BindVectorInteraction.mjs';
@@ -43,6 +44,7 @@ export function installVectorAnalysisTools({ host, svg, bar, status, analysis, s
       if (!binding.controller.active && (p.x < 0 || p.y < 0 || p.x > width || p.y > height)) return null;
       return { x: Math.max(0, Math.min(width, p.x)), y: Math.max(0, Math.min(height, p.y)) };
     },
+    snapVertex: (point, points) => findActivePathVertex(points, point, svg.getScreenCTM(), () => isVisible() && isPathVertexVisible(draft)),
     preview: (geometry, points) => renderVectorPreview(draft, geometry, points),
     commit(geometry) { annotations.push(geometry); undone.length = 0; selected = annotations.length - 1; describe(geometry); paint(); analysis.changed?.(); },
     status: text => { status.textContent = text; }
@@ -67,7 +69,7 @@ export function installVectorAnalysisTools({ host, svg, bar, status, analysis, s
   button('Undo annotation', undo); button('Redo annotation', redo);
   button('Analyze annotation', () => {
     const geometry = annotations[selected];
-    if (!geometry || ['line', 'arc', 'freehand'].includes(geometry.kind)) { status.textContent = 'Select a closed annotation to analyze its pixels.'; return; }
+    if (!geometry || (['line', 'arc', 'freehand'].includes(geometry.kind) && !geometry.closed)) { status.textContent = 'Select a closed annotation to analyze its pixels.'; return; }
     beforeStart(); setMode(null, true); useRegion(geometry);
   });
   const key = event => {

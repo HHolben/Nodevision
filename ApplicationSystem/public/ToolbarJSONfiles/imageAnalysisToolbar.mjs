@@ -7,6 +7,7 @@ export function initToolbarWidget(host) {
     queueMicrotask(() => { if (host.isConnected) initToolbarWidget(host); });
     return;
   }
+  host.classList.add('nv-image-analysis-toolbar');
   let current = null, release = null;
   function refresh() {
     if (!host.isConnected) { dispose(); return; }
@@ -14,7 +15,7 @@ export function initToolbarWidget(host) {
     if (next === current) return;
     release?.(); release = null; current = next;
     host.replaceChildren(); host.hidden = !next;
-    host.style.display = next ? '' : 'none';
+    host.style.display = next ? 'contents' : 'none';
     if (next) release = next.mount(host);
   }
   function dispose() {

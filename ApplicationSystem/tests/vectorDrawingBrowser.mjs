@@ -65,7 +65,7 @@ export async function run() {
       for (const kind of ['line','circle','ellipse','arc','rectangle','polygon']) { click(kind[0].toUpperCase() + kind.slice(1)); gesture(svg, kind); }
       const artwork = svg.children[2]; assert(artwork.children.length === 6, 'all six tools committed for ' + filename);
       assert(artwork.firstChild.getAttribute('d') === 'M 20 20 L 40 20 L 40 40 L 60 40 L 60 60', 'five committed Line vertices without hover');
-      checkRasterLineDraft(svg, host, artwork, click);
+      await checkRasterLineDraft(svg, host, artwork, click);
       click('Analyze annotation'); await until(() => analysis?.latest?.result);
       assert(analysis.annotations.length === 6, 'analysis exposes geometry');
       assert(near(analysis.measurements.area, 200), 'native polygon area');

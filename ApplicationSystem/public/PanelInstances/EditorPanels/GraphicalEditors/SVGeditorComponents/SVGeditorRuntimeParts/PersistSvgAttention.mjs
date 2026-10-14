@@ -54,12 +54,13 @@ export function createAddLineToolVertexMarkerHandler(owner) {
 }
 
 export function createCommitLineToolGeometryHandler(owner) {
-  return function () {
+  return function ({ closed = false } = {}) {
     const layer = owner.svgSession.lineToolState.layer;
     const points = owner.svgSession.lineToolState.pointsSpace || [];
     if (!layer || !Array.isArray(points) || points.length < 2) return null;
     const geometry = createGeometry("line", points.map(([x, y]) => ({ x, y })));
     if (!geometry) return null;
+    if (closed) geometry.closed = true;
     const style = owner.svgSession.currentStyleDefaults();
     // Draft segments stay editor-only so save and history never include a preview.
     owner.svgSession.lineToolState.placedLines.forEach(el => el.remove());
@@ -79,10 +80,13 @@ export function createCommitLineToolGeometryHandler(owner) {
 }
 
 export function createFinishLineToolHandler(owner) {
-  return function () {
+  return function (options = {}) {
     if (!owner.svgSession.lineToolState.active) return false;
-    owner.svgSession.commitLineToolGeometry();
+    owner.svgSession.commitLineToolGeometry(options);
     owner.svgSession.lineToolState.active = false;
+    owner.svgSession.lineToolState.layer = null;
+    owner.svgSession.lineToolState.vertexSnap = null;
+    owner.svgSession.lineToolState.rawCursorRoot = null;
     owner.svgSession.lineToolState.startRoot = null;
     owner.svgSession.lineToolState.startSpace = null;
     owner.svgSession.lineToolState.lastPlacedRoot = null;

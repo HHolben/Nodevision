@@ -1,7 +1,7 @@
 // Nodevision/ApplicationSystem/public/VectorDrawing/VectorInteraction.mjs
 // This controller manages vector gestures independently of the DOM. Render and commit callbacks allow the SVG editor and image analysis to share cancellation, validation, and multi-click behavior.
 import { createGeometry } from './VectorGeometry.mjs';
-export function createVectorInteraction({ preview, commit, status = () => {} }) {
+export function createVectorInteraction({ preview, commit, status = () => {}, snapVertex = () => null }) {
   let kind = null, points = [], cursor = null, pointer = null, sweep = 1;
   const cancel = () => { points = []; cursor = null; pointer = null; preview(null); };
   const geometry = () => createGeometry(kind, points, { sweep });
@@ -10,10 +10,11 @@ export function createVectorInteraction({ preview, commit, status = () => {} }) 
     const shape = createGeometry(kind, next, { sweep });
     preview(shape, next, kind);
   }
-  function finish() {
+  function finish(closed = false) {
     if (!points.length) return false;
     const shape = geometry();
     if (!shape) { status('Place a nonzero shape; polygons need three distinct, non-collinear vertices.'); return false; }
+    if (closed) shape.closed = true;
     cancel(); commit(shape); return true;
   }
   return {
@@ -21,6 +22,9 @@ export function createVectorInteraction({ preview, commit, status = () => {} }) 
     setTool(value) { if (value !== kind) { cancel(); kind = value; } }, cancel, finish,
     down(point, event = {}) {
       if (pointer !== null) return;
+      const snap = kind === 'line' && event.shiftKey ? snapVertex(point, points) : null;
+      if (snap?.index === 0) { finish(true); return; }
+      if (snap) point = snap.point;
       cursor = null; sweep = event.shiftKey ? 0 : 1;
       if (['line', 'polygon'].includes(kind)) {
         if (event.detail >= 2) { finish(); return; }
@@ -41,6 +45,7 @@ export function createVectorInteraction({ preview, commit, status = () => {} }) 
         if (Math.hypot(point.x - last.x, point.y - last.y) > 1e-6) points.push({ x: point.x, y: point.y });
         cursor = null; render(); return;
       }
+      if (kind === 'line' && event.shiftKey) point = snapVertex(point, points)?.point || point;
       cursor = { x: point.x, y: point.y }; sweep = event.shiftKey ? 0 : 1; render();
     },
     up(point, event = {}) {

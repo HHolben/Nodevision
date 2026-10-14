@@ -37,6 +37,12 @@ export function installSharedVectorTools(session) {
       session.setSelection([element], { primary: element });
       session.setStatus(`${geometry.kind} drawn`);
     },
+    modifierChanged(event) {
+      const state = session.lineToolState;
+      if (state.active && state.rawCursorRoot && !state.grab) {
+        session.updateLineToolPreview(session.resolveLineToolPoint(state.rawCursorRoot, event));
+      }
+    },
     cancelOnDeactivate() { session.cancelLineToolAndDeletePlaced(); return true; },
     status: text => session.setStatus(text)
   });

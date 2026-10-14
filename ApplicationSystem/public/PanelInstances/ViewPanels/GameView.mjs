@@ -108,8 +108,10 @@ function cleanupLegacyGameView(panel, state = {}) {
   if (panel._vrMetaWorldMultiplayerClient?.dispose) panel._vrMetaWorldMultiplayerClient.dispose();
   panel._vrMetaWorldMultiplayerClient = null;
   if (window.VRWorldContext?.panel === panel && Array.isArray(window.VRWorldContext.objects)) {
+    window.VRWorldContext.cancelPathDrawing?.();
     window.VRWorldContext.objects.forEach((object) => {
       try {
+        object?.userData?.pathRuntime?.dispose();
         object?.userData?.proceduralVoxelRuntime?.dispose();
         object?.userData?.soundRuntime?.audio?.pause?.();
         if (object?.userData?.soundRuntime?.audio) object.userData.soundRuntime.audio.src = "";

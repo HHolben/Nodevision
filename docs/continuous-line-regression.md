@@ -47,3 +47,11 @@ env -u ELECTRON_RUN_AS_NODE xvfb-run -a node_modules/.bin/electron --no-sandbox 
 ```
 
 Append `--svg-only` for the SVG and native pointer subset.
+
+## Follow-up: draft disappears on mouse release
+
+The previous native test mounted the editor outside a workspace cell and omitted `setupActivePanelTracking`. With that real click handler enabled, the first mouse release reproduced the reported failure: `native click keeps same Line active: 0`. The workspace emits `activePanelChanged` on every click, including reactivation of the current panel; the shared vector binding interpreted every notification as deactivation and deleted SVG Line drafts. Raster analysis drafts and the original Region tool had the same cancellation issue.
+
+`panelZoomPanParts/ownership.mjs` now exposes `panelActivationKeepsHost`, which resolves the activated tab or panel against the drawing host. `BindVectorInteraction` and `PngAnalysisTools` ignore reactivation of their own host while retaining cancellation on real panel/tab switches, cleared activation, window blur, and explicit cancellation. Line gesture, commit, history, and serialization behavior remain unchanged.
+
+The regression now drives real mouse input through both SVG and raster analysis Line with workspace tracking enabled. Five successive clicks retain their vertices and released-mouse hover preview; Enter commits, history remains functional, and changing panels still cancels unfinished work. PNG/JPG/JPEG/EXIF raster regressions also dispatch the click phase for Line and Region. The complete vector Electron suite and the expanded native subset pass. Three ownership cases (same tab, sibling tab, and cleared activation), vector geometry, SVG Line feedback, panel-context, and panel-tab lifecycle regressions pass. The lifecycle test requires the existing browser-root import loader and inert MutationObserver preload used by its fake DOM.

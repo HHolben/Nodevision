@@ -17,6 +17,7 @@ export function installStretchGizmoAbility(ctx) {
   }
 
   function createStretchGizmo(target) {
+    if (target?.userData?.pathRuntime) return false;
     const group = new THREE.Group();
     const handleGeo = new THREE.ConeGeometry(0.08, 0.24, 12);
     const handleMat = new THREE.MeshStandardMaterial({ color: 0x48b0ff });

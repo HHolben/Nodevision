@@ -2,6 +2,7 @@
 // This file defines browser-side object Inspector logic for the Nodevision UI. It renders interface components and handles user interactions.
 
 import { createVoxelWorldProperties } from "../../../MetaWorld/ProceduralVoxelWorld/VoxelWorldProperties.mjs";
+import { createPathProperties } from "../../../MetaWorld/Paths/PathProperties.mjs";
 import { createFloatingInventoryPanel } from "/PanelInstances/InfoPanels/PlayerInventory.mjs";
 import { getActiveMetaWorldLayerBridge, notifyMetaWorldLayersChanged } from "/MetaWorld/MetaWorldLayerState.mjs";
 import { updateToolbarState } from "/panels/createToolbar.mjs";
@@ -170,6 +171,7 @@ export function createObjectInspector({ THREE, panel, scene, sceneObjects, colli
     onRequestClose: () => {
       stopPreviewLoop();
       terrainProperties.hide();
+      pathProperties.hide();
       floatingPanel.setVisible(false);
     }
   });
@@ -182,6 +184,8 @@ export function createObjectInspector({ THREE, panel, scene, sceneObjects, colli
   root.style.font = "12px/1.3 monospace";
   floatingPanel.content.appendChild(root);
   const terrainProperties = createVoxelWorldProperties(floatingPanel.content, root);
+  const pathProperties = createPathProperties(floatingPanel.content, root);
+  let pathInspectorLayout = false;
 
   const previewHost = document.createElement("div");
   previewHost.style.height = "220px";
@@ -1238,6 +1242,15 @@ export function createObjectInspector({ THREE, panel, scene, sceneObjects, colli
 
   return {
     inspectTarget(target, distance = null) {
+      pathProperties.hide();
+      if (target?.userData?.pathPointIndex !== undefined) target = target.parent?.parent;
+      if (target?.userData?.pathRuntime) {
+        terrainProperties.hide();activeTarget=target;stopPreviewLoop();pathProperties.show(target);
+        floatingPanel.setLayout('floating');pathInspectorLayout=true;
+        Object.assign(floatingPanel.panel.style,{left:'auto',right:'16px',width:'min(360px, calc(100vw - 32px))',transform:'none'});
+        floatingPanel.setVisible(true);return true;
+      }
+      if (pathInspectorLayout) { floatingPanel.panel.style.right='';floatingPanel.setLayout('overlay');pathInspectorLayout=false; }
       if (target?.userData?.proceduralTerrainId) target = sceneObjects.find(object=>object.userData?.metaWorldLayerId===target.userData.proceduralTerrainId);
       if (target?.userData?.proceduralVoxelRuntime) {
         activeTarget=target; stopPreviewLoop(); terrainProperties.show(target);
@@ -1255,6 +1268,7 @@ export function createObjectInspector({ THREE, panel, scene, sceneObjects, colli
       return true;
     },
     hide() {
+      pathProperties.hide();
       terrainProperties.hide();
       activeTarget = null;
       stopPreviewLoop();
@@ -1269,6 +1283,7 @@ export function createObjectInspector({ THREE, panel, scene, sceneObjects, colli
     },
     refreshActiveTarget() {
       if (!activeTarget) return false;
+      if (activeTarget.userData?.pathRuntime) return pathProperties.show(activeTarget);
       if (activeTarget.userData?.proceduralVoxelRuntime) return terrainProperties.show(activeTarget);
       syncTargetCollider(THREE, colliders, activeTarget);
       loadPreviewFromTarget(activeTarget);
@@ -1277,6 +1292,7 @@ export function createObjectInspector({ THREE, panel, scene, sceneObjects, colli
       return true;
     },
     dispose() {
+      pathProperties.dispose();
       terrainProperties.dispose();
       activeTarget = null;
       stopPreviewLoop();

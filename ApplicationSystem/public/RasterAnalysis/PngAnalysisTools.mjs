@@ -5,6 +5,7 @@ import { installAnalysisSessionState } from './AnalysisSessionState.mjs';
 import { installGrayscaleAnalysis } from './GrayscaleAnalysisSession.mjs';
 import { installVectorAnalysisTools } from './VectorAnalysisTools.mjs';
 import { registerAnalysisTools } from './AnalysisToolsContext.mjs';
+import { panelActivationKeepsHost } from '../panels/panelZoomPanParts/ownership.mjs';
 import { updateToolbarState, showToolbarSubToolbar, hideToolbarSubToolbar } from '../panels/createToolbar.mjs';
 import { paintAnalysisRegions } from './AnalysisRegionOverlay.mjs';
 import { createAnalysisPolygonTool } from './AnalysisPolygonTool.mjs';
@@ -19,8 +20,6 @@ export function installPngAnalysisTools(host, viewport, filename, createPanel = 
   const menu = document.createElement('div'), bar = document.createElement('div');
   menu.hidden = true; menu.id = `png-analysis-tools-${crypto.randomUUID()}`;
   menu.dataset.pngAnalysis = ''; bar.setAttribute('role', 'toolbar'); bar.setAttribute('aria-label', 'Image analysis');
-  Object.assign(menu.style, { background: 'var(--panel-background, Canvas)', color: 'var(--panel-color, CanvasText)', padding: '0', width: '100%' });
-  Object.assign(bar.style, { display: 'flex', flexWrap: 'wrap', gap: '4px' });
   const status = document.createElement('p'); status.setAttribute('role', 'status'); status.textContent = 'Select Region, then click polygon vertices.';
   status.style.margin = '4px 0 0';
   menu.append(bar, status);
@@ -84,7 +83,8 @@ export function installPngAnalysisTools(host, viewport, filename, createPanel = 
   button('Undo region', () => { vectors.cancel(); tool.cancel(); setDrawing(false); regions.pop(); paint(); calculate(); });
   button('Clear', () => { vectors.cancel(); tool.cancel(); setDrawing(false); regions.length = 0; paint(); calculate();  });
   button('Show results', showPanel); paint();
-  const vectors = installVectorAnalysisTools({ host, svg, bar, status, analysis, isVisible: () => menu.isConnected && !menu.hidden && menu.getClientRects().length > 0,
+  const isVisible = () => menu.isConnected && !menu.hidden && bar.firstElementChild?.getClientRects().length > 0;
+  const vectors = installVectorAnalysisTools({ host, svg, bar, status, analysis, isVisible,
     size: () => ({ width: width(), height: height() }),
     beforeStart() { tool.cancel(); setDrawing(false); },
     useRegion(geometry) {
@@ -131,14 +131,14 @@ export function installPngAnalysisTools(host, viewport, filename, createPanel = 
     else return;
     event.preventDefault(); event.stopPropagation();
   };
-  const deactivate = () => { if (drawing) { tool.cancel(); setDrawing(false); } };
+  const deactivate = event => { if (drawing && !panelActivationKeepsHost(event, host)) { tool.cancel(); setDrawing(false); } };
   const doubleClick = event => { if (drawing) { tool.finish(); event.preventDefault(); } };
   window.addEventListener('activePanelChanged', deactivate);
   svg.addEventListener('dblclick', doubleClick);
   const unregisterTools = registerAnalysisTools(host, {
     analysis,
     openGrayscale: () => grayscale.open(),
-    id: menu.id, get visible() { return menu.isConnected && !menu.hidden && menu.getClientRects().length > 0; },
+    id: menu.id, get visible() { return isVisible(); },
     mount(container) {
       if (disposed) return () => {};
       container.append(menu); menu.hidden = false;

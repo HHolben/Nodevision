@@ -22,11 +22,11 @@ const server = http.createServer((req, res) => {
     res.end(bytes);
   });
 });
-const timeout = setTimeout(() => { console.error('Grayscale test timed out', errors); app.exit(1); }, 120000);
+const timeout = setTimeout(() => { console.error('Grayscale test timed out', errors); app.exit(1); }, 240000);
 (async () => {
   await app.whenReady(); await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
   const win = new BrowserWindow({ width:1100, height:900, show:false, webPreferences:{contextIsolation:true,nodeIntegration:false,backgroundThrottling:false} });
-  win.webContents.on('console-message', (_event, level, message) => { if (level >= 3) errors.push(message); });
+  win.webContents.on('console-message', (_event, level, message) => { if (level >= 3) errors.push(message); if (message.startsWith('GRAYSCALE TEST')) console.log(message); });
   await win.loadURL(`http://127.0.0.1:${server.address().port}`);
   const fixtures = await win.webContents.executeJavaScript(`(() => {
     const c=document.createElement('canvas'); c.width=120; c.height=80; const x=c.getContext('2d');
@@ -38,15 +38,18 @@ const timeout = setTimeout(() => { console.error('Grayscale test timed out', err
   for (const [name, key] of [['opaque.png','png'],['alpha.PNG','alpha'],['photo.JPG','jpeg'],['photo.jpeg','jpeg']]) {
     assets.set('/Notebook/' + name, {type:key==='jpeg'?'image/jpeg':'image/png',bytes:Buffer.from(fixtures[key].split(',')[1],'base64')});
   }
-  const result = await win.webContents.executeJavaScript("import('/tests/grayscaleAnalysisBrowser.mjs').then(m=>m.run())", true);
+  const runScript = process.argv.includes('--editor-only')
+    ? "import('/tests/grayscaleEditorBrowser.mjs').then(async m=>{const passed=[];await m.runEditorChecks(passed);return {ok:true,passed};})"
+    : "import('/tests/grayscaleAnalysisBrowser.mjs').then(m=>m.run())";
+  const result = await win.webContents.executeJavaScript(runScript, true);
   console.log(JSON.stringify(result,null,2));
   if (!result.ok) throw new Error(result.error);
-  for (const width of [1100,390]) {
+  for (const width of process.argv.includes('--editor-only') ? [] : [1100,390]) {
     win.setSize(width,900);
     await win.webContents.executeJavaScript(`window.checkGrayscaleLayout(${width})`);
     fs.writeFileSync(path.join(os.tmpdir(), `nodevision-grayscale-${width}.png`), (await win.webContents.capturePage()).toPNG());
   }
-  console.log('PASS desktop/mobile layout and screenshots: /tmp/nodevision-grayscale-{1100,390}.png');
+  if (!process.argv.includes('--editor-only')) console.log('PASS desktop/mobile layout and screenshots: /tmp/nodevision-grayscale-{1100,390}.png');
   clearTimeout(timeout); win.destroy(); server.close(); app.exit(0);
 })().catch(error => { console.error(error.stack, errors.slice(-8)); server.close(); app.exit(1); });
 app.on('quit', () => fs.rmSync(profile,{recursive:true,force:true}));

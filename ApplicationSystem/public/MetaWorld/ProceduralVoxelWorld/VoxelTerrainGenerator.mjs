@@ -2,14 +2,17 @@
 // This module composes base terrain and bounded procedural features into a deterministic final voxel field shared by rendering, collision, and future overrides.
 import { createChunkLevelQuery } from './VoxelChunkLevels.mjs';
 import { createBaseTerrain } from './VoxelBaseTerrain.mjs';
+import { createPathTerrainField } from '../Paths/PathTerrainField.mjs';
 import { createFeatureField } from './Features/FeatureField.mjs';
 import { createTreePlacement } from './Features/TreePlacement.mjs';
 import { featureMaterialPriority, voxelMaterialId } from './VoxelMaterialIds.mjs';
 import { chunkToVoxel, voxelIndex, containsVoxel } from './VoxelCoordinates.mjs';
 const priority=featureMaterialPriority;
 export function createVoxelGenerator(def) {
-  const base=createBaseTerrain(def),provider=createTreePlacement(base,def.generator.seed);
-  const features=createFeatureField(def.generation?.vegetation === false ? [] : [provider],priority);
+  const original=createBaseTerrain(def),base=createPathTerrainField(original,def),provider=createTreePlacement(original,def.generator.seed);
+  const filtered={...provider,candidate(x,z){const f=provider.candidate(x,z);return base.excludesFeature(f)?null:f;}};
+  const features=createFeatureField(def.generation?.vegetation === false ? [] : [filtered],priority);
+  let levels=createChunkLevelQuery(base,features);
   const featureStats={lookupMs:0,samplingMs:0,candidates:0};
   function getFeatureVoxel(x,y,z,list) {
     if(!containsVoxel([x,y,z],base.dimensions)||base.getVoxel(x,y,z))return 0;
@@ -36,7 +39,9 @@ export function createVoxelGenerator(def) {
     featureStats.samplingMs+=performance.now()-sampleStart;
     return data;
   }
-  return { ...base,getChunkLevels:createChunkLevelQuery(base,features),features,featureStats,getFeatureVoxel,getVoxel,generateChunk,
+  return { ...base,getChunkLevels:(x,z)=>levels(x,z),features,featureStats,getFeatureVoxel,getVoxel,generateChunk,
+    pathFeatureReach:provider.reach*2,
+    setPathConstraints(paths){base.setPathConstraints(paths);features.clear();levels=createChunkLevelQuery(base,features);},
     maxSolidHeight:Math.min(base.dimensions[1],base.maxSolidHeight+provider.maxHeight),
     getVoxelMaterialId:(x,y,z)=>voxelMaterialId(getVoxel(x,y,z)) };
 }

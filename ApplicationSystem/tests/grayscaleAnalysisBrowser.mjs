@@ -19,6 +19,7 @@ export async function run() {
     const entries=await fetch('/ToolbarJSONfiles/viewToolbar.json').then(r=>r.json());
     assert(entries.some(e=>e.parentHeading==='Analysis Tools'&&e.heading==='Grayscale Analysis'),'View menu registration');
     for (const filename of ['opaque.png','alpha.PNG','photo.JPG','photo.jpeg']) {
+      console.log('GRAYSCALE TEST ' + filename);
       const host=document.createElement('div');host.className='panel';host.style.cssText='width:600px;height:400px;position:relative';document.body.append(host);
       window.__nvActivePanelElement=host;window.activeCell=host;
       const img=new Image();img.src='/Notebook/'+filename;await img.decode();
@@ -93,6 +94,7 @@ export async function run() {
       passed.push(filename+': thresholds, modes, polygon/circle AND, transforms, lifecycle, restoration');
       releasePanel();dispose();viewport.command({action:'reset'});host._dispose();host.remove();
     }
+    console.log('GRAYSCALE TEST editor');
     await (await import('./grayscaleEditorBrowser.mjs')).runEditorChecks(passed);
     // Leave a live, populated panel for responsive layout and screenshot inspection.
     const host=document.createElement('div');host.className='panel';host.style.cssText='width:100%;height:360px';document.body.append(host);window.__nvActivePanelElement=host;window.activeCell=host;

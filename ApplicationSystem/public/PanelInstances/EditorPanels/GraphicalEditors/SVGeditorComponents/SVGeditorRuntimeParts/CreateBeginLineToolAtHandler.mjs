@@ -46,7 +46,7 @@ export function createBeginLineToolAtHandler(owner) {
 }
 
 export function createPlaceLineToolVertexHandler(owner) {
-  return function (rootPoint, layer = null) {
+  return function (rootPoint, layer = null, vertexIndex = null) {
     owner.svgSession.recordLineProbe("placeLineToolVertex:start", {
       active: Boolean(owner.svgSession.lineToolState.active)
     });
@@ -60,7 +60,8 @@ export function createPlaceLineToolVertexHandler(owner) {
       owner.svgSession.recordLineProbe("placeLineToolVertex:after-begin");
       return began;
     }
-    const spacePoint = owner.svgSession.rootPointToElementPoint(targetLayer, rootPoint);
+    const vertex = vertexIndex === null ? null : owner.svgSession.lineToolState.pointsSpace[vertexIndex];
+    const spacePoint = vertex ? { x: vertex[0], y: vertex[1] } : owner.svgSession.rootPointToElementPoint(targetLayer, rootPoint);
     if (!owner.svgSession.lineToolState.startSpace) return false;
     const segmentStartRoot = owner.svgSession.lineToolState.startRoot ? {
       ...owner.svgSession.lineToolState.startRoot

@@ -16,7 +16,7 @@ function rasterRow(points, y, width) {
 export function regionRow(region, y, width) {
   const g = region.geometry;
   if (!g) return rasterRow(region.points, y, width);
-  if (g.kind === 'polygon') return rasterRow(g.points.map(p => [p.x, p.y]), y, width);
+  if (g.kind === 'polygon' || (g.kind === 'line' && g.closed)) return rasterRow(g.points.map(p => [p.x, p.y]), y, width);
   const row = new Uint8Array(width);
   let left, right;
   if (g.kind === 'rectangle') {

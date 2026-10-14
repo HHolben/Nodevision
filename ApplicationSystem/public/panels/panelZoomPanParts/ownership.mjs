@@ -139,6 +139,14 @@ export function getPanelElementFromEvent(event) {
   return getPanelElementFromElement(event?.target);
 }
 
+// Workspace click tracking re-announces the current panel after every pointer release.
+export function panelActivationKeepsHost(event, host) {
+  const detail = event?.detail;
+  if (!detail || (!detail.panel && !detail.cell && !detail.tab)) return false;
+  const panel = detail.tab?.contentElement || panelFromCell(detail.cell) || getActivePanelElement();
+  return panel === host || Boolean(panel?.contains?.(host));
+}
+
 export function eventUsesLocalZoomScope(event) {
   const target = event?.target?.nodeType === 1 ? event.target : null;
   return Boolean(target?.closest?.(LOCAL_ZOOM_SCOPE_SELECTOR));

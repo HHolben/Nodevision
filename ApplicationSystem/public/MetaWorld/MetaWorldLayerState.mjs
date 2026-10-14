@@ -401,6 +401,7 @@ function moveMetaWorldLayer(objectId, direction) {
 
 function renameMetaWorldLayer(objectId, nextName) {
   const bridge = getActiveMetaWorldLayerBridge();
+  if (bridge?.getPathDefinition?.(objectId)) return bridge.updatePath(objectId,{name:String(nextName || '').trim() || 'Path'});
   if (typeof bridge?.updateExpressionLayer === "function") {
     const entry = listMetaWorldLayerObjects().find((candidate) => candidate.id === objectId);
     if (isExpressionLayer(entry)) return updateExpressionLayer(objectId, { name: nextName });

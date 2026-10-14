@@ -1,6 +1,7 @@
 // Nodevision/ApplicationSystem/public/PanelInstances/EditorPanels/GraphicalEditors/SVGeditorComponents/SVGeditorRuntimeParts/InstallSvgLinePlacement.mjs
 // This module implements install Svg Line Placement behavior for the SVGeditorRuntime feature. Its dependencies and instance state are supplied explicitly so other editor instances remain independent.
 
+import { findActivePathVertex, isPathVertexVisible } from "../../../../../VectorDrawing/ActivePathVertexSnap.mjs";
 import { createBeginLineToolAtHandler, createPlaceLineToolVertexHandler } from "./CreateBeginLineToolAtHandler.mjs";
 import { createApplyLineToolAxisDistanceHandler, createApplyLineToolAxisPositionHandler, createSetLineToolAxisConstraintHandler } from "./CreateApplyLineToolAxisDistanceHandler.mjs";
 import { createSetLineToolPositionAxisConstraintHandler } from "./CreateSetLineToolPositionAxisConstraintHandler.mjs";
@@ -8,15 +9,18 @@ import { createSetLineToolPositionAxisConstraintHandler } from "./CreateSetLineT
 // Install Svg Line Placement operations.
 export function installSvgLinePlacement(scope) {
   scope.svgSession.resolveLineToolPoint = function (rawPoint, event = null) {
+    const session = scope.svgSession, state = session.lineToolState;
+    state.rawCursorRoot = rawPoint;
+    state.vertexSnap = null;
     let next = rawPoint;
-    if (event?.shiftKey && scope.svgSession.lineToolState.startRoot) {
-      const tol = scope.svgSession.pointerToleranceInSvgUnits(18);
-      const snapped = scope.svgSession.findNearestSnapPointInRoot(rawPoint, tol, {
-        snapCache: "line-tool"
-      });
-      next = snapped || scope.svgSession.snapAngleEndpointInRoot(scope.svgSession.lineToolState.startRoot, rawPoint, Math.PI / 12);
+    if (event?.shiftKey && state.active && state.startRoot) {
+      const points = state.pointsSpace.map(([x, y]) => session.elementPointToRootPoint(state.layer, x, y));
+      state.vertexSnap = findActivePathVertex(points, rawPoint, session.svgRoot.getScreenCTM(),
+        index => isPathVertexVisible(state.layer) && isPathVertexVisible(state.vertexMarkers[index]));
+      next = state.vertexSnap?.point || session.snapAngleEndpointInRoot(state.startRoot, rawPoint, Math.PI / 12);
     }
-    next = scope.svgSession.applyLineToolConstraint(next);
+    // An exact vertex has priority; independent constraints retain their existing fallback.
+    if (!state.vertexSnap) next = session.applyLineToolConstraint(next);
     scope.svgSession.lineToolState.cursorRoot = next;
     return next;
   };

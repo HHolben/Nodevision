@@ -599,6 +599,7 @@ export function initScene({ THREE, PointerLockControls, panel, canvas, state, lo
   const voxelStreamPosition = new THREE.Vector3();
   const update = () => {
     temporalController.update();
+    window.VRWorldContext?.updatePathTransforms?.();
     objects.forEach(object => object.userData?.proceduralVoxelRuntime?.update((viewController.getActiveCamera() || camera).getWorldPosition(voxelStreamPosition)));
     if (movementState.paused) return;
     consolePanels.updateEnvironmentLighting?.(temporalController.getTimeSeconds?.() ?? 0);

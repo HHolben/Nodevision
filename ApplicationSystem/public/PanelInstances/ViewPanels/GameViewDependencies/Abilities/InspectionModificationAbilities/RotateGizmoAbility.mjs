@@ -20,6 +20,7 @@ export function installRotateGizmoAbility(ctx) {
   }
 
   function createRotateGizmo(target) {
+    if (target?.userData?.pathRuntime) return false;
     const group = new THREE.Group();
     const handles = [];
     const axes = [

@@ -660,6 +660,13 @@
   {
     "ToolbarCategory": "Insert",
     "parentHeading": "Insert",
+    "heading": "Path",
+    "callbackKey": "insertPath",
+    "modes": ["Virtual World Editing", "VR World Editing"]
+  },
+  {
+    "ToolbarCategory": "Insert",
+    "parentHeading": "Insert",
     "heading": "Voxel World",
     "callbackKey": "insertVoxelWorld",
     "modes": ["Virtual World Editing", "VR World Editing"]

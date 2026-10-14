@@ -34,7 +34,8 @@ export function handleSvgPointerDrawingStart(scope) {
       x: scope.pointerStartState.rootPoint.x,
       y: scope.pointerStartState.rootPoint.y
     });
-    scope.owner.svgSession.placeLineToolVertex(scope.pointerStartState.rootPoint, scope.pointerStartState.layer);
+    if (scope.owner.svgSession.lineToolState.vertexSnap?.index === 0) scope.owner.svgSession.finishLineTool({ closed: true });
+    else scope.owner.svgSession.placeLineToolVertex(scope.pointerStartState.rootPoint, scope.pointerStartState.layer, scope.owner.svgSession.lineToolState.vertexSnap?.index ?? null);
     scope.owner.svgSession.recordLineProbe("line-branch:after-place", {
       active: Boolean(scope.owner.svgSession.lineToolState.active)
     });

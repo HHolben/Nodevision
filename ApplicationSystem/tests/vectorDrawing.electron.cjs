@@ -20,7 +20,7 @@ const server = http.createServer((req, res) => {
   if (!file.startsWith(path.resolve('ApplicationSystem') + path.sep)) { res.writeHead(403); res.end(); return; }
   fs.readFile(file, (error, bytes) => {
     if (error) { res.writeHead(404); res.end(); return; }
-    res.setHeader('Content-Type', file.endsWith('.mjs') || file.endsWith('.js') ? 'text/javascript' : file.endsWith('.json') ? 'application/json' : file.endsWith('.csv') ? 'text/csv' : 'text/plain'); res.end(bytes);
+    res.setHeader('Content-Type', file.endsWith('.mjs') || file.endsWith('.js') ? 'text/javascript' : file.endsWith('.json') ? 'application/json' : file.endsWith('.css') ? 'text/css' : file.endsWith('.png') ? 'image/png' : file.endsWith('.csv') ? 'text/csv' : 'text/plain'); res.end(bytes);
   });
 });
 (async () => {
@@ -40,30 +40,44 @@ const server = http.createServer((req, res) => {
   // EXIF little-endian orientation 6: display a 120x80 encoded image as 80x120.
   const exif = Buffer.from('ffe1002245786966000049492a0008000000010012010300010000000600000000000000', 'hex');
   assets.set('/Notebook/oriented.JPEG', { type: 'image/jpeg', bytes: Buffer.concat([jpeg.subarray(0,2),exif,jpeg.subarray(2)]) });
-  const runScript = process.argv.includes('--svg-only')
+  if (process.argv.includes('--toolbar-only')) {
+    await win.webContents.executeJavaScript("import('/tests/analysisToolbarLayoutBrowser.mjs').then(m => m.setup())");
+    for (const width of [1200, 768, 390]) {
+      win.setSize(width, 900);
+      console.log(await win.webContents.executeJavaScript('window.checkAnalysisToolbarLayout()'));
+      fs.writeFileSync(path.join(os.tmpdir(), `nodevision-analysis-toolbar-${width}.png`), (await win.webContents.capturePage()).toPNG());
+    }
+    win.destroy(); server.close(); app.exit(0); return;
+  }
+  const runScript = process.argv.includes('--snap-only')
+    ? `import('/tests/lineVertexSnapBrowser.mjs').then(m => m.run())`
+    : process.argv.includes('--svg-only')
     ? `import('/tests/vectorDrawingSvgBrowser.mjs').then(async m => { const passed=[]; await m.runSvgTests(passed); return {ok:true,passed}; })`
     : `import('/tests/vectorDrawingBrowser.mjs').then(m => m.run())`;
   const result = await win.webContents.executeJavaScript(runScript, true);
   console.log(JSON.stringify(result, null, 2));
   if (!result.ok) throw new Error(result.error);
-  await win.webContents.executeJavaScript("import('/tests/continuousLineBrowser.mjs').then(m => m.setupNativeLine())");
-  win.show(); win.focus(); win.webContents.focus();
   const pause = () => new Promise(resolve => setTimeout(resolve, 60));
-  await new Promise(resolve => setTimeout(resolve, 300));
-  for (let i = 0; i < 5; i++) {
-    const vertices = await win.webContents.executeJavaScript('window.nativeLineCoordinates()');
-    const at = vertices[i];
-    win.webContents.sendInputEvent({type:'mouseMove', ...at});
-    win.webContents.sendInputEvent({type:'mouseDown', ...at, button:'left', clickCount:1});
-    const releaseAt = i === 0 ? {x:at.x+5,y:at.y} : at;
-    win.webContents.sendInputEvent({type:'mouseMove', ...releaseAt});
-    win.webContents.sendInputEvent({type:'mouseUp', ...releaseAt, button:'left', clickCount:1});
-    win.webContents.sendInputEvent({type:'mouseMove', ...vertices[5]});
-    await pause(); await win.webContents.executeJavaScript(`window.checkNativeLine(${i})`);
+  for (const setup of ['setupNativeLine', 'setupNativeRasterLine']) {
+    await win.webContents.executeJavaScript(`import('/tests/continuousLineBrowser.mjs').then(m => m.${setup}())`);
+    win.show(); win.focus(); win.webContents.focus();
+    await new Promise(resolve => setTimeout(resolve, 300));
+    for (let i = 0; i < 5; i++) {
+      const vertices = await win.webContents.executeJavaScript('window.nativeLineCoordinates()');
+      const at = vertices[i];
+      win.webContents.sendInputEvent({type:'mouseMove', ...at});
+      win.webContents.sendInputEvent({type:'mouseDown', ...at, button:'left', clickCount:1});
+      const releaseAt = i === 0 ? {x:at.x+5,y:at.y} : at;
+      win.webContents.sendInputEvent({type:'mouseMove', ...releaseAt});
+      win.webContents.sendInputEvent({type:'mouseUp', ...releaseAt, button:'left', clickCount:1});
+      win.webContents.sendInputEvent({type:'mouseMove', ...vertices[5]});
+      await pause(); await win.webContents.executeJavaScript(`window.checkNativeLine(${i})`);
+    }
+    win.webContents.sendInputEvent({type:'keyDown',keyCode:'Return'}); await pause();
+    await win.webContents.executeJavaScript('window.finishNativeLine()');
+    console.log('PASS ' + setup + ': native five-click Line with workspace activation, hover, completion, cancellation, history');
   }
-  win.webContents.sendInputEvent({type:'keyDown',keyCode:'Return'}); await pause();
-  await win.webContents.executeJavaScript('window.finishNativeLine()');
-  console.log('PASS native five-click SVG Line, hover, completion, cancellation, history, save/reload');
+  if (process.argv.includes('--snap-only')) { clearTimeout(timeout); win.destroy(); server.close(); app.exit(0); return; }
   // Native input verifies real pointer capture and Escape cleanup, beyond synthetic gestures.
   const point = await win.webContents.executeJavaScript('window.vectorNativeCaptureSetup()');
   win.show(); win.focus(); win.webContents.focus();
