@@ -1,0 +1,29 @@
+{
+  "format": "nodevision-world-object-material",
+  "version": 1,
+  "id": "CoarseBeachSand",
+  "displayName": "Coarse Beach Sand",
+  "description": "Reusable Aegean material for terrain, vegetation and authored objects.",
+  "defaultColor": "#c4b58c",
+  "homogeneousSubstance": false,
+  "MatterState": "solid",
+  "defaultForPlacedObjects": false,
+  "collider": {
+    "state": "solid",
+    "solid": true,
+    "densityKgPerCubicMeter": 1700,
+    "dynamicViscosityPascalSeconds": 0,
+    "kinematicViscositySquareMetersPerSecond": 0,
+    "coefficientOfStaticFriction": 0.7,
+    "coefficientOfKineticFriction": 0.5,
+    "springConstantNewtonsPerMeter": "Infinity",
+    "restitution": 0.08
+  },
+  "rendering": {
+    "materialType": "terrain",
+    "color": "#c4b58c",
+    "roughness": 0.95,
+    "opacity": 1
+  },
+  "chemicalFormulaMol": null
+}

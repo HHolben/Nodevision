@@ -1,0 +1,14 @@
+{
+  "format": "nodevision-world-object-material",
+  "version": 1,
+  "id": "Bronze",
+  "displayName": "Bronze",
+  "description": "Bronze appearance for editable lettering, signs, and general world objects.",
+  "defaultColor": "#b78946",
+  "MatterState": "solid",
+  "rendering": {
+    "color": "#b78946",
+    "roughness": 0.4,
+    "metalness": 0.85
+  }
+}

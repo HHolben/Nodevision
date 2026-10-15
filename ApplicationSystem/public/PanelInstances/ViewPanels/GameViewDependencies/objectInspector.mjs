@@ -1,6 +1,7 @@
 // Nodevision/ApplicationSystem/public/PanelInstances/ViewPanels/GameViewDependencies/objectInspector.mjs
 // This file defines browser-side object Inspector logic for the Nodevision UI. It renders interface components and handles user interactions.
 
+import { openTextEditor } from '../../../MetaWorld/Text/TextEditor.mjs';
 import { createVoxelWorldProperties } from "../../../MetaWorld/ProceduralVoxelWorld/VoxelWorldProperties.mjs";
 import { createPathProperties } from "../../../MetaWorld/Paths/PathProperties.mjs";
 import { createFloatingInventoryPanel } from "/PanelInstances/InfoPanels/PlayerInventory.mjs";
@@ -1242,6 +1243,8 @@ export function createObjectInspector({ THREE, panel, scene, sceneObjects, colli
 
   return {
     inspectTarget(target, distance = null) {
+      const textTarget = target?.userData?.textRoot || target;
+      if (textTarget?.userData?.textRuntime) return openTextEditor(textTarget);
       pathProperties.hide();
       if (target?.userData?.pathPointIndex !== undefined) target = target.parent?.parent;
       if (target?.userData?.pathRuntime) {

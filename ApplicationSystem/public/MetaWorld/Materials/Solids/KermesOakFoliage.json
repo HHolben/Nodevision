@@ -1,0 +1,29 @@
+{
+  "format": "nodevision-world-object-material",
+  "version": 1,
+  "id": "KermesOakFoliage",
+  "displayName": "Kermes Oak Foliage",
+  "description": "Reusable Aegean material for terrain, vegetation and authored objects.",
+  "defaultColor": "#536643",
+  "homogeneousSubstance": false,
+  "MatterState": "solid",
+  "defaultForPlacedObjects": false,
+  "collider": {
+    "state": "solid",
+    "solid": false,
+    "densityKgPerCubicMeter": 1700,
+    "dynamicViscosityPascalSeconds": 0,
+    "kinematicViscositySquareMetersPerSecond": 0,
+    "coefficientOfStaticFriction": 0.7,
+    "coefficientOfKineticFriction": 0.5,
+    "springConstantNewtonsPerMeter": "Infinity",
+    "restitution": 0.08
+  },
+  "rendering": {
+    "materialType": "terrain",
+    "color": "#536643",
+    "roughness": 0.95,
+    "opacity": 1
+  },
+  "chemicalFormulaMol": null
+}

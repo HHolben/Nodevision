@@ -1,7 +1,7 @@
 // Nodevision/ApplicationSystem/public/MetaWorld/ProceduralVoxelWorld/VoxelChunkMesher.mjs
 // This module emits indexed exposed voxel faces and queries neighboring cells across chunk boundaries to suppress seams.
 
-import { isLiquidVoxel } from "./VoxelMaterialIds.mjs";
+import { isLiquidVoxel, isWaterVoxel } from "./VoxelMaterialIds.mjs";
 import { CHUNK_SIZE, VOXEL_SIZE, chunkToVoxel, voxelIndex } from "./VoxelCoordinates.mjs";
 const faces = [
   [[1,0,0], [[1,0,0],[1,1,0],[1,1,1],[1,0,1]]],
@@ -24,6 +24,7 @@ export function meshVoxelChunk(data, chunk, getVoxel) {
     for (const [normal, corners] of faces) {
       const neighbor = sample(x+normal[0], y+normal[1], z+normal[2]);
       // Liquid exposes the lakebed but contributes no duplicate face against it.
+      if (isWaterVoxel(material)&&isWaterVoxel(neighbor))continue;
       if (neighbor && (!isLiquidVoxel(neighbor) || (isLiquidVoxel(material) && material <= neighbor))) continue;
       const first = positions.length / 3;
       for (const corner of corners) {

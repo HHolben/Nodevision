@@ -41,6 +41,7 @@ export function installPickingAbility(ctx) {
 
   function shouldUseBoundsPicking(target) {
     if (!target?.isMesh) return false;
+    if (target.userData?.textRuntime) return true;
     if (target.userData?.isPortal === true || String(target.userData?.nvType || "").toLowerCase() === "portal") return true;
     if (target.userData?.objectFileUseBoundsPicking === true) return true;
     const objectPath = String(target.userData?.objectFilePath || "").toLowerCase().split(/[?#]/)[0];

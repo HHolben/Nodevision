@@ -1,0 +1,40 @@
+{
+  "node": "v24.19.0",
+  "note": "Same process, identical chunks, warmed implementations, alternating order, four repetitions. Geometry bytes assume 32-bit indices.",
+  "results": [
+    {
+      "density": 0.15,
+      "chunks": 16,
+      "samplesPerMesher": 64,
+      "reference": {
+        "meanMs": 12.68886218749998,
+        "p95Ms": 26.498138000000154,
+        "quads": 18996,
+        "bytes": 2279520
+      },
+      "greedy": {
+        "meanMs": 9.248184312500017,
+        "p95Ms": 22.188990999999987,
+        "quads": 6173,
+        "bytes": 740760
+      }
+    },
+    {
+      "density": 1,
+      "chunks": 16,
+      "samplesPerMesher": 64,
+      "reference": {
+        "meanMs": 12.392107640624978,
+        "p95Ms": 23.10216900000023,
+        "quads": 30589,
+        "bytes": 3670680
+      },
+      "greedy": {
+        "meanMs": 8.22657198437495,
+        "p95Ms": 15.668064999999842,
+        "quads": 13332,
+        "bytes": 1599840
+      }
+    }
+  ]
+}

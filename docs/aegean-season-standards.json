@@ -1,0 +1,13 @@
+{
+  "checked": 31,
+  "maximumCodeLines": 592,
+  "failed": [
+    {
+      "file": "ApplicationSystem/public/PanelInstances/ViewPanels/GameViewDependencies/initScene.mjs",
+      "codeLines": 592,
+      "header": true,
+      "description": true,
+      "pass": false
+    }
+  ]
+}

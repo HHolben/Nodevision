@@ -600,7 +600,7 @@ export function initScene({ THREE, PointerLockControls, panel, canvas, state, lo
   const update = () => {
     temporalController.update();
     window.VRWorldContext?.updatePathTransforms?.();
-    objects.forEach(object => object.userData?.proceduralVoxelRuntime?.update((viewController.getActiveCamera() || camera).getWorldPosition(voxelStreamPosition)));
+    objects.forEach(object => object.userData?.proceduralVoxelRuntime?.update((viewController.getActiveCamera() || camera).getWorldPosition(voxelStreamPosition),window.VRWorldContext?.astronomy??null));
     if (movementState.paused) return;
     consolePanels.updateEnvironmentLighting?.(temporalController.getTimeSeconds?.() ?? 0);
     movementUpdate();

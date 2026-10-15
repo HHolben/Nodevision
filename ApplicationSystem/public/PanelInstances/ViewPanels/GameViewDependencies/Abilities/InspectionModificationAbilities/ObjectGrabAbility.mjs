@@ -39,7 +39,8 @@ export function installObjectGrabAbility(ctx) {
       : camera?.getWorldPosition
         ? camera.getWorldPosition(new THREE.Vector3())
         : controls?.getObject?.().position || new THREE.Vector3();
-    obj.position.copy(origin.clone().addScaledVector(dir, state.distance));
+    const position = origin.clone().addScaledVector(dir, state.distance);
+    obj.position.copy(obj.parent ? obj.parent.worldToLocal(position) : position);
     if (state.rotation) obj.quaternion.copy(state.rotation);
     ctx.api.updateColliderForTarget(obj);
   }

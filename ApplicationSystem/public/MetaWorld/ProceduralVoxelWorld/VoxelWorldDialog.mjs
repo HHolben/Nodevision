@@ -29,11 +29,27 @@ export function openVoxelWorldDialog(bridge = getActiveMetaWorldLayerBridge(), o
   field('name','World Name','text').maxLength=120;field('seed','Seed','text').maxLength=256;
   for(const [key,label] of [['sizeX','World Size X (m)'],['sizeZ','World Size Z (m)'],['maxHeight','Maximum Height (m)'],['minHeight','Minimum Height (m)'],['voxelSize','Voxel Size (m)'],['chunkSize','Chunk Size (voxels)']])field(key,label);
   fields.voxelSize.readOnly=fields.chunkSize.readOnly=true;
-  const terrain=document.createElement('label');terrain.textContent='Terrain Type ';const select=document.createElement('select');
-  select.add(new Option('Existing terrain generator (V1)','nodevision-terrain-v1'));terrain.append(select);form.append(terrain);
+  function choice(key,label,options){
+    const row=document.createElement('label');row.textContent=label+' ';
+    const input=document.createElement('select');input.name=key;
+    for(const [value,text] of options)input.add(new Option(text,value));
+    input.value=values[key];fields[key]=input;row.append(input);form.append(row);return input;
+  }
+  const preset=choice('environmentPreset','Environment preset',[['legacy','Existing terrain generator (V1)'],['aegean','Aegean Greek Wilderness']]);
+  const aegean=document.createElement('fieldset');form.append(aegean);
+  const legend=document.createElement('legend');legend.textContent='Aegean environment (V1)';aegean.append(legend);
+  for(const [key,label,options] of [['landform','Coastline',['island','peninsula']],['geology','Geology',['limestone','metamorphic','volcanic','mixed']],['season','Manual / fallback season',['spring','summer','autumn','winter']]]){
+    const input=choice(key,label,options.map(v=>[v,v]));aegean.append(input.parentElement);
+  }
+  const seasonMode=choice('seasonMode','Season source',[['manual','Manual'],['calendar','World calendar']]);aegean.append(seasonMode.parentElement);
+  const seasonNote=document.createElement('p');seasonNote.textContent='World calendar uses the existing astronomy date, observer latitude and timezone. Without an active calendar, the fallback season applies.';aegean.append(seasonNote);
+  field('seaLevel','Sea level (m)','number',aegean);
+  const density=field('vegetationDensity','Vegetation density','number',aegean);density.min=0;density.max=1;density.step='.05';
+  field('uplandOak','Include upland oak woodland','checkbox',aegean);field('mountains','Include rocky mountains','checkbox',aegean);
+  const updatePreset=()=>{aegean.hidden=preset.value!=='aegean';aegean.disabled=aegean.hidden;};preset.onchange=updatePreset;updatePreset();
   const advanced=document.createElement('details'),summary=document.createElement('summary');summary.textContent='Advanced';advanced.append(summary);form.append(advanced);
   field('vegetation','Trees and vegetation','checkbox',advanced);field('water','Generate water','checkbox',advanced);field('caves','Generate caves','checkbox',advanced);
-  const note=document.createElement('p');note.textContent='V1 uses 0.25 m voxels and 32-voxel chunks. Heights are relative to the object origin; terrain streams near the camera. Biomes and materials follow the existing generator. Generated cells are read-only; manual cell edits are not saved.';form.append(note);
+  const note=document.createElement('p');note.textContent='V1 uses 0.25 m voxels and 32-voxel chunks. Heights are relative to the object origin; terrain streams near the camera. Aegean uses coastal terrain and Mediterranean vegetation. Aegean caves use bounded coastal passages; a memory palace is not yet included. Regeneration protects ground under authored objects and preserves existing path grading. Generated cells are read-only; manual cell edits are not saved.';form.append(note);
   const status=document.createElement('div');status.setAttribute('role','status');form.append(status);
   const actions=document.createElement('div'),generate=document.createElement('button'),cancel=document.createElement('button');
   generate.type='submit';generate.textContent=objectId?'Regenerate':'Generate';cancel.type='button';cancel.textContent='Cancel';cancel.onclick=close;actions.append(generate,cancel);form.append(actions);

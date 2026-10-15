@@ -3,6 +3,8 @@
 
 
 
+import { AEGEAN_MATERIAL_ROWS } from '../Aegean/MaterialRows.mjs';
+
 export const WORLD_OBJECT_MATERIAL_LIBRARY_PATH = "/MetaWorld/Materials";
 
 export const WORLD_OBJECT_MATERIAL_CATALOG_PATH = "/MetaWorld/Materials.csv";
@@ -16,6 +18,9 @@ export const DEFAULT_WORLD_GAS_MATERIAL_ID = "WhiteOxygenatedAir";
 export const DEFAULT_WORLD_GAS_MATERIAL_FILE = WORLD_OBJECT_MATERIAL_LIBRARY_PATH + "/Gasses/WhiteOxygenatedAir.json";
 
 export const DEFAULT_WORLD_OBJECT_MATERIAL_ROWS = [
+  { MaterialName: "Bronze", MaterialJSONfile: "Materials/Solids/Bronze.json" },
+  { MaterialName: "Ceramic", MaterialJSONfile: "Materials/Solids/Ceramic.json" },
+  ...AEGEAN_MATERIAL_ROWS,
   { MaterialName: "Apple Wood", MaterialJSONfile: "Materials/Solids/AppleWood.json" },
   { MaterialName: "Apple Bark", MaterialJSONfile: "Materials/Solids/AppleBark.json" },
   { MaterialName: "Apple Foliage", MaterialJSONfile: "Materials/Solids/AppleFoliage.json" },
@@ -132,3 +137,9 @@ export const CANONICAL_MATERIAL_IDS = new Map([
   ["salt water", "saltwater"],
   ["bog water", "bogwater"]
 ]);
+
+for (const row of AEGEAN_MATERIAL_ROWS) {
+  const id=row.MaterialJSONfile.split("/").pop().replace(".json", "");
+  CANONICAL_MATERIAL_IDS.set(id.toLowerCase(),id);
+  CANONICAL_MATERIAL_IDS.set(row.MaterialName.toLowerCase(),id);
+}

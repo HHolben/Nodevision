@@ -1,6 +1,7 @@
 // Nodevision/ApplicationSystem/public/PanelInstances/ViewPanels/GameViewDependencies/Abilities/CommandAbilities/EditorSelectionCommandAbility.mjs
 // This file handles editor-selection commands for Game View. It routes grab, translate, stretch, rotate, and selected-item adjust presses after movement has been applied.
 
+import { openTextEditor } from '../../../../../MetaWorld/Text/TextEditor.mjs';
 import { installMovementApi } from "../movementContext.mjs";
 
 export function installEditorSelectionCommandAbility(ctx) {
@@ -57,6 +58,7 @@ export function installEditorSelectionCommandAbility(ctx) {
       return true;
     }
     const grabHit = ctx.api.getInspectHit();
+    if (grabHit?.object?.userData?.textRuntime) return openTextEditor(grabHit.object);
     if (grabHit?.object && ctx.api.startGrabFromHit(grabHit)) {
       movementState.suppressAttackUntilMs = nowMs + 200;
       return true;

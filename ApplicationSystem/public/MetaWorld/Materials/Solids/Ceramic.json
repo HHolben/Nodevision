@@ -1,0 +1,14 @@
+{
+  "format": "nodevision-world-object-material",
+  "version": 1,
+  "id": "Ceramic",
+  "displayName": "Ceramic",
+  "description": "Ceramic appearance for editable lettering, signs, and general world objects.",
+  "defaultColor": "#c58f65",
+  "MatterState": "solid",
+  "rendering": {
+    "color": "#c58f65",
+    "roughness": 0.35,
+    "metalness": 0
+  }
+}

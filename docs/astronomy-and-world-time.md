@@ -64,7 +64,7 @@ Initialization modes:
 
 Explicit fixed/saved instants require an ISO string with `Z` or an explicit UTC offset. Invalid clock/observer configurations do not install a runtime. `timeScale` initializes the canonical temporal controller (its existing bounds are -128 to 128); temporal controls remain authoritative during the session. A fixed initialization mode is distinct from the temporal controller's optional static-time setting.
 
-Seasons use a reusable **meteorological** classifier: northern seasons follow three-month groups; the southern hemisphere shifts by two seasons. The calendar month uses the clock timezone. The equator follows the northern convention. No terrain, snow probability or foliage data is changed by season.
+Seasons use a reusable **meteorological** classifier: northern seasons follow three-month groups; the southern hemisphere shifts by two seasons. The calendar month uses the clock timezone. The equator follows the northern convention. Astronomy itself does not modify terrain. Aegean terrain can opt into calendar-driven grass, flower and seasonal-stream appearance through `environment.seasonMode: "calendar"`; see [calendar seasons and performance](aegean-seasons-performance.md). Other terrain retains its existing behavior.
 
 The existing metadata validator and world-save path preserve `metadata.astronomy`. Generated spheres, lights, star coordinates and buffers never enter the authored objects array. System-local Build and Play each start from the host instant on fresh launch; saved mode instead resumes the saved instant.
 

@@ -10,7 +10,7 @@ import { VOXEL_MATERIAL_IDS } from './VoxelMaterialIds.mjs';
 import { magnoliaParameters,sampleMagnoliaVoxel } from './Features/MagnoliaShape.mjs';
 
 test('new vegetation resolves canonical physical properties and magnolia blossoms',async()=>{
-  for(const id of VOXEL_MATERIAL_IDS.slice(19)){
+  for(const id of VOXEL_MATERIAL_IDS.slice(19,37)){
     const material=await resolveWorldObjectMaterial(id,voxelMaterialOptions);
     assert.equal(material.materialId,id);assert.equal(material.collider.solid,/(Wood|Bark)$/.test(id)||id==='moss');
   }

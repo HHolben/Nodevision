@@ -64,3 +64,89 @@ Pear Foliage,Materials/Solids/PearFoliage.json
 Cherry Wood,Materials/Solids/CherryWood.json
 Cherry Bark,Materials/Solids/CherryBark.json
 Cherry Foliage,Materials/Solids/CherryFoliage.json
+Pale Limestone,Materials/Solids/PaleLimestone.json
+Weathered Limestone,Materials/Solids/WeatheredLimestone.json
+Fractured Limestone,Materials/Solids/FracturedLimestone.json
+Brown Schist,Materials/Solids/BrownSchist.json
+Sandstone,Materials/Solids/Sandstone.json
+Pumice,Materials/Solids/Pumice.json
+Volcanic Ash,Materials/Solids/VolcanicAsh.json
+Dry Mediterranean Soil,Materials/Solids/DryMediterraneanSoil.json
+Terra Rossa,Materials/Solids/TerraRossa.json
+Rocky Soil,Materials/Solids/RockySoil.json
+Pale Gravel,Materials/Solids/PaleGravel.json
+Beach Pebbles,Materials/Solids/BeachPebbles.json
+Fine Beach Sand,Materials/Solids/FineBeachSand.json
+Coarse Beach Sand,Materials/Solids/CoarseBeachSand.json
+Coastal Sediment,Materials/Solids/CoastalSediment.json
+Streambed Gravel,Materials/Solids/StreambedGravel.json
+Dry Mediterranean Grass,Materials/Solids/DryMediterraneanGrass.json
+Living Mediterranean Grass,Materials/Solids/LivingMediterraneanGrass.json
+Leaf Litter,Materials/Solids/LeafLitter.json
+Sparse Ground Cover,Materials/Solids/SparseGroundCover.json
+Olive Wood,Materials/Solids/OliveWood.json
+Olive Bark,Materials/Solids/OliveBark.json
+Olive Foliage,Materials/Solids/OliveFoliage.json
+Turkish Pine Wood,Materials/Solids/TurkishPineWood.json
+Turkish Pine Bark,Materials/Solids/TurkishPineBark.json
+Turkish Pine Foliage,Materials/Solids/TurkishPineFoliage.json
+Aleppo Pine Wood,Materials/Solids/AleppoPineWood.json
+Aleppo Pine Bark,Materials/Solids/AleppoPineBark.json
+Aleppo Pine Foliage,Materials/Solids/AleppoPineFoliage.json
+Cypress Wood,Materials/Solids/CypressWood.json
+Cypress Bark,Materials/Solids/CypressBark.json
+Cypress Foliage,Materials/Solids/CypressFoliage.json
+Kermes Oak Wood,Materials/Solids/KermesOakWood.json
+Kermes Oak Bark,Materials/Solids/KermesOakBark.json
+Kermes Oak Foliage,Materials/Solids/KermesOakFoliage.json
+Carob Wood,Materials/Solids/CarobWood.json
+Carob Bark,Materials/Solids/CarobBark.json
+Carob Foliage,Materials/Solids/CarobFoliage.json
+Juniper Wood,Materials/Solids/JuniperWood.json
+Juniper Bark,Materials/Solids/JuniperBark.json
+Juniper Foliage,Materials/Solids/JuniperFoliage.json
+Holm Oak Wood,Materials/Solids/HolmOakWood.json
+Holm Oak Bark,Materials/Solids/HolmOakBark.json
+Holm Oak Foliage,Materials/Solids/HolmOakFoliage.json
+Wild Fig Wood,Materials/Solids/WildFigWood.json
+Wild Fig Bark,Materials/Solids/WildFigBark.json
+Wild Fig Foliage,Materials/Solids/WildFigFoliage.json
+Strawberry Tree Wood,Materials/Solids/StrawberryTreeWood.json
+Strawberry Tree Bark,Materials/Solids/StrawberryTreeBark.json
+Strawberry Tree Foliage,Materials/Solids/StrawberryTreeFoliage.json
+Bay Laurel Wood,Materials/Solids/BayLaurelWood.json
+Bay Laurel Bark,Materials/Solids/BayLaurelBark.json
+Bay Laurel Foliage,Materials/Solids/BayLaurelFoliage.json
+Almond Wood,Materials/Solids/AlmondWood.json
+Almond Bark,Materials/Solids/AlmondBark.json
+Almond Foliage,Materials/Solids/AlmondFoliage.json
+Greek Sage Foliage,Materials/Solids/GreekSageFoliage.json
+Wild Thyme Foliage,Materials/Solids/WildThymeFoliage.json
+Rockrose Foliage,Materials/Solids/RockroseFoliage.json
+White Rockrose Foliage,Materials/Solids/WhiteRockroseFoliage.json
+Mastic Foliage,Materials/Solids/MasticFoliage.json
+Thorny Burnet Foliage,Materials/Solids/ThornyBurnetFoliage.json
+Rosemary Foliage,Materials/Solids/RosemaryFoliage.json
+Spurge Foliage,Materials/Solids/SpurgeFoliage.json
+Coastal Juniper Foliage,Materials/Solids/CoastalJuniperFoliage.json
+Maquis Shrub Foliage,Materials/Solids/MaquisShrubFoliage.json
+Everlasting Foliage,Materials/Solids/EverlastingFoliage.json
+Asphodel Foliage,Materials/Solids/AsphodelFoliage.json
+Anemone Foliage,Materials/Solids/AnemoneFoliage.json
+Poppy Foliage,Materials/Solids/PoppyFoliage.json
+Sea Lavender Foliage,Materials/Solids/SeaLavenderFoliage.json
+Sea Holly Foliage,Materials/Solids/SeaHollyFoliage.json
+Wildflowers Foliage,Materials/Solids/WildflowersFoliage.json
+Dry Grass Foliage,Materials/Solids/DryGrassFoliage.json
+Spring Grass Foliage,Materials/Solids/SpringGrassFoliage.json
+Sparse Grass Foliage,Materials/Solids/SparseGrassFoliage.json
+Tall Grass Foliage,Materials/Solids/TallGrassFoliage.json
+Dune Grass Foliage,Materials/Solids/DuneGrassFoliage.json
+Rock Tufts Foliage,Materials/Solids/RockTuftsFoliage.json
+AegeanDeepWater,Materials/Liquids/AegeanDeepWater.json
+AegeanShallowWater,Materials/Liquids/AegeanShallowWater.json
+AegeanClearWater,Materials/Liquids/AegeanClearWater.json
+AegeanFreshwater,Materials/Liquids/AegeanFreshwater.json
+AegeanStreamWater,Materials/Liquids/AegeanStreamWater.json
+Bronze,Materials/Solids/Bronze.json
+Ceramic,Materials/Solids/Ceramic.json

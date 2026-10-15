@@ -662,14 +662,20 @@
     "parentHeading": "Insert",
     "heading": "Path",
     "callbackKey": "insertPath",
-    "modes": ["Virtual World Editing", "VR World Editing"]
+    "modes": [
+      "Virtual World Editing",
+      "VR World Editing"
+    ]
   },
   {
     "ToolbarCategory": "Insert",
     "parentHeading": "Insert",
     "heading": "Voxel World",
     "callbackKey": "insertVoxelWorld",
-    "modes": ["Virtual World Editing", "VR World Editing"]
+    "modes": [
+      "Virtual World Editing",
+      "VR World Editing"
+    ]
   },
   {
     "ToolbarCategory": "Insert",
@@ -2659,5 +2665,26 @@
     "conditions": {
       "midiSelectedType": "cleff"
     }
+  },
+  {
+    "ToolbarCategory": "Insert",
+    "parentHeading": "Insert",
+    "heading": "Text",
+    "modes": [
+      "Virtual World Editing",
+      "VR World Editing"
+    ],
+    "preventDropdown": true
+  },
+  {
+    "ToolbarCategory": "Insert",
+    "parentHeading": "Text",
+    "heading": "World Text Controls",
+    "script": "worldTextWidget.mjs",
+    "modes": [
+      "Virtual World Editing",
+      "VR World Editing"
+    ],
+    "preventDropdown": true
   }
 ]

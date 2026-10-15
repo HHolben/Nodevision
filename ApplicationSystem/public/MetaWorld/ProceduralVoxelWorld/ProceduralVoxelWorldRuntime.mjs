@@ -1,11 +1,13 @@
 // Nodevision/ApplicationSystem/public/MetaWorld/ProceduralVoxelWorld/ProceduralVoxelWorldRuntime.mjs
 // This module owns one logical terrain object, its streamed chunk resources, and its analytic movement collider.
 
+import { createCalendarSeasonBinding } from '../Aegean/CalendarSeasons.mjs';
 import { findVoxelSpawn } from "./VoxelSpawn.mjs";
 import { createFeatureCollision } from "./VoxelFeatureCollision.mjs";
 import { validateVoxelWorld } from "./VoxelWorldDefinition.mjs";
 import { VOXEL_SIZE, chunkToVoxel, voxelToWorld, worldToVoxel } from "./VoxelCoordinates.mjs";
 import { createVoxelGenerator } from "./VoxelTerrainGenerator.mjs";
+import { meshGreedyVoxelChunk } from './VoxelGreedyMesher.mjs';
 import { meshVoxelChunk } from "./VoxelChunkMesher.mjs";
 import { createVoxelMaterialPalette } from "./VoxelMaterialPalette.mjs";
 import { createVoxelLiquidVolume } from "./VoxelLiquidVolume.mjs";
@@ -16,7 +18,7 @@ export function createProceduralVoxelWorld(THREE, source, colliders, materialOpt
   root.position.fromArray(definition.position);
   root.visible = definition.visible !== false && definition.hidden !== true;
   Object.assign(root.userData, { nvType: definition.type, metaWorldLayerId: definition.id, breakable: false });
-  let palette = null, disposed = false, lastPosition = null;
+  let palette = null, disposed = false, lastPosition = null, activeAstronomy = null;
   const floorOffset = definition.heightLimits?.min || 0;
   const originPoint = () => new THREE.Vector3(root.position.x,root.position.y+floorOffset,root.position.z);
   const origin = () => originPoint().toArray();
@@ -41,7 +43,7 @@ export function createProceduralVoxelWorld(THREE, source, colliders, materialOpt
   colliders.push(collider); root.userData.colliderRef = collider;
   const manager = new VoxelChunkManager(generator, definition.chunks.loadRadius, cell => {
     const start = performance.now(), data = generator.generateChunk(...cell), generated = performance.now();
-    const result = meshVoxelChunk(data, cell, generator.getVoxel);
+    const result = (definition.environment?.id==='aegean'?meshGreedyVoxelChunk:meshVoxelChunk)(data, cell, generator.getVoxel);
     let mesh = null;
     if (result.faceCount) {
       const geometry = new THREE.BufferGeometry();
@@ -58,7 +60,12 @@ export function createProceduralVoxelWorld(THREE, source, colliders, materialOpt
     return { mesh, faceCount: result.faceCount, solidVoxels: result.solidVoxels,
       generationMs: generated-start, meshingMs: performance.now()-generated };
   }, entry => { entry.mesh?.geometry.dispose(); entry.mesh?.removeFromParent(); });
+  const seasons=createCalendarSeasonBinding(definition.environment,season=>{
+    if(disposed||!generator.setSeason(season))return false;
+    manager.invalidateBounds({minX:0,minZ:0,maxX:generator.dimensions[0],maxZ:generator.dimensions[2]});return true;
+  });
   const runtime = {
+    seasonState:seasons.state,updateCalendar(astronomy){if(disposed)return false;activeAstronomy=astronomy;return seasons.update(astronomy);},
     generator, manager, definition, stats: manager.stats,
     setPathConstraints(paths,bounds) {
       generator.setPathOrigin(root.position.toArray());
@@ -82,7 +89,9 @@ export function createProceduralVoxelWorld(THREE, source, colliders, materialOpt
     getBiome: generator.getBiome,
     getVoxelMaterial(x, y, z) { return palette?.entries[generator.getVoxel(x,y,z)] || null; },
     get materials() { return palette?.materials || []; },
-    update(position) {
+    update(position,astronomy=activeAstronomy) {
+      if(disposed)return;
+      activeAstronomy=astronomy;seasons.update(astronomy);
       lastPosition = { x: position.x, y: position.y, z: position.z };
       if (!disposed && palette && root.visible) manager.update(worldToVoxel([position.x,position.y,position.z], origin()));
     },
@@ -106,7 +115,7 @@ export function createProceduralVoxelWorld(THREE, source, colliders, materialOpt
     }
   };
   collider.sampleMaterial = (x,y,z) => runtime.getVoxelMaterial(...worldToVoxel([x,y,z], origin()));
-  runtime.ready = createVoxelMaterialPalette(THREE, materialOptions).then(resolved => {
+  runtime.ready = createVoxelMaterialPalette(THREE, {...materialOptions,aegean:definition.environment?.id==='aegean'}).then(resolved => {
     if (disposed) { resolved.dispose(); return false; }
     palette = resolved;
     collider.intersectsPlayer = createFeatureCollision(root, generator, palette.entries, () => disposed, originPoint);

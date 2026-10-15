@@ -1,5 +1,6 @@
 // Nodevision/ApplicationSystem/public/MetaWorld/ProceduralVoxelWorld/VoxelWorldProperties.mjs
 // This view adds procedural terrain properties to the existing object inspector without exposing mesh-level controls that cannot apply to streamed chunks. Its status timer belongs to the visible inspector and is released on hide or disposal.
+import { appendRegenerationControls } from '../Aegean/RegenerationControls.mjs';
 import { openVoxelWorldDialog } from './VoxelWorldDialog.mjs';
 import { getActiveMetaWorldLayerBridge, META_WORLD_LAYER_EVENTS } from '../MetaWorldLayerState.mjs';
 export function createVoxelWorldProperties(host, ordinaryControls) {
@@ -16,7 +17,8 @@ export function createVoxelWorldProperties(host, ordinaryControls) {
     const status=document.createElement('p');status.setAttribute('role','status');
     const note=document.createElement('p');note.textContent='Terrain cells are generated and read-only. Authored objects are separate and survive regeneration. Move this object with the editor’s translation controls; rotation and scaling are unsupported.';
     container.append(title,summary,edit,status,note);
-    const update=()=>{status.textContent=runtime.materialError ? 'Material loading failed: '+runtime.materialError.message : `${runtime.stats.loaded} chunks loaded; ${runtime.stats.queued} queued chunks/columns. Terrain streams as the camera moves.`;};
+    appendRegenerationControls(container,def,getActiveMetaWorldLayerBridge());
+    const update=()=>{status.textContent=runtime.materialError ? 'Material loading failed: '+runtime.materialError.message : `${runtime.stats.loaded} chunks loaded; ${runtime.stats.queued} queued chunks/columns. Terrain streams as the camera moves.${def.environment?.id==='aegean'?` Season: ${runtime.seasonState.season} (${runtime.seasonState.source}).`:''}`;};
     update();timer=setInterval(update,500);return true;
   }
   const changed=()=>{if(target && !getActiveMetaWorldLayerBridge()?.listObjects().some(entry=>entry.id===target.userData.metaWorldLayerId))hide();};

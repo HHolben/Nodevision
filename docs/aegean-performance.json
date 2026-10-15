@@ -1,0 +1,50 @@
+{
+  "node": "v24.19.0",
+  "note": "CPU timings; main-thread chunk cost is not a rendered frame time. Heap delta includes temporary buffers and GC effects.",
+  "results": [
+    {
+      "density": 0.15,
+      "chunks": 16,
+      "generation": {
+        "totalMs": 123.83352099999985,
+        "meanMs": 7.7395950624999905,
+        "p95Ms": 21.96651
+      },
+      "meshing": {
+        "totalMs": 312.5475100000001,
+        "meanMs": 19.534219375000006,
+        "p95Ms": 56.54245800000001
+      },
+      "faces": 18996,
+      "estimatedGeometryBytes": 2279520,
+      "sample10000Ms": 86.22267899999997,
+      "featuresIn128mSquare": 48,
+      "heapDeltaBytes": 45940384,
+      "saveBytes": 491,
+      "saveMs": 0.026333000000022366,
+      "loadMs": 9.058685999999966
+    },
+    {
+      "density": 1,
+      "chunks": 16,
+      "generation": {
+        "totalMs": 247.3247230000004,
+        "meanMs": 15.457795187500025,
+        "p95Ms": 46.59862700000008
+      },
+      "meshing": {
+        "totalMs": 235.23942,
+        "meanMs": 14.70246375,
+        "p95Ms": 60.481011999999964
+      },
+      "faces": 30589,
+      "estimatedGeometryBytes": 3670680,
+      "sample10000Ms": 105.87241200000017,
+      "featuresIn128mSquare": 352,
+      "heapDeltaBytes": 52008520,
+      "saveBytes": 488,
+      "saveMs": 0.025888000000122702,
+      "loadMs": 8.545521999999892
+    }
+  ]
+}

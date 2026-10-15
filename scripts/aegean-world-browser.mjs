@@ -1,0 +1,97 @@
+// Nodevision/scripts/aegean-world-browser.mjs
+// This Electron browser regression drives the actual Insert dialog, object inspector, scene bridge, renderer, and HTML persistence. It verifies terrain regeneration and history without replacing unrelated authored objects or adopting Sandbox gameplay settings.
+import * as THREE from '/lib/three/three.module.js';
+import { loadWorldFromFile } from '/PanelInstances/ViewPanels/GameViewDependencies/worldLoading.mjs';
+import { saveCurrentWorldFile } from '/PanelInstances/ViewPanels/GameViewDependencies/worldSave.mjs';
+import { createObjectInspector } from '/PanelInstances/ViewPanels/GameViewDependencies/objectInspector.mjs';
+import { getActiveMetaWorldLayerBridge, selectMetaWorldObject } from '/MetaWorld/MetaWorldLayerState.mjs';
+import insertVoxelWorld from '/ToolbarCallbacks/insert/insertVoxelWorld.mjs';
+const ok=(v,m)=>{if(!v)throw Error(m);};
+const tick=()=>new Promise(resolve=>requestAnimationFrame(resolve));
+try {
+  window.NodevisionState={currentMode:'Virtual World Editing'};
+  const panel=document.getElementById('editor'),scene=new THREE.Scene(),camera=new THREE.PerspectiveCamera(75,1.6,.1,1000);
+  const state={currentWorldPath:'page.html'},movementState={playerMode:'creative',playerHeight:1.75,environment:{},isGrounded:true};
+  const context=window.VRWorldContext={THREE,scene,camera,panel,state,movementState,objects:[],colliders:[],lights:[],portals:[],collisionActions:[],useTargets:[],spawnPoints:[],waterVolumes:[],measurementVisuals:[],controls:{getObject:()=>camera}};
+  const box={id:'authored-box',type:'box',position:[2,30,2],size:[1,1,1],color:'#ff0000',isSolid:true};
+  let definition={name:'Ordinary',type:'world',worldType:'NodevisionMetaWorld',spawnPosition:{x:0,y:30,z:0},objects:[box]},savedHtml='';
+  const originalFetch=window.fetch;
+  window.fetch=async(url,options)=>{
+    if(url==='/api/load-world')return {ok:true,json:async()=>({worldDefinition:structuredClone(definition)})};
+    if(url==='/Notebook/page.html')return {ok:true,text:async()=>'<html><body><h1>Keep authored page</h1></body></html>'};
+    if(url==='/api/save'){savedHtml=JSON.parse(options.body).content;return {ok:true,json:async()=>({success:true})};}
+    return originalFetch(url,options);
+  };
+  const toolbar=await(await fetch('/ToolbarJSONfiles/insertToolbar.json')).json();
+  ok(toolbar.some(item=>item.heading==='Voxel World'&&item.callbackKey==='insertVoxelWorld'&&item.modes.includes('Virtual World Editing')),'Insert registration');
+  await loadWorldFromFile('page.html',state,THREE);
+  context.objectInspector=createObjectInspector({THREE,panel,scene,sceneObjects:context.objects,colliders:context.colliders,portals:context.portals,spawnPoints:context.spawnPoints});
+  let bridge=getActiveMetaWorldLayerBridge();
+  const original=JSON.stringify(bridge.worldData),originalBox=context.objects.find(o=>o.userData.metaWorldLayerId==='authored-box');
+  const form=()=>document.querySelector('[data-voxel-world-dialog]');
+  const button=(host,label)=>[...host.querySelectorAll('button')].find(b=>b.textContent===label);
+  insertVoxelWorld();ok(form(),'dialog opens');insertVoxelWorld();ok(document.querySelectorAll('[data-voxel-world-dialog]').length===1,'duplicate opening reuses dialog');
+  button(form(),'Cancel').click();ok(!form()&&JSON.stringify(bridge.worldData)===original,'Cancel changes nothing');
+  insertVoxelWorld();form().elements.sizeX.value=0;form().dispatchEvent(new Event('submit',{bubbles:true,cancelable:true}));
+  ok(form().querySelector('[role=status]').textContent.includes('Dimensions'),'invalid dimensions rejected');
+  ok(JSON.stringify(bridge.worldData)===original,'invalid submission unchanged');
+  for(const [key,value] of Object.entries({name:'Aegean coast',seed:'repeatable forest',sizeX:128,sizeZ:128,minHeight:-16,maxHeight:64}))form().elements[key].value=value;
+  ok(form().elements.seasonMode.value==='manual'&&[...form().elements.seasonMode.options].some(o=>o.value==='calendar'),'manual and calendar season editor controls');
+  form().elements.environmentPreset.value='aegean';form().elements.environmentPreset.dispatchEvent(new Event('change'));
+  button(form(),'Generate').click();ok(!form(),'Generate closes dialog');
+  let root=context.objects.find(o=>o.userData.proceduralVoxelRuntime),runtime=root?.userData.proceduralVoxelRuntime;
+  ok(root&&await runtime.ready,'terrain registered with materials');
+  ok(runtime.definition.environment.id==='aegean','Aegean preset persisted');
+  ok(runtime.materials.some(m=>m.userData.materialId==='OliveFoliage'),'Aegean canonical materials loaded');
+  for(let i=0;i<8;i++){runtime.update(camera.position);await tick();}
+  const id=root.userData.metaWorldLayerId;
+  ok(bridge.listObjects().filter(o=>o.id===id).length===1,'one logical layer');
+  ok(context.objectInspector.getActiveTarget()===root,'new object selected');
+  ok(document.querySelector('[data-voxel-world-properties]')?.textContent.includes('Edit Generation Parameters'),'Properties action');
+  ok(context.objects.includes(originalBox),'authored object identity preserved');
+  ok(!bridge.worldData.metadata.objectGroundOnly&&!bridge.worldData.metadata.astronomy,'ordinary world retains gameplay settings');
+  ok(root.children.length>0&&runtime.stats.generated<=9,'incremental chunk creation');
+  scene.add(new THREE.HemisphereLight(0xffffff,0x666666,2));camera.position.set(0,35,20);camera.lookAt(0,5,0);
+  const renderer=new THREE.WebGLRenderer();renderer.setSize(400,300);panel.append(renderer.domElement);renderer.render(scene,camera);
+  ok(renderer.info.render.triangles>0,'scene renders terrain triangles');
+  const fingerprint=Array.from(runtime.generator.generateChunk(0,2,0)).join(',');
+  await saveCurrentWorldFile({state,movementState,objects:context.objects,lights:[]});
+  const saved=JSON.parse(new DOMParser().parseFromString(savedHtml,'text/html').querySelector('script').textContent);
+  ok(savedHtml.includes('Keep authored page')&&saved.objects.length===2,'compact save retains unrelated content');
+  ok(saved.objects.find(o=>o.id===id).heightLimits.min===-16,'local elevation persisted');
+  insertVoxelWorld();button(form(),'Generate').click();ok(form().querySelector('[role=status]').textContent.includes('already has'),'second terrain explicitly rejected');button(form(),'Cancel').click();
+  root.position.set(-5,2,-7);selectMetaWorldObject(id);
+  button(document.querySelector('[data-voxel-world-properties]'),'Edit Generation Parameters').click();
+  form().elements.seed.value='changed';button(form(),'Regenerate').click();
+  const old=runtime;root=context.objects.find(o=>o.userData.metaWorldLayerId===id);runtime=root.userData.proceduralVoxelRuntime;
+  ok(runtime.definition.protectedRegions.length>0,'authored ground protected');
+  ok(old.stats.loaded===0&&old.manager.queue.length===0,'regeneration releases old chunks');
+  ok(context.objects.length===2&&root.position.toArray().join(',')==='-5,2,-7','identity and transform preserved');
+  ok(bridge.worldData.metadata.layersDirty,'regeneration marks modified');
+  ok(bridge.undo(),'undo regeneration');root=context.objects.find(o=>o.userData.metaWorldLayerId===id);
+  ok(Array.from(root.userData.proceduralVoxelRuntime.generator.generateChunk(0,2,0)).join(',')===fingerprint,'undo restores procedural terrain');
+  ok(bridge.redo(),'redo regeneration');
+  root=context.objects.find(o=>o.userData.metaWorldLayerId===id);runtime=root.userData.proceduralVoxelRuntime;await runtime.ready;runtime.update(new THREE.Vector3(0,20,0));
+  const collider=root.userData.colliderRef;bridge.removeObjectLayer(id);
+  ok(runtime.stats.loaded===0&&!context.colliders.includes(collider),'deletion releases meshes and collider');
+  ok(bridge.undo()&&context.objects.some(o=>o.userData.metaWorldLayerId===id),'undo deletion');
+  definition=saved;await loadWorldFromFile('page.html',state,THREE);bridge=getActiveMetaWorldLayerBridge();
+  root=context.objects.find(o=>o.userData.metaWorldLayerId===id);runtime=root.userData.proceduralVoxelRuntime;
+  ok(Array.from(runtime.generator.generateChunk(0,2,0)).join(',')===fingerprint,'save/reopen deterministic');
+  ok(bridge.listObjects().some(o=>o.id===id)&&selectMetaWorldObject(id),'reloaded layer selectable');
+  const beforeVegetation=JSON.stringify(runtime.definition.generator);
+  const vegetationForm=document.querySelector('[data-voxel-world-properties] form');
+  ok(vegetationForm,'vegetation regeneration controls available');
+  vegetationForm.dispatchEvent(new Event('submit',{bubbles:true,cancelable:true}));
+  root=context.objects.find(o=>o.userData.metaWorldLayerId===id);runtime=root.userData.proceduralVoxelRuntime;
+  ok(runtime.definition.vegetationRevisions.length===1,'vegetation revision persisted');
+  ok(JSON.stringify(runtime.definition.generator)===beforeVegetation,'terrain seed preserved by vegetation regeneration');
+  ok(bridge.undo(),'vegetation regeneration supports undo');
+  root=context.objects.find(o=>o.userData.metaWorldLayerId===id);runtime=root.userData.proceduralVoxelRuntime;await runtime.ready;
+  const frameTimes=[],buildTimes=[];camera.position.set(0,24,18);camera.lookAt(0,8,0);
+  for(let i=0;i<100;i++){const start=performance.now();runtime.update(camera.position);buildTimes.push(performance.now()-start);renderer.render(scene,camera);await tick();frameTimes.push(performance.now()-start);}
+  const measure=a=>({averageMs:a.reduce((x,y)=>x+y,0)/a.length,p95Ms:a.slice().sort((x,y)=>x-y)[Math.ceil(a.length*.95)-1]});
+  window.aegeanRenderReport={frames:100,frame:measure(frameTimes),streamingUpdate:measure(buildTimes),stats:{...runtime.stats},triangles:renderer.info.render.triangles,geometryCount:renderer.info.memory.geometries,note:'Electron SwiftShader, includes requestAnimationFrame pacing and streaming. Not a hardware GPU benchmark.'};
+  context.objectInspector.dispose();runtime.dispose();renderer.dispose();
+  document.getElementById('result').textContent='PASS: Aegean preset, protection, Insert command, cancel, validation, deterministic generation, rendering, hierarchy, selection/Properties, regeneration, history, compact HTML save/reload, unrelated objects, and disposal';
+}catch(error){document.getElementById('result').textContent='FAIL: '+error.stack;}

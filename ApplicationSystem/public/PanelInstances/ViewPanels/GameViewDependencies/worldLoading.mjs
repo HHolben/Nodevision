@@ -1,6 +1,8 @@
 // Nodevision/ApplicationSystem/public/PanelInstances/ViewPanels/GameViewDependencies/worldLoading.mjs
 // This file loads a world definition from the server and builds its scene objects. The loader registers live MetaWorld layer data for side panels.
 
+import { createTextObject } from '../../../MetaWorld/Text/TextRuntime.mjs';
+import { installTextAuthoring } from '../../../MetaWorld/Text/TextAuthoringBridge.mjs';
 import { installVoxelWorldAuthoring } from "../../../MetaWorld/ProceduralVoxelWorld/VoxelWorldAuthoringBridge.mjs";
 import { installPathAuthoring } from "../../../MetaWorld/Paths/PathAuthoringBridge.mjs";
 import { createPathObject } from "../../../MetaWorld/Paths/PathRuntime.mjs";
@@ -780,7 +782,7 @@ function makeObjectColliderRef(THREE, mesh, def, shape) {
   const materialId = readResolvedPhysicsMaterialId(def);
   if (shape === "sphere") {
     const center = new THREE.Vector3(...def.position);
-    const radius = Array.isArray(def.size) && Number.isFinite(def.size[0]) ? def.size[0] : 0.5;
+    const radius = (Array.isArray(def.size) && Number.isFinite(def.size[0]) ? def.size[0] : 0.5) * Math.max(Math.abs(mesh.scale.x),Math.abs(mesh.scale.y),Math.abs(mesh.scale.z));
     return attachPhysicsMaterialToCollider({ type: "sphere", center, radius }, materialId);
   }
   mesh.updateWorldMatrix?.(true, false);
@@ -1166,7 +1168,7 @@ export function registerMetaWorldLayerBridge({ state, filePath, worldData, layer
   const sourceId = "legacy-metaworld:" + (filePath || "active");
   const history = { undoStack: [], redoStack: [], isRestoring: false, limit: 80 };
   const readBridgeExpressionOptions = () => getExpressionLayerOptions(camera || window.VRWorldContext?.camera);
-  const managedObject = def => def?.type === "physical-path" || def?.type === "procedural-voxel-world" || def?.type === "iframe" || def?.equationCollider?.infinite === true;
+  const managedObject = def => (def?.preserveLocalTransform === true && PRIMITIVE_WORLD_OBJECT_TYPES.has(def.type)) || def?.type === "world-text" || def?.type === "physical-path" || def?.type === "procedural-voxel-world" || def?.type === "iframe" || def?.equationCollider?.infinite === true;
   const snapshotWorldObjects = () => {
     const meshes = new Map(layerEntries.map(entry => [entry.def, entry.object3d]));
     return JSON.stringify((worldData.objects || []).map(def => {
@@ -1182,7 +1184,7 @@ export function registerMetaWorldLayerBridge({ state, filePath, worldData, layer
   };
   const attachLayerBreakHandler = (entry) => {
     if (!entry?.object3d) return;
-    if (entry.def?.type === 'physical-path') { entry.object3d.userData.onBreakTarget = () => bridge.removeObjectLayer(entry.id); return; }
+    if (['physical-path','world-text'].includes(entry.def?.type)) { entry.object3d.userData.onBreakTarget = () => bridge.removeObjectLayer(entry.id); return; }
     if (isExpressionLayerType(entry.def?.type)) {
       entry.object3d.userData.breakable = entry.def?.locked !== true;
       entry.object3d.userData.placedByPlayer = true;
@@ -1202,6 +1204,9 @@ export function registerMetaWorldLayerBridge({ state, filePath, worldData, layer
     delete object3d.userData.colliderRef;
   };
   const removeGameObjectRuntimeRefs = (object3d) => {
+    // Preserve independently authored attachments while replacing their generated parent.
+    for (const child of [...(object3d?.children || [])]) if (child.userData?.textRuntime) scene.add(child);
+    object3d?.userData?.textRuntime?.dispose();
     object3d?.userData?.pathRuntime?.dispose();
     object3d?.userData?.proceduralVoxelRuntime?.dispose();
     disposeSoundObjectRuntime(object3d);
@@ -1250,6 +1255,7 @@ export function registerMetaWorldLayerBridge({ state, filePath, worldData, layer
     const inspector = window.VRWorldContext?.objectInspector;
     const selectedId = inspector?.getActiveTarget?.()?.userData?.metaWorldLayerId;
     const previousEntries = layerEntries.slice();
+    const previousSources = new Map(previousEntries.filter(e=>e.object3d && (managedObject(e.def)||isExpressionLayerType(e.def?.type))).map(e=>[e.id,JSON.stringify(managedObject(e.def)?{...e.def,...serializeMesh(e.object3d)}:e.def)]));
     const previousById = new Map(previousEntries.map((entry) => [entry.id, entry]));
     const restoredIds = new Set();
     const nextEntries = restoredDefs.map((def, index) => {
@@ -1277,27 +1283,33 @@ export function registerMetaWorldLayerBridge({ state, filePath, worldData, layer
     layerEntries.splice(0, layerEntries.length, ...nextEntries);
     layerEntries.forEach((entry) => {
       if (isExpressionLayerType(entry.def?.type)) {
-        bridge.regenerateExpressionLayer(entry.id);
+        if(previousSources.get(entry.id)!==JSON.stringify(entry.def))bridge.regenerateExpressionLayer(entry.id);
         return;
       }
-      if (managedObject(entry.def)) {
+      if (managedObject(entry.def) && previousSources.get(entry.id) !== JSON.stringify(entry.def)) {
         if (entry.object3d) {
           removeColliderRef(entry.object3d); removeGameObjectRuntimeRefs(entry.object3d);
           scene.remove(entry.object3d); removeObjectFromArray(objects, entry.object3d);
           disposeExpressionObject(entry.object3d);
         }
         const def = entry.def;
-        const mesh = def.type === 'physical-path' ? createPathObject(THREE, def, colliders)
+        const mesh = def.preserveLocalTransform === true && PRIMITIVE_WORLD_OBJECT_TYPES.has(def.type) ? createPrimitiveWorldMesh(THREE,def,{color:def.color})
+          : def.type === 'world-text' ? createTextObject(THREE, def)
+          : def.type === 'physical-path' ? createPathObject(THREE, def, colliders)
           : def.type === "procedural-voxel-world" ? createProceduralVoxelWorld(THREE, def, colliders)
           : def.type === "iframe" ? createIframeObjectMesh(THREE, def)
           : createEquationColliderPlaneMesh(THREE, def.equationCollider, { color: def.color, opacity: def.opacity });
         mesh.position.fromArray(def.position || [0, 0, 0]);
         if (Array.isArray(def.rotation)) mesh.rotation.set(...def.rotation);
-        if (def.equationCollider?.infinite && Array.isArray(def.scale)) mesh.scale.fromArray(def.scale);
+        if ((def.preserveLocalTransform === true || def.equationCollider?.infinite) && Array.isArray(def.scale)) mesh.scale.fromArray(def.scale);
         Object.assign(mesh.userData, { metaWorldLayerId: entry.id, nvType: def.type, tag: def.tag,
           isSolid: def.isSolid === true, breakable: def.type !== "procedural-voxel-world", placedByPlayer: true });
+        mesh.userData.preserveLocalTransform=def.preserveLocalTransform===true;
         applyPhysicsMaterialToMesh(mesh, ensureWorldObjectPhysicsMaterial(def));
-        if (def.collider !== false && def.equationCollider?.infinite) {
+        if (def.preserveLocalTransform===true && PRIMITIVE_WORLD_OBJECT_TYPES.has(def.type)) {
+          const collider=makeObjectColliderRef(THREE,mesh,def,def.type);
+          if(collider){mesh.userData.colliderRef=collider;colliders.push(collider);}
+        } else if (def.collider !== false && def.equationCollider?.infinite) {
           mesh.userData.colliderRef = makePlaneColliderRef(THREE, mesh);
           colliders.push(mesh.userData.colliderRef);
         } else if (def.type === "iframe" && def.collider !== false) {
@@ -1870,7 +1882,10 @@ export function registerMetaWorldLayerBridge({ state, filePath, worldData, layer
   installPathAuthoring(bridge, { THREE, scene, objects, colliders, layerEntries, worldData, select:selectMetaWorldObject,
     changed(objectId) { markMetaWorldLayersDirty(worldData); syncBridgeWorldState(state,worldData); notifyMetaWorldLayersChanged({reason:'pathUpdated',objectId}); }
   });
-  if (window.VRWorldContext) window.VRWorldContext.updatePathTransforms = () => bridge.updatePathTransforms();
+  installTextAuthoring(bridge, { THREE, scene, objects, layerEntries, worldData, select:selectMetaWorldObject,
+    changed(objectId) { markMetaWorldLayersDirty(worldData); syncBridgeWorldState(state,worldData); notifyMetaWorldLayersChanged({reason:'textUpdated',objectId}); }
+  });
+  if (window.VRWorldContext) window.VRWorldContext.updatePathTransforms = () => { bridge.updatePathTransforms(); bridge.updateTextVisibility(); };
   if (window.VRWorldContext) window.VRWorldContext.recordObjectTransform = mesh => bridge.recordObjectTransform(mesh);
   layerEntries.forEach(attachLayerBreakHandler);
   setActiveMetaWorldLayerBridge(guardWorldLayerBridge(bridge, window.VRWorldContext?.movementState));
@@ -2222,6 +2237,7 @@ function resetLegacyWorldScene(ctx, state, worldData = null) {
   if (ctx.metaWorldHost?.parentNode) ctx.metaWorldHost.parentNode.removeChild(ctx.metaWorldHost);
   ctx.metaWorldHost = null;
   objects?.forEach((obj) => {
+    obj?.userData?.textRuntime?.dispose();
     obj?.userData?.pathRuntime?.dispose();
     obj?.userData?.proceduralVoxelRuntime?.dispose();
     disposeSoundObjectRuntime(obj);
@@ -2350,6 +2366,7 @@ async function loadStlWorld(filePath, state, THREE) {
   if (!ground.parent) scene.add(ground);
 
   objects?.forEach((obj) => {
+    obj?.userData?.textRuntime?.dispose();
     obj?.userData?.pathRuntime?.dispose();
     obj?.userData?.proceduralVoxelRuntime?.dispose();
     disposeSoundObjectRuntime(obj);
@@ -2627,6 +2644,7 @@ export async function loadWorldFromFile(filePath, state, THREE, options = {}) {
       worldData.metadata.multiplayer = multiplayerDef;
     }
     objects.forEach((obj) => {
+      obj?.userData?.textRuntime?.dispose();
       obj?.userData?.pathRuntime?.dispose();
       obj?.userData?.proceduralVoxelRuntime?.dispose();
       disposeSoundObjectRuntime(obj);
@@ -3265,6 +3283,8 @@ export async function loadWorldFromFile(filePath, state, THREE, options = {}) {
             }
           })();
         }
+      } else if (def.type === 'world-text') {
+        mesh = createTextObject(THREE, def);
       } else if (def.type === 'physical-path') {
         mesh = createPathObject(THREE, def, colliders);
       } else if (def.type === "procedural-voxel-world") {
@@ -3359,7 +3379,8 @@ export async function loadWorldFromFile(filePath, state, THREE, options = {}) {
           mesh.position.set(...def.position);
         }
         if (Array.isArray(def.rotation)) mesh.rotation.set(...def.rotation);
-        if (def.equationCollider?.infinite && Array.isArray(def.scale)) mesh.scale.set(...def.scale);
+        if ((def.preserveLocalTransform === true || def.equationCollider?.infinite) && Array.isArray(def.scale)) mesh.scale.set(...def.scale);
+        mesh.userData.preserveLocalTransform=def.preserveLocalTransform===true;
         mesh.userData.nvType = isEquationObjectDefinition(def)
           ? (isEquationInequalityDefinition ? "equation-inequality" : "equation-collider-plane")
           : (def.type || portalShape || null);
@@ -3536,7 +3557,10 @@ export async function loadWorldFromFile(filePath, state, THREE, options = {}) {
         }
 
         if (((isEquationObjectDefinition(def) && !isEquationInequalityDefinition && def.collider !== false) || (isExpressionLayerType(def.type) && def.collider?.enabled === true) || def.isSolid || def.collidable === true) && !isLiquidDefinition) {
-          if (isExpressionLayerType(def.type) && def.collider?.enabled === true) {
+          if(def.preserveLocalTransform===true){
+            const colliderRef=makeObjectColliderRef(THREE,mesh,def,portalShape||def.type);
+            if(colliderRef){colliders.push(colliderRef);mesh.userData.colliderRef=colliderRef;}
+          } else if (isExpressionLayerType(def.type) && def.collider?.enabled === true) {
             const colliderRef = createExpressionLayerColliderRef(THREE, mesh, def, getExpressionLayerOptions(camera || window.VRWorldContext?.camera)) || { type: "box", box: new THREE.Box3().setFromObject(mesh) };
             attachPhysicsMaterialToCollider(colliderRef, physicsMaterialId);
             colliders.push(colliderRef);

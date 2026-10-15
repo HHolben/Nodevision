@@ -1,5 +1,6 @@
 // Nodevision/ApplicationSystem/public/MetaWorld/ProceduralVoxelWorld/VoxelCanonicalMaterials.test.mjs
 // These regressions verify canonical voxel identity, deterministic development strata, pooled rendering, shared physics metadata, authored voxel configuration, and equation persistence.
+import { LEGACY_VOXEL_MATERIAL_COUNT } from './VoxelMaterialIds.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import * as THREE from '../../lib/three/three.module.js';
@@ -41,17 +42,17 @@ test('fixed V1 seed and coordinates pin grass, soil, stone and coherent limeston
   const chunk=generator.generateChunk(0,1,0);
   for(let z=0;z<32;z++)for(let y=0;y<32;y++)for(let x=0;x<32;x++)assert.equal(chunk[voxelIndex(x,y,z)],generator.getVoxel(x,y+32,z));
 });
-test('mixed chunks group faces by canonical material with twenty-six shared runtime materials', async () => {
+test('mixed chunks group faces by canonical material with shared runtime materials', async () => {
   const data=new Uint8Array(32**3);for(const [x,id] of [[0,1],[2,2],[4,3],[6,4]])data[voxelIndex(x,0,0)]=id;
   const result=meshVoxelChunk(data,[0,0,0],()=>0), palette=await createVoxelMaterialPalette(THREE,voxelMaterialOptions);
-  assert.equal(result.faceCount,24);assert.equal(result.groups.length,4);assert.equal(palette.materials.length,36);
+  assert.equal(result.faceCount,24);assert.equal(result.groups.length,4);assert.equal(palette.materials.length,LEGACY_VOXEL_MATERIAL_COUNT-1);
   for(const group of result.groups){
     const material=palette.materials[group.materialIndex], id=group.materialIndex+1;
     assert.equal(group.count,36);assert.equal(material.userData.materialId,palette.entries[id].materialId);
     assert.equal('#'+material.color.getHexString(),palette.entries[id].rendering.color);
     for(const index of result.indices.slice(group.start,group.start+group.count))assert.equal(result.materials[index],id);
   }
-  let disposals=0;palette.materials.forEach(m=>m.addEventListener('dispose',()=>disposals++));palette.dispose();assert.equal(disposals,36);
+  let disposals=0;palette.materials.forEach(m=>m.addEventListener('dispose',()=>disposals++));palette.dispose();assert.equal(disposals,LEGACY_VOXEL_MATERIAL_COUNT-1);
 });
 test('runtime material inspection, ground bounce and compact save use canonical identity', async () => {
   const colliders=[],root=createProceduralVoxelWorld(THREE,def,colliders,voxelMaterialOptions),runtime=root.userData.proceduralVoxelRuntime;

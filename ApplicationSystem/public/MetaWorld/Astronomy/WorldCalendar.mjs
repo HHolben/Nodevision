@@ -22,8 +22,15 @@ export function createWorldCalendar(temporal, config, { now = () => Date.now(), 
     snapshot() { return { ...config, timezone: zone, ...(config.mode === 'saved' ? { savedTime: new Date(current()).toISOString() } : {}) }; }
   };
 }
+const seasonFormatters=new Map();
 export function seasonAt(instant, latitude, timezone = 'UTC') {
-  const month = Number(new Intl.DateTimeFormat('en', { month: 'numeric', timeZone: timezone }).format(new Date(instant)));
+  let formatter=seasonFormatters.get(timezone);
+  if(!formatter){
+    formatter=new Intl.DateTimeFormat('en',{month:'numeric',timeZone:timezone});
+    if(seasonFormatters.size>=16)seasonFormatters.delete(seasonFormatters.keys().next().value);
+    seasonFormatters.set(timezone,formatter);
+  }
+  const month = Number(formatter.format(instant));
   const north = Math.floor((month % 12) / 3), index = (north + (latitude < 0 ? 2 : 0)) % 4;
   return ['winter', 'spring', 'summer', 'autumn'][index];
 }

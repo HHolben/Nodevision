@@ -1,0 +1,24 @@
+{
+  "frames": 100,
+  "frame": {
+    "averageMs": 29.940000000001163,
+    "p95Ms": 40.399999999965075
+  },
+  "streamingUpdate": {
+    "averageMs": 12.845000000001164,
+    "p95Ms": 31.29999999998836
+  },
+  "stats": {
+    "loaded": 77,
+    "queued": 0,
+    "generated": 77,
+    "voxels": 1670972,
+    "faces": 25808,
+    "generationMs": 180.49999999988358,
+    "meshingMs": 688.1999999997788,
+    "maxBuildMs": 47.59999999997672
+  },
+  "triangles": 32626,
+  "geometryCount": 34,
+  "note": "Electron SwiftShader, includes requestAnimationFrame pacing and streaming. Not a hardware GPU benchmark."
+}

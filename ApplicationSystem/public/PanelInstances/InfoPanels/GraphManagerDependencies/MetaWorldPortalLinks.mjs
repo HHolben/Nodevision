@@ -31,6 +31,7 @@ const RESOURCE_REFERENCE_FIELDS = Object.freeze([
   Object.freeze({ field: "soundLinkedPath", resourceType: "audio", linkKind: "audio-resource" }),
 ]);
 const RESOURCE_EDGE_TEXT = Object.freeze({
+  text: "references inscription source located at:",
   model: "references model located at:",
   image: "references image located at:",
   audio: "references audio located at:",
@@ -147,6 +148,13 @@ function visitResourceValue(value, links = [], seen = new Set()) {
   if (Array.isArray(value)) {
     value.forEach((item) => visitResourceValue(item, links, seen));
     return links;
+  }
+
+  if (value.type === 'world-text') {
+    for (const field of ['file','audio','note']) {
+      const target=value.links?.[field];
+      if (typeof target==='string' && target.trim()) links.push({target:target.trim(),field:'links.'+field,resourceType:field==='audio'?'audio':'text',linkKind:field==='audio'?'audio-resource':'text-resource'});
+    }
   }
 
   for (const def of RESOURCE_REFERENCE_FIELDS) {

@@ -41,6 +41,7 @@ export function createInputHandlers({ getBindings, normalizeKeyName, movementSta
   }
 
   const onKeyDown = (e) => {
+    if (movementState?.textEditing || e.target?.closest?.('input,textarea,select,[contenteditable="true"]')) { clearTransientInputs(); return; }
     if (e.key === "Escape" || e.defaultPrevented || !acceptsInput(e)) return;
     const keyName = normalizeKeyName(e.key);
     const shortcutModifier = e.ctrlKey === true || e.metaKey === true;

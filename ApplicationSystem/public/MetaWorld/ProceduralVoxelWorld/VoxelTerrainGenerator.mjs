@@ -1,5 +1,7 @@
 // Nodevision/ApplicationSystem/public/MetaWorld/ProceduralVoxelWorld/VoxelTerrainGenerator.mjs
 // This module composes base terrain and bounded procedural features into a deterministic final voxel field shared by rendering, collision, and future overrides.
+import { excludesProtectedFeature } from '../Aegean/ProtectedRegions.mjs';
+import { createAegeanPlacement } from '../Aegean/PlantPlacement.mjs';
 import { createChunkLevelQuery } from './VoxelChunkLevels.mjs';
 import { createBaseTerrain } from './VoxelBaseTerrain.mjs';
 import { createPathTerrainField } from '../Paths/PathTerrainField.mjs';
@@ -8,9 +10,10 @@ import { createTreePlacement } from './Features/TreePlacement.mjs';
 import { featureMaterialPriority, voxelMaterialId } from './VoxelMaterialIds.mjs';
 import { chunkToVoxel, voxelIndex, containsVoxel } from './VoxelCoordinates.mjs';
 const priority=featureMaterialPriority;
-export function createVoxelGenerator(def) {
-  const original=createBaseTerrain(def),base=createPathTerrainField(original,def),provider=createTreePlacement(original,def.generator.seed);
-  const filtered={...provider,candidate(x,z){const f=provider.candidate(x,z);return base.excludesFeature(f)?null:f;}};
+export function createVoxelGenerator(source) {
+  const def={...source,environment:source.environment?{...source.environment}:undefined};
+  const original=createBaseTerrain(def),base=createPathTerrainField(original,def),provider=def.environment?.id==='aegean'?createAegeanPlacement(original,def):createTreePlacement(original,def.generator.seed);
+  const filtered={...provider,candidate(x,z){const f=provider.candidate(x,z);return base.excludesFeature(f)||excludesProtectedFeature(def,f)?null:f;}};
   const features=createFeatureField(def.generation?.vegetation === false ? [] : [filtered],priority);
   let levels=createChunkLevelQuery(base,features);
   const featureStats={lookupMs:0,samplingMs:0,candidates:0};
@@ -40,6 +43,12 @@ export function createVoxelGenerator(def) {
     return data;
   }
   return { ...base,getChunkLevels:(x,z)=>levels(x,z),features,featureStats,getFeatureVoxel,getVoxel,generateChunk,
+    get season(){return def.environment?.season;},
+    setSeason(season){
+      if(def.environment?.id!=='aegean'||def.environment.season===season)return false;
+      if(!['spring','summer','autumn','winter'].includes(season))throw Error('Unsupported season.');
+      def.environment.season=season;base.clearColumns();features.clear();levels=createChunkLevelQuery(base,features);return true;
+    },
     pathFeatureReach:provider.reach*2,
     setPathConstraints(paths){base.setPathConstraints(paths);features.clear();levels=createChunkLevelQuery(base,features);},
     maxSolidHeight:Math.min(base.dimensions[1],base.maxSolidHeight+provider.maxHeight),

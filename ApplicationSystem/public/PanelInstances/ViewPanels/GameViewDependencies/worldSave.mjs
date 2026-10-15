@@ -1,6 +1,7 @@
 // Nodevision/ApplicationSystem/public/PanelInstances/ViewPanels/GameViewDependencies/worldSave.mjs
 // This file defines browser-side world Save logic for the Nodevision UI. It renders interface components and handles user interactions.
 
+import { TEXT_PARENT_TYPES } from '../../../MetaWorld/Text/TextDefinition.mjs';
 import { worldAuthoringAllowed } from "/MetaWorld/WorldAuthoringPermissions.mjs";
 import { readWorldHtml, clearWorldDraft } from "/MetaWorld/WorldDocumentDrafts.mjs";
 import { expressionUsesTimeVariable, normalizePlaneEquationConfig } from "./equationColliderTool.mjs";
@@ -540,6 +541,7 @@ function compactVoxelDefinitions(defs = []) {
 
 export function serializeMesh(mesh) {
   if (mesh?.userData?.runtimeGenerated) return null;
+  if (mesh?.userData?.textRuntime) return mesh.userData.textRuntime.serialize();
   if (mesh?.userData?.pathRuntime) return mesh.userData.pathRuntime.serialize();
   if (mesh?.userData?.proceduralVoxelRuntime) return mesh.userData.proceduralVoxelRuntime.serialize();
   if (!mesh?.isMesh) return null;
@@ -567,10 +569,12 @@ export function serializeMesh(mesh) {
     isSolid: mesh.userData?.isSolid === true
   };
 
+  const preserveLocalTransform=TEXT_PARENT_TYPES.includes(type)&&(mesh.userData.preserveLocalTransform===true||mesh.children.some(child=>child.userData?.textRuntime));
+  if(preserveLocalTransform){def.preserveLocalTransform=true;def.scale=mesh.scale.toArray();def.position=mesh.position.toArray();}
   const g = mesh.geometry;
-  const sx = Math.abs(mesh.scale?.x || 1);
-  const sy = Math.abs(mesh.scale?.y || 1);
-  const sz = Math.abs(mesh.scale?.z || 1);
+  const sx = preserveLocalTransform ? 1 : Math.abs(mesh.scale?.x || 1);
+  const sy = preserveLocalTransform ? 1 : Math.abs(mesh.scale?.y || 1);
+  const sz = preserveLocalTransform ? 1 : Math.abs(mesh.scale?.z || 1);
 
   const shape = type === "portal" || type === "spawn" ? getGeometryShape(mesh) : type;
 
@@ -965,7 +969,7 @@ export function buildWorldDefinition({
 
 function makeWorldDefinitionScript(worldDefinition) {
   return `<script id="nodevision-metaworld" type="application/json" data-nodevision-meta-world>
-${JSON.stringify(worldDefinition, null, 2)}
+${JSON.stringify(worldDefinition, null, 2).replace(/</g, "\\u003c")}
 </script>`;
 }
 
@@ -978,10 +982,10 @@ function injectWorldDefinitionIntoHtml(html, worldDefinition) {
   ];
 
   for (const pattern of scriptPatterns) {
-    if (pattern.test(html)) return html.replace(pattern, scriptBlock);
+    if (pattern.test(html)) return html.replace(pattern, () => scriptBlock);
   }
   if (/<\/body>/i.test(html)) {
-    return html.replace(/<\/body>/i, `  ${scriptBlock}
+    return html.replace(/<\/body>/i, () => `  ${scriptBlock}
 </body>`);
   }
   return `${html}

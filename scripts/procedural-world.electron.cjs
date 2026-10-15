@@ -9,9 +9,9 @@ const stubs = {
   '/panels/panelFactory.mjs': 'export function createPanelDOM(){return document.createElement("div")}',
   '/panels/workspace.mjs': 'export function ensureSvgEditorModeLayout(){} export function rebuildLayoutDividersForContainer(){} export function loadPanelIntoCell(){}',
   '/TemplateSystem/NodevisionOverlayPanel.mjs': 'export function openNodevisionOverlayPanel(){}',
-  '/ToolbarJSONfiles/insertMediaPanel.mjs': 'export function registerSvgEditorContextForInsertMedia(){return {dispose(){}}}',
+  '/ToolbarJSONfiles/insertMediaPanel.mjs': 'export function registerSvgEditorContextForInsertMedia(){return {dispose(){}}} export function openInsertMediaPanel(){throw Error("Standalone media panels are not used by this fixture")}',
 };
-if (['sandbox-session-browser.mjs','astronomy-sandbox-browser.mjs','voxel-world-sandbox-browser.mjs'].includes(browserModule)) {
+if (['sandbox-session-browser.mjs','astronomy-sandbox-browser.mjs','voxel-world-sandbox-browser.mjs','aegean-seasons-browser.mjs'].includes(browserModule)) {
   stubs['/panels/workspace.mjs'] = `
     export { ensureSvgEditingSplit } from '/panels/workspaceParts/workspaceSvgSplit.mjs';
     export function ensureSvgEditorModeLayout(){}
@@ -26,6 +26,7 @@ if (['sandbox-session-browser.mjs','astronomy-sandbox-browser.mjs','voxel-world-
     }`;
   stubs['/TemplateSystem/NodevisionOverlayPanel.mjs'] = 'export async function openNodevisionOverlayPanel(type,options){window.fixtureSessionError=options.message; console.error(options.message);return "quit";}';
 }
+if (process.env.NV_AEGEAN_REFERENCE_MESHER === '1') stubs['/MetaWorld/ProceduralVoxelWorld/VoxelGreedyMesher.mjs'] = "export { meshVoxelChunk as meshGreedyVoxelChunk } from './VoxelChunkMesher.mjs';";
 const server = http.createServer((req,res)=>{
   const url = new URL(req.url,'http://localhost').pathname;
   if(url==='/'){res.setHeader('Content-Type','text/html');res.end(('<div class="panel-cell"><div id="editor" style="width:800px;height:600px"></div></div><pre id="result">RUNNING</pre><script type="module" src="/scripts/procedural-world-browser.mjs"></script>').replace('procedural-world-browser.mjs',browserModule));return;}
@@ -57,6 +58,10 @@ app.whenReady().then(async()=>{
             if(await win.webContents.executeJavaScript('window.pathValidationComplete===true'))break;
             await new Promise(r=>setTimeout(r,100));
           }
+        }
+        if(result.startsWith('PASS:') && browserModule === 'aegean-world-browser.mjs') {
+          fs.writeFileSync(path.join(root,process.env.NV_AEGEAN_REFERENCE_MESHER === '1'?'docs/aegean-render-reference.json':'docs/aegean-render-performance.json'),JSON.stringify(await win.webContents.executeJavaScript('window.aegeanRenderReport'),null,2)+'\n');
+          fs.writeFileSync('/tmp/aegean-world.png',(await win.webContents.capturePage()).toPNG());
         }
         if(result.startsWith('PASS:') && browserModule === 'astronomy-render-browser.mjs') fs.writeFileSync(path.join(root,'docs/astronomy-render-performance.json'),JSON.stringify(await win.webContents.executeJavaScript('window.astronomyRenderReport'),null,2)+'\n');
         if(result.startsWith('PASS:') && browserModule === 'procedural-world-browser.mjs') fs.writeFileSync(path.join(root,'docs/procedural-voxel-performance.json'),JSON.stringify(await win.webContents.executeJavaScript('window.proceduralReport'),null,2)+'\n');

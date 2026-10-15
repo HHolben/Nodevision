@@ -7,6 +7,7 @@ import { parseLinkRecordsFromText } from "./LinkRecords.mjs";
 const world = {
   worldType: "NodevisionMetaWorld",
   objects: [
+    { type: "world-text", links: { file: "Notebook/Greek/alpha.html", audio: "Notebook/Greek/alpha.ogg", note: "Notebook/Greek/mnemonic.md" } },
     { type: "object-file", objectFile: "Notebook/Resources/Models/ship.stl" },
     { type: "panel", imageFile: "Resources/Media/Images/panel.png" },
     { type: "sound-object", audioLinkedPath: "Resources/Media/Audio/chime.wav" },
@@ -21,3 +22,7 @@ assert(records.some((record) => record.linkKind === "audio-resource" && record.t
 assert(records.every((record) => record.sourceFormat === "metaworld"));
 
 console.log("ok - MetaWorld saved resource references produce graph records");
+
+assert(records.some(record => record.linkKind === "text-resource" && record.targetPath === "Greek/alpha.html"));
+assert(records.some(record => record.linkKind === "audio-resource" && record.targetPath === "Greek/alpha.ogg"));
+assert(records.some(record => record.linkKind === "text-resource" && record.targetPath === "Greek/mnemonic.md"));

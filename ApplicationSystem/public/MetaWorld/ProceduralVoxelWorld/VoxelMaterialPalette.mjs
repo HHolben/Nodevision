@@ -2,9 +2,10 @@
 // This module maps compact development-generator palette indices to canonical material identities and pools resolved rendering resources per terrain runtime.
 import { resolveWorldObjectMaterial } from '../Materials/WorldObjectMaterialResolver.mjs';
 import { createTerrainMaterial } from '../../PanelInstances/ViewPanels/GameViewDependencies/TerrainTool/terrainMaterial.mjs';
-import { VOXEL_MATERIAL_IDS } from "./VoxelMaterialIds.mjs";
+import { VOXEL_MATERIAL_IDS, LEGACY_VOXEL_MATERIAL_COUNT } from "./VoxelMaterialIds.mjs";
 export async function createVoxelMaterialPalette(THREE, options = {}) {
-  const entries = [null, ...await Promise.all(VOXEL_MATERIAL_IDS.slice(1).map(id => resolveWorldObjectMaterial(id, options)))];
+  const ids=options.aegean ? VOXEL_MATERIAL_IDS : VOXEL_MATERIAL_IDS.slice(0,LEGACY_VOXEL_MATERIAL_COUNT);
+  const entries = [null, ...await Promise.all(ids.slice(1).map(id => resolveWorldObjectMaterial(id, options)))];
   const materials = entries.slice(1).map(entry => {
     const settings = entry.rendering;
     const material = createTerrainMaterial(THREE, { ...settings, kind: settings.terrainKind,
