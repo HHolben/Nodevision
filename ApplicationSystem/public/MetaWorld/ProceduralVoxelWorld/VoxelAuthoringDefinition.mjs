@@ -34,7 +34,7 @@ export function voxelWorldForm(def = null) {
   return { environmentPreset:def?.environment?.id || 'legacy', ...AEGEAN_DEFAULTS, ...def?.environment, name: def?.name || 'Voxel World', seed: def ? String(def.generator.seed) : String(crypto.getRandomValues(new Int32Array(1))[0]),
     sizeX: def?.size[0] ?? 256, sizeZ: def?.size[2] ?? 256,
     minHeight: def ? (def.heightLimits?.min ?? 0) : -16, maxHeight: def?.heightLimits?.max ?? def?.size[1] ?? 64,
-    voxelSize: .25, chunkSize: 32, vegetation: def?.generation?.vegetation !== false,
+    voxelSize: .25, chunkSize: 32, loadRadius: def?.chunks?.loadRadius ?? 2, vegetation: def?.generation?.vegetation !== false,
     water: def?.generation?.water !== false, caves: def?.generation?.caves !== false };
 }
 export function definitionFromVoxelForm(values, previous = null) {
@@ -52,11 +52,12 @@ export function definitionFromVoxelForm(values, previous = null) {
   const def = { ...previous, id: previous?.id || 'voxel-world', name, type:'procedural-voxel-world',
     position: previous?.position?.slice() || [-sizeX/2,0,-sizeZ/2], size:[sizeX,max-min,sizeZ], heightLimits:{min,max},
     voxelSize:.25, generator:{id:'nodevision-terrain-v1',version:1,seed:terrainSeed(values.seed)},
-    chunks:previous?.chunks || {voxelsPerAxis:32,loadRadius:2}, boundaryMode:previous?.boundaryMode || 'open',
+    chunks:{voxelsPerAxis:32,loadRadius:values.loadRadius === undefined ? (previous?.chunks?.loadRadius ?? 2) : number('loadRadius')}, boundaryMode:previous?.boundaryMode || 'open',
     generation:{vegetation:values.vegetation === true,water:values.water === true,caves:values.caves === true},
     materialPalette:'nodevision-canonical-v1', biomeSource:'nodevision-biomes-v1' };
   if(values.environmentPreset==='aegean')def.environment={...AEGEAN_DEFAULTS,...previous?.environment,landform:values.landform,geology:values.geology,season:values.season,seasonMode:values.seasonMode??previous?.environment?.seasonMode??'manual',seaLevel:number('seaLevel'),vegetationDensity:number('vegetationDensity'),uplandOak:values.uplandOak===true,mountains:values.mountains===true};
   else delete def.environment;
+  if (!Number.isInteger(def.chunks.loadRadius) || def.chunks.loadRadius < 1 || def.chunks.loadRadius > 8) throw Error('Render distance must be an integer from 1 to 8 chunks.');
   validateAuthoringTerrain(def);
   return def;
 }

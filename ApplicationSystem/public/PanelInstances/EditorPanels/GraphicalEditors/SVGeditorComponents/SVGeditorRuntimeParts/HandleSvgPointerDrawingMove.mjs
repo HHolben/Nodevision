@@ -4,39 +4,13 @@
 // Handle Svg Pointer Drawing Move operations.
 export function handleSvgPointerDrawingMove(scope) {
   if (scope.owner.svgSession.rotateState && scope.owner.svgSession.rotateState.pointerId === scope.e.pointerId) {
-    if (scope.owner.svgSession.rotateState.command) {
-      scope.pointerMoveState.angleLocal = Math.atan2(scope.pointerMoveState.p.y - scope.owner.svgSession.rotateState.cy, scope.pointerMoveState.p.x - scope.owner.svgSession.rotateState.cx) - scope.owner.svgSession.rotateState.startAngle;
-      scope.owner.svgSession.applyRotationAngleToCommand(scope.owner.svgSession.rotateState.command, scope.owner.svgSession.rotateState.baseAngleRad + scope.pointerMoveState.angleLocal);
-      scope.owner.svgSession.updatePendingRotationStatus();
-      scope.e.preventDefault();
-      return {
-        value: void 0
-      };
-    }
-    scope.pointerMoveState.angle = Math.atan2(scope.pointerMoveState.p.y - scope.owner.svgSession.rotateState.cy, scope.pointerMoveState.p.x - scope.owner.svgSession.rotateState.cx) - scope.owner.svgSession.rotateState.startAngle;
-    scope.pointerMoveState.angleDeg = scope.pointerMoveState.angle * 180 / Math.PI;
-    if (scope.owner.svgSession.rotateState.baseLine) {
-      scope.pointerMoveState.p1 = scope.owner.svgSession.rotatePointAroundCenter(scope.owner.svgSession.rotateState.baseLine.p1, {
-        x: scope.owner.svgSession.rotateState.cx,
-        y: scope.owner.svgSession.rotateState.cy
-      }, scope.pointerMoveState.angle);
-      scope.pointerMoveState.p2 = scope.owner.svgSession.rotatePointAroundCenter(scope.owner.svgSession.rotateState.baseLine.p2, {
-        x: scope.owner.svgSession.rotateState.cx,
-        y: scope.owner.svgSession.rotateState.cy
-      }, scope.pointerMoveState.angle);
-      scope.owner.svgSession.rotateState.element.setAttribute("x1", String(scope.pointerMoveState.p1.x));
-      scope.owner.svgSession.rotateState.element.setAttribute("y1", String(scope.pointerMoveState.p1.y));
-      scope.owner.svgSession.rotateState.element.setAttribute("x2", String(scope.pointerMoveState.p2.x));
-      scope.owner.svgSession.rotateState.element.setAttribute("y2", String(scope.pointerMoveState.p2.y));
-    } else {
-      scope.owner.svgSession.setTransformFromBase(scope.owner.svgSession.rotateState.element, scope.owner.svgSession.rotateState.baseTransform, `rotate(${scope.pointerMoveState.angleDeg} ${scope.owner.svgSession.rotateState.cx} ${scope.owner.svgSession.rotateState.cy})`);
-    }
-    scope.owner.svgSession.refreshSelectionGeometryAfterMutation("rotate");
+    scope.pointerMoveState.angleLocal = Math.atan2(scope.pointerMoveState.p.y - scope.owner.svgSession.rotateState.cy, scope.pointerMoveState.p.x - scope.owner.svgSession.rotateState.cx) - scope.owner.svgSession.rotateState.startAngle;
+    scope.owner.svgSession.applyRotationAngleToCommand(scope.owner.svgSession.rotateState.command, scope.owner.svgSession.rotateState.baseAngleRad + scope.pointerMoveState.angleLocal);
+    scope.owner.svgSession.updatePendingRotationStatus();
     scope.e.preventDefault();
-    return {
-      value: void 0
-    };
+    return { value: void 0 };
   }
+
   if (scope.owner.svgSession.toolState.mode === "select") {
     if (scope.owner.svgSession.dragState && scope.owner.svgSession.dragState.pointerId === scope.e.pointerId) {
       scope.owner.svgSession.updateDragFromClient(scope.owner.svgSession.dragState, scope.e.clientX, scope.e.clientY);

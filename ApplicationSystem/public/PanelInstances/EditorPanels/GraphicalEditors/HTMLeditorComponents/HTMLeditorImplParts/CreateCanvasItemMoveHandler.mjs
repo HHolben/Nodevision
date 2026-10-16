@@ -1,9 +1,8 @@
 // Nodevision/ApplicationSystem/public/PanelInstances/EditorPanels/GraphicalEditors/HTMLeditorComponents/HTMLeditorImplParts/CreateCanvasItemMoveHandler.mjs
 // This module implements create Canvas Item Move Handler behavior for the HTMLeditorImpl feature. Its dependencies and instance state are supplied explicitly so other editor instances remain independent.
 
-import { HTML_TABLE_MIN_COLUMN_WIDTH, HTML_TABLE_MIN_ROW_HEIGHT } from "./EnsureHTMLLayoutStyles.mjs";
-import { applyTableColumnWidth, getTableCellFromEditorTarget } from "./MarkHtmlEditorNativeInputDirty.mjs";
-import { applyTableRowHeight, resolveTableDividerResizeHit } from "./MeasureTableRowHeight.mjs";
+import { getTableCellFromEditorTarget } from "./MarkHtmlEditorNativeInputDirty.mjs";
+import { resolveTableDividerResizeHit } from "./MeasureTableRowHeight.mjs";
 import { clearTableCellSelection, setActiveTableCell } from "/ToolbarCallbacks/insert/tableTools.mjs";
 import { resolveTableDragSelectionMode } from "./StartTableDividerResize.mjs";
 import { updateToolbarState } from "../../../../../panels/createToolbar.mjs";
@@ -69,39 +68,12 @@ export const HTMLeditorImplStyleSection8 = `    }
 
 export function createCanvasItemMoveHandler(owner) {
   return moveEvent => {
-    if (!owner.resizeState) return;
-    const dx = moveEvent.clientX - owner.startX;
-    const dy = moveEvent.clientY - owner.startY;
-    if (Math.abs(dx) > 1 || Math.abs(dy) > 1) moved = true;
-    if (owner.resizeState.kind === "column") {
-      const pointerDelta = (moveEvent.clientX - owner.resizeState.dividerStartClientX) * owner.resizeState.clientToLayoutX;
-      if (owner.resizeState.rightIndex !== null) {
-        const leftWidth = Math.max(HTML_TABLE_MIN_COLUMN_WIDTH, Math.min(owner.resizeState.total - HTML_TABLE_MIN_COLUMN_WIDTH, owner.resizeState.leftStart + pointerDelta));
-        if (Math.abs(leftWidth - owner.resizeState.leftStart) > 0.5) moved = true;
-        applyTableColumnWidth(owner.table, owner.resizeState.leftIndex, leftWidth);
-        applyTableColumnWidth(owner.table, owner.resizeState.rightIndex, owner.resizeState.total - leftWidth);
-        owner.table.style.width = owner.resizeState.tableStartWidth + "px";
-      } else {
-        const nextWidth = Math.max(HTML_TABLE_MIN_COLUMN_WIDTH, owner.resizeState.leftStart + pointerDelta);
-        if (Math.abs(nextWidth - owner.resizeState.leftStart) > 0.5) moved = true;
-        applyTableColumnWidth(owner.table, owner.resizeState.leftIndex, nextWidth);
-        owner.table.style.width = Math.max(HTML_TABLE_MIN_COLUMN_WIDTH, owner.resizeState.tableStartWidth + (nextWidth - owner.resizeState.leftStart)) + "px";
-      }
-      return;
-    }
-    const pointerDelta = (moveEvent.clientY - owner.resizeState.dividerStartClientY) * owner.resizeState.clientToLayoutY;
-    if (owner.resizeState.bottomRow) {
-      const topHeight = Math.max(HTML_TABLE_MIN_ROW_HEIGHT, Math.min(owner.resizeState.total - HTML_TABLE_MIN_ROW_HEIGHT, owner.resizeState.topStart + pointerDelta));
-      if (Math.abs(topHeight - owner.resizeState.topStart) > 0.5) moved = true;
-      applyTableRowHeight(owner.resizeState.topRow, topHeight);
-      applyTableRowHeight(owner.resizeState.bottomRow, owner.resizeState.total - topHeight);
-      owner.table.style.height = owner.resizeState.tableStartHeight + "px";
-    } else {
-      const nextHeight = Math.max(HTML_TABLE_MIN_ROW_HEIGHT, owner.resizeState.topStart + pointerDelta);
-      if (Math.abs(nextHeight - owner.resizeState.topStart) > 0.5) moved = true;
-      applyTableRowHeight(owner.resizeState.topRow, nextHeight);
-      owner.table.style.height = Math.max(HTML_TABLE_MIN_ROW_HEIGHT, owner.resizeState.tableStartHeight + (nextHeight - owner.resizeState.topStart)) + "px";
-    }
+    const state = owner.resizeState;
+    if (!state || moveEvent.pointerId !== owner.pointerId) return;
+    const delta = state.kind === "column"
+      ? (moveEvent.clientX - owner.startX) * state.scale
+      : (moveEvent.clientY - owner.startY) * state.scale;
+    owner.preview(() => state.apply(delta));
   };
 }
 

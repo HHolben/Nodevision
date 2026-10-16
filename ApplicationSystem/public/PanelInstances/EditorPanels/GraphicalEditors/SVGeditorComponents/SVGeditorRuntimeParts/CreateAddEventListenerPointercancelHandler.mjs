@@ -39,6 +39,7 @@ export function createAddEventListenerPointercancelHandler(owner) {
       return;
     }
     if (owner.svgSession.rotateState && owner.svgSession.rotateState.pointerId === e.pointerId) {
+      const commitOnRelease = owner.svgSession.rotateState.commitOnRelease;
       const wasPendingRotateDrag = Boolean(owner.svgSession.rotateState.command);
       owner.svgSession.rotateState = null;
       try {
@@ -47,7 +48,8 @@ export function createAddEventListenerPointercancelHandler(owner) {
         // Ignore unsupported pointer capture errors.
       }
       if (wasPendingRotateDrag && owner.svgSession.pendingRotateCommand) {
-        owner.svgSession.updatePendingRotationStatus("Rotate preview ready; Enter commits, Esc cancels");
+        if (commitOnRelease) owner.svgSession.cancelPendingRotationCommand();
+        else owner.svgSession.updatePendingRotationStatus("Rotate preview ready; Enter commits, Esc cancels");
       }
       return;
     }

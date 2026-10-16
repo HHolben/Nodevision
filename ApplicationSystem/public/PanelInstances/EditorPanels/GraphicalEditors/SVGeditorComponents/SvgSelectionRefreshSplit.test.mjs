@@ -52,9 +52,12 @@ for (const snippet of [
   'if (moved) refreshSelectionGeometryAfterMutation("move");',
   'refreshSelectionGeometryAfterMutation("line-handle");',
   'refreshSelectionGeometryAfterMutation("resize");',
-  'refreshSelectionGeometryAfterMutation("rotate");',
 ]) {
   assert.ok(source.includes(snippet), `interactive transform path should use geometry-only refresh: ${snippet}`);
 }
+
+const rotation = functionBody("applyRotationAngleToCommand");
+assert.ok(rotation.includes("refreshSelectionGeometryAfterMutation(reason)"), "shared rotation preview uses geometry-only refresh");
+assert.ok(!rotation.includes("refreshSelectionAfterMutation("), "rotation preview avoids full selection refresh");
 
 console.log("SVG selection refresh split test passed");

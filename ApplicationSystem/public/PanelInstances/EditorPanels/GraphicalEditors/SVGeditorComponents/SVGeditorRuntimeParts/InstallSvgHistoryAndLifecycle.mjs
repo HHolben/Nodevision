@@ -74,10 +74,12 @@ export function installSvgHistoryAndLifecycle(scope) {
     return true;
   };
   scope.svgSession.undoSvgHistory = function () {
+    scope.svgSession.textCaret?.finish();
     if (scope.svgSession.cancelLineToolAndDeletePlaced()) return true;
     return scope.svgSession.applySvgHistoryResult(scope.svgSession.history.undo(), "undo");
   };
   scope.svgSession.redoSvgHistory = function () {
+    scope.svgSession.textCaret?.finish();
     scope.svgSession.cancelLineToolAndDeletePlaced();
     return scope.svgSession.applySvgHistoryResult(scope.svgSession.history.redo(), "redo");
   };

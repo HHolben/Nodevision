@@ -11,6 +11,7 @@ import { getAttrNumber, parsePoints } from "../svgDom.mjs";
 export function createSetModeHandler(owner) {
   return function (mode) {
     if (mode !== owner.svgSession.toolState.mode) {
+      owner.svgSession.textCaret?.finish();
       owner.svgSession.sharedVectorTools?.cancel();
       clearSvgMarquee(owner.svgSession);
     }
@@ -67,7 +68,7 @@ export function createSetModeHandler(owner) {
       owner.svgSession.clearSelection();
       owner.svgSession.sketchController.onModeEnter();
     }
-    const cursor = mode === "select" ? "default" : mode === "rotate" ? "grab" : "crosshair";
+    const cursor = mode === "text-caret" ? "text" : mode === "select" ? "default" : mode === "rotate" ? "grab" : "crosshair";
     owner.svgSession.svgRoot.style.cursor = mode === "eyedropper" ? "copy" : mode === "eraser" ? "not-allowed" : cursor;
     owner.svgSession.updateBrushCursor(owner.svgSession.lastPointerRoot);
     try {

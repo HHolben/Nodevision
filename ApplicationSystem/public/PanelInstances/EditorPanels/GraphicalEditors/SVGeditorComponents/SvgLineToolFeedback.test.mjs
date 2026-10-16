@@ -14,7 +14,8 @@ const preservationSource = readFileSync(join(here, "SvgPreservation.mjs"), "utf8
 function functionBody(name) {
   const start = source.indexOf(`function ${name}`);
   assert.notEqual(start, -1, `missing function ${name}`);
-  const open = source.indexOf("{", start);
+  // Skip default parameter objects, such as options = {}, before locating the body.
+  const open = source.indexOf("{", source.indexOf(") {", start));
   let depth = 0;
   for (let index = open; index < source.length; index += 1) {
     const ch = source[index];

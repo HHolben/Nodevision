@@ -5,6 +5,7 @@ export function createMovementUpdateLoop(ctx) {
   const { controls, getBindings, movementState } = ctx;
 
   return function update() {
+    ctx.api.updateVoxelWorldPreview?.();
     if (ctx.api.runFramePreflight().stop) return;
     const nowMs = performance.now();
     const baseSpeed = 0.2;
@@ -32,6 +33,7 @@ export function createMovementUpdateLoop(ctx) {
     });
     ctx.api.handleCameraCommands(inputState);
     ctx.api.updateTapeMeasurePreview();
+    ctx.api.updateVoxelWorldPreview?.({snapToGrid:!!inputState.snapPlace});
     if (ctx.api.handleInspectAndCollision({ inspecting: inputState.inspect, nowMs })) return;
     if (ctx.api.handleEditorSelectionCommands({ inputState, inEditorMode, nowMs })) return;
     if (ctx.api.handleUsePhase({ inputState, using: inputState.use, nowMs })) return;

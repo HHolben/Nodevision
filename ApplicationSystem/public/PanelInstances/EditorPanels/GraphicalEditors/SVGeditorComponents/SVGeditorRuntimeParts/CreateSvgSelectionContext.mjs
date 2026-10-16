@@ -43,6 +43,7 @@ export function createSvgSelectionContext(owner) {
 
 export function createSvgEditorCleanup(owner) {
   return () => {
+    owner.svgSession.textCaret?.dispose();
     owner.svgSession.disposed = true;
     owner.svgSession.unregisterZoom?.();
     window.cancelAnimationFrame(owner.svgSession.selectionChangeRaf);

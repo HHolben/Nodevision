@@ -91,12 +91,28 @@ export function installSvgSelectionOrdering(scope) {
     command?.items?.forEach(item => scope.svgSession.restoreTransformSnapshot(item));
   };
   scope.svgSession.buildRotationCommandItems = function (elements = scope.svgSession.selectedElements) {
-    return elements.filter(Boolean).map(el => ({
-      element: el,
-      space: scope.svgSession.getDragSpaceForElement(el),
-      hadTransform: el.hasAttribute("transform"),
-      baseTransform: el.getAttribute("transform") || ""
-    }));
+    const rootToScreen = scope.svgSession.svgRoot.getScreenCTM();
+    if (!rootToScreen) return [];
+    try {
+      return elements.filter(Boolean).map(el => {
+        const space = scope.svgSession.getDragSpaceForElement(el);
+        const parentToRoot = space === scope.svgSession.svgRoot
+          ? scope.svgSession.svgRoot.createSVGMatrix()
+          : rootToScreen.inverse().multiply(space.getScreenCTM());
+        return {
+          element: el,
+          space,
+          parentToRoot,
+          rootToParent: parentToRoot.inverse(),
+          hadTransform: el.hasAttribute("transform"),
+          baseTransform: el.getAttribute("transform") || ""
+        };
+      });
+    } catch {
+      // A collapsed/noninvertible ancestor cannot represent a root-space rotation.
+      // Reject the whole selection before mutating any element.
+      return [];
+    }
   };
   scope.svgSession.getRotationCenterRoot = function () {
     const stored = scope.svgSession.readStoredRotationOriginRoot(scope.svgSession.getSelectedRotationOriginElement());
@@ -109,8 +125,14 @@ export function installSvgSelectionOrdering(scope) {
     const angleDeg = angleRad * 180 / Math.PI;
     command.items.forEach(item => {
       if (!item?.element) return;
-      const center = item.space && item.space !== scope.svgSession.svgRoot ? scope.svgSession.rootPointToElementPoint(item.space, command.centerRoot) : command.centerRoot;
-      scope.svgSession.setParentSpaceTransformFromBase(item.element, item.baseTransform, "rotate(" + angleDeg + " " + center.x + " " + center.y + ")");
+      // Conjugate the root-space rotation into parent space. Converting only
+      // the pivot is insufficient when an ancestor has nonuniform scaling.
+      const center = command.centerRoot;
+      const rotation = scope.svgSession.svgRoot.createSVGMatrix()
+        .translate(center.x, center.y).rotate(angleDeg).translate(-center.x, -center.y);
+      const operation = item.rootToParent.multiply(rotation).multiply(item.parentToRoot);
+      const matrix = "matrix(" + [operation.a, operation.b, operation.c, operation.d, operation.e, operation.f].join(" ") + ")";
+      scope.svgSession.setParentSpaceTransformFromBase(item.element, item.baseTransform, matrix);
     });
     scope.svgSession.refreshSelectionGeometryAfterMutation(reason);
     return true;

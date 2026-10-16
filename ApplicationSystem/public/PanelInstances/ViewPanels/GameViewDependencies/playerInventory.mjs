@@ -2,6 +2,8 @@
 // This file defines browser-side player Inventory logic for the Nodevision UI. It renders interface components and handles user interactions.
 import { createFloatingInventoryPanel } from "/PanelInstances/InfoPanels/PlayerInventory.mjs";
 
+import { VOXEL_WORLD_TOOL_ID, VOXEL_WORLD_ICON } from "/MetaWorld/ProceduralVoxelWorld/VoxelWorldToolState.mjs";
+
 const GRID_COLUMNS = 9;
 const ICON_SIZE = 30;
 const CELL_MIN_HEIGHT = 62;
@@ -13,7 +15,7 @@ const CATEGORY_META = {
   "resources": { label: "Resources", emptyText: "No resources carried." },
   "building-blocks": { label: "Building Blocks", emptyText: "No building blocks carried." }
 };
-const TOOL_IDS = new Set(["select-object", "select-image", "svg-camera", "tape-measure", "terrain-generator", "temporal-manipulator", "voxel-placer", "voxel-extruder"]);
+const TOOL_IDS = new Set([VOXEL_WORLD_TOOL_ID, "select-object", "select-image", "svg-camera", "tape-measure", "terrain-generator", "temporal-manipulator", "voxel-placer", "voxel-extruder"]);
 const BUILDING_IDS = new Set(["box", "sphere", "cylinder", "flying-carpet", "math-function", "object-file", "image-plane", "iframe", "console", "portal"]);
 const RESOURCE_IDS = new Set(["ore", "wood", "stone", "energy-cell", "water", "fuel"]);
 const PASSIVE_IDS = new Set(["armor", "helmet", "boots", "jetpack", "oxygen-tank"]);
@@ -76,6 +78,7 @@ export function createPlayerInventory({ panel }) {
     selectedImageFile: "",
     activeInstruments: new Set([HOTBAR_INSTRUMENT_ID]),
     items: [
+      { id: VOXEL_WORLD_TOOL_ID, label: "Voxel World", sprite: VOXEL_WORLD_ICON, count: 1, category: "tools", tool: true },
       { id: "box", label: "Box", count: 10, category: "building-blocks", placeable: true },
       { id: "sphere", label: "Sphere", count: 6, category: "building-blocks", placeable: true },
       { id: "cylinder", label: "Cylinder", count: 6, category: "building-blocks", placeable: true },
@@ -685,7 +688,15 @@ export function createPlayerInventory({ panel }) {
     floatingPanel.setVisible(true);
   }
 
+  const selectionListeners = new Set();
+  let lastEquippedId = null;
   function render() {
+    const id = getEquippedItem()?.id || null;
+    if (id !== lastEquippedId) {
+      lastEquippedId = id;
+      selectionListeners.forEach(listener => listener(id));
+      window.dispatchEvent(new CustomEvent("nv-contextual-cursor-family-changed", {detail:{providerId:"world-cursor-tools", toolId:id || "gameplay"}}));
+    }
     renderStatus();
     renderHotbar();
     renderInstrumentsHud();
@@ -952,7 +963,10 @@ export function createPlayerInventory({ panel }) {
   function onKeyDown(event) {
     if (event.repeat) return;
     const key = (event.key || "").toLowerCase();
-    if (!state.menuOpen) return;
+    if (!state.menuOpen) {
+      if (key === "escape" && getEquippedItem()?.id === VOXEL_WORLD_TOOL_ID && !event.target?.closest?.('input,textarea,select,[contenteditable="true"]')) equipItemToActiveHand(null);
+      return;
+    }
     const deferToGameLoop = !!window.VRWorldContext?.inventory;
     if (key === "escape") {
       setMenuOpen(false);
@@ -973,6 +987,8 @@ export function createPlayerInventory({ panel }) {
 
   return {
     addItem,
+    equipItemToActiveHand,
+    subscribeSelection(listener) { selectionListeners.add(listener); return () => selectionListeners.delete(listener); },
     consumeSelected,
     getSelectedItem,
     selectMenuIndex,
@@ -995,6 +1011,7 @@ export function createPlayerInventory({ panel }) {
     get dominantSlots() { return state.dominantSlots.slice(); },
     get selectedIndex() { return state.selectedMenuIndex; },
     dispose() {
+      selectionListeners.forEach(listener => listener(null)); selectionListeners.clear();
       window.clearInterval(instrumentTimer);
       window.removeEventListener("keydown", onKeyDown);
       if (statusHud.parentNode) statusHud.parentNode.removeChild(statusHud);

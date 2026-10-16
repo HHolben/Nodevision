@@ -672,6 +672,7 @@
     "parentHeading": "Insert",
     "heading": "Voxel World",
     "callbackKey": "insertVoxelWorld",
+    "icon": "icons/VoxelWorldIcon.svg",
     "modes": [
       "Virtual World Editing",
       "VR World Editing"

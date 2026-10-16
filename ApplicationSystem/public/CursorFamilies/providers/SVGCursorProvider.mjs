@@ -4,6 +4,7 @@ import { vectorTools } from "../../VectorDrawing/VectorGeometry.mjs";
 import { notifyContextualCursorFamilyChanged } from "../ContextualCursorFamilyRegistry.mjs";
 
 const TOOL_TO_MODE = {
+  "text-caret": "text-caret",
   "object-select": "select",
   "rectangle-select": "select",
   "freehand-draw": "freehand",
@@ -23,6 +24,7 @@ export function createCursorFamilyProvider() {
     },
     getTools() {
       return [
+        { id: "text-caret", label: "Text Caret", glyph: "I", description: "Edit SVG text on the canvas." },
         { id: "object-select", label: "Object Select", glyph: "P", description: "Select and transform SVG objects." },
         { id: "rectangle-select", label: "Rectangle Select", glyph: "RECT", description: "Use the SVG editor's existing marquee selection." },
         ...vectorTools.map(kind => ({ id: `${kind}-draw`, label: kind[0].toUpperCase() + kind.slice(1), glyph: kind.slice(0, 4).toUpperCase(), kind: "drawing" })),

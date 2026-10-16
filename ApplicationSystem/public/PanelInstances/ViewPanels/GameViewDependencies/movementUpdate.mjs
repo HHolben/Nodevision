@@ -16,6 +16,7 @@ import { installUseAttackCommandAbility } from "./Abilities/CommandAbilities/Use
 import { installVoxelDialogUiAbility } from "./Abilities/CraftAbilities/VoxelDialogUiAbility.mjs";
 import { installVoxelMaterialConfigAbility } from "./Abilities/CraftAbilities/VoxelMaterialConfigAbility.mjs";
 import { installVoxelPlacerDialogAbility } from "./Abilities/CraftAbilities/VoxelPlacerDialogAbility.mjs";
+import { installVoxelWorldToolAbility } from "./Abilities/CraftAbilities/VoxelWorldToolAbility.mjs";
 import { installVoxelToolActionsAbility } from "./Abilities/CraftAbilities/VoxelToolActionsAbility.mjs";
 import { installAssetPropertyAbility } from "./Abilities/ConstructAbilities/AssetPropertyAbility.mjs";
 import { installFunctionMeshAbility } from "./Abilities/ConstructAbilities/FunctionMeshAbility.mjs";
@@ -93,6 +94,7 @@ const ABILITY_INSTALLERS = [
   installUseAttackCommandAbility,
   installBreakTargetAbility,
   installVoxelToolActionsAbility,
+  installVoxelWorldToolAbility,
   installPlacedMeshFactoryAbility,
   installInventoryPlacementAbility
 ];

@@ -22,7 +22,7 @@ export const SVG_ROTATION_ORIGIN_X_ATTR = "data-nv-rotation-origin-x";
 
 export const SVG_ROTATION_ORIGIN_Y_ATTR = "data-nv-rotation-origin-y";
 
-export const SVG_TOOL_MODES = new Set(["select", "rotate", ...vectorTools, "freehand", "bezier", "sketch", "eyedropper", "eraser"]);
+export const SVG_TOOL_MODES = new Set(["text-caret", "select", "rotate", ...vectorTools, "freehand", "bezier", "sketch", "eyedropper", "eraser"]);
 
 export const SVG_CANVAS_MIN_ZOOM = 0.1;
 

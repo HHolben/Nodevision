@@ -3,113 +3,100 @@
 
 import { setActiveTableCell } from "/ToolbarCallbacks/insert/tableTools.mjs";
 import { updateToolbarState } from "../../../../../panels/createToolbar.mjs";
-import { setTableDividerResizeCursor, getTableColumnDividerClientX, getClientToLayoutScale, measureTableRowHeight, getTableRowDividerClientY, resolveTableDividerResizeHit } from "./MeasureTableRowHeight.mjs";
-import { freezeTableColumnWidths, getTableColumnCount, measureTableColumnWidth } from "./MarkHtmlEditorNativeInputDirty.mjs";
-import { HTML_TABLE_MIN_COLUMN_WIDTH, HTML_TABLE_MIN_ROW_HEIGHT, markHtmlEditorDirty, HTML_TABLE_SELECTION_EDGE_PX } from "./EnsureHTMLLayoutStyles.mjs";
+import { setTableDividerResizeCursor, resolveTableDividerResizeHit } from "./MeasureTableRowHeight.mjs";
+import { createTableResizeState } from "./TableResizeGeometry.mjs";
+import { HTML_TABLE_SELECTION_EDGE_PX } from "./EnsureHTMLLayoutStyles.mjs";
 import { createCanvasItemMoveHandler } from "./CreateCanvasItemMoveHandler.mjs";
 
 // Start Table Divider Resize operations.
 export function startTableDividerResize(wysiwyg, filePath, hit, startEvent) {
-  if (!hit?.table || !wysiwyg) return;
+  if (!hit?.table || !wysiwyg) return () => {};
   const table = hit.table;
-  const rows = Array.from(table.rows || []);
-  const startX = startEvent.clientX;
-  const startY = startEvent.clientY;
-  const tableStartRect = table.getBoundingClientRect?.();
-  const previousUserSelect = document.body.style.userSelect;
-  let moved = false;
+  const view = wysiwyg.ownerDocument.defaultView;
+  const body = wysiwyg.ownerDocument.body;
+  const pointerId = startEvent.pointerId;
+  const previousUserSelect = body.style.userSelect;
   setActiveTableCell(hit.cell);
-  updateToolbarState({
-    htmlTableSelected: true
-  });
-  setTableDividerResizeCursor(wysiwyg, hit, true);
-  document.body.style.userSelect = "none";
-  let resizeState = null;
-  if (hit.kind === "column") {
-    freezeTableColumnWidths(table);
-    const columnCount = getTableColumnCount(table);
-    const leftIndex = Math.max(0, Math.min(hit.index, columnCount - 1));
-    const rightIndex = leftIndex + 1 < columnCount ? leftIndex + 1 : null;
-    const leftStart = measureTableColumnWidth(table, leftIndex);
-    const rightStart = rightIndex !== null ? measureTableColumnWidth(table, rightIndex) : 0;
-    resizeState = {
-      kind: "column",
-      leftIndex,
-      rightIndex,
-      leftStart,
-      rightStart,
-      total: leftStart + rightStart,
-      tableStartWidth: Math.max(HTML_TABLE_MIN_COLUMN_WIDTH, Math.round(table.offsetWidth || tableStartRect?.width || leftStart)),
-      dividerStartClientX: getTableColumnDividerClientX(table, leftIndex, hit.edgeClientX ?? startX),
-      clientToLayoutX: getClientToLayoutScale(table, "x")
-    };
-  } else {
-    const topIndex = Math.max(0, Math.min(hit.index, rows.length - 1));
-    const bottomIndex = topIndex + 1 < rows.length ? topIndex + 1 : null;
-    const topRow = rows[topIndex] || null;
-    const bottomRow = bottomIndex !== null ? rows[bottomIndex] : null;
-    const topStart = measureTableRowHeight(topRow);
-    const bottomStart = bottomRow ? measureTableRowHeight(bottomRow) : 0;
-    resizeState = {
-      kind: "row",
-      topRow,
-      bottomRow,
-      topStart,
-      bottomStart,
-      total: topStart + bottomStart,
-      tableStartHeight: Math.max(HTML_TABLE_MIN_ROW_HEIGHT, Math.round(table.offsetHeight || tableStartRect?.height || topStart)),
-      dividerStartClientY: getTableRowDividerClientY(rows, topIndex, hit.edgeClientY ?? startY),
-      clientToLayoutY: getClientToLayoutScale(table, "y")
-    };
-  }
+  updateToolbarState({ htmlTableSelected: true });
+  const transactions = wysiwyg.__nvHtmlEditorContext.transactions;
+  const transaction = transactions.begin("Resize table " + hit.kind);
+  let resizeState;
+  let finished = false;
   const onMove = createCanvasItemMoveHandler({
-    get resizeState() {
-      return resizeState;
-    },
-    set resizeState(value) {
-      resizeState = value;
-    },
-    get startX() {
-      return startX;
-    },
-    get startY() {
-      return startY;
-    },
-    get table() {
-      return table;
+    get resizeState() { return resizeState; },
+    startX: startEvent.clientX, startY: startEvent.clientY, pointerId,
+    preview(mutate) {
+      try {
+        transaction.preview(mutate);
+      } catch (error) { finish(null, true); throw error; }
     }
   });
-  const finish = () => {
-    window.removeEventListener("pointermove", onMove);
-    window.removeEventListener("pointerup", finish);
-    window.removeEventListener("pointercancel", finish);
-    document.body.style.userSelect = previousUserSelect;
-    setTableDividerResizeCursor(wysiwyg, null);
-    if (moved) markHtmlEditorDirty(wysiwyg, filePath);
+  // Initialize lazily: a click on a divider must not rewrite authored sizing.
+  const move = event => {
+    if (event.pointerId !== pointerId) return;
+    if (!table.isConnected || !transactions.pending) { finish(null, true); return; }
+    if (!resizeState) {
+      const delta = hit.kind === "column" ? event.clientX - startEvent.clientX : event.clientY - startEvent.clientY;
+      if (Math.abs(delta) < 0.01) return;
+      try { transaction.preview(() => { resizeState = createTableResizeState(table, hit); }); }
+      catch (error) { finish(null, true); throw error; }
+    }
+    onMove(event);
   };
-  window.addEventListener("pointermove", onMove);
-  window.addEventListener("pointerup", finish);
-  window.addEventListener("pointercancel", finish);
+  const finish = (event, cancel = false) => {
+    if (finished || (event?.pointerId !== undefined && event.pointerId !== pointerId)) return;
+    finished = true;
+    view.removeEventListener("pointermove", move, true);
+    view.removeEventListener("pointerup", finish, true);
+    view.removeEventListener("pointercancel", cancelDrag, true);
+    view.removeEventListener("keydown", keydown, true);
+    view.removeEventListener("blur", cancelDrag);
+    wysiwyg.removeEventListener("lostpointercapture", cancelDrag);
+    if (wysiwyg.hasPointerCapture?.(pointerId)) wysiwyg.releasePointerCapture(pointerId);
+    body.style.userSelect = previousUserSelect;
+    setTableDividerResizeCursor(wysiwyg, null);
+    if (transactions.pending) {
+      if (cancel) transaction.cancel({ focus: false });
+      else transaction.commit();
+    }
+  };
+  const cancelDrag = event => finish(event, true);
+  const keydown = event => {
+    if (event.key === "Escape") { event.preventDefault(); event.stopPropagation(); finish(null, true); }
+  };
+  setTableDividerResizeCursor(wysiwyg, hit, true);
+  body.style.userSelect = "none";
+  view.addEventListener("pointermove", move, true);
+  view.addEventListener("pointerup", finish, true);
+  view.addEventListener("pointercancel", cancelDrag, true);
+  view.addEventListener("keydown", keydown, true);
+  view.addEventListener("blur", cancelDrag);
+  wysiwyg.addEventListener("lostpointercapture", cancelDrag);
+  try { wysiwyg.setPointerCapture(pointerId); } catch { /* Window listeners also support synthetic input. */ }
+  return () => finish(null, true);
 }
 
 export function registerTableDividerResizing(wysiwyg, filePath = "") {
   if (!wysiwyg) return () => {};
+  let cancel = null;
+  const active = () => wysiwyg.classList.contains("nv-table-divider-resizing");
   const onPointerMove = event => {
-    setTableDividerResizeCursor(wysiwyg, resolveTableDividerResizeHit(wysiwyg, event));
+    if (!active()) setTableDividerResizeCursor(wysiwyg, resolveTableDividerResizeHit(wysiwyg, event));
   };
-  const onPointerLeave = () => setTableDividerResizeCursor(wysiwyg, null);
+  const onPointerLeave = () => { if (!active()) setTableDividerResizeCursor(wysiwyg, null); };
   const onPointerDown = event => {
-    if (event.button !== 0) return;
+    if (event.button !== 0 || active()) return;
     const hit = resolveTableDividerResizeHit(wysiwyg, event);
     if (!hit) return;
     event.preventDefault();
     event.stopPropagation();
-    startTableDividerResize(wysiwyg, filePath, hit, event);
+    cancel = startTableDividerResize(wysiwyg, filePath, hit, event);
   };
   wysiwyg.addEventListener("pointermove", onPointerMove);
   wysiwyg.addEventListener("pointerleave", onPointerLeave);
   wysiwyg.addEventListener("pointerdown", onPointerDown, true);
   return () => {
+    cancel?.();
     wysiwyg.removeEventListener("pointermove", onPointerMove);
     wysiwyg.removeEventListener("pointerleave", onPointerLeave);
     wysiwyg.removeEventListener("pointerdown", onPointerDown, true);

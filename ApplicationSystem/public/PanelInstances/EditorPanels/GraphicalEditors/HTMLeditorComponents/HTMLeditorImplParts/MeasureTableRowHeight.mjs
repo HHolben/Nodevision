@@ -1,6 +1,7 @@
 // Nodevision/ApplicationSystem/public/PanelInstances/EditorPanels/GraphicalEditors/HTMLeditorComponents/HTMLeditorImplParts/MeasureTableRowHeight.mjs
 // This module implements measure Table Row Height behavior for the HTMLeditorImpl feature. Its dependencies and instance state are supplied explicitly so other editor instances remain independent.
 
+import { getTableGrid } from "./TableResizeGeometry.mjs";
 import { HTML_TABLE_MIN_ROW_HEIGHT, HTML_TABLE_DIVIDER_HIT_PX } from "./EnsureHTMLLayoutStyles.mjs";
 import { formatTableCssPixels, getTableColumnCells, getTableCellFromEditorTarget } from "./MarkHtmlEditorNativeInputDirty.mjs";
 
@@ -24,7 +25,13 @@ export function getClientToLayoutScale(element, axis) {
   const rect = element?.getBoundingClientRect?.();
   if (!rect) return 1;
   const rendered = axis === "y" ? rect.height : rect.width;
-  const layout = axis === "y" ? element.offsetHeight : element.offsetWidth;
+  const style = element.ownerDocument.defaultView.getComputedStyle(element);
+  const sides = axis === "y" ? ["Top", "Bottom"] : ["Left", "Right"];
+  // offsetWidth/Height round to integers; that error accumulates on long drags.
+  const extra = style.boxSizing === "border-box" ? 0 : sides.reduce((sum, side) =>
+    sum + (parseFloat(style["padding" + side]) || 0) + (parseFloat(style["border" + side + "Width"]) || 0), 0);
+  const layout = parseFloat(style[axis === "y" ? "height" : "width"]) + extra
+    || (axis === "y" ? element.offsetHeight : element.offsetWidth);
   if (!Number.isFinite(rendered) || rendered <= 0 || !Number.isFinite(layout) || layout <= 0) return 1;
   return layout / rendered;
 }
@@ -57,7 +64,8 @@ export function resolveTableDividerResizeHit(wysiwyg, event) {
   const rows = Array.from(table.rows || []);
   const row = cell.parentElement;
   const rowIndex = rows.indexOf(row);
-  const columnIndex = cell.cellIndex;
+  const entry = getTableGrid(table).cells.find(entry => entry.cell === cell);
+  const columnIndex = entry.column;
   const hits = [];
   const left = Math.abs(event.clientX - rect.left);
   const right = Math.abs(event.clientX - rect.right);
@@ -76,7 +84,7 @@ export function resolveTableDividerResizeHit(wysiwyg, event) {
   if (right <= HTML_TABLE_DIVIDER_HIT_PX && columnIndex >= 0) {
     hits.push({
       kind: "column",
-      index: columnIndex,
+      index: columnIndex + entry.columns - 1,
       distance: right,
       edgeClientX: rect.right,
       cell,
@@ -96,7 +104,7 @@ export function resolveTableDividerResizeHit(wysiwyg, event) {
   if (bottom <= HTML_TABLE_DIVIDER_HIT_PX && rowIndex >= 0) {
     hits.push({
       kind: "row",
-      index: rowIndex,
+      index: rowIndex + entry.rows - 1,
       distance: bottom,
       edgeClientY: rect.bottom,
       cell,

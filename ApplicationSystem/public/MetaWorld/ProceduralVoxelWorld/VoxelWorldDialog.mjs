@@ -4,19 +4,21 @@ import { createFloatingInventoryPanel } from '../../PanelInstances/InfoPanels/Pl
 import { getActiveMetaWorldLayerBridge, META_WORLD_LAYER_EVENTS } from '../MetaWorldLayerState.mjs';
 import { worldAuthoringAllowed } from '../WorldAuthoringPermissions.mjs';
 import { definitionFromVoxelForm, voxelWorldForm } from './VoxelAuthoringDefinition.mjs';
-export function openVoxelWorldDialog(bridge = getActiveMetaWorldLayerBridge(), objectId = null) {
+export function openVoxelWorldDialog(bridge = getActiveMetaWorldLayerBridge(), objectId = null, options = {}) {
   if(!bridge?.addVoxelWorld || !worldAuthoringAllowed(window.VRWorldContext?.movementState))return false;
   if(bridge.voxelWorldDialog){bridge.voxelWorldDialog.panel.setVisible(true);return bridge.voxelWorldDialog;}
   const previous=objectId ? bridge.getVoxelWorldDefinition(objectId) : null;
   if(objectId && !previous)return false;
-  const values=voxelWorldForm(previous), fields={};
+  const values=options.values || voxelWorldForm(previous), fields={};
   let closed=false;
   function close(){
     if(closed)return;closed=true;
     window.removeEventListener(META_WORLD_LAYER_EVENTS.bridgeChanged,close);
+    window.removeEventListener("nv-contextual-cursor-family-changed",toolChanged);
     panel.dispose();delete bridge.voxelWorldDialog;
   }
-  const panel=createFloatingInventoryPanel({title:objectId?'Edit Generation Parameters':'Insert Voxel World',onRequestClose:close});
+  function toolChanged(event) { if (options.onConfigure && event.detail?.providerId === "world-cursor-tools") close(); }
+  const panel=createFloatingInventoryPanel({title:objectId?'Edit Generation Parameters':options.onConfigure?'Voxel World — Tool Settings':'Insert Voxel World',onRequestClose:close});
   const form=document.createElement('form');form.dataset.voxelWorldDialog='';form.style.cssText='display:grid;gap:8px;max-height:75vh;overflow:auto';
   panel.content.append(form);
   function field(key,label,type='number',parent=form){
@@ -48,11 +50,12 @@ export function openVoxelWorldDialog(bridge = getActiveMetaWorldLayerBridge(), o
   field('uplandOak','Include upland oak woodland','checkbox',aegean);field('mountains','Include rocky mountains','checkbox',aegean);
   const updatePreset=()=>{aegean.hidden=preset.value!=='aegean';aegean.disabled=aegean.hidden;};preset.onchange=updatePreset;updatePreset();
   const advanced=document.createElement('details'),summary=document.createElement('summary');summary.textContent='Advanced';advanced.append(summary);form.append(advanced);
+  const radius=field('loadRadius','Render distance (chunks)','number',advanced);radius.min=1;radius.max=8;radius.step=1;
   field('vegetation','Trees and vegetation','checkbox',advanced);field('water','Generate water','checkbox',advanced);field('caves','Generate caves','checkbox',advanced);
   const note=document.createElement('p');note.textContent='V1 uses 0.25 m voxels and 32-voxel chunks. Heights are relative to the object origin; terrain streams near the camera. Aegean uses coastal terrain and Mediterranean vegetation. Aegean caves use bounded coastal passages; a memory palace is not yet included. Regeneration protects ground under authored objects and preserves existing path grading. Generated cells are read-only; manual cell edits are not saved.';form.append(note);
   const status=document.createElement('div');status.setAttribute('role','status');form.append(status);
   const actions=document.createElement('div'),generate=document.createElement('button'),cancel=document.createElement('button');
-  generate.type='submit';generate.textContent=objectId?'Regenerate':'Generate';cancel.type='button';cancel.textContent='Cancel';cancel.onclick=close;actions.append(generate,cancel);form.append(actions);
+  generate.type='submit';generate.textContent=objectId?'Regenerate':options.onConfigure?'Apply Settings':'Generate';cancel.type='button';cancel.textContent='Cancel';cancel.onclick=close;actions.append(generate,cancel);form.append(actions);
   form.addEventListener('keydown',event=>{event.stopPropagation();if(event.key==='Escape'){event.preventDefault();close();}});
   form.onsubmit=event=>{
     event.preventDefault();if(generate.disabled||closed)return;
@@ -60,11 +63,12 @@ export function openVoxelWorldDialog(bridge = getActiveMetaWorldLayerBridge(), o
       if(getActiveMetaWorldLayerBridge()!==bridge)throw Error('The active world changed. Reopen Insert → Voxel World.');
       const input=Object.fromEntries(Object.entries(fields).map(([key,field])=>[key,field.type==='checkbox'?field.checked:field.value]));
       const def=definitionFromVoxelForm(input,previous);generate.disabled=true;
-      const result=objectId?bridge.regenerateVoxelWorld(objectId,def):bridge.addVoxelWorld(def);
+      const result=options.onConfigure ? (options.onConfigure(input,def), true) : objectId?bridge.regenerateVoxelWorld(objectId,def):bridge.addVoxelWorld(def);
       if(!result)throw Error('This world is not currently editable.');
       close();
     } catch(error){status.textContent=error.message;generate.disabled=false;}
   };
   window.addEventListener(META_WORLD_LAYER_EVENTS.bridgeChanged,close);
+  if (options.onConfigure) window.addEventListener("nv-contextual-cursor-family-changed",toolChanged);
   bridge.voxelWorldDialog={panel,close};panel.setVisible(true);fields.name.focus();return bridge.voxelWorldDialog;
 }

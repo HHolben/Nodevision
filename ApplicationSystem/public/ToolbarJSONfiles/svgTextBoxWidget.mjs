@@ -131,7 +131,7 @@ function makeToggleButton(label) {
   return btn;
 }
 
-function insertTextBox(ctx, options) {
+export function insertTextBox(ctx, options) {
   const {
     text,
     fontFamily,
@@ -168,12 +168,13 @@ function insertTextBox(ctx, options) {
   if (underline) textEl.setAttribute("text-decoration", "underline");
   textEl.textContent = text;
 
-  group.append(rect, textEl);
+  const inserted = backgroundEnabled ? group : textEl;
+  if (backgroundEnabled) group.append(rect, textEl);
 
   if (ctx.layers?.appendToActiveLayer) {
-    ctx.layers.appendToActiveLayer(group);
+    ctx.layers.appendToActiveLayer(inserted);
   } else {
-    svgRoot.appendChild(group);
+    svgRoot.appendChild(inserted);
   }
 
   // Size background rect to text bounds (best effort).
@@ -190,7 +191,8 @@ function insertTextBox(ctx, options) {
     rect.setAttribute("height", String(Math.max(44, fontSize + 22)));
   }
 
-  window.selectSVGElement?.(group);
+  window.selectSVGElement?.(inserted);
+  return inserted;
 }
 
 export function initToolbarWidget(hostElement) {
@@ -281,7 +283,7 @@ export function initToolbarWidget(hostElement) {
     const italic = italicBtn.dataset.on === "true";
     const underline = underlineBtn.dataset.on === "true";
 
-    insertTextBox(ctx, {
+    const insert = () => insertTextBox(ctx, {
       text,
       fontFamily,
       fontSize,
@@ -292,6 +294,8 @@ export function initToolbarWidget(hostElement) {
       italic,
       underline,
     });
+    if (ctx.recordSvgSnapshot) ctx.recordSvgSnapshot("insert-text", insert);
+    else insert();
   });
 
   mount.append(

@@ -3,7 +3,6 @@
 
 import { clearSvgMarquee } from "./ClearSvgMarquee.mjs";
 
-import { getAttrNumber } from "../svgDom.mjs";
 import { parseEditableSvgRoot } from "./ParseEditableSvgRoot.mjs";
 import { cleanupSvgCloneForSave, applyEditableSvgRootDefaults, prepareSvgRootForEditor } from "../SvgPreservation.mjs";
 import { syncSvgDocumentBackgroundGeometry } from "../SvgDocumentBackground.mjs";
@@ -56,48 +55,17 @@ export function createStartResizeInteractionHandler(owner) {
 
 export function createStartRotateInteractionHandler(owner) {
   return function (target, pointerId, point) {
-    if (!target) return false;
-    try {
-      const bbox = owner.svgSession.getElementBBoxInRoot(target);
-      if (!bbox || !Number.isFinite(bbox.x) || !Number.isFinite(bbox.y)) return false;
-      const origin = owner.svgSession.readStoredRotationOriginRoot(target);
-      const cx = origin ? origin.x : bbox.x + bbox.width / 2;
-      const cy = origin ? origin.y : bbox.y + bbox.height / 2;
-      const startAngle = Math.atan2(point.y - cy, point.x - cx);
-      const tag = target.tagName.toLowerCase();
-      owner.svgSession.rotateState = {
-        pointerId,
-        element: target,
-        cx,
-        cy,
-        startAngle,
-        baseTransform: target.getAttribute("transform") || "",
-        baseLine: tag === "line" ? {
-          p1: {
-            x: getAttrNumber(target, "x1", 0),
-            y: getAttrNumber(target, "y1", 0)
-          },
-          p2: {
-            x: getAttrNumber(target, "x2", 0),
-            y: getAttrNumber(target, "y2", 0)
-          }
-        } : null
-      };
-      try {
-        owner.svgSession.svgRoot.setPointerCapture(pointerId);
-      } catch {
-        // Ignore unsupported pointer capture errors.
-      }
-      owner.svgSession.setStatus("Rotating selection");
-      return true;
-    } catch {
-      return false;
-    }
+    if (!owner.svgSession.startPendingRotationDrag(target, pointerId, point)) return false;
+    // Shift-drag commits on release; the Rotate tool retains its explicit preview.
+    owner.svgSession.rotateState.commitOnRelease = true;
+    owner.svgSession.setStatus("Rotating selection");
+    return true;
   };
 }
 
 export function createSetSvgFromStringHandler(owner) {
   return function (svgString) {
+    owner.svgSession.textCaret?.finish();
     owner.svgSession.sharedVectorTools?.cancel();
     clearSvgMarquee(owner.svgSession);
     const parsed = parseEditableSvgRoot(svgString);

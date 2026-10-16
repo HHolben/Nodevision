@@ -8,7 +8,7 @@ import sys
 import re
 import html
 
-suite = 'html-source' if '--html-source' in sys.argv else 'editor-switch' if '--editor-switch' in sys.argv else 'world-startup' if '--world-startup' in sys.argv else 'world' if '--world' in sys.argv else 'svg-layers'
+suite = 'svg-text' if '--svg-text' in sys.argv else 'svg-rotation' if '--svg-rotation' in sys.argv else 'html-source' if '--html-source' in sys.argv else 'editor-switch' if '--editor-switch' in sys.argv else 'world-startup' if '--world-startup' in sys.argv else 'world' if '--world' in sys.argv else 'svg-layers'
 root = pathlib.Path(__file__).resolve().parents[1]
 public = root / 'ApplicationSystem/public'
 
@@ -54,6 +54,9 @@ class Handler(http.server.BaseHTTPRequestHandler):
 server = http.server.ThreadingHTTPServer(('127.0.0.1', 0), Handler)
 threading.Thread(target=server.serve_forever, daemon=True).start()
 try:
+    if suite in ['svg-rotation', 'svg-text']:
+        browser = next((arg for arg in sys.argv[1:] if not arg.startswith('--')), 'chromium')
+        sys.exit(subprocess.run(['node', str(root / ('scripts/svg-text-native.mjs' if suite == 'svg-text' else 'scripts/run-browser-regression.mjs')), f'http://127.0.0.1:{server.server_port}/', browser, '60000'], timeout=75).returncode)
     result = subprocess.run([next((arg for arg in sys.argv[1:] if not arg.startswith('--')), 'chromium'), '--headless', '--enable-logging=stderr', '--no-sandbox', '--disable-gpu', '--enable-unsafe-swiftshader', '--disable-dev-shm-usage', '--dump-dom', '--virtual-time-budget=15000', f'http://127.0.0.1:{server.server_port}/'], capture_output=True, text=True, timeout=90)
     match = re.search(r'<pre id="result">(.*?)</pre>', result.stdout, re.S)
     report = html.unescape(match.group(1)) if match else result.stderr

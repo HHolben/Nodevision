@@ -4,6 +4,7 @@
 // Create Run Svg Snapshot Operation Handler operations.
 export function createRunSvgSnapshotOperationHandler(owner) {
   return function (label, operation) {
+    owner.svgSession.textCaret?.finish();
     if (owner.svgSession.svgSnapshotDepth > 0) return operation?.();
     owner.svgSession.svgSnapshotDepth += 1;
     const before = owner.svgSession.serializeSvgForSave();
@@ -37,6 +38,7 @@ export function createRunSvgSnapshotOperationHandler(owner) {
 
 export function createRunSvgSnapshotOperationAsyncHandler(owner) {
   return async function (label, operation) {
+    owner.svgSession.textCaret?.finish();
     if (owner.svgSession.svgSnapshotDepth > 0) return await operation?.();
     owner.svgSession.svgSnapshotDepth += 1;
     const before = owner.svgSession.serializeSvgForSave();

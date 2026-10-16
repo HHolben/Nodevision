@@ -7,6 +7,7 @@ import { installSvgClickTraceOnSvgRoot } from "../../../../../SvgClickFeedbackTr
 import { createAddEventListenerPointerupHandler } from "./CreateAddEventListenerPointerupHandler.mjs";
 import { createAddEventListenerPointercancelHandler } from "./CreateAddEventListenerPointercancelHandler.mjs";
 
+import { installSvgTextCaret } from "../SvgTextCaret.mjs";
 import { installSharedVectorTools } from "./InstallSharedVectorTools.mjs";
 
 // Connect Svg Pointer Events operations.
@@ -104,6 +105,7 @@ export function connectSvgPointerEvents(scope) {
   }));
 
   installSharedVectorTools(scope.svgSession);
+  scope.svgSession.textCaret = installSvgTextCaret(scope.svgSession);
 
   // Nodevision hooks
   if (!scope.svgSession.isCurrentRender()) return {
