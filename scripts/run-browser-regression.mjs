@@ -5,7 +5,7 @@ import { mkdtemp, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 const profile = await mkdtemp(join(tmpdir(), 'nodevision-browser-test-'));
-const browser = spawn(process.argv[3] || 'chromium', ['--headless', '--no-sandbox', '--disable-gpu', '--disable-dev-shm-usage', '--force-device-scale-factor=2', '--remote-debugging-pipe', `--user-data-dir=${profile}`, 'about:blank'], { stdio: ['ignore', 'ignore', 'pipe', 'pipe', 'pipe'] });
+const browser = spawn(process.argv[3] || 'chromium', ['--headless', '--no-sandbox', ...(process.env.NODEVISION_TEST_WEBGL === '1' ? ['--enable-unsafe-swiftshader', '--use-angle=swiftshader'] : []), '--disable-gpu', '--disable-dev-shm-usage', '--force-device-scale-factor=2', '--remote-debugging-pipe', `--user-data-dir=${profile}`, 'about:blank'], { stdio: ['ignore', 'ignore', 'pipe', 'pipe', 'pipe'] });
 let nextId = 0, buffer = '', errors = '';
 const pending = new Map(), events = new Map();
 browser.stderr.on('data', chunk => { errors = (errors + chunk).slice(-4000); });

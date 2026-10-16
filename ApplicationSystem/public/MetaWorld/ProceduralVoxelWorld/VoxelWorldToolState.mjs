@@ -11,6 +11,8 @@ export function getVoxelWorldToolSettings(bridge) {
 }
 export function setVoxelWorldToolSettings(bridge, values) {
   const merged = {...getVoxelWorldToolSettings(bridge), ...values};
+  if (values.environmentPreset !== undefined && values.startingBiome === undefined) merged.startingBiome = values.environmentPreset === 'aegean' ? 'aegean' : 'auto';
+  merged.environmentPreset = merged.startingBiome === 'aegean' ? 'aegean' : 'legacy';
   validateVoxelWorld(definitionFromVoxelForm(merged));
   settings.set(bridge, structuredClone(merged));
   return getVoxelWorldToolSettings(bridge);

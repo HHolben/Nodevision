@@ -11,6 +11,7 @@ export function openVoxelWorldToolSettings(bridge = getActiveMetaWorldLayerBridg
   const context = window.VRWorldContext;
   if (!bridge?.addVoxelWorld || !voxelWorldToolAllowed() || context?.inventory?.getSelectedItem()?.id !== VOXEL_WORLD_TOOL_ID) return false;
   context.controls?.unlock?.();
+  context.movementState.selectedItemAdjustLatch = true;
   return openVoxelWorldDialog(bridge, null, {
     values: getVoxelWorldToolSettings(bridge),
     onConfigure(values) {

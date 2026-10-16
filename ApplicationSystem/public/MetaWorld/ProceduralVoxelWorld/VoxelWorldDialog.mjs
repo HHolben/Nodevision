@@ -3,6 +3,7 @@
 import { createFloatingInventoryPanel } from '../../PanelInstances/InfoPanels/PlayerInventory.mjs';
 import { getActiveMetaWorldLayerBridge, META_WORLD_LAYER_EVENTS } from '../MetaWorldLayerState.mjs';
 import { worldAuthoringAllowed } from '../WorldAuthoringPermissions.mjs';
+import { STARTING_BIOMES } from './VoxelStartingBiome.mjs';
 import { definitionFromVoxelForm, voxelWorldForm } from './VoxelAuthoringDefinition.mjs';
 export function openVoxelWorldDialog(bridge = getActiveMetaWorldLayerBridge(), objectId = null, options = {}) {
   if(!bridge?.addVoxelWorld || !worldAuthoringAllowed(window.VRWorldContext?.movementState))return false;
@@ -37,7 +38,8 @@ export function openVoxelWorldDialog(bridge = getActiveMetaWorldLayerBridge(), o
     for(const [value,text] of options)input.add(new Option(text,value));
     input.value=values[key];fields[key]=input;row.append(input);form.append(row);return input;
   }
-  const preset=choice('environmentPreset','Environment preset',[['legacy','Existing terrain generator (V1)'],['aegean','Aegean Greek Wilderness']]);
+  const preset=choice('startingBiome','Starting biome',STARTING_BIOMES);
+  const biomeNote=document.createElement('p');biomeNote.textContent='Temperate and snowy starts apply around the placement center and blend into seeded biomes farther away. Aegean uses its coastal landscape and Mediterranean habitats throughout the world.';form.append(biomeNote);
   const aegean=document.createElement('fieldset');form.append(aegean);
   const legend=document.createElement('legend');legend.textContent='Aegean environment (V1)';aegean.append(legend);
   for(const [key,label,options] of [['landform','Coastline',['island','peninsula']],['geology','Geology',['limestone','metamorphic','volcanic','mixed']],['season','Manual / fallback season',['spring','summer','autumn','winter']]]){

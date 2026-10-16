@@ -5,7 +5,7 @@ export function createMovementUpdateLoop(ctx) {
   const { controls, getBindings, movementState } = ctx;
 
   return function update() {
-    ctx.api.updateVoxelWorldPreview?.();
+    ctx.api.updateVoxelWorldPreview?.({cleanupOnly:true});
     if (ctx.api.runFramePreflight().stop) return;
     const nowMs = performance.now();
     const baseSpeed = 0.2;

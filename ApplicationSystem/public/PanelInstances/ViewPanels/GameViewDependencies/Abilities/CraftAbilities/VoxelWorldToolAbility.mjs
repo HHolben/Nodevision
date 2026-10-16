@@ -19,10 +19,11 @@ export function installVoxelWorldToolAbility(ctx) {
     unsubscribe?.(); clearPreview(); inventory = next;
     unsubscribe = inventory?.subscribeSelection?.(() => { clearPreview(); });
   }
-  function updateVoxelWorldPreview({ snapToGrid = false } = {}) {
+  function updateVoxelWorldPreview({ snapToGrid = false, cleanupOnly = false } = {}) {
     synchronizeInventory();
     const bridge = getActiveMetaWorldLayerBridge();
     if (!selected() || !allowed() || !bridge?.addVoxelWorld || bridge.voxelWorldDialog || inventory?.isMenuOpen()) { clearPreview(); return; }
+    if (cleanupOnly) return;
     const hit = ctx.api.getPlacementHit();
     if (!hit?.point) { clearPreview(); return; }
     const def = voxelWorldPlacementDefinition(bridge, hit.point, snapToGrid);

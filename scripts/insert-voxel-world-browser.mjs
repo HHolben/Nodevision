@@ -6,6 +6,8 @@ import { saveCurrentWorldFile } from '/PanelInstances/ViewPanels/GameViewDepende
 import { createObjectInspector } from '/PanelInstances/ViewPanels/GameViewDependencies/objectInspector.mjs';
 import { getActiveMetaWorldLayerBridge, selectMetaWorldObject } from '/MetaWorld/MetaWorldLayerState.mjs';
 import insertVoxelWorld from '/ToolbarCallbacks/insert/insertVoxelWorld.mjs';
+import { createPlayerInventory } from '/PanelInstances/ViewPanels/GameViewDependencies/playerInventory.mjs';
+import { installVoxelWorldToolAbility } from '/PanelInstances/ViewPanels/GameViewDependencies/Abilities/CraftAbilities/VoxelWorldToolAbility.mjs';
 const ok=(v,m)=>{if(!v)throw Error(m);};
 const tick=()=>new Promise(resolve=>requestAnimationFrame(resolve));
 try {
@@ -25,6 +27,10 @@ try {
   const toolbar=await(await fetch('/ToolbarJSONfiles/insertToolbar.json')).json();
   ok(toolbar.some(item=>item.heading==='Voxel World'&&item.callbackKey==='insertVoxelWorld'&&item.modes.includes('Virtual World Editing')),'Insert registration');
   await loadWorldFromFile('page.html',state,THREE);
+  context.inventory=createPlayerInventory({panel});
+  const actions=new Map(),tool={...context,api:{canUseAbility:()=>true,getPlacementHit:()=>({point:new THREE.Vector3(0,0,0)}),registerSelectedItemAction:(id,handlers)=>actions.set(id,handlers)} };
+  installVoxelWorldToolAbility(tool);
+  const place=()=>actions.get('procedural-voxel-world').use();
   context.objectInspector=createObjectInspector({THREE,panel,scene,sceneObjects:context.objects,colliders:context.colliders,portals:context.portals,spawnPoints:context.spawnPoints});
   let bridge=getActiveMetaWorldLayerBridge();
   const original=JSON.stringify(bridge.worldData),originalBox=context.objects.find(o=>o.userData.metaWorldLayerId==='authored-box');
@@ -35,10 +41,11 @@ try {
   insertVoxelWorld();form().elements.sizeX.value=0;form().dispatchEvent(new Event('submit',{bubbles:true,cancelable:true}));
   ok(form().querySelector('[role=status]').textContent.includes('Dimensions'),'invalid dimensions rejected');
   ok(JSON.stringify(bridge.worldData)===original,'invalid submission unchanged');
-  for(const [key,value] of Object.entries({name:'Inserted hills',seed:'repeatable forest',sizeX:16,sizeZ:16,minHeight:-16,maxHeight:64}))form().elements[key].value=value;
-  button(form(),'Generate').click();ok(!form(),'Generate closes dialog');
+  for(const [key,value] of Object.entries({name:'Inserted hills',seed:'repeatable forest',sizeX:32,sizeZ:32,startingBiome:'aegean',minHeight:-16,maxHeight:64}))form().elements[key].value=value;
+  button(form(),'Apply Settings').click();ok(!form(),'Apply closes dialog');place();
   let root=context.objects.find(o=>o.userData.proceduralVoxelRuntime),runtime=root?.userData.proceduralVoxelRuntime;
   ok(root&&await runtime.ready,'terrain registered with materials');
+  ok(runtime.definition.startingBiome==='aegean' && runtime.definition.environment.id==='aegean','Insert places the selected Aegean environment');
   for(let i=0;i<8;i++){runtime.update(camera.position);await tick();}
   const id=root.userData.metaWorldLayerId;
   ok(bridge.listObjects().filter(o=>o.id===id).length===1,'one logical layer');
@@ -55,7 +62,7 @@ try {
   const saved=JSON.parse(new DOMParser().parseFromString(savedHtml,'text/html').querySelector('script').textContent);
   ok(savedHtml.includes('Keep authored page')&&saved.objects.length===2,'compact save retains unrelated content');
   ok(saved.objects.find(o=>o.id===id).heightLimits.min===-16,'local elevation persisted');
-  insertVoxelWorld();button(form(),'Generate').click();ok(form().querySelector('[role=status]').textContent.includes('already has'),'second terrain explicitly rejected');button(form(),'Cancel').click();
+  insertVoxelWorld();button(form(),'Apply Settings').click();place();ok(context.objects.filter(o=>o.userData.proceduralVoxelRuntime).length===1,'second terrain rejected');context.inventory.selectDominantSlot(0);
   root.position.set(-5,2,-7);selectMetaWorldObject(id);
   button(document.querySelector('[data-voxel-world-properties]'),'Edit Generation Parameters').click();
   form().elements.seed.value='changed';button(form(),'Regenerate').click();
@@ -74,6 +81,6 @@ try {
   root=context.objects.find(o=>o.userData.metaWorldLayerId===id);runtime=root.userData.proceduralVoxelRuntime;
   ok(Array.from(runtime.generator.generateChunk(0,2,0)).join(',')===fingerprint,'save/reopen deterministic');
   ok(bridge.listObjects().some(o=>o.id===id)&&selectMetaWorldObject(id),'reloaded layer selectable');
-  context.objectInspector.dispose();runtime.dispose();renderer.dispose();
+  context.inventory.dispose();context.objectInspector.dispose();runtime.dispose();renderer.dispose();
   document.getElementById('result').textContent='PASS: Insert command, cancel, validation, deterministic generation, rendering, hierarchy, selection/Properties, regeneration, history, compact HTML save/reload, unrelated objects, and disposal';
 }catch(error){document.getElementById('result').textContent='FAIL: '+error.stack;}

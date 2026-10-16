@@ -1,5 +1,6 @@
 // Nodevision/ApplicationSystem/public/MetaWorld/ProceduralVoxelWorld/VoxelAuthoringDefinition.mjs
 // This module translates user-facing terrain dimensions and seeds into the existing compact V1 procedural definition. It validates authoring extensions before runtime allocation while leaving older Sandbox definitions unchanged.
+import { validateStartingBiome } from './VoxelStartingBiome.mjs';
 import { AEGEAN_DEFAULTS, validateAegean } from '../Aegean/AegeanDefinition.mjs';
 export function terrainSeed(value) {
   const text = String(value ?? '').trim();
@@ -15,6 +16,7 @@ export function terrainSeed(value) {
 }
 export function validateAuthoringTerrain(def) {
   validateAegean(def);
+  validateStartingBiome(def);
   if (def.heightLimits !== undefined) {
     const { min, max } = def.heightLimits || {};
     if (![min,max].every(n => Number.isFinite(n) && Math.abs(n) <= 256 && Number.isInteger(n * 4)) || max <= min || max-min > 256)
@@ -31,7 +33,7 @@ export function validateAuthoringTerrain(def) {
   if (def.biomeSource !== undefined && def.biomeSource !== 'nodevision-biomes-v1') throw Error('Unsupported terrain biome source.');
 }
 export function voxelWorldForm(def = null) {
-  return { environmentPreset:def?.environment?.id || 'legacy', ...AEGEAN_DEFAULTS, ...def?.environment, name: def?.name || 'Voxel World', seed: def ? String(def.generator.seed) : String(crypto.getRandomValues(new Int32Array(1))[0]),
+  return { startingBiome:def?.startingBiome || (def?.environment?.id === 'aegean' ? 'aegean' : 'auto'), environmentPreset:def?.environment?.id || 'legacy', ...AEGEAN_DEFAULTS, ...def?.environment, name: def?.name || 'Voxel World', seed: def ? String(def.generator.seed) : String(crypto.getRandomValues(new Int32Array(1))[0]),
     sizeX: def?.size[0] ?? 256, sizeZ: def?.size[2] ?? 256,
     minHeight: def ? (def.heightLimits?.min ?? 0) : -16, maxHeight: def?.heightLimits?.max ?? def?.size[1] ?? 64,
     voxelSize: .25, chunkSize: 32, loadRadius: def?.chunks?.loadRadius ?? 2, vegetation: def?.generation?.vegetation !== false,
@@ -55,7 +57,9 @@ export function definitionFromVoxelForm(values, previous = null) {
     chunks:{voxelsPerAxis:32,loadRadius:values.loadRadius === undefined ? (previous?.chunks?.loadRadius ?? 2) : number('loadRadius')}, boundaryMode:previous?.boundaryMode || 'open',
     generation:{vegetation:values.vegetation === true,water:values.water === true,caves:values.caves === true},
     materialPalette:'nodevision-canonical-v1', biomeSource:'nodevision-biomes-v1' };
-  if(values.environmentPreset==='aegean')def.environment={...AEGEAN_DEFAULTS,...previous?.environment,landform:values.landform,geology:values.geology,season:values.season,seasonMode:values.seasonMode??previous?.environment?.seasonMode??'manual',seaLevel:number('seaLevel'),vegetationDensity:number('vegetationDensity'),uplandOak:values.uplandOak===true,mountains:values.mountains===true};
+  const startingBiome = values.startingBiome ?? (values.environmentPreset === 'aegean' ? 'aegean' : 'auto');
+  if (startingBiome === 'auto') delete def.startingBiome; else def.startingBiome = startingBiome;
+  if(startingBiome==='aegean')def.environment={...AEGEAN_DEFAULTS,...previous?.environment,landform:values.landform,geology:values.geology,season:values.season,seasonMode:values.seasonMode??previous?.environment?.seasonMode??'manual',seaLevel:number('seaLevel'),vegetationDensity:number('vegetationDensity'),uplandOak:values.uplandOak===true,mountains:values.mountains===true};
   else delete def.environment;
   if (!Number.isInteger(def.chunks.loadRadius) || def.chunks.loadRadius < 1 || def.chunks.loadRadius > 8) throw Error('Render distance must be an integer from 1 to 8 chunks.');
   validateAuthoringTerrain(def);
