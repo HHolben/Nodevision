@@ -69,6 +69,7 @@ export function publishHtmlEditorContext(scope) {
       insertNodeAtCaret(scope.htmlSession.wysiwyg, document.createTextNode(String(text ?? "")));
     })
   };
+  scope.htmlSession.wysiwyg.__nvAssetInsertionTools = scope.htmlSession.ownedTools;
   scope.htmlSession.layersContext = window.HTMLLayersContext;
   scope.htmlSession.activateHtmlEditorContext = createActivateHtmlEditorContextHandler({
     get htmlSession() {

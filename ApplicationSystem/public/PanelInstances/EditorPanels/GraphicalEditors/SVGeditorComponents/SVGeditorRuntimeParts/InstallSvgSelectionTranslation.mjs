@@ -14,8 +14,16 @@ export function installSvgSelectionTranslation(scope) {
       primary: el
     });
   };
-  scope.svgSession.appendElement = function (el) {
-    scope.svgSession.layersMgr.appendToActiveLayer(el);
+  scope.svgSession.appendElement = function (el, insertion = {}) {
+    if (insertion.layerId) {
+      const layer = scope.svgSession.getLayers().find(item => item.id === insertion.layerId);
+      if (!scope.svgSession.svgRoot.isConnected || !layer?.isConnected) throw new Error("Captured SVG layer is unavailable.");
+      for (let node = layer; node; node = node.parentElement) {
+        if (node.getAttribute?.("data-nv-locked") === "true") throw new Error("Captured SVG layer is locked.");
+        if (node === scope.svgSession.svgRoot) break;
+      }
+      layer.appendChild(el);
+    } else scope.svgSession.layersMgr.appendToActiveLayer(el);
     scope.svgSession.setSelection([el], {
       primary: el
     });

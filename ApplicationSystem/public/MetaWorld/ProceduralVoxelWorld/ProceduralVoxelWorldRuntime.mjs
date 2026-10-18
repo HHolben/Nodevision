@@ -48,6 +48,7 @@ export function createProceduralVoxelWorld(THREE, source, colliders, materialOpt
     if (result.faceCount) {
       const geometry = new THREE.BufferGeometry();
       geometry.setAttribute("position", new THREE.Float32BufferAttribute(result.positions,3));
+      geometry.setAttribute("uv", new THREE.Float32BufferAttribute(result.uvs,2));
       geometry.setAttribute("normal", new THREE.Float32BufferAttribute(result.normals,3));
       for (const group of result.groups) geometry.addGroup(group.start, group.count, group.materialIndex);
       geometry.setIndex(result.indices); geometry.computeBoundingSphere();

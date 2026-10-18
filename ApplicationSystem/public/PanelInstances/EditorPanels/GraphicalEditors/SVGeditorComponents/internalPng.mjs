@@ -265,7 +265,7 @@ export function createInternalPngController({
       try {
         const src = String(insertion.src || "").trim();
         if (!src) throw new Error("No image source was provided.");
-        const img = await decodeImage(src);
+        const img = await decodeImage(insertion.previewSrc || src);
         const viewport = getViewBox?.() || { x: 0, y: 0, width: 800, height: 600 };
         const size = img
           ? fitNaturalSize(img, viewport)
@@ -283,7 +283,7 @@ export function createInternalPngController({
         if (insertion.sourceName) {
           el.setAttribute("data-nodevision-source-name", String(insertion.sourceName));
         }
-        appendElement?.(el);
+        appendElement?.(el, insertion);
         markDirty?.(true);
         notifyChanged?.("insert-image");
         setStatus?.("Image inserted: " + (insertion.sourceName || "image"));

@@ -3,6 +3,7 @@
 import { registerRememberedPanelTool } from "../../../CursorFamilies/RememberedPanelTool.mjs";
 import { registerPanelZoomCapabilities } from "../../../panels/panelZoomCapabilities.mjs";
 import { installRasterEditorAnalysis } from "./PNGeditorComponents/analysisTools.mjs";
+import { createRasterAssetPlacement } from "./PNGeditorComponents/assetPlacement.mjs";
 import { History } from "./PNGeditorComponents/history.mjs";
 import {
   bresenhamLine,
@@ -101,6 +102,7 @@ export async function renderRasterEditor(filePath, container, options = {}) {
   if (/\.jpe?g(?:[?#]|$)/i.test(filePath || "")) canvas.style.imageRendering = "auto";
   let displayZoom = null;
   let analysisTools = null;
+  let assetPlacement = null;
   const ctx = canvas.getContext("2d", { alpha: true });
   const history = new History(ctx);
   const canvasArea = document.createElement("div");
@@ -815,6 +817,7 @@ export async function renderRasterEditor(filePath, container, options = {}) {
   }
 
   function performUndo() {
+    if (assetPlacement?.hasPendingAssetPlacement()) assetPlacement.cancelAssetPlacement();
     const snapshot = history.undo(canvas);
     if (!snapshot) {
       updateRasterStatus("Nothing to undo");
@@ -1350,6 +1353,7 @@ export async function renderRasterEditor(filePath, container, options = {}) {
   }
 
   function clearSelection() {
+    if (assetPlacement?.hasPendingAssetPlacement()) assetPlacement.cancelAssetPlacement();
     analysisTools?.refresh();
     if (state.baseSnapshot) {
       ctx.putImageData(state.baseSnapshot, 0, 0);
@@ -1608,7 +1612,9 @@ export async function renderRasterEditor(filePath, container, options = {}) {
     if (command.action === "fit") displayZoom = null;
     updateDisplayScale(); return true;
   } });
+  assetPlacement = createRasterAssetPlacement({ canvas, ctx, state, history, setSelectionRect, drawSelectionTexture, resetSelectionState, updateRasterStatus });
   const editorApi = {
+    ...assetPlacement,
     mode: editorMode,
     filePath,
     getCanvas: () => canvas,
@@ -1628,6 +1634,7 @@ export async function renderRasterEditor(filePath, container, options = {}) {
     flipHorizontal: () => flipCanvas("h"),
     flipVertical: () => flipCanvas("v"),
   };
+  container.__nvRasterEditorApi = editorApi;
   window.__nvRasterEditorApi = editorApi;
   window[apiGlobalName] = editorApi;
   window.__nvPngEditorApi = editorApi;
@@ -1636,6 +1643,8 @@ export async function renderRasterEditor(filePath, container, options = {}) {
   return {
     api: editorApi,
     destroy: () => {
+      assetPlacement.cancelAssetPlacement();
+      delete container.__nvRasterEditorApi;
       releaseActiveTool();
       analysisTools?.dispose();
       unregisterZoom();

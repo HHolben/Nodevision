@@ -31,7 +31,7 @@ function findWorkspacePanelCell(panelType, excludeCell = null) {
   return Array.from(document.querySelectorAll(".panel-cell")).find((cell) => cell !== excludeCell && !cell.contains?.(excludeCell) && cellContainsPanelTab(cell, normalizedType)) || null;
 }
 
-export function ensureAdjacentPanelCell({ originCell = null, panelId = "InfoPanel", panelClass = "InfoPanel", edge = "right", splitPercent = 68, reuseExistingPanel = true, reuseAdjacentSibling = true } = {}) {
+export function ensureAdjacentPanelCell({ originCell = null, panelId = "InfoPanel", panelClass = "InfoPanel", edge = "right", splitPercent = 68, reuseExistingPanel = true, reuseAdjacentSibling = true, activate = true } = {}) {
   const origin = resolvePanelCell(originCell || window.activeCell);
   if (!origin) return null;
   const normalizedPanelId = normalizePanelIdentifier(panelId) || panelId;
@@ -51,7 +51,7 @@ export function ensureAdjacentPanelCell({ originCell = null, panelId = "InfoPane
       return { cell: sibling, originCell: origin, didCreate: false, reused: "adjacent-sibling" };
     }
   }
-  const split = splitPanelCellFromEdge(origin, edge, splitPercent);
+  const split = splitPanelCellFromEdge(origin, edge, splitPercent, { activate });
   const cell = split?.newCell || null;
   if (!cell) return null;
   setCellIdentity(cell, { id: normalizedPanelId, panelClass, flex: cell.style.flex || null });

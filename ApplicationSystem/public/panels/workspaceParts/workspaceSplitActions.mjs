@@ -77,12 +77,12 @@ function insertSplitCellInParent(cell, newCell, direction, edge, splitPercent) {
   return wrapper;
 }
 
-export function splitPanelCellFromEdge(cell, edge, splitPercent = 50) {
+export function splitPanelCellFromEdge(cell, edge, splitPercent = 50, { activate = true } = {}) {
   if (!cell || !edge) return null;
   const direction = edge === "top" || edge === "bottom" ? "column" : "row";
   const newCell = buildSplitCell(cell);
   const container = insertSplitCellInParent(cell, newCell, direction, edge, clampPanelSplitPercent(splitPercent));
-  activatePanelCell(newCell, { announce: false });
+  if (activate) activatePanelCell(newCell, { announce: false });
   setStatus("Panel split", `Created ${edge} panel`);
   return { container, newCell };
 }

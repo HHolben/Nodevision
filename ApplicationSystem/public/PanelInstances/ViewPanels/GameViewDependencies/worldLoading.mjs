@@ -1,6 +1,7 @@
 // Nodevision/ApplicationSystem/public/PanelInstances/ViewPanels/GameViewDependencies/worldLoading.mjs
 // This file loads a world definition from the server and builds its scene objects. The loader registers live MetaWorld layer data for side panels.
 
+import { createDownloadedImagePlane, installDownloadedImageCommand } from "/MetaWorld/DownloadedImagePlane.mjs";
 import { createTextObject } from '../../../MetaWorld/Text/TextRuntime.mjs';
 import { installTextAuthoring } from '../../../MetaWorld/Text/TextAuthoringBridge.mjs';
 import { installVoxelWorldAuthoring } from "../../../MetaWorld/ProceduralVoxelWorld/VoxelWorldAuthoringBridge.mjs";
@@ -1168,7 +1169,7 @@ export function registerMetaWorldLayerBridge({ state, filePath, worldData, layer
   const sourceId = "legacy-metaworld:" + (filePath || "active");
   const history = { undoStack: [], redoStack: [], isRestoring: false, limit: 80 };
   const readBridgeExpressionOptions = () => getExpressionLayerOptions(camera || window.VRWorldContext?.camera);
-  const managedObject = def => (def?.preserveLocalTransform === true && PRIMITIVE_WORLD_OBJECT_TYPES.has(def.type)) || def?.type === "world-text" || def?.type === "physical-path" || def?.type === "procedural-voxel-world" || def?.type === "iframe" || def?.equationCollider?.infinite === true;
+  const managedObject = def => def?.type === 'image-plane' || (def?.preserveLocalTransform === true && PRIMITIVE_WORLD_OBJECT_TYPES.has(def.type)) || def?.type === "world-text" || def?.type === "physical-path" || def?.type === "procedural-voxel-world" || def?.type === "iframe" || def?.equationCollider?.infinite === true;
   const snapshotWorldObjects = () => {
     const meshes = new Map(layerEntries.map(entry => [entry.def, entry.object3d]));
     return JSON.stringify((worldData.objects || []).map(def => {
@@ -1294,6 +1295,7 @@ export function registerMetaWorldLayerBridge({ state, filePath, worldData, layer
         }
         const def = entry.def;
         const mesh = def.preserveLocalTransform === true && PRIMITIVE_WORLD_OBJECT_TYPES.has(def.type) ? createPrimitiveWorldMesh(THREE,def,{color:def.color})
+          : def.type === 'image-plane' ? createDownloadedImagePlane(THREE, def)
           : def.type === 'world-text' ? createTextObject(THREE, def)
           : def.type === 'physical-path' ? createPathObject(THREE, def, colliders)
           : def.type === "procedural-voxel-world" ? createProceduralVoxelWorld(THREE, def, colliders)
@@ -1888,6 +1890,10 @@ export function registerMetaWorldLayerBridge({ state, filePath, worldData, layer
   if (window.VRWorldContext) window.VRWorldContext.updatePathTransforms = () => { bridge.updatePathTransforms(); bridge.updateTextVisibility(); };
   if (window.VRWorldContext) window.VRWorldContext.recordObjectTransform = mesh => bridge.recordObjectTransform(mesh);
   layerEntries.forEach(attachLayerBreakHandler);
+  installDownloadedImageCommand({ bridge, THREE, scene, objects, layerEntries, changed: objectId => {
+    markMetaWorldLayersDirty(worldData); syncBridgeWorldState(state, worldData);
+    notifyMetaWorldLayersChanged({ reason: "downloadedImageAdded", objectId });
+  } });
   setActiveMetaWorldLayerBridge(guardWorldLayerBridge(bridge, window.VRWorldContext?.movementState));
 }
 

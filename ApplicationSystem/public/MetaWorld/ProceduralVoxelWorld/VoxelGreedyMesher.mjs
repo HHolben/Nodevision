@@ -5,7 +5,7 @@ const SIZE=32,STRIDES=[1,1024,32],SCALE=.25;
 const liquid=new Uint8Array(256),water=new Uint8Array(256);
 for(let i=0;i<256;i++){liquid[i]=Number(isLiquidVoxel(i));water[i]=Number(isWaterVoxel(i));}
 export function meshGreedyVoxelChunk(data,chunk,getVoxel) {
-  const positions=[],normals=[],materials=[],indices=[],buckets=new Map(),mask=new Uint8Array(SIZE*SIZE);
+  const positions=[],uvs=[],normals=[],materials=[],indices=[],buckets=new Map(),mask=new Uint8Array(SIZE*SIZE);
   const origin=chunk.map(v=>v*SIZE);
   let solidVoxels=0,surfaceFaceCount=0;
   for(let i=0;i<data.length;i++)if(data[i]&&!liquid[data[i]])solidVoxels++;
@@ -34,6 +34,7 @@ export function meshGreedyVoxelChunk(data,chunk,getVoxel) {
           const point=[0,0,0];point[axis]=plane;
           point[u]=(i+(corner===1||corner===2?width:0))*SCALE;
           point[v]=(j+(corner>=2?height:0))*SCALE;
+          uvs.push(point[u]/SCALE,point[v]/SCALE);
           positions.push(point[0],point[1],point[2]);normals.push(normal[0],normal[1],normal[2]);materials.push(material);
         }
         let bucket=buckets.get(material);if(!bucket){bucket=[];buckets.set(material,bucket);}
@@ -49,5 +50,5 @@ export function meshGreedyVoxelChunk(data,chunk,getVoxel) {
     const bucket=buckets.get(material);groups.push({start:indices.length,count:bucket.length,materialIndex:material-1});
     for(const index of bucket)indices.push(index);
   }
-  return {positions,normals,materials,indices,groups,solidVoxels,surfaceFaceCount,faceCount:indices.length/6};
+  return {positions,uvs,normals,materials,indices,groups,solidVoxels,surfaceFaceCount,faceCount:indices.length/6};
 }

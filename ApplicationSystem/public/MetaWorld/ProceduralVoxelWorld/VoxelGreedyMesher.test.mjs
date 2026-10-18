@@ -9,6 +9,15 @@ import { createVoxelGenerator } from './VoxelTerrainGenerator.mjs';
 import { AEGEAN_DEFAULTS } from '../Aegean/AegeanDefinition.mjs';
 function unitFaces(mesh){
   const faces=[];
+  assert.equal(mesh.uvs.length, mesh.positions.length / 3 * 2);
+  for (let vertex=0;vertex<mesh.positions.length/3;vertex+=4) {
+    const uv=Array.from({length:4},(_,i)=>mesh.uvs.slice((vertex+i)*2,(vertex+i)*2+2));
+    const width=Math.max(...uv.map(p=>p[0]))-Math.min(...uv.map(p=>p[0]));
+    const height=Math.max(...uv.map(p=>p[1]))-Math.min(...uv.map(p=>p[1]));
+    const a=mesh.positions.slice(vertex*3,vertex*3+3), b=mesh.positions.slice((vertex+1)*3,(vertex+1)*3+3), d=mesh.positions.slice((vertex+3)*3,(vertex+3)*3+3);
+    const area=Math.hypot(...b.map((n,i)=>n-a[i]))*Math.hypot(...d.map((n,i)=>n-a[i]));
+    assert.ok(Math.abs(width*height*.25**2-area)<1e-8, 'texture scale remains constant across merged faces');
+  }
   for(let vertex=0;vertex<mesh.positions.length/3;vertex+=4){
     const normal=mesh.normals.slice(vertex*3,vertex*3+3),axis=normal.findIndex(n=>n!==0),u=(axis+1)%3,v=(axis+2)%3;
     const points=Array.from({length:4},(_,i)=>mesh.positions.slice((vertex+i)*3,(vertex+i)*3+3).map(n=>n*4));

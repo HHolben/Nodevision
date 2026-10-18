@@ -27,6 +27,7 @@ import { registerGamepadRoutes } from "./server/routes/gamepadRoutes.mjs";
 import { registerSoundSettingsRoutes } from "./server/routes/soundSettingsRoutes.mjs";
 import { registerAppStylesRoutes } from "./server/routes/appStylesRoutes.mjs";
 import { registerWorldRoutes } from "./server/routes/worldRoutes.mjs";
+import { registerAssetDownloadRoutes } from "./server/routes/assetDownloadRoutes.mjs";
 import { registerMetaWorldAssetRoutes } from "./server/routes/metaWorldAssetRoutes.mjs";
 import { requireLanViewPermission } from "./routes/api/lanCooperationRoutes.js";
 import { registerPeerRoutes } from "./server/routes/peerRoutes.mjs";
@@ -162,6 +163,7 @@ export default async function createApp(runtimeConfig = {}) {
   registerSoundSettingsRoutes(app, ctx);
   registerAppStylesRoutes(app, ctx);
   registerMetaWorldAssetRoutes(app, ctx);
+  registerAssetDownloadRoutes(app, ctx);
   registerWorldRoutes(app, ctx);
   registerTerrainRoutes(app, ctx);
   registerResourcePathRoutes(app, ctx);

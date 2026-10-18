@@ -12,7 +12,7 @@ const faces = [
   [[0,0,-1], [[0,0,0],[0,1,0],[1,1,0],[1,0,0]]]
 ];
 export function meshVoxelChunk(data, chunk, getVoxel) {
-  const origin = chunkToVoxel(chunk), positions = [], normals = [], materials = [], indices = [];
+  const origin = chunkToVoxel(chunk), positions = [], uvs = [], normals = [], materials = [], indices = [];
   const indexBuckets = new Map();
   let solidVoxels = 0;
   const sample = (x,y,z) => [x,y,z].every(n => n >= 0 && n < CHUNK_SIZE)
@@ -27,7 +27,9 @@ export function meshVoxelChunk(data, chunk, getVoxel) {
       if (isWaterVoxel(material)&&isWaterVoxel(neighbor))continue;
       if (neighbor && (!isLiquidVoxel(neighbor) || (isLiquidVoxel(material) && material <= neighbor))) continue;
       const first = positions.length / 3;
+      const axis = normal.findIndex(value => value !== 0), u = (axis+1)%3, v = (axis+2)%3;
       for (const corner of corners) {
+        uvs.push(corner[u], corner[v]);
         positions.push((x+corner[0])*VOXEL_SIZE, (y+corner[1])*VOXEL_SIZE, (z+corner[2])*VOXEL_SIZE);
         normals.push(...normal); materials.push(material);
       }
@@ -41,5 +43,5 @@ export function meshVoxelChunk(data, chunk, getVoxel) {
     groups.push({ start: indices.length, count: bucket.length, materialIndex: material - 1 });
     for (const index of bucket) indices.push(index);
   }
-  return { positions, normals, materials, indices, groups, solidVoxels, faceCount: indices.length / 6 };
+  return { positions, uvs, normals, materials, indices, groups, solidVoxels, faceCount: indices.length / 6 };
 }

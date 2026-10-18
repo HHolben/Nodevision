@@ -3,8 +3,8 @@
 
 import { setStatus } from "/StatusBar.mjs";
 import { cleanNotebookPath, isHtmlWorldPath, selectedWorldPath } from "./MetaWorldImportComponents/assetTypes.mjs";
-import { renderAssetGrid } from "./MetaWorldImportComponents/assetGrid.mjs";
-import { importNotebookAsset, listNotebookAssets } from "./MetaWorldImportComponents/importAssetApi.mjs";
+import { createAssetBrowser } from "./MetaWorldImportComponents/assetBrowser.mjs";
+import { importNotebookAsset } from "./MetaWorldImportComponents/importAssetApi.mjs";
 
 function styles() {
   return `
@@ -29,16 +29,6 @@ function styles() {
   `;
 }
 
-function filteredAssets(assets, query) {
-  const q = String(query || "").trim().toLowerCase();
-  if (!q) return assets;
-  return assets.filter((asset) => (
-    asset.name.toLowerCase().includes(q)
-    || asset.notebookPath.toLowerCase().includes(q)
-    || asset.type.toLowerCase().includes(q)
-  ));
-}
-
 async function refreshWorldViewport(worldPath) {
   const loader = window.VRWorldContext?.loadWorldFromFile;
   if (typeof loader === "function") {
@@ -55,11 +45,11 @@ function renderTarget(root, path) {
     : "Select an HTML world file first.";
 }
 
-export async function createPanel(contentElem) {
-  let assets = [];
+export function createPanel(contentElem, options = {}) {
   let activeTab = "notebook";
   let placement = "origin";
-  const worldPath = () => cleanNotebookPath(selectedWorldPath());
+  const targetWorld = cleanNotebookPath(options.worldPath || selectedWorldPath());
+  const worldPath = () => targetWorld;
 
   contentElem.innerHTML = `${styles()}<div class="nv-mw-import">
     <div data-target class="nv-mw-import-target"></div>
@@ -69,11 +59,10 @@ export async function createPanel(contentElem) {
     </div>
     <section data-panel="notebook" class="nv-mw-import-panel" aria-hidden="false">
       <div class="nv-mw-import-controls">
-        <input data-search type="search" placeholder="Search Notebook assets">
         <label><input data-placement type="radio" name="nv-mw-placement" value="origin" checked> Place at Origin</label>
         <label><input data-placement type="radio" name="nv-mw-placement" value="camera-target"> Place at Camera Target</label>
       </div>
-      <div data-grid class="nv-mw-import-grid"></div>
+      <div data-browser></div>
     </section>
     <section data-panel="online" class="nv-mw-import-panel" aria-hidden="true">
       <div class="nv-mw-import-empty">Free/open asset search will support license, attribution, Notebook localization, and metadata before insertion.</div>
@@ -82,8 +71,6 @@ export async function createPanel(contentElem) {
   </div>`;
 
   const targetEl = contentElem.querySelector("[data-target]");
-  const gridEl = contentElem.querySelector("[data-grid]");
-  const searchEl = contentElem.querySelector("[data-search]");
   const statusEl = contentElem.querySelector("[data-status]");
 
   const setLocalStatus = (message) => {
@@ -91,28 +78,28 @@ export async function createPanel(contentElem) {
     if (message) setStatus(message);
   };
 
-  const redraw = () => {
-    renderTarget(targetEl, worldPath());
-    renderAssetGrid(gridEl, filteredAssets(assets, searchEl.value), {
-      onImport: async (asset, button) => {
-        const target = worldPath();
-        if (!isHtmlWorldPath(target)) {
-          setLocalStatus("Select an HTML world file first.");
-          return;
-        }
-        button.disabled = true;
-        try {
-          const result = await importNotebookAsset({ worldPath: target, assetPath: asset.notebookPath, placement });
-          await refreshWorldViewport(target);
-          setLocalStatus(`Imported ${result.assetPath.split("/").pop()} into world.`);
-        } catch (err) {
-          setLocalStatus(err?.message || "Import failed.");
-        } finally {
-          button.disabled = false;
-        }
-      },
-    });
-  };
+  renderTarget(targetEl, worldPath());
+  contentElem.cleanup = createAssetBrowser(contentElem.querySelector('[data-browser]'), {
+    startDirectory: targetWorld.split('/').slice(0,-1).join('/'),
+    onStatus: message => { statusEl.textContent=message; },
+    onImport: async (asset, button) => {
+      const target = worldPath();
+      if (!isHtmlWorldPath(target)) {
+        setLocalStatus("Select an HTML world file first.");
+        return;
+      }
+      button.disabled = true;
+      try {
+        const result = await importNotebookAsset({ worldPath: target, assetPath: asset.notebookPath, placement });
+        if(cleanNotebookPath(selectedWorldPath())===target)await refreshWorldViewport(target);
+        setLocalStatus(`Imported ${result.assetPath.split("/").pop()} into world.`);
+      } catch (err) {
+        setLocalStatus(err?.message || "Import failed.");
+      } finally {
+        button.disabled = false;
+      }
+    },
+  });
 
   contentElem.querySelectorAll("[data-tab]").forEach((tab) => {
     tab.addEventListener("click", () => {
@@ -124,13 +111,4 @@ export async function createPanel(contentElem) {
   contentElem.querySelectorAll("[data-placement]").forEach((input) => {
     input.addEventListener("change", () => { placement = input.value; });
   });
-  searchEl.addEventListener("input", redraw);
-
-  try {
-    renderTarget(targetEl, worldPath());
-    assets = await listNotebookAssets();
-    redraw();
-  } catch (err) {
-    gridEl.innerHTML = `<div class="nv-mw-import-empty">${err?.message || "Failed to load assets."}</div>`;
-  }
 }

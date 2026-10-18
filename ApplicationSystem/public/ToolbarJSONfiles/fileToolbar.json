@@ -1,6 +1,14 @@
 [
   {
     "ToolbarCategory": "File",
+    "heading": "Download",
+    "callbackKey": "downloadAssets",
+    "icon": "icons/Download.png",
+    "modes": ["HTMLediting", "SVGediting", "PNGediting", "JPEGediting", "JPGediting", "CodeEditing", "GraphicalEditing", "Virtual World Editing", "VR World Editing"],
+    "preventAutoSubToolbar": true
+  },
+  {
+    "ToolbarCategory": "File",
     "heading": "File Manager",
     "hotkeyText": "",
     "icon": "icons/FileManager.png",

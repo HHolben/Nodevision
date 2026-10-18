@@ -75,7 +75,18 @@ export function installSvgLayerCommands(scope) {
     return scope.svgSession.internalPngController.insertInternalPng();
   };
   scope.svgSession.insertImageFromInsertion = async function (insertion) {
-    return await scope.svgSession.runSvgSnapshotOperationAsync("insert-image", () => scope.svgSession.internalPngController.insertImageFromInsertion(insertion));
+    return await scope.svgSession.runSvgSnapshotOperationAsync("insert-image", async () => {
+      const image = await scope.svgSession.internalPngController.insertImageFromInsertion(insertion);
+      if (image && insertion.credit) {
+        const text = document.createElementNS("http://www.w3.org/2000/svg", "text");
+        text.textContent = insertion.credit;
+        text.setAttribute("x", image.getAttribute("x"));
+        text.setAttribute("y", String(Number(image.getAttribute("y")) + Number(image.getAttribute("height")) + 18));
+        text.setAttribute("font-size", "12");
+        scope.svgSession.appendElement(text, insertion);
+      }
+      return image;
+    });
   };
   scope.svgSession.replaceSelectedInternalPng = function () {
     return scope.svgSession.internalPngController.replaceSelectedPng();

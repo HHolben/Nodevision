@@ -24,7 +24,7 @@ export const RESOURCE_TYPE_IDS = Object.freeze({
   ELECTRONICS_COMPONENT: "electronics.component",
 });
 
-const IMAGE_EXTENSIONS = Object.freeze([".apng", ".avif", ".bmp", ".gif", ".ico", ".jpeg", ".jpg", ".png", ".svg", ".webp"]);
+const IMAGE_EXTENSIONS = Object.freeze([".hdr", ".exr", ".apng", ".avif", ".bmp", ".gif", ".ico", ".jpeg", ".jpg", ".png", ".svg", ".webp"]);
 const AUDIO_EXTENSIONS = Object.freeze([".aac", ".flac", ".m4a", ".mp3", ".oga", ".ogg", ".opus", ".wav", ".weba"]);
 const VIDEO_EXTENSIONS = Object.freeze([".avi", ".m4v", ".mov", ".mp4", ".mpeg", ".ogv", ".webm"]);
 const MODEL_EXTENSIONS = Object.freeze([".3mf", ".dae", ".fbx", ".glb", ".gltf", ".obj", ".ply", ".scad", ".stl", ".usd", ".usda", ".usdc", ".usdz"]);

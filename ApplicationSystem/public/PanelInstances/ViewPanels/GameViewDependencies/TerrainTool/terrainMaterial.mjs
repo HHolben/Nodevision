@@ -49,6 +49,7 @@ function makeCanvasTexture(THREE, { baseColor, texture }) {
   }
 
   const map = new THREE.CanvasTexture(canvas);
+  map.colorSpace = THREE.SRGBColorSpace;
   map.needsUpdate = true;
   if (THREE.NearestFilter) {
     map.magFilter = THREE.NearestFilter;
@@ -86,7 +87,11 @@ export function createTerrainMaterial(THREE, { color = "#777777", texture = "sol
     const map = texture && texture !== "solid"
       ? makeCanvasTexture(THREE, { baseColor, texture })
       : null;
-    if (map) materialOptions.map = map;
+    if (map) {
+      // The canvas already contains the base color; tinting it again darkens terrain.
+      materialOptions.map = map;
+      materialOptions.color = "#ffffff";
+    }
     return new THREE.MeshBasicMaterial(materialOptions);
   }
 
@@ -98,7 +103,11 @@ export function createTerrainMaterial(THREE, { color = "#777777", texture = "sol
   const map = texture && texture !== "solid"
     ? makeCanvasTexture(THREE, { baseColor, texture })
     : null;
-  if (map) materialOptions.map = map;
+  if (map) {
+    // The canvas already contains the base color; tinting it again darkens terrain.
+    materialOptions.map = map;
+    materialOptions.color = "#ffffff";
+  }
   if (materialOpacity < 1 || texture === "ripples") {
     materialOptions.transparent = true;
     materialOptions.opacity = materialOpacity;
