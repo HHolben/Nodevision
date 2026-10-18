@@ -51,7 +51,7 @@ export class SessionUiOwnership {
     this.root = null;
     this.messagePanel = null;
     this.keyHandler = (event) => {
-      if (event.key !== "Escape") return;
+      if (event.key !== "Escape" || this.root?.dataset.escapeDisabled === "true") return;
       event.preventDefault();
       event.stopPropagation();
       this.onEscape();

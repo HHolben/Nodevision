@@ -79,6 +79,10 @@ function cleanupLegacyGameView(panel, state = {}) {
   }
   if (panel._vrViewController?.dispose) panel._vrViewController.dispose();
   panel._vrViewController = null;
+  panel._vrFlashlightTool?.dispose();
+  panel._vrFlashlightTool = null;
+  panel._vrHangGliderTool?.dispose();
+  panel._vrHangGliderTool = null;
   if (panel._vrInventory?.dispose) panel._vrInventory.dispose();
   panel._vrInventory = null;
   if (panel._vrEmbeddedResourceEditor?.dispose) panel._vrEmbeddedResourceEditor.dispose();

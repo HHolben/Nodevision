@@ -36,10 +36,12 @@ const BUILTIN_HANDLER_LOADERS = Object.freeze({
   "console.open": load("./handlers/SystemCommands.mjs", "openConsoleCommand"),
   "session.emit": load("./handlers/SystemCommands.mjs", "emitSessionEventCommand"),
   "session.quit": load("./handlers/SystemCommands.mjs", "quitSessionCommand"),
+  "bridging.open": load("./handlers/SystemCommands.mjs", "openBridgingCommand"),
   "htmlDraftFocus.open": load("./handlers/SystemCommands.mjs", "openHtmlDraftFocusCommand"),
   "sandbox.open": load("./handlers/SystemCommands.mjs", "openSandboxCommand"),
   "uppercaseHandwriting.open": load("./handlers/SystemCommands.mjs", "openUppercaseHandwritingCommand"),
   "sketchFocus.open": load("./handlers/SystemCommands.mjs", "openSketchFocusCommand"),
+  "templatePopulator.open": load("./handlers/SystemCommands.mjs", "openTemplatePopulatorCommand"),
   "imageStitcher.open": load("./handlers/SystemCommands.mjs", "openImageStitcherCommand"),
   "sectionals.update": load("./handlers/SystemCommands.mjs", "updateSectionalsCommand"),
 });

@@ -6,7 +6,7 @@ import subprocess
 import threading
 import sys
 
-suite = 'html-table-resize'
+suite = sys.argv[1] if len(sys.argv) > 1 else 'html-table-resize'
 root = pathlib.Path(__file__).resolve().parents[1]
 public = root / 'ApplicationSystem/public'
 
@@ -16,6 +16,9 @@ stubs = {
     '/TemplateSystem/NodevisionOverlayPanel.mjs': 'export function openNodevisionOverlayPanel() {}',
     '/ToolbarJSONfiles/insertMediaPanel.mjs': 'export function registerSvgEditorContextForInsertMedia() {return {dispose(){}};}',
 }
+
+if suite == "bridging":
+    stubs["/TemplateSystem/NodevisionOverlayPanel.mjs"] = "export async function openNodevisionOverlayPanel() {return window.__bridgingNewDocumentRequest || null;}"
 
 class Handler(http.server.BaseHTTPRequestHandler):
     def log_message(self, *args):
@@ -48,7 +51,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
 server = http.server.ThreadingHTTPServer(('127.0.0.1', 0), Handler)
 threading.Thread(target=server.serve_forever, daemon=True).start()
 try:
-    sys.exit(subprocess.run(['node', str(root / 'scripts/html-table-resize-native.mjs'),
+    sys.exit(subprocess.run(['node', str(root / f'scripts/{suite}-native.mjs'),
         f'http://127.0.0.1:{server.server_port}/', 'chromium', '60000'], timeout=70).returncode)
 finally:
     server.shutdown()

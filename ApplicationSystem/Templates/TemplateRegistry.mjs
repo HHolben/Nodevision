@@ -524,3 +524,21 @@ export async function saveNotebookFileAsTemplate(options = {}, ctx = BASE_CONTEX
     template,
   };
 }
+
+// Populated binary documents share the same Notebook boundaries and exclusive
+// creation semantics as the existing Create from Template flow.
+export async function savePopulatedDocument(options = {}, ctx = BASE_CONTEXT) {
+  const {fileBuffer,outputExtension,filename,destinationDirectory=''}=options;
+  if(outputExtension!=='odp' || !Buffer.isBuffer(fileBuffer) || !fileBuffer.length) {
+    throw Object.assign(new Error('A populated ODP document is required.'),{status:400});
+  }
+  const destination=resolveNotebookDestination(ctx,destinationDirectory,filename,outputExtension);
+  if(path.extname(destination.filename).toLowerCase()!=='.odp')throw Object.assign(new Error('The output filename must end in .odp.'),{status:400});
+  const parent=path.dirname(destination.absolute);
+  await assertNotebookAncestorIsSafe(ctx,parent);
+  await fs.mkdir(parent,{recursive:true});
+  await assertNotebookParentIsSafe(ctx,destination);
+  try {await fs.writeFile(destination.absolute,fileBuffer,{flag:'wx'});}
+  catch(error) {if(error.code==='EEXIST')throw Object.assign(new Error('That output already exists. Choose a new filename; no file was overwritten.'),{status:409});throw error;}
+  return {success:true,path:destination.relativePath,bytes:fileBuffer.length,outputExtension};
+}

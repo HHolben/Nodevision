@@ -70,6 +70,7 @@ export async function createNewFile() {
 
     window.selectedFilePath = result?.path || (destinationDirectory ? `${destinationDirectory}/${filename}` : filename);
     await refreshNotebookDirectory(destinationDirectory);
+    return result;
   } catch (err) {
     console.error("Failed to create file:", err);
     alert(`Failed to create file: ${err?.message || err}`);

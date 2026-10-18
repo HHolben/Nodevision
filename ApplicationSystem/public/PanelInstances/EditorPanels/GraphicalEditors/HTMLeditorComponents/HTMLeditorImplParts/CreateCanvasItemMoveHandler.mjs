@@ -24,6 +24,7 @@ export const HTMLeditorImplStyleSection8 = `    }
     #wysiwyg.nv-table-divider-resizing {
       user-select: none;
     }
+    #wysiwyg.nv-table-cell-moving { cursor: move; }
     #wysiwyg.nv-table-cell-selecting {
       cursor: crosshair;
       user-select: none;
@@ -90,7 +91,7 @@ export function createOnPointerDownHandler(owner) {
       return;
     }
     if (resolveTableDividerResizeHit(owner.wysiwyg, event)) return;
-    dragState = {
+    owner.dragState = {
       anchorCell,
       lastCell: anchorCell,
       mode: resolveTableDragSelectionMode(owner.wysiwyg, anchorCell, event),
@@ -105,6 +106,7 @@ export function createOnPointerDownHandler(owner) {
     updateToolbarState({
       htmlTableSelected: true
     });
+    if (event.altKey) owner.beginSelection(event);
     owner.removeWindowListeners();
     window.addEventListener("pointermove", owner.onPointerMove);
     window.addEventListener("pointerup", owner.onPointerEnd);

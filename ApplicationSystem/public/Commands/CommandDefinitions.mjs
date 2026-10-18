@@ -8,6 +8,8 @@ import { WORKSPACE_COMMANDS } from './WorkspaceCommandDefinitions.mjs';
 
 export const NODEVISION_SHARED_COMMANDS = Object.freeze([
   ...WORKSPACE_COMMANDS,
+  { id: "bridging.open", category: "Session", label: "Focus Session — Bridging", description: "Write toward a net word-growth goal or countdown in the HTML graphical editor.", sessionSafe: true, arguments: [], returns: "status", events: ["session.bridging.finished"] },
+  { id: "templatePopulator.open", category: "Session", label: "Open Template Populator", description: "Assign images to document template placeholders.", sessionSafe: true, arguments: [], returns: "status", events: ["session.templatePopulator.finished"] },
   {
     id: "speech.speak", category: "Speech", label: "Speak Text",
     description: "Speak text through the selected Nodevision speech provider.", sessionSafe: true,

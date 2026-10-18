@@ -12,6 +12,7 @@ import {
   resolveTemplateAssetFile,
   saveNotebookFileAsTemplate,
   saveTemplateBinaryFile,
+  savePopulatedDocument,
 } from "./TemplateRegistry.mjs";
 
 function sendError(res, err) {
@@ -27,6 +28,15 @@ export default function createTemplateRoutes(ctx) {
   const binaryUpload = multer({
     storage: multer.memoryStorage(),
     limits: { fileSize: 200 * 1024 * 1024 },
+  });
+  router.post('/templates/populate-save', (req,res,next) => {
+    if(!req.identity)return res.status(401).json({error:'Authentication required.'});
+    next();
+  }, (req,res,next) => binaryUpload.single('file')(req,res,error => error ? res.status(400).json({error:error.message}) : next()), async (req,res) => {
+    try {
+      res.json(await savePopulatedDocument({fileBuffer:req.file?.buffer,filename:req.body?.filename,
+        destinationDirectory:req.body?.destinationDirectory,outputExtension:req.body?.outputExtension},ctx));
+    } catch(error) {sendError(res,error);}
   });
 
   router.get("/templates", async (req, res) => {
@@ -127,4 +137,3 @@ export default function createTemplateRoutes(ctx) {
 
   return router;
 }
-

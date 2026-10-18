@@ -8,7 +8,7 @@ import sys
 import os
 root = pathlib.Path(__file__).resolve().parents[1]
 public = root / 'ApplicationSystem/public'
-suite = 'insert-voxel-world' if '--insert' in sys.argv else 'voxel-tool'
+suite = 'hang-glider' if '--glider' in sys.argv else 'flashlight' if '--flashlight' in sys.argv else 'inventory-hotbar' if '--inventory' in sys.argv else 'insert-voxel-world' if '--insert' in sys.argv else 'voxel-tool'
 class Handler(http.server.SimpleHTTPRequestHandler):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, directory=str(public), **kwargs)
@@ -34,6 +34,6 @@ class Handler(http.server.SimpleHTTPRequestHandler):
 server = http.server.ThreadingHTTPServer(('127.0.0.1', 0), Handler)
 threading.Thread(target=server.serve_forever, daemon=True).start()
 try:
-    sys.exit(subprocess.run(['node', str(root / 'scripts/run-browser-regression.mjs'), f'http://127.0.0.1:{server.server_port}/', 'chromium', '60000'], timeout=70, env={**os.environ, 'NODEVISION_TEST_WEBGL':'1'}).returncode)
+    sys.exit(subprocess.run(['node', str(root / ('scripts/svg-text-native.mjs' if suite == 'inventory-hotbar' else 'scripts/run-browser-regression.mjs')), f'http://127.0.0.1:{server.server_port}/', 'chromium', '60000'], timeout=70, env={**os.environ, 'NODEVISION_TEST_WEBGL':'1'}).returncode)
 finally:
     server.shutdown()

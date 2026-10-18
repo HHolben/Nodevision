@@ -2,6 +2,7 @@
 // This module distinguishes authored attributes from editor presentation and records reversible resource resolution using private per-document identities that survive body history snapshots but never reach saved source.
 
 const chromeAttribute = 'data-nv-chrome-' + crypto.randomUUID();
+export const htmlEditorChromeRemovalSelector = `[${chromeAttribute}="remove"]`;
 export const isHtmlEditorChrome = element => element.hasAttribute(chromeAttribute);
 export function markHtmlEditorChrome(element, mode = 'remove') {
   element.setAttribute(chromeAttribute, mode);

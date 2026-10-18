@@ -33,6 +33,12 @@
   },
   {
     "ToolbarCategory": "Edit",
+    "heading": "Styles",
+    "hotkeyText": "",
+    "modes": ["HTMLediting"]
+  },
+  {
+    "ToolbarCategory": "Edit",
     "heading": "Edit Styles",
     "hotkeyText": "",
     "callbackKey": "editStyles",

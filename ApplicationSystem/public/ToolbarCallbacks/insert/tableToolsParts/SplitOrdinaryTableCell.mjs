@@ -4,7 +4,7 @@
 import { expandPeerCellsForRowSplit, expandPeerCellsForColumnSplit, splitMergedTableCell } from "./MergeCellOrigins.mjs";
 import { makeEmptyCellLike, buildTableGrid } from "./ReadCellSpan.mjs";
 import { getActiveTableCell, focusCell, notifyTableEditorInput, focusTableCell } from "./ExpandRectToWholeCellSpans.mjs";
-import { getSelectedTableCells, getTableEditorRoot, closestCell, isCellInEditor, setActiveTableCell, getActiveGridTableContext } from "./IsEditableTableRoot.mjs";
+import { setSelectedTableCells, getSelectedTableCells, getTableEditorRoot, closestCell, isCellInEditor, setActiveTableCell, getActiveGridTableContext } from "./IsEditableTableRoot.mjs";
 import { readEditorHtml, recordTableEditorMutation } from "../TableProgrammaticHistory.mjs";
 
 // Split Ordinary Table Cell operations.
@@ -108,6 +108,28 @@ export function handleTableArrowKeyNavigation(event) {
   if (!direction) return false;
   if (event.defaultPrevented || event.isComposing) return false;
   if (event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) return false;
+  // An active HTML cell is toolbar context, not an object selection. Native
+  // ranges take precedence even before selectionchange clears stale cell state.
+  if ((direction === "left" || direction === "right") && !getActiveGridTableContext()) {
+    const root = getTableEditorRoot();
+    if (!root?.contains(event.target)) return false;
+    const selection = window.getSelection?.();
+    for (let index = 0; index < (selection?.rangeCount || 0); index += 1) {
+      const range = selection.getRangeAt(index);
+      if (isCellInEditor(closestCell(range.startContainer), root) ||
+          isCellInEditor(closestCell(range.endContainer), root)) return false;
+    }
+    const selected = getSelectedTableCells();
+    if (!window.__nvHtmlTableSelectionMode || !selected.length) return false;
+    const active = window.__nvHtmlTableActiveCell;
+    const cell = selected.includes(active) ? active : selected[selected.length - 1];
+    const target = adjacentCell(cell, direction);
+    if (!target) return false;
+    setSelectedTableCells([target], { activeCell: target, anchorCell: target });
+    target.scrollIntoView?.({ block: "nearest", inline: "nearest" });
+    event.preventDefault();
+    return true;
+  }
   const cell = cellFromKeyboardEvent(event);
   if (!cell) return false;
   if (!moveActiveTableCell(direction, {

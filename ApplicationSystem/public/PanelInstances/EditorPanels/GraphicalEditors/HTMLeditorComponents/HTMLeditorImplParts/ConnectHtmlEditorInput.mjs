@@ -107,6 +107,10 @@ export function connectHtmlEditorInput(scope) {
     const selection = window.getSelection?.();
     const range = selection?.rangeCount ? selection.getRangeAt(0) : null;
     if (!range || !scope.htmlSession.wysiwyg.contains(range.commonAncestorContainer)) return;
+    // Chromium may synthesize a caret outside the table when a key is
+    // pressed with no native range. It does not replace an object selection.
+    if (window.__nvHtmlTableSelectionMode && range.collapsed &&
+        !scope.htmlSession.findTableCellFromNode(range.startContainer)) return;
     clearTableCellSelection({
       keepActive: true
     });

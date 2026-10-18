@@ -1,5 +1,6 @@
 // Nodevision/ApplicationSystem/public/PanelInstances/ViewPanels/GameViewDependencies/worldSleepControls.mjs
-// This pause-menu component offers one sleep action with upcoming solar-time choices supplied by the astronomical service.
+// This pause-menu component offers one sleep action with upcoming solar-time choices supplied by astronomy or the configured day/night cycle.
+import { createCycleSleepRuntime } from './worldCycleSleep.mjs';
 import { applyOverlayButtonAppearance } from '/OverlayAppearance.mjs';
 export function installWorldSleepControls(menu,panel){
   const row=document.createElement('div'),status=document.createElement('div'),select=document.createElement('select');
@@ -8,16 +9,20 @@ export function installWorldSleepControls(menu,panel){
   applyOverlayButtonAppearance(button);status.setAttribute('role','status');row.className='nv-world-sleep-controls';
   Object.assign(row.style,{display:'flex',gap:'8px',flexWrap:'wrap',alignItems:'center',justifyContent:'center'});
   const events=new AbortController();
-  const runtime=()=>window.VRWorldContext?.panel===panel?window.VRWorldContext.astronomy:null;
+  const runtime=()=>{
+    const context=window.VRWorldContext;
+    if(context?.panel!==panel)return null;
+    return context.astronomy??createCycleSleepRuntime(context);
+  };
   function refresh(clearStatus=true){
     const targets=runtime()?.sleepOptions()||[];select.replaceChildren();
     for(const target of targets){const option=document.createElement('option');option.value=target.id;option.textContent=target.label;select.append(option);}
     select.disabled=button.disabled=!targets.length;
-    if(!targets.length){const option=document.createElement('option');option.textContent='No available solar times';select.append(option);}
+    if(!targets.length){const option=document.createElement('option');option.textContent='No available sleep times';select.append(option);}
     if(clearStatus)status.textContent='';
   }
   button.addEventListener('click',event=>{
-    event.stopPropagation();const result=runtime()?.sleep(select.value);status.textContent=result?.message||'This world has no supported Sun.';refresh(false);
+    event.stopPropagation();const result=runtime()?.sleep(select.value);status.textContent=result?.message||'This world has no available sleep times.';refresh(false);
   },{signal:events.signal});
   row.append(button,select,status);menu.append(row);
   return {refresh,dispose(){events.abort();row.remove();}};

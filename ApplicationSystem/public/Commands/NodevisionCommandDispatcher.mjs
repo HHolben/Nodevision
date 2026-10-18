@@ -10,8 +10,13 @@ import {
   searchNodevisionCommands,
 } from "./NodevisionCommandRegistry.mjs";
 
+import {assertSessionActionAvailable,interceptSessionCommand} from "../Sessions/SessionActionAvailability.mjs";
+
 export async function dispatchNodevisionCommand(commandId, args = [], context = {}) {
   const id = String(commandId || "").trim();
+  const intercepted=typeof document!=="undefined"?interceptSessionCommand(id):null;
+  if(intercepted?.handled)return intercepted.result;
+  assertSessionActionAvailable("command:" + id);
   const definition = getNodevisionCommandDefinition(id);
   if (!definition) {
     throw commandError(COMMAND_ERROR_CODES.UNKNOWN_COMMAND, `Unknown Nodevision command: ${id || "(empty)"}.`, { commandId: id });
@@ -25,6 +30,7 @@ export async function dispatchNodevisionCommand(commandId, args = [], context = 
   }
   const validatedArgs = normalizeCommandArguments(args, definition);
   try {
+    assertSessionActionAvailable("command:" + id);
     return await handler(validatedArgs, { ...context, command: definition, commandId: id });
   } catch (err) {
     throw wrapCommandFailure(err, id);

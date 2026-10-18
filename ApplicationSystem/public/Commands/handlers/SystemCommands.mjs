@@ -50,3 +50,12 @@ export async function updateSectionalsCommand() {
 export async function openUppercaseHandwritingCommand(args, context = {}) {
   return (await import("/Sessions/UppercaseHandwritingSession.mjs")).startUppercaseHandwriting(context);
 }
+
+export async function openTemplatePopulatorCommand(args, context = {}) {
+  const { startTemplatePopulator } = await import("../../Sessions/TemplatePopulatorSession.mjs");
+  return startTemplatePopulator(context);
+}
+
+export async function openBridgingCommand(args, context = {}) {
+  return (await import("../../Sessions/BridgingSession.mjs")).startBridging(context);
+}

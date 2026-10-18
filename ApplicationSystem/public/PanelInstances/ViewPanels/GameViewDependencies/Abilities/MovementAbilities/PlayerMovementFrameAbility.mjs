@@ -15,6 +15,7 @@ export function installPlayerMovementFrameAbility(ctx) {
     ctx.api.updateGrabbedObjectFollow();
     ctx.api.updateGizmoHandleOrientations();
     if (mountedVehicle) {
+      window.VRWorldContext?.hangGliderTool?.step({inputState,allowed:false});
       movementState.playerHeight = ctx.basePlayerHeight;
       movementState.isSwimming = false;
       movementState.walkInputBlockedByFall = false;
@@ -46,6 +47,10 @@ export function installPlayerMovementFrameAbility(ctx) {
     const { inputState, crouching, crawling, inEditorMode, editorGravityDisabled, speed, activeWaterVolume, swimActive } = frame;
     const activeGravityModel = ctx.api.readActiveGravityModel();
     const flatGravityActive = activeGravityModel.mode === "flat";
+    const gliderGravity = window.VRWorldContext?.hangGliderTool?.step({
+      inputState, gravity:activeGravityModel.flatG, wouldCollide:ctx.wouldCollide,
+      allowed:flatGravityActive && movementState.worldMode !== "2d" && !movementState.isFlying && !swimActive && !editorGravityDisabled
+    });
     const zeroGravityWalkingDisabled = activeGravityModel.mode === "none" && !inEditorMode;
     const fallingWithoutEditorControl = flatGravityActive
       && !inEditorMode
@@ -57,7 +62,7 @@ export function installPlayerMovementFrameAbility(ctx) {
     const directionalWalkingAllowed = !zeroGravityWalkingDisabled && !fallingWithoutEditorControl;
     const runWalkingAllowed = directionalWalkingAllowed && !movementState.isFlying && !swimActive && (inEditorMode || movementState.isGrounded === true);
     const directionalSpeed = speed * ctx.api.runSpeedMultiplier(inputState, { crouching, crawling, walkingAllowed: runWalkingAllowed });
-    if (directionalWalkingAllowed) applyDirectionalStep(inputState, directionalSpeed, crawling, crouching, swimActive);
+    if (directionalWalkingAllowed && !movementState.isGliding) applyDirectionalStep(inputState, directionalSpeed, crawling, crouching, swimActive);
     const movementGroundLevel = ctx.api.sampleExpressionTerrainGroundLevel(controls.getObject().position, ctx.groundLevel);
     const activeJumpForce = ctx.api.readJumpForce();
     movementState.activeJumpForce = activeJumpForce;
@@ -70,7 +75,8 @@ export function installPlayerMovementFrameAbility(ctx) {
       swimActive,
       speed,
       crouching,
-      movementGroundLevel
+      movementGroundLevel,
+      gliderGravity
     });
     return movementGroundLevel;
   }
@@ -116,7 +122,7 @@ export function installPlayerMovementFrameAbility(ctx) {
         controls,
         inputState: frame.inputState,
         movementState,
-        gravity: frame.activeGravityModel.flatG,
+        gravity: movementState.isGliding ? frame.gliderGravity : frame.activeGravityModel.flatG,
         jumpSpeed: frame.activeJumpForce,
         crouching: frame.crouching,
         crouchJumpMultiplier: Number.isFinite(movementState.crouchJumpMultiplier) ? movementState.crouchJumpMultiplier : ctx.defaultCrouchJumpMultiplier,
@@ -124,6 +130,7 @@ export function installPlayerMovementFrameAbility(ctx) {
         wouldCollide: ctx.wouldCollide,
         resolveGroundBounce: ctx.api.bounceConfigForCollider
       });
+      if (movementState.isGrounded) window.VRWorldContext?.hangGliderTool?.fold();
     }
   }
 

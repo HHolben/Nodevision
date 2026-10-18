@@ -12,6 +12,8 @@ import { worldAuthoringAllowed, guardWorldControllers } from "/MetaWorld/WorldAu
 import { startRenderLoop } from "./renderLoop.mjs";
 import { setupResizeObserver } from "./resizeObserver.mjs";
 import { createPlayerInventory } from "./playerInventory.mjs";
+import { createFlashlightTool } from "./flashlightTool.mjs";
+import { createHangGliderTool } from "./hangGliderTool.mjs";
 import { createObjectInspector } from "./objectInspector.mjs";
 import { createVirtualWorldEmbeddedResourceEditor } from "./embeddedResourceEditor.mjs";
 import { createTerrainToolController } from "./terrainGeneratorTool.mjs";
@@ -534,6 +536,13 @@ export function initScene({ THREE, PointerLockControls, panel, canvas, state, lo
     crosshair
   });
   panel._vrViewController = viewController;
+  const flashlightTool = createFlashlightTool({THREE,scene,panel,inventory,playerCamera:camera,
+    getCamera:() => viewController.getActiveCamera(),objects,movementState,controls});
+  panel._vrFlashlightTool = flashlightTool;
+  window.VRWorldContext.flashlightTool = flashlightTool;
+  const hangGliderTool = createHangGliderTool({THREE,scene,panel,inventory,controls,movementState});
+  panel._vrHangGliderTool = hangGliderTool;
+  window.VRWorldContext.hangGliderTool = hangGliderTool;
 
   const textWorldConsole = createTextWorldConsole({
     panel,
@@ -601,10 +610,12 @@ export function initScene({ THREE, PointerLockControls, panel, canvas, state, lo
     temporalController.update();
     window.VRWorldContext?.updatePathTransforms?.();
     objects.forEach(object => object.userData?.proceduralVoxelRuntime?.update((viewController.getActiveCamera() || camera).getWorldPosition(voxelStreamPosition),window.VRWorldContext?.astronomy??null));
-    if (movementState.paused) return;
+    if (movementState.paused) { flashlightTool.update(); hangGliderTool.update(); return; }
     consolePanels.updateEnvironmentLighting?.(temporalController.getTimeSeconds?.() ?? 0);
     movementUpdate();
     viewController.update();
+    flashlightTool.update();
+    hangGliderTool.update();
     textWorldConsole.update();
     updateIframeObjectOverlays({
       panel,

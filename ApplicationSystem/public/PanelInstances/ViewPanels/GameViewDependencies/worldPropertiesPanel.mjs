@@ -3,6 +3,7 @@
 
 import { createFloatingInventoryPanel } from "/PanelInstances/InfoPanels/PlayerInventory.mjs";
 import { normalizeMetaWorldMultiplayer } from "/MetaWorld/MetaWorldMultiplayerConfig.mjs";
+import { cycleOnEnable } from "./worldCycleSleep.mjs";
 import { normalizeGravityModel } from "./gravityModel.mjs";
 
 const DEFAULT_ENVIRONMENT = {
@@ -502,6 +503,7 @@ export function createWorldPropertiesPanel({ movementState }) {
     applyCycle("Full brightness restored.");
   });
   dayNightEnabledInput.addEventListener("change", () => {
+    setCycleFields(cycleOnEnable(readCycleFromFields()));
     applyCycle(dayNightEnabledInput.checked ? "Day/night cycle enabled." : "Day/night cycle disabled.");
   });
   cycleDurationInput.addEventListener("change", () => applyCycle("Cycle length updated."));

@@ -4,6 +4,8 @@ import { createFloatingInventoryPanel } from "/PanelInstances/InfoPanels/PlayerI
 
 import { VOXEL_WORLD_TOOL_ID, VOXEL_WORLD_ICON } from "/MetaWorld/ProceduralVoxelWorld/VoxelWorldToolState.mjs";
 
+import { createInventoryHotbar } from "./InventoryHotbar.mjs";
+
 const GRID_COLUMNS = 9;
 const ICON_SIZE = 30;
 const CELL_MIN_HEIGHT = 62;
@@ -15,7 +17,7 @@ const CATEGORY_META = {
   "resources": { label: "Resources", emptyText: "No resources carried." },
   "building-blocks": { label: "Building Blocks", emptyText: "No building blocks carried." }
 };
-const TOOL_IDS = new Set([VOXEL_WORLD_TOOL_ID, "select-object", "select-image", "svg-camera", "tape-measure", "terrain-generator", "temporal-manipulator", "voxel-placer", "voxel-extruder"]);
+const TOOL_IDS = new Set([VOXEL_WORLD_TOOL_ID, "hang-glider", "flashlight", "select-object", "select-image", "svg-camera", "tape-measure", "terrain-generator", "temporal-manipulator", "voxel-placer", "voxel-extruder"]);
 const BUILDING_IDS = new Set(["box", "sphere", "cylinder", "flying-carpet", "math-function", "object-file", "image-plane", "iframe", "console", "portal"]);
 const RESOURCE_IDS = new Set(["ore", "wood", "stone", "energy-cell", "water", "fuel"]);
 const PASSIVE_IDS = new Set(["armor", "helmet", "boots", "jetpack", "oxygen-tank"]);
@@ -91,6 +93,8 @@ export function createPlayerInventory({ panel }) {
       { id: "select-image", label: "Select Image", count: 1, category: "tools", tool: true },
       { id: "svg-camera", label: "SVG Camera", count: 1, category: "tools", tool: true },
       { id: "tape-measure", label: "Tape Measure", count: 1, category: "tools", tool: true },
+      { id: "flashlight", label: "Flashlight (G: settings)", count: 1, category: "tools", tool: true },
+      { id: "hang-glider", label: "Hang Glider (airborne jump; G: settings)", count: 1, category: "tools", tool: true },
       { id: "terrain-generator", label: "Terrain Generator", count: 1, category: "tools", tool: true },
       { id: "temporal-manipulator", label: "Temporal Manipulator", count: 1, category: "tools", tool: true },
       { id: "voxel-placer", label: "Voxel Placer", count: 1, category: "tools", tool: true },
@@ -125,7 +129,9 @@ export function createPlayerInventory({ panel }) {
   hotbarHud.style.display = "flex";
   hotbarHud.style.alignItems = "end";
   hotbarHud.style.gap = "8px";
-  hotbarHud.style.pointerEvents = "none";
+  hotbarHud.style.pointerEvents = "auto";
+  hotbarHud.dataset.playerHotbar = "";
+  hotbarHud.style.width = "min(580px, calc(100% - 16px))";
   hotbarHud.style.zIndex = "26";
   panel.appendChild(hotbarHud);
 
@@ -201,6 +207,11 @@ export function createPlayerInventory({ panel }) {
     return item;
   }
 
+  function getHeldItems() {
+    return [{hand:"dominant",id:state.dominantSlots[state.dominantSlot]}, {hand:"off",id:state.offHandId}]
+      .map(({hand,id}) => ({hand,item:findItem(id)})).filter(({item}) => isItemAvailable(item));
+  }
+
   function describeItem(item, fallback = "Empty Hand") {
     if (!item) return fallback;
     if (item.id === "object-file") return state.selectedObjectFile ? `${item.label} (${state.selectedObjectFile}) x${item.count}` : fallback;
@@ -218,7 +229,7 @@ export function createPlayerInventory({ panel }) {
   function renderStatus() {
     const objectInfo = state.selectedObjectFile ? `  |  Object: ${state.selectedObjectFile}` : "";
     const imageInfo = state.selectedImageFile ? `  |  Image: ${state.selectedImageFile}` : "";
-    const handLabel = state.activeHand === "off" ? "Off hand" : `Dominant ${state.dominantSlot + 1}`;
+    const handLabel = state.activeHand === "off" ? "Off hand" : (state.dominantSlot < 0 ? "Empty hand" : `Dominant ${state.dominantSlot + 1}`);
     statusHud.textContent = `${handLabel}: ${getEquippedLabel()}${objectInfo}${imageInfo}`;
   }
 
@@ -318,6 +329,16 @@ export function createPlayerInventory({ panel }) {
       tape.style.height = "3px";
       tape.style.background = "rgba(32, 24, 12, 0.9)";
       icon.appendChild(tape);
+      return icon;
+    }
+    if (id === "flashlight") {
+      icon.textContent = "🔦";
+      icon.style.fontSize = "26px";
+      return icon;
+    }
+    if (id === "hang-glider") {
+      icon.textContent = "△";
+      icon.style.cssText += ";font-size:30px;color:#f5a623;font-weight:bold";
       return icon;
     }
     if (id === "terrain-generator") {
@@ -523,6 +544,16 @@ export function createPlayerInventory({ panel }) {
     return create3DIcon(choice);
   }
 
+  function canEquip(id) {
+    const item = findItem(id);
+    return isItemAvailable(item) && (item.category === "tools" || item.category === "building-blocks");
+  }
+  function assignItemToSlot(index, id) {
+    if (!Number.isInteger(index) || index < 0 || index > 8 || (id !== null && !canEquip(id))) return false;
+    state.activeHand = "dominant"; state.dominantSlot = index; state.dominantSlots[index] = id;
+    render(); return true;
+  }
+  const hotbar = createInventoryHotbar({state,findItem,createIcon,styleSlot,selectSlot:selectDominantSlot,assignSlot:assignItemToSlot,canEquip});
   function renderHotbar() {
     hotbarHud.innerHTML = "";
     if (!state.activeInstruments.has(HOTBAR_INSTRUMENT_ID)) {
@@ -530,7 +561,11 @@ export function createPlayerInventory({ panel }) {
       return;
     }
     hotbarHud.style.display = "flex";
-    const offSlot = document.createElement("div");
+    const offSlot = document.createElement("button");
+    offSlot.type = "button"; offSlot.setAttribute("aria-label", "Select off hand");
+    offSlot.addEventListener("click", event => { event.stopPropagation(); state.activeHand = "off"; render(); });
+    for (const type of ["pointerdown", "mousedown"]) offSlot.addEventListener(type, event => event.stopPropagation());
+    offSlot.style.flexShrink = "0";
     const offSelected = state.activeHand === "off";
     styleSlot(offSlot, offSelected, true);
     offSlot.appendChild(createIcon(findItem(state.offHandId)));
@@ -539,21 +574,7 @@ export function createPlayerInventory({ panel }) {
     offSlot.appendChild(offLabel);
     hotbarHud.appendChild(offSlot);
 
-    const strip = document.createElement("div");
-    strip.style.display = "grid";
-    strip.style.gridTemplateColumns = "repeat(9, 56px)";
-    strip.style.gap = "4px";
-    state.dominantSlots.forEach((id, index) => {
-      const item = findItem(id);
-      const slot = document.createElement("div");
-      styleSlot(slot, state.activeHand === "dominant" && state.dominantSlot === index);
-      slot.appendChild(createIcon(index === 0 ? null : item));
-      const label = document.createElement("div");
-      label.textContent = index === 0 ? "1 Hand" : `${index + 1}`;
-      slot.appendChild(label);
-      strip.appendChild(slot);
-    });
-    hotbarHud.appendChild(strip);
+    hotbarHud.appendChild(hotbar.render("hud"));
   }
 
   function renderInstrumentsHud() {
@@ -593,8 +614,10 @@ export function createPlayerInventory({ panel }) {
     const choices = getCategoryChoices();
     state.selectedMenuIndex = Math.min(normalizeMenuIndex(state.selectedMenuIndex), Math.max(0, choices.length - 1));
     menu.innerHTML = "";
+    const slots = hotbar.render("inventory"); slots.style.marginBottom = "12px"; menu.append(slots);
 
     const tabs = document.createElement("div");
+    tabs.dataset.inventoryCategories = "";
     tabs.style.display = "flex";
     tabs.style.flexWrap = "wrap";
     tabs.style.gap = "6px";
@@ -616,7 +639,7 @@ export function createPlayerInventory({ panel }) {
     const handLine = document.createElement("div");
     handLine.style.marginBottom = "8px";
     handLine.style.opacity = "0.88";
-    handLine.textContent = `Active hand: ${state.activeHand === "off" ? "Off hand" : `Dominant slot ${state.dominantSlot + 1}`}`;
+    handLine.textContent = `Active hand: ${state.activeHand === "off" ? "Off hand" : (state.dominantSlot < 0 ? "Empty hand" : `Dominant slot ${state.dominantSlot + 1}`)}`;
     menu.appendChild(handLine);
 
     if (choices.length === 0) {
@@ -673,10 +696,17 @@ export function createPlayerInventory({ panel }) {
       else count.textContent = `x${choice.count}`;
       cell.appendChild(count);
 
-      cell.addEventListener("click", () => {
+      hotbar.bindItem(cell, choice);
+      cell.tabIndex = 0; cell.setAttribute("role", "button");
+      cell.addEventListener("click", event => {
+        event.stopPropagation(); if (event.detail > 1) return;
         state.selectedMenuIndex = idx;
         state.categorySelection[state.activeCategory] = idx;
-        render();
+        if (canEquip(choice.id)) equipItemToActiveHand(choice.id);
+        else applySelection();
+      });
+      cell.addEventListener("keydown", event => {
+        if (event.key === "Enter" || event.key === " ") { event.preventDefault(); event.stopPropagation(); cell.click(); }
       });
       cell.addEventListener("dblclick", () => {
         state.selectedMenuIndex = idx;
@@ -754,15 +784,14 @@ export function createPlayerInventory({ panel }) {
   }
 
   function clearSlotsForItem(id) {
-    state.dominantSlots = state.dominantSlots.map((slot, index) => index === 0 ? null : (slot === id ? null : slot));
+    state.dominantSlots = state.dominantSlots.map(slot => slot === id ? null : slot);
     if (state.offHandId === id) state.offHandId = null;
-    if (state.dominantSlot === 0) state.activeHand = "dominant";
   }
 
   function equipItemToActiveHand(id) {
     if (!id) {
       if (state.activeHand === "off") state.offHandId = null;
-      else state.dominantSlot = 0;
+      else state.dominantSlot = -1;
       render();
       return;
     }
@@ -772,7 +801,7 @@ export function createPlayerInventory({ panel }) {
     if (state.activeHand === "off") {
       state.offHandId = id;
     } else {
-      if (state.dominantSlot === 0) state.dominantSlot = 1;
+      if (state.dominantSlot < 0) state.dominantSlot = 0;
       state.dominantSlots[state.dominantSlot] = id;
     }
     render();
@@ -790,9 +819,8 @@ export function createPlayerInventory({ panel }) {
     const choice = getCategoryChoices()[state.selectedMenuIndex] || null;
     if (!choice) return;
     if (choice.id === null) {
-      state.activeHand = "dominant";
-      state.dominantSlot = 0;
-      render();
+      if (state.activeHand === "dominant" && state.dominantSlot >= 0) assignItemToSlot(state.dominantSlot, null);
+      else equipItemToActiveHand(null);
       return;
     }
     if (choice.id === "select-object") {
@@ -895,7 +923,7 @@ export function createPlayerInventory({ panel }) {
     }
     const item = findItem(key);
     if ((item?.tool || item?.placeable) && !state.dominantSlots.includes(key)) {
-      const openSlot = state.dominantSlots.findIndex((slot, index) => index > 0 && !slot);
+      const openSlot = state.dominantSlots.findIndex(slot => !slot);
       if (openSlot >= 0) state.dominantSlots[openSlot] = key;
     }
     render();
@@ -991,6 +1019,7 @@ export function createPlayerInventory({ panel }) {
     subscribeSelection(listener) { selectionListeners.add(listener); return () => selectionListeners.delete(listener); },
     consumeSelected,
     getSelectedItem,
+    getHeldItems,
     selectMenuIndex,
     moveSelection,
     selectNext,

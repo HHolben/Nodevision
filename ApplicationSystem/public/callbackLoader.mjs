@@ -1,6 +1,9 @@
 // Nodevision/ApplicationSystem/public/callbackLoader.mjs
 // This file defines browser-side callback Loader logic for the Nodevision UI. It renders interface components and handles user interactions.
 
+import {assertSessionActionAvailable} from "./Sessions/SessionActionAvailability.mjs";
+const guarded=callback=>(...args)=>{assertSessionActionAvailable("toolbar.command");return callback(...args);};
+
 const formElementCallbackKinds = Object.freeze({
   insertFormButton: "button",
   insertFormTextField: "text",
@@ -73,13 +76,13 @@ const inlineCallbacks = {
 
 export async function loadCallback(category, key) {
   const inline = inlineCallbacks[String(category || "").toLowerCase()]?.[key];
-  if (typeof inline === "function") return inline;
+  if (typeof inline === "function") return guarded(inline);
 
   try {
     const path = `/ToolbarCallbacks/${category}/${key}.mjs`;
     const module = await import(path);
     if (module.default && typeof module.default === "function") {
-      return module.default;
+      return guarded(module.default);
     } else {
       console.warn(`Callback file ${path} did not export a default function.`);
       return () => alert(`Callback not implemented properly: ${key}`);

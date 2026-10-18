@@ -20,7 +20,19 @@ export function installSelectedItemActionAbility(ctx) {
   function handleSelectedItemAction(actionName, context = {}) {
     const actionMap = ctx.selectedItemActions.get(getSelectedItemId());
     const handler = actionMap && actionMap[actionName];
-    if (typeof handler !== "function") return false;
+    if (typeof handler !== "function") {
+      // Held equipment is adjustable without taking over another active tool's
+      // command. Prefer the active hand when both equipment items are held.
+      const world = window.VRWorldContext;
+      if (actionName === "adjust") {
+        const held = world?.inventory?.getHeldItems?.() || [];
+        const tools = {"flashlight":world?.flashlightTool,"hang-glider":world?.hangGliderTool};
+        const selected = getSelectedItemId();
+        const id = tools[selected] ? selected : held.find(({item}) => tools[item.id])?.item.id;
+        if (id) return tools[id]?.openSettings?.() === true;
+      }
+      return false;
+    }
     return handler(context) !== false;
   }
 

@@ -7,6 +7,8 @@ import { selectTableCellRange, clearTableCellSelection } from "/ToolbarCallbacks
 import { HTML_TABLE_SELECTION_DRAG_THRESHOLD_PX } from "./EnsureHTMLLayoutStyles.mjs";
 import { createOnPointerDownHandler } from "./CreateCanvasItemMoveHandler.mjs";
 
+import { registerHtmlTableCellMoving } from "./MoveHtmlTableCells.mjs";
+
 // Get Table Cell At Point operations.
 export function getTableCellAtPoint(wysiwyg, table, clientX, clientY) {
   if (!wysiwyg || !table) return null;
@@ -36,6 +38,7 @@ export function getTableCellAtPoint(wysiwyg, table, clientX, clientY) {
 export function registerTableDragSelection(wysiwyg) {
   if (!wysiwyg) return () => {};
   let dragState = null;
+  const cleanupMoving = registerHtmlTableCellMoving(wysiwyg);
   const removeWindowListeners = () => {
     window.removeEventListener("pointermove", onPointerMove);
     window.removeEventListener("pointerup", onPointerEnd);
@@ -91,6 +94,7 @@ export function registerTableDragSelection(wysiwyg) {
     window.__nvHtmlTableDragSelecting = false;
     if (previousBodyUserSelect !== undefined) document.body.style.userSelect = previousBodyUserSelect;
     if (wasSelecting) {
+      window.getSelection()?.removeAllRanges();
       wysiwyg.__nvSuppressNextTableClickSelection = true;
       window.setTimeout(() => {
         if (wysiwyg.__nvSuppressNextTableClickSelection) wysiwyg.__nvSuppressNextTableClickSelection = false;
@@ -100,6 +104,10 @@ export function registerTableDragSelection(wysiwyg) {
     }
   }
   const onPointerDown = createOnPointerDownHandler({
+    beginSelection,
+    set dragState(value) {
+      dragState = value;
+    },
     get wysiwyg() {
       return wysiwyg;
     },
@@ -115,6 +123,8 @@ export function registerTableDragSelection(wysiwyg) {
   });
   wysiwyg.addEventListener("pointerdown", onPointerDown);
   return () => {
+    cleanupMoving();
+    if (dragState?.previousBodyUserSelect !== undefined) document.body.style.userSelect = dragState.previousBodyUserSelect;
     removeWindowListeners();
     clearTableDragSelectionClass(wysiwyg);
     if (window.__nvTableEditorRoot === wysiwyg) clearTableCellSelection({

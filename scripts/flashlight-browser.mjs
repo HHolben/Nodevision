@@ -1,0 +1,61 @@
+// Nodevision/scripts/flashlight-browser.mjs
+// This regression exercises production inventory and tool-adjust routing, both hands, flashlight configuration, actual WebGL illumination and cleanup.
+import * as THREE from '/lib/three/three.module.js';
+import {createPlayerInventory} from '/PanelInstances/ViewPanels/GameViewDependencies/playerInventory.mjs';
+import {createFlashlightTool} from '/PanelInstances/ViewPanels/GameViewDependencies/flashlightTool.mjs';
+import {normalizeFlashlightSettings} from '/PanelInstances/ViewPanels/GameViewDependencies/flashlightSettings.mjs';
+import {installSelectedItemActionAbility} from '/PanelInstances/ViewPanels/GameViewDependencies/Abilities/CommandAbilities/SelectedItemActionAbility.mjs';
+import {installEditorSelectionCommandAbility} from '/PanelInstances/ViewPanels/GameViewDependencies/Abilities/CommandAbilities/EditorSelectionCommandAbility.mjs';
+let checks=0;
+const ok=(value,label)=>{checks++;if(!value)throw Error(label);};
+try {
+  window.NodevisionState={currentMode:'Virtual World Editing'};
+  const panel=document.getElementById('editor'),scene=new THREE.Scene(),camera=new THREE.PerspectiveCamera(75,1,.1,100);
+  const inventory=createPlayerInventory({panel}),movementState={playerMode:'creative',worldMode:'3d',heldKeys:{g:true,w:true}};
+  let unlocks=0;const controls={unlock(){unlocks++;}};
+  const mesh=new THREE.Mesh(new THREE.PlaneGeometry(30,30),new THREE.MeshStandardMaterial({color:0xffffff}));mesh.position.z=-10;scene.add(mesh);
+  const tool=createFlashlightTool({THREE,scene,panel,inventory,playerCamera:camera,getCamera:()=>camera,objects:[mesh],movementState,controls});
+  window.VRWorldContext={scene,panel,inventory,movementState,flashlightTool:tool};
+  const ctx={scene,movementState,api:{},selectedItemActions:new Map()};installSelectedItemActionAbility(ctx);installEditorSelectionCommandAbility(ctx);
+  const g=()=>{movementState.selectedItemAdjustLatch=false;return ctx.api.handleAdjustPress(true,performance.now());};
+  const form=()=>panel.querySelector('[data-flashlight-settings]');
+  ok(inventory.items.filter(item=>item.id==='flashlight').length===1,'flashlight in inventory');
+  ok(!tool.light.visible,'unequipped light off');
+  inventory.equipItemToActiveHand('flashlight');tool.update();
+  ok(tool.light.visible && inventory.getHeldItems()[0].hand==='dominant','dominant flashlight illuminates');
+  ok(tool.light.target.position.distanceTo(new THREE.Vector3(0,0,-10))<.001,'beam aims at crosshair hit');
+  const renderer=new THREE.WebGLRenderer({antialias:false});renderer.setSize(128,128);renderer.setClearColor(0x000000);
+  const target=new THREE.WebGLRenderTarget(128,128),pixel=new Uint8Array(4);
+  function read(x=64) {renderer.setRenderTarget(target);renderer.render(scene,camera);renderer.readRenderTargetPixels(target,x,64,1,1,pixel);return [...pixel];}
+  const lit=read();ok(lit[0]>20,'spotlight visibly illuminates lit material');
+  const narrow=read(100)[0];
+  ok(g() && form(),'G opens flashlight settings');
+  ok(movementState.textEditing && !movementState.heldKeys.w && unlocks===1,'dialog clears movement and releases mouse');
+  const input=(key,value)=>{const el=form().querySelector(`[data-field="${key}"]`);el.value=value;el.dispatchEvent(new Event('input',{bubbles:true}));};
+  input('radius','8');ok(read(100)[0]>narrow+10,'radius widens visible beam');
+  input('color','#ff0000');const red=read();ok(red[0]>red[1]+20 && red[0]>red[2]+20,'color affects actual illumination');
+  input('intensity','0');ok(read()[0]===0,'zero intensity turns beam dark');
+  input('intensity','200');ok(read()[0]>red[0],'intensity increases illumination');
+  const angle=tool.light.angle;input('radius','-1');ok(tool.light.angle===angle,'invalid radius rejected');
+  ok(g() && panel.querySelectorAll('[data-flashlight-settings]').length===1,'repeated G does not duplicate dialog');
+  form().querySelector('button').click();ok(!form() && !movementState.textEditing,'Done restores input');
+  inventory.selectDominantSlot(1);tool.update();ok(!tool.light.visible,'switching dominant slot extinguishes light');
+  inventory.switchHand();inventory.equipItemToActiveHand('flashlight');inventory.switchHand();tool.update();
+  ok(tool.light.visible && inventory.getSelectedItem().id==='select-object','inactive off-hand remains illuminated');
+  ok(tool.light.position.x<0,'off-hand light origin');
+  ok(g() && form(),'G configures off-hand flashlight with other tool active');
+  ok(form().querySelector('[data-field="radius"]').value==='8','settings persist across hand and slot changes');
+  form().dispatchEvent(new Event('cancel',{cancelable:true}));ok(!form(),'Escape cancellation closes dialog');
+  let adjusted=false;ctx.api.registerSelectedItemAction('select-object',{adjust(){adjusted=true;return true;}});
+  g();ok(adjusted && !form(),'active tool adjust takes precedence');
+  camera.rotation.y=Math.PI/2;tool.update();ok(tool.light.target.position.x < -40,'beam tracks camera rotation');
+  camera.position.set(5,2,3);tool.update();ok(Math.abs(tool.light.position.y-1.82)<.001,'beam follows player position');
+  inventory.switchHand();inventory.equipItemToActiveHand(null);tool.update();ok(!tool.light.visible,'unequipping off-hand extinguishes light');
+  ok(!tool.openSettings(),'cannot configure unheld flashlight');
+  const normalized=normalizeFlashlightSettings({color:'bad',intensity:Infinity,radius:999});
+  ok(normalized.color==='#fff4dc' && normalized.intensity===100 && normalized.radius===15,'settings normalized');
+  inventory.equipItemToActiveHand('flashlight');tool.openSettings();tool.dispose();
+  ok(!form() && !tool.light.parent && !tool.light.target.parent,'disposal removes dialog and scene lights');
+  inventory.dispose();target.dispose();renderer.dispose();mesh.geometry.dispose();mesh.material.dispose();
+  document.getElementById('result').textContent=`PASS: ${checks} flashlight inventory, both-hand, G settings, WebGL beam, input and cleanup checks`;
+} catch(error) { document.getElementById('result').textContent='FAIL: '+error.stack; }

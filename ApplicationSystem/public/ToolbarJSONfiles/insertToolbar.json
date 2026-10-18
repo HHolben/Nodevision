@@ -1855,6 +1855,18 @@
   {
     "ToolbarCategory": "Insert",
     "parentHeading": "Table",
+    "heading": "Select Cell",
+    "hotkeyText": "Alt+click; Alt+drag selects cells",
+    "shortLabel": "Select",
+    "callbackKey": "tableSelectCell",
+    "modes": ["HTMLediting"],
+    "conditions": {
+      "htmlTableSelected": true
+    }
+  },
+  {
+    "ToolbarCategory": "Insert",
+    "parentHeading": "Table",
     "heading": "Insert Row Above",
     "hotkeyText": "",
     "shortLabel": "R+",

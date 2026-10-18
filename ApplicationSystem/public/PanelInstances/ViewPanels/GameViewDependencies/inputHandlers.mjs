@@ -89,8 +89,18 @@ export function createInputHandlers({ getBindings, normalizeKeyName, movementSta
       heldKeys.standup = false;
     }
   };
+  let inventoryDragging = false;
+  const onInventoryDragStart = e => {
+    if (!e.target?.closest?.("[data-inventory-item-id]")) return;
+    inventoryDragging = true; clearTransientInputs();
+  };
+  const onInventoryDragEnd = () => {
+    if (!inventoryDragging) return;
+    inventoryDragging = false; clearTransientInputs();
+  };
+  const acceptsMouseInput = e => !inventoryDragging && acceptsInput(e) && !e.target?.closest?.('[data-player-hotbar], [data-inventory-hotbar], [data-inventory-item-id]');
   const onMouseDown = (e) => {
-    if (!acceptsInput(e)) return;
+    if (!acceptsMouseInput(e)) { clearTransientInputs(); return; }
     if (e.button === 0) heldKeys.mouse0 = true;
     else if (e.button === 1) heldKeys.mouse1 = true;
     else if (e.button === 2) heldKeys.mouse2 = true;
@@ -100,9 +110,9 @@ export function createInputHandlers({ getBindings, normalizeKeyName, movementSta
     else if (e.button === 1) heldKeys.mouse1 = false;
     else if (e.button === 2) heldKeys.mouse2 = false;
   };
-  const onMouseMove = (e) => syncMouseButtons(acceptsInput(e) ? e.buttons : 0);
-  const onPointerMove = (e) => syncMouseButtons(acceptsInput(e) ? e.buttons : 0);
-  const onPointerUp = (e) => syncMouseButtons(acceptsInput(e) ? e.buttons : 0);
+  const onMouseMove = (e) => syncMouseButtons(acceptsMouseInput(e) ? e.buttons : 0);
+  const onPointerMove = (e) => syncMouseButtons(acceptsMouseInput(e) ? e.buttons : 0);
+  const onPointerUp = (e) => syncMouseButtons(acceptsMouseInput(e) ? e.buttons : 0);
   const onFocusIn = e => { if (!acceptsInput(e)) clearTransientInputs(); };
   const onWindowBlur = () => clearTransientInputs();
   const onVisibilityChange = () => {
@@ -112,6 +122,9 @@ export function createInputHandlers({ getBindings, normalizeKeyName, movementSta
     if (!document.pointerLockElement) clearTransientInputs();
   };
 
+  document.addEventListener("dragstart", onInventoryDragStart, true);
+  document.addEventListener("dragend", onInventoryDragEnd, true);
+  document.addEventListener("drop", onInventoryDragEnd, true);
   document.addEventListener("focusin", onFocusIn);
   document.addEventListener("keydown", onKeyDown);
   document.addEventListener("keyup", onKeyUp);
@@ -125,6 +138,9 @@ export function createInputHandlers({ getBindings, normalizeKeyName, movementSta
   window.addEventListener("blur", onWindowBlur);
 
   function dispose() {
+    document.removeEventListener("dragstart", onInventoryDragStart, true);
+    document.removeEventListener("dragend", onInventoryDragEnd, true);
+    document.removeEventListener("drop", onInventoryDragEnd, true);
     document.removeEventListener("focusin", onFocusIn);
     document.removeEventListener("keydown", onKeyDown);
     document.removeEventListener("keyup", onKeyUp);

@@ -1,5 +1,6 @@
 // Nodevision/ApplicationSystem/public/panels/createToolbar.mjs
 // This file defines browser-side create Toolbar logic for the Nodevision UI. It renders interface components and handles user interactions.
+import {sessionActionAvailable} from "../Sessions/SessionActionAvailability.mjs";
 
 import { getActiveAnalysisTools } from '../RasterAnalysis/AnalysisToolsContext.mjs';
 import { createPanel } from '/panels/panelManager.mjs';
@@ -568,8 +569,9 @@ function showToolbarDropdown(dropdown, anchor) {
 
 // === Dynamic callback loader ===
 async function handleToolbarClick(category, key) {
+  if(!sessionActionAvailable("toolbar.command"))return;
   const callback = await loadCallback(category.toLowerCase(), key);
-  callback();
+  if(sessionActionAvailable("toolbar.command"))callback();
 }
 
 function resolveToolbarScriptPath(scriptPath) {
@@ -1306,6 +1308,7 @@ export function showToolbarSubToolbar(panelHeading, options = {}) {
 
 // === Update toolbar state dynamically ===
 export function updateToolbarState(newState = {}, options = {}) {
+  if(!sessionActionAvailable("toolbar.refresh")) { Object.assign(window.NodevisionState ||= {},newState); return; }
   const { rebuildDropdowns = true } = options || {};
   recordToolbarLineProbe("toolbar:updateToolbarState:start", { rebuildDropdowns });
   console.log("Updating Toolbar state")

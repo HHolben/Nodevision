@@ -46,5 +46,24 @@
     "modes": ["HTMLediting"],
     "content": "<div id=\"nv-html-document-style-toolbar\"></div>",
     "script": "htmlDocumentStyleToolbar.mjs"
+  },
+  {
+    "ToolbarCategory": "Styles",
+    "heading": "Table",
+    "toolbarHeading": "HTML Table Styles",
+    "hotkeyText": "",
+    "modes": ["HTMLediting"],
+    "conditions": { "htmlTableSelected": true },
+    "preventDropdown": true
+  },
+  {
+    "ToolbarCategory": "Styles",
+    "parentHeading": "HTML Table Styles",
+    "heading": "Table Style Controls",
+    "hotkeyText": "",
+    "modes": ["HTMLediting"],
+    "conditions": { "htmlTableSelected": true },
+    "content": "<div id=\"nv-html-table-style-toolbar\"></div>",
+    "script": "htmlTableStyleToolbar.mjs"
   }
 ]
