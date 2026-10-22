@@ -7,6 +7,7 @@
         ".csv",
         ".gtl",
         ".gbr",
-        ".drl"
+        ".drl",
+        ".gox"
     ]
 }

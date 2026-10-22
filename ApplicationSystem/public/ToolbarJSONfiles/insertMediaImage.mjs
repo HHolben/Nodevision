@@ -1,5 +1,9 @@
 // Nodevision/ApplicationSystem/public/ToolbarJSONfiles/insertMediaImage.mjs
 // Insert -> Media image picker shared by graphical editors that can place images.
+import { imageStorageMarkup } from './insertMediaStorage.mjs';
+import { captureAssetEditorContext } from '/AssetDownloads/AssetEditorContext.mjs';
+import { appendOnlineMediaButton, supportsOnlineMedia } from './insertMediaOnline.mjs';
+import { insertMediaResource } from './insertMediaResource.mjs';
 import {
   dirname,
   escapeHtml,
@@ -113,7 +117,7 @@ function resourceFromInsertion({ src = "", linkedNotebookPath = "", sourceName =
   });
 }
 
-function renderImageForm(root, onInsert, { svgMode = false, exts = [], initialState = null, initialResource = null, originContext = null } = {}) {
+function renderImageForm(root, onInsert, { svgMode = false, exts = [], initialState = null, initialResource = null, originContext = null, bookmark = null } = {}) {
   const extensions = Array.from(new Set([...(exts || []), ...IMAGE_EXTS]))
     .map((e) => String(e).toLowerCase())
     .filter(Boolean);
@@ -127,11 +131,7 @@ function renderImageForm(root, onInsert, { svgMode = false, exts = [], initialSt
       <label style="display:block;margin-bottom:6px;"><input type="radio" name="nv-image-source" value="new" checked> New Image</label>
       <label style="display:block;"><input type="radio" name="nv-image-source" value="existing"> Existing Image</label>
     </fieldset>
-    <fieldset style="border:1px solid #c6c6c6;padding:8px;">
-      <legend>Storage Mode</legend>
-      <label style="display:block;margin-bottom:6px;"><input type="radio" name="nv-image-storage" value="referenced" checked> Referenced (src points to file path)</label>
-      <label style="display:block;"><input type="radio" name="nv-image-storage" value="inline"> Inline (embed as data URL)</label>
-    </fieldset>
+    ${imageStorageMarkup()}
     <div data-section="new" style="display:flex;flex-direction:column;gap:8px;">
       <label>New Image Format<select data-field="format" style="display:block;width:100%;margin-top:4px;">${optionHtml}</select></label>
       <label data-section="new-name">New Image File Name<input data-field="newName" type="text" style="display:block;width:100%;margin-top:4px;" /></label>
@@ -155,6 +155,10 @@ function renderImageForm(root, onInsert, { svgMode = false, exts = [], initialSt
   </form>`;
 
   const form = root.querySelector("form");
+  if (supportsOnlineMedia(bookmark)) {
+    const onlineRow = document.createElement('div'); form.querySelector('[data-field="status"]').before(onlineRow);
+    appendOnlineMediaButton(onlineRow, () => ({ origin: bookmark, mediaFamily: 'Image', settings: { storageMode: selectedValue(root, 'nv-image-storage'), fallbacks: fallbackList.getFallbacks() } }), message => { root.querySelector('[data-field="status"]').textContent = message; });
+  }
   const newSection = root.querySelector('[data-section="new"]');
   const existingSection = root.querySelector('[data-section="existing"]');
   const newNameRow = root.querySelector('[data-section="new-name"]');
@@ -271,7 +275,7 @@ function renderImageForm(root, onInsert, { svgMode = false, exts = [], initialSt
           exts,
           initialState: invocation.insertMediaState,
           initialResource: resource,
-          originContext: panel.originContext || returnOriginContext,
+          originContext: panel.originContext || returnOriginContext, bookmark,
         });
       },
     };
@@ -426,6 +430,20 @@ async function insertImageIntoOriginatingSvg(insertion = {}, originContext = nul
 
 export function renderImage(root, exts = [], renderOptions = {}) {
   const originContext = renderOptions.originContext || getInsertMediaOriginContext(root) || null;
+  if (renderOptions.bookmark?.path && supportsOnlineMedia(renderOptions.bookmark)) {
+    let localBookmark = renderOptions.bookmark;
+    renderImageForm(root, async insertion => {
+      const resource = insertion.resource;
+      resource.previewUrl = insertion.src.startsWith('data:') ? insertion.src : insertion.linkedNotebookPath ? notebookHrefFromPath(insertion.linkedNotebookPath) : insertion.src;
+      const current = await captureAssetEditorContext(localBookmark.cell);
+      if (current?.path === localBookmark.path && current.kind === localBookmark.kind) localBookmark = current;
+      const result = await insertMediaResource(localBookmark, resource, { extension: 'png' }, { local: true });
+      const next = await captureAssetEditorContext(localBookmark.cell);
+      if (next) localBookmark = next;
+      return result;
+    }, { svgMode: isSvgInsertOrigin(originContext), exts, originContext, bookmark: renderOptions.bookmark });
+    return;
+  }
   if (isSvgInsertOrigin(originContext)) {
     renderImageForm(root, async (insertion) => {
       return await insertImageIntoOriginatingSvg(insertion, originContext);

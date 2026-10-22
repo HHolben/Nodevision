@@ -3,7 +3,7 @@
 export function normalizeBridgingGoal(goal) {
   const targetGrowth=Number(goal.targetGrowth),durationMs=Number(goal.durationMs);
   if(!goal.wordsEnabled && !goal.timerEnabled)throw Error('Enable a word target, a timer, or both.');
-  if(goal.wordsEnabled && (!Number.isSafeInteger(targetGrowth)||targetGrowth<0))throw Error('Word growth must be a nonnegative integer.');
+  if(goal.wordsEnabled && (!Number.isSafeInteger(targetGrowth)||targetGrowth<=0))throw Error('Word growth must be a positive integer. Uncheck Word target for a timer-only session.');
   if(goal.timerEnabled && (!Number.isFinite(durationMs)||durationMs<=0))throw Error('Timer duration must be greater than zero.');
   return {...goal,targetGrowth,durationMs};
 }

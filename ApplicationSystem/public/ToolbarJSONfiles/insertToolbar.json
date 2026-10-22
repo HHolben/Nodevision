@@ -1,6 +1,25 @@
 [
   {
     "ToolbarCategory": "Insert",
+    "heading": "3D Model",
+    "script": "insert3DModelWidget.mjs",
+    "modes": [
+      "HTMLediting",
+      "Virtual World Editing",
+      "VR World Editing"
+    ]
+  },
+  {
+    "ToolbarCategory": "Insert",
+    "heading": "Voxel Building Tools",
+    "script": "goxBuildToolbar.mjs",
+    "modes": [
+      "GOXediting",
+      "GOXviewing"
+    ]
+  },
+  {
+    "ToolbarCategory": "Insert",
     "heading": "Insert Text",
     "hotkeyText": ""
   },
@@ -1521,7 +1540,7 @@
     "insertGroup": "text",
     "callbackKey": "insertSymbol",
     "parentHeading": "Insert Text",
-    "shortLabel": "Ω"
+    "shortLabel": "\u03a9"
   },
   {
     "ToolbarCategory": "Insert",
@@ -1859,7 +1878,9 @@
     "hotkeyText": "Alt+click; Alt+drag selects cells",
     "shortLabel": "Select",
     "callbackKey": "tableSelectCell",
-    "modes": ["HTMLediting"],
+    "modes": [
+      "HTMLediting"
+    ],
     "conditions": {
       "htmlTableSelected": true
     }
@@ -2293,6 +2314,11 @@
     "callbackKey": "insertMedia",
     "modes": [
       "HTMLediting",
+      "HTML Editing",
+      "CodeEditing",
+      "PNGediting",
+      "JPEGediting",
+      "JPGediting",
       "GraphicalEditing",
       "SVG Editing",
       "Virtual World Editing",
@@ -2307,6 +2333,11 @@
     "parentHeading": "Media",
     "modes": [
       "HTMLediting",
+      "HTML Editing",
+      "CodeEditing",
+      "PNGediting",
+      "JPEGediting",
+      "JPGediting",
       "GraphicalEditing",
       "SVG Editing",
       "Virtual World Editing",
@@ -2694,6 +2725,27 @@
     "parentHeading": "Text",
     "heading": "World Text Controls",
     "script": "worldTextWidget.mjs",
+    "modes": [
+      "Virtual World Editing",
+      "VR World Editing"
+    ],
+    "preventDropdown": true
+  },
+  {
+    "ToolbarCategory": "Insert",
+    "parentHeading": "Insert",
+    "heading": "Sound",
+    "modes": [
+      "Virtual World Editing",
+      "VR World Editing"
+    ],
+    "preventDropdown": true
+  },
+  {
+    "ToolbarCategory": "Insert",
+    "parentHeading": "Sound",
+    "heading": "World Sound Controls",
+    "script": "worldSoundWidget.mjs",
     "modes": [
       "Virtual World Editing",
       "VR World Editing"

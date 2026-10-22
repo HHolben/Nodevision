@@ -18,6 +18,10 @@ export function installSelectedItemActionAbility(ctx) {
   }
 
   function handleSelectedItemAction(actionName, context = {}) {
+    const goxItem=getSelectedInventoryItem();
+    if(goxItem?.id==='sound'&&['use','adjust','attack'].includes(actionName)){if(actionName==='attack')window.VRWorldContext?.cancelSoundPlacement?.();else void import('/MetaWorld/Sounds/SoundTool.mjs').then(m=>m.activateSoundTool(actionName==='adjust'));return true;}
+    if(goxItem?.id==='path'&&['use','adjust','attack'].includes(actionName)){void import('/MetaWorld/Paths/PathTool.mjs').then(m=>m.pathToolAction(actionName));return true;}
+    if((goxItem?.modelFile||goxItem?.goxFile||goxItem?.id==="3d-model")&&["use","adjust","attack"].includes(actionName)){void import("/Models/ModelPlacement.mjs").then(m=>m.useModelInventoryItem(goxItem,actionName)).catch(error=>import("/StatusBar.mjs").then(m=>m.setStatus("3D Model",error.message)));return true;}
     const actionMap = ctx.selectedItemActions.get(getSelectedItemId());
     const handler = actionMap && actionMap[actionName];
     if (typeof handler !== "function") {
@@ -41,6 +45,9 @@ export function installSelectedItemActionAbility(ctx) {
     if (!ctx.api.canUseAbility("allowToolUse")) return false;
     const selected = window.VRWorldContext?.inventory?.getSelectedItem?.();
     if (!selected?.id) return false;
+    if(selected.id==='sound')return handleSelectedItemAction('use',context);
+    if(selected.id==='path')return handleSelectedItemAction('use',context);
+    if(selected.modelFile||selected.goxFile||selected.id==="3d-model")return handleSelectedItemAction("use",context);
     const selectedUseAction = ctx.selectedItemActions.get(String(selected.id).toLowerCase())?.use;
     if (typeof selectedUseAction !== "function") return false;
     return selectedUseAction(context) !== false;

@@ -121,3 +121,11 @@ test('only supported standalone signatures pass', () => {
   assert.throws(() => validateAssetSignature(Buffer.from('<script>'), 'png'));
   assert.throws(() => validateAssetSignature(Buffer.from('PK'), 'zip'));
 });
+
+test('case-sensitive provider IDs remain valid without permitting path injection', async () => {
+  const urls = []; const provider = createPolyHavenProvider(async url => { urls.push(url); return {}; });
+  await provider.inspect('ArmChair_01');
+  assert(urls.includes('https://api.polyhaven.com/info/ArmChair_01'));
+  assert(urls.includes('https://api.polyhaven.com/files/ArmChair_01'));
+  for (const id of ['../ArmChair_01', 'ArmChair_01/x', 'ArmChair_01?x=1', '%2e%2e', 'x#y']) await assert.rejects(provider.inspect(id), /Invalid asset ID/);
+});

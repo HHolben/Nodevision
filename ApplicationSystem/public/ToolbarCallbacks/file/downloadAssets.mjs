@@ -5,13 +5,15 @@ import { createPanelDOM } from '/panels/panelFactory.mjs';
 import { ensureAdjacentPanelCell } from '/panels/workspaceParts/workspaceAdjacentPanel.mjs';
 import { ensureWorkspace, ensureTopRow, createCell } from '/panels/workspaceParts/workspaceCells.mjs';
 let pending = null;
-export default async function downloadAssets() {
-  const origin = await captureAssetEditorContext();
+export default async function downloadAssets() { return openDownloadAssets({ mode: 'standalone' }); }
+export async function openDownloadAssets(options = {}) {
+  const origin = options.origin || await captureAssetEditorContext();
+  const launch = { ...options, origin, mode: options.mode || 'standalone' };
   const existing = document.querySelector('.panel[data-instance-name="DownloadAssetsPanel"]');
-  if (existing) { if (origin) await existing.__nvSetAssetOrigin?.(origin); existing.hidden = false; existing.scrollIntoView({ block: 'nearest' }); return existing; }
-  if (pending) return pending;
+  if (existing) { void existing.__nvSetAssetLaunch?.(launch); existing.hidden = false; existing.scrollIntoView({ block: 'nearest' }); return existing; }
+  if (pending) { const panel = await pending; if (launch.mode === 'insert') void panel.__nvSetAssetLaunch?.(launch); return panel; }
   pending = (async () => {
-    const { panel } = await createPanelDOM('DownloadAssetsPanel', 'DownloadAssetsPanel', 'InfoPanel', { displayName: 'Download Assets', origin });
+    const { panel } = await createPanelDOM('DownloadAssetsPanel', 'DownloadAssetsPanel', 'InfoPanel', { displayName: 'Download Assets', ...launch });
     const cells = [...document.querySelectorAll('#workspace .panel-cell')].filter(cell => !cell.querySelector('.panel-cell') && cell.getBoundingClientRect().width > 0);
     const rightmost = cells.sort((a, b) => b.getBoundingClientRect().right - a.getBoundingClientRect().right)[0];
     const previousCell = cells.find(cell => cell.dataset.id === 'DownloadAssetsPanel' && !cell.querySelector('.panel'));

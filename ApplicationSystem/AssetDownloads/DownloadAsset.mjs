@@ -8,15 +8,15 @@ import { providerFetch, MAX_ASSET_BYTES } from './ProviderNetwork.mjs';
 import { resourceUrlForFile } from '../Resources/ResourcePathSafety.mjs';
 import { resolveDownloadDestination, destinationDisplayPath } from './DownloadDestinations.mjs';
 import { validateAssetSignature } from './DownloadValidation.mjs';
-export async function downloadAsset(ctx, request, { signal, progress = () => {}, provider = getAssetProvider(request.provider), fetchImpl } = {}) {
+export async function downloadAsset(ctx, request, { signal, progress = () => {}, provider = getAssetProvider(request.provider, 'download'), fetchImpl } = {}) {
   if (request.authorized !== true) throw new Error('Explicit download authorization required');
   signal?.throwIfAborted();
   const asset = await provider.inspect(request.asset, signal);
   const format = asset.formats.find(item => item.id === request.format);
-  if (!format || !['png', 'jpg', 'hdr', 'exr', 'glb'].includes(format.extension)) throw new Error('Unsupported asset format');
+  if (!format || !['png', 'jpg', 'hdr', 'exr', 'glb', 'gox'].includes(format.extension)) throw new Error('Unsupported asset format');
   if (!Number.isSafeInteger(format.size) || format.size <= 0 || format.size > MAX_ASSET_BYTES) throw new Error('Asset exceeds the download size limit');
   const destination = await resolveDownloadDestination(ctx, request.destination, request.subdirectory, request.document);
-  if (destination.type !== 'project' && (format.extension === 'glb') !== (destination.type === 'model')) throw new Error('Choose a matching image/material or model destination');
+  if (destination.type !== 'project' && (['glb', 'gox'].includes(format.extension)) !== (destination.type === 'model')) throw new Error('Choose a matching image/material or model destination');
   const response = await providerFetch(format.url, provider.downloadHosts || [], { signal, fetchImpl });
   const advertised = Number(response.headers.get('content-length'));
   if (advertised > MAX_ASSET_BYTES || (advertised && advertised !== format.size)) { await response.body?.cancel(); throw new Error('Unexpected download size'); }
@@ -42,6 +42,7 @@ export async function downloadAsset(ctx, request, { signal, progress = () => {},
     if (format.extension === 'glb' && signature.readUInt32LE(8) !== size) throw new Error('Invalid GLB length');
     if (format.md5 && hash.digest('hex') !== format.md5) throw new Error('Provider checksum mismatch');
     await file.sync(); await file.close(); file = null;
+    if (format.extension === 'gox') await (await import('../public/Voxels/GoxCodec.mjs')).decodeGox(await fs.readFile(temporary), { signal });
     const base = `${asset.id}-${format.id}`.replace(/[^a-zA-Z0-9_-]/g, '_').slice(0, 150);
     for (let suffix = 0; suffix < 1000; suffix++) {
       signal?.throwIfAborted();

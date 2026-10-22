@@ -1,10 +1,12 @@
 // Nodevision/ApplicationSystem/public/PanelInstances/ViewPanels/GameViewDependencies/worldLoading.mjs
 // This file loads a world definition from the server and builds its scene objects. The loader registers live MetaWorld layer data for side panels.
 
+import { createModelWorldObject, installModelWorldCommand } from "/Models/ModelWorldAsset.mjs";
 import { createDownloadedImagePlane, installDownloadedImageCommand } from "/MetaWorld/DownloadedImagePlane.mjs";
 import { createTextObject } from '../../../MetaWorld/Text/TextRuntime.mjs';
 import { installTextAuthoring } from '../../../MetaWorld/Text/TextAuthoringBridge.mjs';
 import { installVoxelWorldAuthoring } from "../../../MetaWorld/ProceduralVoxelWorld/VoxelWorldAuthoringBridge.mjs";
+import { installSoundAuthoring } from '../../../MetaWorld/Sounds/SoundAuthoringBridge.mjs';
 import { installPathAuthoring } from "../../../MetaWorld/Paths/PathAuthoringBridge.mjs";
 import { createPathObject } from "../../../MetaWorld/Paths/PathRuntime.mjs";
 import { validatePath } from "../../../MetaWorld/Paths/PathDefinition.mjs";
@@ -545,11 +547,13 @@ function ensureSoundUnlockHandlers() {
 }
 
 function tryPlaySoundRuntime(runtime) {
-  if (!runtime?.audio || runtime.playPromise || runtime.playBlocked) return;
+  if (!runtime?.audio || runtime.disposed || runtime.completed || !runtime.audible || runtime.playPromise || runtime.playBlocked) return;
   const result = runtime.audio.play?.();
   if (!result || typeof result.then !== "function") return;
   runtime.playPromise = result
+    .then(()=>{if(runtime.disposed||!runtime.audible)runtime.audio.pause();})
     .catch(() => {
+      if(runtime.disposed || !runtime.audible)return;
       runtime.playBlocked = true;
       blockedSoundRuntimes.add(runtime);
       ensureSoundUnlockHandlers();
@@ -562,6 +566,7 @@ function tryPlaySoundRuntime(runtime) {
 export function disposeSoundObjectRuntime(target) {
   const runtime = target?.audio ? target : target?.userData?.soundRuntime;
   if (!runtime) return;
+  runtime.disposed=true;runtime.audible=false;
   blockedSoundRuntimes.delete(runtime);
   try {
     runtime.audio?.pause?.();
@@ -579,15 +584,20 @@ function updateSoundObjectRuntime(mesh, listenerPosition = null) {
   const sound = soundDefinitionFromMesh(mesh);
   runtime.baseVolume = normalizeSoundObjectVolume(sound.volume);
   runtime.range = normalizeSoundObjectRange(sound.range);
-  const visible = mesh.visible !== false && mesh.userData?.soundEnabled !== false;
+  let visible = mesh.userData?.soundEnabled !== false;
+  for(let parent=mesh;parent;parent=parent.parent)if(parent.visible===false)visible=false;
   let attenuation = visible ? 1 : 0;
   if (listenerPosition?.distanceTo) {
-    const distance = listenerPosition.distanceTo(mesh.position);
+    const position=mesh.getWorldPosition ? mesh.getWorldPosition(mesh.position.clone()) : mesh.position;
+    const distance = listenerPosition.distanceTo(position);
     attenuation = runtime.range > 0 ? Math.max(0, 1 - distance / runtime.range) : (distance <= 0.001 ? 1 : 0);
   }
+  if(!visible)attenuation=0;
+  runtime.audible=visible && attenuation>0;
   runtime.audio.loop = sound.loop !== false;
   runtime.audio.volume = Math.max(0, Math.min(1, runtime.baseVolume * attenuation));
-  if (runtime.audio.paused && visible && runtime.sourceUrl) tryPlaySoundRuntime(runtime);
+  if(!runtime.audible){blockedSoundRuntimes.delete(runtime);runtime.playBlocked=false;runtime.completed=false;runtime.audio.pause();}
+  else if (runtime.audio.paused && runtime.sourceUrl) tryPlaySoundRuntime(runtime);
 }
 
 function attachSoundObjectRuntime(mesh, def = {}, baseWorldPath = "") {
@@ -605,6 +615,7 @@ function attachSoundObjectRuntime(mesh, def = {}, baseWorldPath = "") {
   audio.preload = "auto";
   audio.volume = 0;
   const runtime = { audio, sourceUrl, target: mesh, baseVolume: normalizeSoundObjectVolume(def.volume), range: normalizeSoundObjectRange(def.range), playPromise: null, playBlocked: false };
+  audio.addEventListener('ended',()=>{runtime.completed=true;});
   mesh.userData.soundRuntime = runtime;
   mesh.userData.updateSoundObjectRuntime = (listenerPosition) => updateSoundObjectRuntime(mesh, listenerPosition);
   mesh.userData.syncSoundObjectRuntime = () => attachSoundObjectRuntime(mesh, soundDefinitionFromMesh(mesh), baseWorldPath);
@@ -1169,7 +1180,7 @@ export function registerMetaWorldLayerBridge({ state, filePath, worldData, layer
   const sourceId = "legacy-metaworld:" + (filePath || "active");
   const history = { undoStack: [], redoStack: [], isRestoring: false, limit: 80 };
   const readBridgeExpressionOptions = () => getExpressionLayerOptions(camera || window.VRWorldContext?.camera);
-  const managedObject = def => def?.type === 'image-plane' || (def?.preserveLocalTransform === true && PRIMITIVE_WORLD_OBJECT_TYPES.has(def.type)) || def?.type === "world-text" || def?.type === "physical-path" || def?.type === "procedural-voxel-world" || def?.type === "iframe" || def?.equationCollider?.infinite === true;
+  const managedObject = def => ['gox-model','model-asset'].includes(def?.type) || def?.type === 'image-plane' || PRIMITIVE_WORLD_OBJECT_TYPES.has(def?.type) || def?.type === "world-text" || def?.type === "physical-path" || def?.type === "procedural-voxel-world" || def?.type === "iframe" || def?.equationCollider?.infinite === true;
   const snapshotWorldObjects = () => {
     const meshes = new Map(layerEntries.map(entry => [entry.def, entry.object3d]));
     return JSON.stringify((worldData.objects || []).map(def => {
@@ -1185,7 +1196,7 @@ export function registerMetaWorldLayerBridge({ state, filePath, worldData, layer
   };
   const attachLayerBreakHandler = (entry) => {
     if (!entry?.object3d) return;
-    if (['physical-path','world-text'].includes(entry.def?.type)) { entry.object3d.userData.onBreakTarget = () => bridge.removeObjectLayer(entry.id); return; }
+    if (['physical-path','world-text','gox-model','model-asset'].includes(entry.def?.type)) { entry.object3d.userData.onBreakTarget = () => bridge.removeObjectLayer(entry.id); return; }
     if (isExpressionLayerType(entry.def?.type)) {
       entry.object3d.userData.breakable = entry.def?.locked !== true;
       entry.object3d.userData.placedByPlayer = true;
@@ -1207,6 +1218,7 @@ export function registerMetaWorldLayerBridge({ state, filePath, worldData, layer
   const removeGameObjectRuntimeRefs = (object3d) => {
     // Preserve independently authored attachments while replacing their generated parent.
     for (const child of [...(object3d?.children || [])]) if (child.userData?.textRuntime) scene.add(child);
+    object3d?.userData?.modelRuntime?.dispose();
     object3d?.userData?.textRuntime?.dispose();
     object3d?.userData?.pathRuntime?.dispose();
     object3d?.userData?.proceduralVoxelRuntime?.dispose();
@@ -1294,7 +1306,8 @@ export function registerMetaWorldLayerBridge({ state, filePath, worldData, layer
           disposeExpressionObject(entry.object3d);
         }
         const def = entry.def;
-        const mesh = def.preserveLocalTransform === true && PRIMITIVE_WORLD_OBJECT_TYPES.has(def.type) ? createPrimitiveWorldMesh(THREE,def,{color:def.color})
+        const mesh = PRIMITIVE_WORLD_OBJECT_TYPES.has(def.type) ? createPrimitiveWorldMesh(THREE,def,{color:def.color})
+          : ['gox-model','model-asset'].includes(def.type) ? createModelWorldObject(def)
           : def.type === 'image-plane' ? createDownloadedImagePlane(THREE, def)
           : def.type === 'world-text' ? createTextObject(THREE, def)
           : def.type === 'physical-path' ? createPathObject(THREE, def, colliders)
@@ -1308,7 +1321,7 @@ export function registerMetaWorldLayerBridge({ state, filePath, worldData, layer
           isSolid: def.isSolid === true, breakable: def.type !== "procedural-voxel-world", placedByPlayer: true });
         mesh.userData.preserveLocalTransform=def.preserveLocalTransform===true;
         applyPhysicsMaterialToMesh(mesh, ensureWorldObjectPhysicsMaterial(def));
-        if (def.preserveLocalTransform===true && PRIMITIVE_WORLD_OBJECT_TYPES.has(def.type)) {
+        if (PRIMITIVE_WORLD_OBJECT_TYPES.has(def.type)) {
           const collider=makeObjectColliderRef(THREE,mesh,def,def.type);
           if(collider){mesh.userData.colliderRef=collider;colliders.push(collider);}
         } else if (def.collider !== false && def.equationCollider?.infinite) {
@@ -1378,6 +1391,7 @@ export function registerMetaWorldLayerBridge({ state, filePath, worldData, layer
         locked: entry.def?.locked === true,
         error: entry.def?.error || "",
         equationCollider: entry.def?.equationCollider || null,
+        soundProperty: entry.def?.soundProperty || null,
       }));
     },
     selectObject(objectId) {
@@ -1884,12 +1898,20 @@ export function registerMetaWorldLayerBridge({ state, filePath, worldData, layer
   installPathAuthoring(bridge, { THREE, scene, objects, colliders, layerEntries, worldData, select:selectMetaWorldObject,
     changed(objectId) { markMetaWorldLayersDirty(worldData); syncBridgeWorldState(state,worldData); notifyMetaWorldLayersChanged({reason:'pathUpdated',objectId}); }
   });
+  installSoundAuthoring(bridge, {layerEntries,
+    attach:(mesh,sound)=>attachSoundObjectRuntime(mesh,sound,filePath),dispose:disposeSoundObjectRuntime,
+    changed(objectId){markMetaWorldLayersDirty(worldData);syncBridgeWorldState(state,worldData);notifyMetaWorldLayersChanged({reason:'soundPropertyUpdated',objectId});}
+  });
   installTextAuthoring(bridge, { THREE, scene, objects, layerEntries, worldData, select:selectMetaWorldObject,
     changed(objectId) { markMetaWorldLayersDirty(worldData); syncBridgeWorldState(state,worldData); notifyMetaWorldLayersChanged({reason:'textUpdated',objectId}); }
   });
   if (window.VRWorldContext) window.VRWorldContext.updatePathTransforms = () => { bridge.updatePathTransforms(); bridge.updateTextVisibility(); };
   if (window.VRWorldContext) window.VRWorldContext.recordObjectTransform = mesh => bridge.recordObjectTransform(mesh);
   layerEntries.forEach(attachLayerBreakHandler);
+  installModelWorldCommand({ bridge, scene, objects, layerEntries, changed: objectId => {
+    markMetaWorldLayersDirty(worldData); syncBridgeWorldState(state, worldData);
+    notifyMetaWorldLayersChanged({ reason: "goxAssetAdded", objectId });
+  } });
   installDownloadedImageCommand({ bridge, THREE, scene, objects, layerEntries, changed: objectId => {
     markMetaWorldLayersDirty(worldData); syncBridgeWorldState(state, worldData);
     notifyMetaWorldLayersChanged({ reason: "downloadedImageAdded", objectId });
@@ -2243,6 +2265,7 @@ function resetLegacyWorldScene(ctx, state, worldData = null) {
   if (ctx.metaWorldHost?.parentNode) ctx.metaWorldHost.parentNode.removeChild(ctx.metaWorldHost);
   ctx.metaWorldHost = null;
   objects?.forEach((obj) => {
+    obj?.userData?.modelRuntime?.dispose();
     obj?.userData?.textRuntime?.dispose();
     obj?.userData?.pathRuntime?.dispose();
     obj?.userData?.proceduralVoxelRuntime?.dispose();
@@ -2372,6 +2395,7 @@ async function loadStlWorld(filePath, state, THREE) {
   if (!ground.parent) scene.add(ground);
 
   objects?.forEach((obj) => {
+    obj?.userData?.modelRuntime?.dispose();
     obj?.userData?.textRuntime?.dispose();
     obj?.userData?.pathRuntime?.dispose();
     obj?.userData?.proceduralVoxelRuntime?.dispose();
@@ -2650,6 +2674,7 @@ export async function loadWorldFromFile(filePath, state, THREE, options = {}) {
       worldData.metadata.multiplayer = multiplayerDef;
     }
     objects.forEach((obj) => {
+      obj?.userData?.modelRuntime?.dispose();
       obj?.userData?.textRuntime?.dispose();
       obj?.userData?.pathRuntime?.dispose();
       obj?.userData?.proceduralVoxelRuntime?.dispose();
@@ -3264,6 +3289,8 @@ export async function loadWorldFromFile(filePath, state, THREE, options = {}) {
         def.isSolid = false;
         def.collidable = false;
         mesh = createSoundObjectMesh(THREE, def, filePath);
+      } else if (["gox-model","model-asset"].includes(def.type)) {
+        mesh = createModelWorldObject(def);
       } else if (def.type === "image-plane") {
         const size = Array.isArray(def.size) && def.size.length >= 2 ? def.size : [2, 2];
         mesh = new THREE.Mesh(
@@ -3275,6 +3302,7 @@ export async function loadWorldFromFile(filePath, state, THREE, options = {}) {
             side: THREE.DoubleSide
           })
         );
+        if (def.assetProvenance) mesh.userData.assetProvenance = JSON.parse(JSON.stringify(def.assetProvenance));
         const imageFile = typeof def.imageFile === "string"
           ? def.imageFile
           : typeof def.image === "string"

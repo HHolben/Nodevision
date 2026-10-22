@@ -6,14 +6,18 @@ export function samplePath(THREE, def, terrainHeight) {
   const length = points.slice(1).reduce((n,p,i) => n + p.distanceTo(points[i]),0);
   if (length > 4096) throw Error('Path length exceeds 4096 m. Split it into shorter paths.');
   const result = [];
+  if(def.elevationMode==='locally-flat'&&points.length>2){const original=points.map(p=>p.y),strength=def.smoothing??.5;for(let i=1;i<points.length-1;i++)points[i].y=original[i]*(1-strength)+(original[i-1]+original[i+1])*.5*strength;}
   if (def.interpolation === 'smooth') {
     const curve = new THREE.CatmullRomCurve3(points, false, 'centripetal');
     curve.arcLengthDivisions = Math.max(200, Math.ceil(length * 4));
-    result.push(...curve.getSpacedPoints(Math.max(2, Math.ceil(length / .25))).map(p => p.toArray()));
+    const count=Math.max(2,Math.ceil(length/.25)),strength=1-(def.smoothing||0)*.5;
+    if(strength===1)result.push(...curve.getSpacedPoints(count).map(p=>p.toArray()));
+    else for(let i=0;i<=count;i++){const t=i/count*(points.length-1),segment=Math.min(points.length-2,Math.floor(t)),linear=points[segment].clone().lerp(points[segment+1],t-segment);result.push(linear.lerp(curve.getPoint(i/count),strength).toArray());}
   } else {
+    const curve=def.interpolation==='mixed'?new THREE.CatmullRomCurve3(points,false,'centripetal'):null;
     points.slice(1).forEach((p,i) => {
       const count = Math.max(1,Math.ceil(p.distanceTo(points[i]) / .25));
-      for (let j=0;j<count;j++) result.push(points[i].clone().lerp(p,j/count).toArray());
+      for (let j=0;j<count;j++) result.push(curve&&def.segmentKinds?.[i]==='smooth'?points[i].clone().lerp(p,j/count).lerp(curve.getPoint((i+j/count)/(points.length-1)),1-(def.smoothing||0)*.5).toArray():points[i].clone().lerp(p,j/count).toArray());
     });
     result.push(points.at(-1).toArray());
   }
@@ -22,6 +26,8 @@ export function samplePath(THREE, def, terrainHeight) {
     if (!Number.isFinite(height)) throw Error('Follow terrain requires every path sample to lie within a terrain heightfield.');
     p[1] = height;
   }
+  if(def.elevationMode==='follow-terrain'&&def.smoothing>0){const ys=result.map(p=>p[1]),radius=Math.max(1,Math.round(def.smoothing*16));for(let i=1;i<result.length-1;i++){let sum=0,n=0;for(let j=Math.max(0,i-radius);j<=Math.min(result.length-1,i+radius);j++){sum+=ys[j];n++;}result[i][1]=ys[i]*(1-def.smoothing)+sum/n*def.smoothing;}}
+  for(const p of result)p[1]+=def.elevationOffset||0;
   return result;
 }
 const cross = (a,b,c) => (b[0]-a[0])*(c[2]-a[2])-(b[2]-a[2])*(c[0]-a[0]);

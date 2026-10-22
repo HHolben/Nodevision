@@ -3,6 +3,7 @@
 // routes/api/folderRoutes.js
 // Backend for folder creation and management operations
 
+import { syncAttributionFileOperation } from '../../AssetDownloads/AttributionFileOperations.mjs';
 import express from 'express';
 import fs from 'node:fs/promises';
 import path from 'node:path';
@@ -168,8 +169,9 @@ export default function createFolderRouter(ctx = BASE_CONTEXT) {
       await fs.mkdir(destDir, { recursive: true });
       await fs.rename(sourceFullPath, destinationFullPath);
       const destinationPath = normalizeClientPath(destination ? destination + "/" + path.basename(source) : path.basename(source));
+      const attribution = await syncAttributionFileOperation(ctx, source, destinationPath);
       const directoryAppearance = await remapDirectoryAppearanceAfterMove(source, destinationPath);
-      res.status(200).json({ message: "Moved \"" + source + "\" to \"" + destination + "\".", directoryAppearance });
+      res.status(200).json({ message: "Moved \"" + source + "\" to \"" + destination + "\".", directoryAppearance, attribution });
     } catch (error) {
       console.error('Error moving file or directory:', error);
       res.status(500).json({ error: 'Failed to move file or directory.', details: error.message });

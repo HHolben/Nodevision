@@ -1,5 +1,7 @@
 // Nodevision/ApplicationSystem/public/ToolbarJSONfiles/insertMediaModel.mjs
 // Renders and executes the Insert Model workflow with New/Existing, inline previews, and static linked 3D viewer panels.
+import {createAssetBrowser} from '/PanelInstances/EditorPanels/MetaWorldImportComponents/assetBrowser.mjs';
+import {appendOnlineMediaButton} from './insertMediaOnline.mjs';
 
 import { escapeHtml, getActiveEditorNotebookPath, dirname, joinNotebookPath, normalizeNotebookPath, notebookHrefFromPath, saveNotebookText, insertHtmlAtCaret } from "./insertMediaCommon.mjs";
 import { fetchUrlAsDataUrl, fetchUrlAsText, looksLikeUrlOrAbsPath, notebookSourceFromPath, readFileAsDataUrl, readFileAsText, saveNotebookBinaryFromDataUrl } from "./insertMediaIO.mjs";
@@ -58,19 +60,20 @@ function pickDefaultExt(exts) {
 
 const STATIC_MODEL_VIEWER_SCRIPT_KEY = "nv-static-model-panels";
 const USD_SCENE_EXTENSIONS = new Set(["usd", "usda", "usdc"]);
-const MODEL_VIEWER_SUPPORTED_EXTENSIONS = new Set(["glb", "gltf", "obj", "ply", "stl"]);
-const VIRTUAL_WORLD_MODEL_EXTENSIONS = new Set(["stl", "obj", "scad"]);
+const MODEL_VIEWER_SUPPORTED_EXTENSIONS = new Set(["glb", "gltf", "obj", "ply", "stl", "gox"]);
+const VIRTUAL_WORLD_MODEL_EXTENSIONS = new Set(["stl", "obj", "scad", "gox", "gltf", "glb"]);
 const STATIC_MODEL_VIEWER_SCRIPT = `(function(){
   "use strict";
   const RUNTIME_KEY = "nv-static-model-panels";
   const THREE_VERSION = "0.160.0";
   const CDN_BASE = "https://esm.sh/three@" + THREE_VERSION;
   const state = window.NVStaticModelPanels || (window.NVStaticModelPanels = {});
-  if (state.installed) {
+  if (state.installed && state.version === 2) {
     if (typeof state.initAll === "function") state.initAll();
     return;
   }
   state.installed = true;
+  state.version = 2;
   state.imports = state.imports || {};
 
   function setStatus(panel, message, isError) {
@@ -87,7 +90,12 @@ const STATIC_MODEL_VIEWER_SCRIPT = `(function(){
     return state.imports[key];
   }
 
-  async function loadCore() {
+  async function loadCore(ext) {
+    if (ext === "gox") {
+      const three = await importCached("gox-three", "/lib/three/three.module.js");
+      const controls = await importCached("gox-controls", "/lib/three/OrbitControls.js");
+      return { THREE: three, OrbitControls: controls.OrbitControls };
+    }
     const three = await importCached("three", CDN_BASE);
     const controls = await importCached("controls", CDN_BASE + "/examples/jsm/controls/OrbitControls.js");
     return { THREE: three, OrbitControls: controls.OrbitControls };
@@ -101,6 +109,10 @@ const STATIC_MODEL_VIEWER_SCRIPT = `(function(){
   }
 
   async function loadModelObject(THREE, src, ext) {
+    if (ext === "gox") {
+      const mod = await importCached("gox", "/Voxels/GoxHtmlModel.mjs");
+      return mod.loadGoxHtmlModel(src);
+    }
     if (ext === "glb" || ext === "gltf") {
       const mod = await importCached("gltf", CDN_BASE + "/examples/jsm/loaders/GLTFLoader.js");
       const gltf = await new mod.GLTFLoader().loadAsync(src);
@@ -154,7 +166,9 @@ const STATIC_MODEL_VIEWER_SCRIPT = `(function(){
   }
 
   async function initPanel(panel) {
-    if (!panel || panel.dataset.nvModelViewerReady === "true") return;
+    if (!panel || panel.__nvModelViewerState) return;
+    panel.__nvModelViewerDispose?.();
+    panel.__nvModelViewerState = "loading";
     panel.dataset.nvModelViewerReady = "true";
     const src = panel.dataset.src || panel.getAttribute("data-src") || "";
     const ext = extensionFromSource(src, panel.dataset.ext || "");
@@ -166,17 +180,18 @@ const STATIC_MODEL_VIEWER_SCRIPT = `(function(){
     if (!canvas.parentNode) panel.prepend(canvas);
     Object.assign(canvas.style, { display: "block", width: "100%", height: "100%" });
 
+    let renderer = null, controls = null, object = null;
     try {
       setStatus(panel, "Loading 3D model...", false);
-      const { THREE, OrbitControls } = await loadCore();
-      const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+      const { THREE, OrbitControls } = await loadCore(ext);
+      renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
       renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
       if (THREE.SRGBColorSpace) renderer.outputColorSpace = THREE.SRGBColorSpace;
 
       const scene = new THREE.Scene();
       scene.background = new THREE.Color(panel.dataset.background || "#f6f7f9");
       const camera = new THREE.PerspectiveCamera(45, 1, 0.01, 1000);
-      const controls = new OrbitControls(camera, renderer.domElement);
+      controls = new OrbitControls(camera, renderer.domElement);
       controls.enableDamping = true;
       controls.dampingFactor = 0.08;
       controls.enableRotate = true;
@@ -206,7 +221,7 @@ const STATIC_MODEL_VIEWER_SCRIPT = `(function(){
       keyLight.position.set(4, 6, 5);
       scene.add(keyLight);
 
-      const object = await loadModelObject(THREE, src, ext);
+      object = await loadModelObject(THREE, src, ext);
       if (!object) throw new Error("Model did not contain a renderable scene.");
       const modelRoot = new THREE.Group();
       modelRoot.add(object);
@@ -238,13 +253,20 @@ const STATIC_MODEL_VIEWER_SCRIPT = `(function(){
       animate();
 
       panel.__nvModelViewerDispose = function() {
+        delete panel.__nvModelViewerState;
+        delete panel.dataset.nvModelViewerReady;
         cancelAnimationFrame(frameId);
         observer?.disconnect();
         window.removeEventListener("resize", resize);
         controls.dispose?.();
+        object.userData?.disposeModel?.();
         renderer.dispose?.();
       };
     } catch (err) {
+      delete panel.__nvModelViewerState;
+      controls?.dispose?.();
+      object?.userData?.disposeModel?.();
+      renderer?.dispose?.();
       panel.dataset.nvModelViewerReady = "error";
       setStatus(panel, err && err.message ? err.message : String(err), true);
     }
@@ -293,7 +315,7 @@ function resourceFromModel({ src = "", label = "", linkedPath = "", objectDataUr
   });
 }
 
-function buildLinkedModelViewerHtml({ src, label, linkedPath = "", ext = "", fallbacks = [], resource = null } = {}) {
+export function buildLinkedModelViewerHtml({ src, label, linkedPath = "", ext = "", fallbacks = [], resource = null } = {}) {
   const ref = resource || null;
   const source = String(ref?.src || src || "").trim();
   const modelExt = modelExtensionFromSource(source, ext || ref?.metadata?.extension || "");
@@ -308,15 +330,16 @@ function buildLinkedModelViewerHtml({ src, label, linkedPath = "", ext = "", fal
   return `<div id="${escapeHtml(id)}" class="nv-3d-model-panel" data-nv-static-model-viewer data-src="${escapeHtml(source)}"${fallbackAttrs} data-ext="${escapeHtml(modelExt)}" data-label="${escapeHtml(displayLabel)}"${linkedAttr} contenteditable="false" style="position:relative;width:min(100%,360px);height:240px;margin:12px 0;border:1px solid #c7d0da;border-radius:8px;overflow:hidden;background:#f6f7f9;box-shadow:0 1px 3px rgba(15,23,42,0.12);"><canvas data-nv-model-canvas style="display:block;width:100%;height:100%;"></canvas><div data-nv-model-status style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;text-align:center;padding:12px;font:12px system-ui,sans-serif;color:#26313d;background:rgba(255,255,255,0.86);box-sizing:border-box;">Loading 3D model...</div><a href="${escapeHtml(source)}" style="position:absolute;left:8px;bottom:8px;max-width:calc(100% - 16px);padding:3px 6px;border-radius:4px;background:rgba(255,255,255,0.86);color:#1d4ed8;font:11px system-ui,sans-serif;text-decoration:none;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escapeHtml(title)}</a></div>`;
 }
 
-function insertLinkedModelViewerAtCaret(options = {}) {
-  insertHtmlAtCaret(buildLinkedModelViewerHtml(options));
-  const tools = window.HTMLWysiwygTools;
+export function insertLinkedModelViewerAtCaret(options = {}) {
+  const tools = options.tools || window.HTMLWysiwygTools;
+  const insert = options.tools ? html => tools.insertHTMLAtCaret(html) : insertHtmlAtCaret;
+  insert(buildLinkedModelViewerHtml(options));
   const appended = tools?.appendScriptForSave?.(STATIC_MODEL_VIEWER_SCRIPT, STATIC_MODEL_VIEWER_SCRIPT_KEY);
   if (!appended) {
-    insertHtmlAtCaret(`<script>${STATIC_MODEL_VIEWER_SCRIPT}</script>`);
+    insert(`<script>${STATIC_MODEL_VIEWER_SCRIPT}</script>`);
   }
   try {
-    if (!window.NVStaticModelPanels?.initAll) {
+    if (!window.NVStaticModelPanels?.initAll || window.NVStaticModelPanels.version !== 2) {
       (0, eval)(STATIC_MODEL_VIEWER_SCRIPT);
     }
     window.NVStaticModelPanels?.initAll?.();
@@ -340,7 +363,7 @@ function makeWorldModelId(label) {
 function assertVirtualWorldModelExtension(source, fallback = "") {
   const ext = modelExtensionFromSource(source, fallback);
   if (!VIRTUAL_WORLD_MODEL_EXTENSIONS.has(ext)) {
-    throw new Error("Virtual world models currently support STL, OBJ, and SCAD files.");
+    throw new Error("Virtual world models support STL, OBJ, SCAD, GLTF, GLB and GOX.");
   }
   return ext;
 }
@@ -381,7 +404,13 @@ async function insertWorldModelObject(model = {}) {
   if (refText) def.objectText = refText;
   if (!def.objectFile && !def.objectDataUrl && !def.objectText) throw new Error("Missing 3D model content.");
 
+  if(model.validate&&!model.validate())throw Error("The originating world changed");
   const bridge = await ensureEditableMetaWorldBridge();
+  if (["gox","gltf","glb"].includes(ext)) {
+    if (!refPath || refDataUrl) throw new Error("Save the model to the Notebook before placing it.");
+    const {startModelPlacement}=await import('/Models/ModelPlacement.mjs');
+    return startModelPlacement(refPath,{name:label,assetProvenance:ref?.metadata,validate:model.validate,repeat:window.VRWorldContext?.inventory?.getSelectedItem?.()?.id==="3d-model"});
+  }
   if (!bridge?.addObjectFileLayer) throw new Error("Open a MetaWorld editor before inserting 3D models.");
   const added = bridge.addObjectFileLayer(def);
   if (!added) throw new Error("Could not add 3D model to the virtual world.");
@@ -395,6 +424,7 @@ export function renderInsertModel(root, exts = [], renderOptions = {}) {
   const initialResource = renderOptions?.initialResource || null;
   const originContext = renderOptions?.originContext || getInsertMediaOriginContext(root) || null;
   const inWorld = target === "virtualWorld";
+  const originatingWorld = inWorld ? window.VRWorldContext : null;
   let extensions = Array.from(new Set(exts)).map((e) => String(e).toLowerCase()).filter(Boolean).sort((a, b) => a.localeCompare(b));
   if (inWorld) {
     extensions = Array.from(new Set([...extensions.filter((ext) => VIRTUAL_WORLD_MODEL_EXTENSIONS.has(ext)), ...VIRTUAL_WORLD_MODEL_EXTENSIONS])).sort((a, b) => a.localeCompare(b));
@@ -450,20 +480,40 @@ export function renderInsertModel(root, exts = [], renderOptions = {}) {
 
   const sync = () => {
     const src = valueOf(sourceEls());
+    const gox = (inWorld?["gox","gltf","glb"]:["gox"]).includes((src === "new" ? formatEl.value : modelExtensionFromSource(existingLocal.dataUrl ? existingLocal.name : existingSourceEl.value)));
+    if (worldColliderEl) { worldColliderEl.disabled = gox; if (gox) worldColliderEl.checked = false; worldColliderEl.closest("fieldset").title = gox ? "GOX artwork does not add a physics collider." : ""; }
+    for (const radio of storageEls()) { if (radio.value === "inline") radio.disabled = gox; if (gox && radio.value === "referenced") radio.checked = true; }
     const storage = valueOf(storageEls());
     newSection.style.display = src === "new" ? "flex" : "none";
     existingSection.style.display = src === "existing" ? "flex" : "none";
     newRefSection.style.display = (src === "new" && storage === "referenced") ? "flex" : "none";
   };
+  formatEl.addEventListener("change", sync);
+  existingSourceEl.addEventListener("input", sync);
+  const sources=document.createElement('div'),browse=document.createElement('button'),browser=document.createElement('div');
+  browse.type='button';browse.textContent='Notebook…';sources.append(browse);form.prepend(sources);sources.after(browser);
+  let releaseBrowser=null;
+  browse.onclick=()=>{if(releaseBrowser){releaseBrowser();releaseBrowser=null;browser.replaceChildren();return;}
+    releaseBrowser=createAssetBrowser(browser,{extensions:options,actionLabel:'Choose model',onStatus:message=>{statusEl.textContent=message;},onImport:asset=>{
+      existingLocal={name:'',dataUrl:''};existingSourceEl.value=asset.notebookPath;delete existingSourceEl.dataset.localFile;
+      sourceEls().find(r=>r.value==='existing').checked=true;storageEls().find(r=>r.value==='referenced').checked=true;sync();releaseBrowser?.();releaseBrowser=null;browser.replaceChildren();
+    }});
+  };
+  appendOnlineMediaButton(sources,()=>({cell:originContext?.originCell,mediaFamily:'Model'}),message=>{statusEl.textContent=message;});
+
   sourceEls().forEach((r) => r.addEventListener("change", sync));
   storageEls().forEach((r) => r.addEventListener("change", sync));
   sync();
 
   const updateExistingLabel = () => {
     existingFileStatus.textContent = existingLocal.dataUrl ? `Selected: ${existingLocal.name}` : "No local file selected.";
+    sync();
   };
   updateExistingLabel();
-  if (initialState) restoreNamedInsertMediaState(root, initialState, stateConfig());
+  if (initialState) {
+    restoreNamedInsertMediaState(root, initialState, stateConfig());
+    sync();
+  }
   if (initialResource) {
     setRadioValue(root, "nv-source", "existing");
     populateExistingSourceFromResource(root, initialResource, {
@@ -506,6 +556,7 @@ export function renderInsertModel(root, exts = [], renderOptions = {}) {
     hiddenExisting.value = "";
     if (!file) return;
     try {
+      await (await import('/Models/ValidateModelFile.mjs')).validateModelFile(file);
       const dataUrl = await readFileAsDataUrl(file);
       let text = "";
       if (file.size <= 800_000) {
@@ -536,21 +587,31 @@ export function renderInsertModel(root, exts = [], renderOptions = {}) {
     try {
       const sourceMode = valueOf(sourceEls());
       const storageMode = valueOf(storageEls());
-      const editorPath = getActiveEditorNotebookPath();
+      const editorPath = originContext?.originEditorPath || (inWorld ? originatingWorld?.currentWorldPath : "") || getActiveEditorNotebookPath();
       const baseDir = dirname(editorPath);
       const defaultDir = joinNotebookPath(baseDir, "models");
 
       if (inWorld) {
+        if(window.VRWorldContext!==originatingWorld)throw Error("The originating world changed; reopen Insert 3D Model.");
         const bindCollider = worldColliderEl?.checked !== false;
         let worldModel = null;
 
         if (sourceMode === "new") {
           const ext = String(formatEl.value || defaultExt).trim().toLowerCase() || defaultExt;
+          if (["gox","gltf","glb"].includes(ext)) throw Error("Choose an existing model, or create one in its graphical editor before placing it.");
           const fileName = ensureExt(fileEl.value || ("model-" + Date.now()), ext) || ("model-" + Date.now() + "." + ext);
           const dotIndex = fileName.lastIndexOf(".");
           const baseName = dotIndex > 0 ? fileName.slice(0, dotIndex) : fileName;
           const content = defaultModelContent(ext, baseName);
-          if (storageMode === "inline") {
+          if (ext === "gox") {
+            if (storageMode === "inline") throw new Error("GOX world artwork must reference a Notebook file.");
+            const notebookPath = normalizeNotebookPath(joinNotebookPath(defaultDir, fileName));
+            const { encodeGox } = await import("/Voxels/GoxCodec.mjs");
+            const { newModel } = await import("/Voxels/VoxelModel.mjs");
+            const bytes = await encodeGox(newModel());
+            await saveNotebookBinaryFromDataUrl(notebookPath, "data:application/octet-stream;base64," + btoa(String.fromCharCode(...bytes)), "application/octet-stream");
+            worldModel = { label: fileName, ext, objectFile: notebookPath };
+          } else if (storageMode === "inline") {
             worldModel = { label: fileName, ext, objectText: content };
           } else {
             const notebookPath = normalizeNotebookPath(joinNotebookPath(defaultDir, fileName));
@@ -578,7 +639,7 @@ export function renderInsertModel(root, exts = [], renderOptions = {}) {
               }
             }
           } else if (localSelected) {
-            const saveName = ensureExt(existingLocal.name || label || ("model-" + Date.now()), ext);
+            const saveName = crypto.randomUUID()+"-"+ensureExt(existingLocal.name || label || ("model-" + Date.now()), ext);
             const notebookPath = normalizeNotebookPath(joinNotebookPath(defaultDir, saveName));
             await saveNotebookBinaryFromDataUrl(notebookPath, existingLocal.dataUrl, "application/octet-stream");
             worldModel = { label: saveName, ext, objectFile: notebookPath };
@@ -606,7 +667,7 @@ export function renderInsertModel(root, exts = [], renderOptions = {}) {
           ext: worldModel.ext || "",
           sourcePath: editorPath,
         });
-        await insertWorldModelObject({ ...worldModel, bindCollider, resource });
+        await insertWorldModelObject({ ...worldModel, bindCollider, resource, validate:()=>window.VRWorldContext===originatingWorld });
         setStatus("Inserted.");
         return;
       }
@@ -619,7 +680,15 @@ export function renderInsertModel(root, exts = [], renderOptions = {}) {
         const fileName = ensureExt(fileEl.value || `model-${Date.now()}`, ext) || `model-${Date.now()}.${ext}`;
         const content = defaultModelContent(ext, fileName.replace(/\.[^.]+$/, ""));
 
-        if (storageMode === "inline") {
+        if (ext === "gox") {
+          if (storageMode === "inline") throw new Error("GOX models require a saved file reference.");
+          const notebookPath = normalizeNotebookPath(joinNotebookPath(defaultDir, fileName));
+          const { encodeGox } = await import("/Voxels/GoxCodec.mjs");
+          const { newModel } = await import("/Voxels/VoxelModel.mjs");
+          const bytes = await encodeGox(newModel());
+          await saveNotebookBinaryFromDataUrl(notebookPath, "data:application/octet-stream;base64," + btoa(String.fromCharCode(...bytes)), "application/octet-stream");
+          modelViewer = { src: notebookSourceFromPath(notebookPath, editorPath), label: fileName, linkedPath: notebookPath, ext };
+        } else if (storageMode === "inline") {
           html = `<details class="nv-inline-model"><summary>${escapeHtml(fileName)}</summary><pre style="white-space:pre-wrap;">${escapeHtml(content)}</pre></details>`;
         } else {
           const notebookPath = normalizeNotebookPath(joinNotebookPath(defaultDir, fileName));
@@ -633,6 +702,7 @@ export function renderInsertModel(root, exts = [], renderOptions = {}) {
         if (!entered && !localSelected) throw new Error("Enter an existing model source or choose a local file.");
 
         if (storageMode === "inline") {
+          if (modelExtensionFromSource(localSelected ? existingLocal.name : entered) === "gox") throw new Error("GOX models require a saved file reference.");
           let text = "";
           if (localSelected) {
             text = existingLocal.text || "(Binary model selected; no text preview available.)";
@@ -691,4 +761,3 @@ export function renderInsertModel(root, exts = [], renderOptions = {}) {
     }
   });
 }
-

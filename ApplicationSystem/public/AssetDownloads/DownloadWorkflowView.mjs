@@ -1,5 +1,6 @@
 // Nodevision/ApplicationSystem/public/AssetDownloads/DownloadWorkflowView.mjs
 // Presents target selection, insertion choices and an explicit preview before running an asset workflow.
+import { appendImageStorageControls } from '/ToolbarJSONfiles/insertMediaStorage.mjs';
 import { element, fillOptions } from './DownloadView.mjs';
 export function addDownloadWorkflowView(view) {
   const section = element('section'); view.download.before(section);
@@ -8,6 +9,7 @@ export function addDownloadWorkflowView(view) {
   const capture = element('button', 'Capture selected editor and insertion location', section);
   const action = field('Action', 'select');
   fillOptions(action, [{ id: 'only', name: 'Download Only' }, { id: 'insert', name: 'Download and Insert' }, { id: 'attribute', name: 'Download, Insert, and Attribute (recommended)' }]);
+  const storage = appendImageStorageControls(section);
   const strategy = field('Insertion strategy', 'select'); fillOptions(strategy, [{ id: 'markup', name: 'Editor element / image placement' }, { id: 'path', name: 'Path only in code (review first)' }]);
   const creditPlacement = field('Attribution placement', 'select'); fillOptions(creditPlacement, [{ id: 'visible', name: 'Visible credit plus project manifest' }, { id: 'project', name: 'Project credits manifest' }]);
   const consent = field('I reviewed the license and accept responsibility for permitted use and any credits provided elsewhere.', 'input'); consent.type = 'checkbox';
@@ -21,5 +23,5 @@ export function addDownloadWorkflowView(view) {
   const creditsText = element('pre', '', credits); creditsText.style.cssText = 'white-space:pre-wrap;overflow-wrap:anywhere';
   const refreshCredits = element('button', 'Load project credits', credits);
   const exportCredits = element('button', 'Export credits text', credits);
-  return { target, capture, action, strategy, creditPlacement, consent, confirmPath, preview, copy, retry, commit, discard, creditsText, refreshCredits, exportCredits };
+  return { storage, target, capture, action, strategy, creditPlacement, consent, confirmPath, preview, copy, retry, commit, discard, creditsText, refreshCredits, exportCredits };
 }

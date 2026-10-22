@@ -540,7 +540,14 @@ function compactVoxelDefinitions(defs = []) {
 }
 
 export function serializeMesh(mesh) {
+  const def=serializeMeshGeometry(mesh);
+  if(def && mesh?.userData?.soundProperty)def.soundProperty=JSON.parse(JSON.stringify(mesh.userData.soundProperty));
+  return def;
+}
+
+function serializeMeshGeometry(mesh) {
   if (mesh?.userData?.runtimeGenerated) return null;
+  if (mesh?.userData?.modelRuntime) return mesh.userData.modelRuntime.serialize();
   if (mesh?.userData?.textRuntime) return mesh.userData.textRuntime.serialize();
   if (mesh?.userData?.pathRuntime) return mesh.userData.pathRuntime.serialize();
   if (mesh?.userData?.proceduralVoxelRuntime) return mesh.userData.proceduralVoxelRuntime.serialize();
@@ -568,6 +575,8 @@ export function serializeMesh(mesh) {
     color: materialColorHex(mesh),
     isSolid: mesh.userData?.isSolid === true
   };
+
+  if (mesh.userData?.assetProvenance) def.assetProvenance = JSON.parse(JSON.stringify(mesh.userData.assetProvenance));
 
   const preserveLocalTransform=TEXT_PARENT_TYPES.includes(type)&&(mesh.userData.preserveLocalTransform===true||mesh.children.some(child=>child.userData?.textRuntime));
   if(preserveLocalTransform){def.preserveLocalTransform=true;def.scale=mesh.scale.toArray();def.position=mesh.position.toArray();}

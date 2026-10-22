@@ -11,7 +11,10 @@ test('fixed baseline and net growth including deletions',()=>{
   const progress=bridgingProgress(goal,500,550,200);assert.equal(progress.netWordsAdded,50);assert.equal(progress.remainingWords,50);assert.equal(progress.reason,null);
   assert.equal(bridgingProgress(goal,500,600,300).reason,'word target');
   assert.equal(bridgingProgress(goal,500,500,60000).reason,'timer');
-  assert.equal(bridgingProgress({...goal,targetGrowth:0},500,500,0).reason,'word target');
+  for(const targetGrowth of [0,'',null,NaN])assert.throws(()=>normalizeBridgingGoal({...goal,targetGrowth}),/positive integer/);
+  const timerOnly=normalizeBridgingGoal({...goal,wordsEnabled:false,targetGrowth:0});
+  assert.equal(bridgingProgress(timerOnly,500,500,0).reason,null);
+  assert.equal(bridgingProgress(timerOnly,500,500,60000).reason,'timer');
   assert.throws(()=>normalizeBridgingGoal({...goal,wordsEnabled:false,timerEnabled:false}));
   assert.throws(()=>normalizeBridgingGoal({...goal,targetGrowth:-1}));
 });

@@ -322,6 +322,7 @@ export async function openPanelTabInCell(cell, descriptor, mountContent) {
 }
 
 function tabLooksDirty(tab, state = null) {
+  if (tab.contentElement?.querySelector?.("[data-nv-gox]")?.__nvGoxApi?.isDirty()) return true;
   const isEditor = /editor/i.test(tab.panelType || "") || /editor/i.test(tab.panelClass || "");
   if (!isEditor) return false;
   const session = tab.contentElement?.__nvCodeEditorSession;

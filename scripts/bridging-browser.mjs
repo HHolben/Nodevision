@@ -1,6 +1,8 @@
 // Nodevision/scripts/bridging-browser.mjs
 // Exercise Bridging against the production HTML editor, source serializer, history and save handler, with a simulated Notebook transport.
 import {renderEditor} from '/PanelInstances/EditorPanels/GraphicalEditors/HTMLeditor.mjs';
+import {SessionUiOwnership} from '/Sessions/SessionUiOwnership.mjs';
+import {startSession,getActiveSession} from '/Sessions/SessionController.mjs';
 import {startBridging} from '/Sessions/BridgingSession.mjs';
 import {createBridgingWordCount} from '/Sessions/BridgingWordCount.mjs';
 import {dispatchNodevisionCommand} from '/Commands/NodevisionCommandDispatcher.mjs';
@@ -11,6 +13,7 @@ try {
   window.NodevisionState={};const fetchOriginal=window.fetch.bind(window);let saved=[],fail=false,createdPath;
   const source='<!doctype html><html lang="en"><head><title>Bridge</title><meta name="test" content="retained"><style>.invisible{display:none}</style></head><body class="writing"><h1 id="heading">Heading</h1><p id="passage" class="prose">'+Array(498).fill('word').join(' ')+'</p><table id="table"><tbody><tr><td id="cell">cell</td></tr></tbody></table><p hidden>hidden words</p><div class="invisible">also hidden</div><script>const ignored="script words";</script></body></html>';
   window.fetch=async(url,options)=>{
+    if(String(url).startsWith('/api/sessions/read?'))return new Response(JSON.stringify({session:{title:'Bridging',source:'run("bridging.open");\nwait("session.bridging.finished");\nquit();'}}));
     if(String(url).includes('/Notebook/reopened.html'))return new Response(saved.at(-1).content);
     if(String(url).startsWith('/Notebook/'))return new Response(source);
     if(url==='/api/create'){createdPath=JSON.parse(options.body).path;return new Response(JSON.stringify({success:true}));}
@@ -32,6 +35,31 @@ try {
   const select=(node,start,end=start)=>{editor.focus();const range=document.createRange();range.setStart(node,start);range.setEnd(node,end);const selection=getSelection();selection.removeAllRanges();selection.addRange(range);};
   const append=text=>{const node=editor.querySelector('#passage').firstChild;select(node,node.length);document.execCommand('insertText',false,text);};
   const cellBefore=editor.querySelector('#cell').firstChild;select(cellBefore,0,cellBefore.length);document.execCommand('insertText',false,'cells');editor.__nvProgrammaticHistory.flush();
+  SessionUiOwnership.prototype.showError=async error=>{throw error;};
+  for(const settings of ['defaults','custom','timer only','words only']) {
+    await startSession('builtin','Bridging.NodevisionSession.js');
+    await wait(()=>document.querySelector('#nv-session-root form button[type=submit]')?.disabled===false);
+    const root=document.getElementById('nv-session-root'),numbers=root.querySelectorAll('input[type=number]'),toggles=root.querySelectorAll('input[type=checkbox]');
+    if(settings!=='defaults'){numbers[0].value=250;numbers[1].value=10;numbers[2].value=30;toggles[0].checked=settings!=='timer only';toggles[1].checked=settings!=='words only';numbers[0].dispatchEvent(new Event('input',{bubbles:true}));}
+    button('Begin writing').click();
+    await new Promise(resolve=>setTimeout(resolve,350));
+    check(getActiveSession() && root.isConnected && root.querySelector('form').hidden && !root.textContent.includes('Bridging — saved'),'Session stays open with '+settings);
+    button('End Session').click();await wait(()=>root.textContent.includes('Bridging — saved'));
+    button('Return to workspace').click();await wait(()=>!getActiveSession());
+    check(host.contains(editor),'Lifecycle restores editor with '+settings);
+  }
+  await open({seconds:30});
+  document.querySelector('#nv-session-root input[type=number]').value='';begin();
+  await new Promise(resolve=>setTimeout(resolve,350));
+  check(!document.querySelector('#nv-session-root form').hidden && document.querySelector('#nv-session-root').textContent.includes('Word growth must be'),'Empty word target keeps configuration open with an error');
+  const growth=document.querySelector('#nv-session-root input[type=number]');growth.value='0';begin();
+  await new Promise(resolve=>setTimeout(resolve,350));
+  check(!document.querySelector('#nv-session-root form').hidden && !growth.validity.valid,'Zero word target cannot start and immediately complete');
+  document.querySelector('#nv-session-root input[type=checkbox]').click();begin();
+  await new Promise(resolve=>setTimeout(resolve,350));
+  check(growth.disabled && document.querySelector('#nv-session-root form').hidden && !document.querySelector('#nv-session-root').textContent.includes('Bridging — saved'),'Disabling zero word target starts timer-only writing');
+  button('End Session').click();await wait(()=>document.querySelector('#nv-session-root').textContent.includes('Bridging — saved'));button('Return to workspace').click();
+  saved=[];
   await open();check(document.querySelector('#nv-session-root form').textContent.includes('Current: 500 words · Required: 600'),'500 baseline and 600 required');
   const originalHeading=editor.querySelector('#heading'),originalTable=editor.querySelector('#table');begin();
   document.execCommand('undo');check(editor.querySelector('#cell').textContent==='cell','Preexisting undo history survives entering Session');

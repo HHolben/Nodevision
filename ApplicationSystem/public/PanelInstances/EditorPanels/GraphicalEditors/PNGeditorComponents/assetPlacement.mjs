@@ -8,7 +8,8 @@ export function createRasterAssetPlacement({ canvas, ctx, state, history, setSel
       if (pending || state.selectionPhase === 'committed') throw new Error('Commit or cancel the existing raster selection first.');
       const image = new Image(); image.src = src; await image.decode();
       if (!canvas.isConnected || validate() === false) throw new Error('The originating raster editor changed.');
-      const scale = Math.min(1, canvas.width / image.naturalWidth, canvas.height / image.naturalHeight);
+      if (credit && canvas.height < 48) throw new Error('Use project credits or enlarge the canvas before adding a visible credit.');
+      const scale = Math.min(1, canvas.width / image.naturalWidth, (canvas.height - (credit ? 32 : 0)) / image.naturalHeight);
       const width = Math.max(1, Math.round(image.naturalWidth * scale));
       const imageHeight = Math.max(1, Math.round(image.naturalHeight * scale));
       const texture = document.createElement('canvas'); texture.width = width; texture.height = imageHeight + (credit ? 32 : 0);

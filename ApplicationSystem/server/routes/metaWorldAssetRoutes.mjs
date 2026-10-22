@@ -9,7 +9,7 @@ import * as cheerio from "cheerio";
 import { validateAndNormalizePath } from "../pathUtils.mjs";
 
 const SUPPORTED_EXTENSIONS = new Map([
-  [".glb", "model"], [".gltf", "model"], [".obj", "model"], [".stl", "model"],
+  [".gox", "model"], [".glb", "model"], [".gltf", "model"], [".obj", "model"], [".stl", "model"],
   [".png", "billboard"], [".jpg", "billboard"], [".jpeg", "billboard"], [".svg", "billboard"], [".webp", "billboard"],
   [".mp3", "audio"], [".wav", "audio"], [".ogg", "audio"],
   [".mp4", "video"], [".webm", "video"],

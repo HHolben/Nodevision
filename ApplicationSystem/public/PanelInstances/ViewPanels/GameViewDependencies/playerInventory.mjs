@@ -17,7 +17,7 @@ const CATEGORY_META = {
   "resources": { label: "Resources", emptyText: "No resources carried." },
   "building-blocks": { label: "Building Blocks", emptyText: "No building blocks carried." }
 };
-const TOOL_IDS = new Set([VOXEL_WORLD_TOOL_ID, "hang-glider", "flashlight", "select-object", "select-image", "svg-camera", "tape-measure", "terrain-generator", "temporal-manipulator", "voxel-placer", "voxel-extruder"]);
+const TOOL_IDS = new Set(["sound", "path", "3d-model", VOXEL_WORLD_TOOL_ID, "hang-glider", "flashlight", "select-object", "select-image", "svg-camera", "tape-measure", "terrain-generator", "temporal-manipulator", "voxel-placer", "voxel-extruder"]);
 const BUILDING_IDS = new Set(["box", "sphere", "cylinder", "flying-carpet", "math-function", "object-file", "image-plane", "iframe", "console", "portal"]);
 const RESOURCE_IDS = new Set(["ore", "wood", "stone", "energy-cell", "water", "fuel"]);
 const PASSIVE_IDS = new Set(["armor", "helmet", "boots", "jetpack", "oxygen-tank"]);
@@ -80,6 +80,9 @@ export function createPlayerInventory({ panel }) {
     selectedImageFile: "",
     activeInstruments: new Set([HOTBAR_INSTRUMENT_ID]),
     items: [
+      { id: "sound", label: "Sound", sprite: "/icons/SoundTool.svg", count: 1, category: "tools", tool: true },
+      { id: "path", label: "Path (G: settings)", sprite: "/icons/PathTool.svg", count: 1, category: "tools", tool: true },
+      { id: "3d-model", label: "3D Model (G: choose model)", count: 1, category: "tools", tool: true },
       { id: VOXEL_WORLD_TOOL_ID, label: "Voxel World", sprite: VOXEL_WORLD_ICON, count: 1, category: "tools", tool: true },
       { id: "box", label: "Box", count: 10, category: "building-blocks", placeable: true },
       { id: "sphere", label: "Sphere", count: 6, category: "building-blocks", placeable: true },
@@ -724,6 +727,10 @@ export function createPlayerInventory({ panel }) {
     const id = getEquippedItem()?.id || null;
     if (id !== lastEquippedId) {
       lastEquippedId = id;
+      if(id==='sound')void import('/MetaWorld/Sounds/SoundTool.mjs').then(m=>{if(getEquippedItem()?.id==='sound')return m.activateSoundTool();});
+      else window.VRWorldContext?.cancelSoundPlacement?.();
+      if(id==='path')void import('/MetaWorld/Paths/PathTool.mjs').then(m=>{if(getEquippedItem()?.id==='path')return m.activatePathTool();});
+      else window.VRWorldContext?.pathDrawing?.suspend();
       selectionListeners.forEach(listener => listener(id));
       window.dispatchEvent(new CustomEvent("nv-contextual-cursor-family-changed", {detail:{providerId:"world-cursor-tools", toolId:id || "gameplay"}}));
     }
@@ -1015,6 +1022,7 @@ export function createPlayerInventory({ panel }) {
 
   return {
     addItem,
+    assignItemToSlot,
     equipItemToActiveHand,
     subscribeSelection(listener) { selectionListeners.add(listener); return () => selectionListeners.delete(listener); },
     consumeSelected,
@@ -1040,6 +1048,7 @@ export function createPlayerInventory({ panel }) {
     get dominantSlots() { return state.dominantSlots.slice(); },
     get selectedIndex() { return state.selectedMenuIndex; },
     dispose() {
+      window.VRWorldContext?.cancelSoundPlacement?.();
       selectionListeners.forEach(listener => listener(null)); selectionListeners.clear();
       window.clearInterval(instrumentTimer);
       window.removeEventListener("keydown", onKeyDown);

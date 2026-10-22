@@ -37,7 +37,8 @@ export function createPathObject(THREE, source, colliders, terrainHeight) {
     geometry.setIndex(ribbon.triangles.flatMap(([a,b,c])=>[a,c,b]));geometry.computeVertexNormals();geometry.computeBoundingSphere();geometry.computeBoundingBox();
     helpers();return ribbon;
   }
-  const collider={type:'expression-heightfield',target:mesh,layerId:def.id,materialId:def.surfaceMaterial,physicsMaterialId:def.surfaceMaterial,
+  const materialId=({dirt:'soil',paved:'stone'})[def.surfaceMaterial]||def.surfaceMaterial;
+  const collider={type:'expression-heightfield',target:mesh,layerId:def.id,materialId,physicsMaterialId:materialId,
     sampleGroundY(x,z){return !disposed&&mesh.visible&&def.collision ? ribbon?.heightAt(x,z)+.025 : NaN;}};
   const runtime={get ribbon(){return ribbon;},serialize,rebuild,
     retainGeometry(){
@@ -49,15 +50,15 @@ export function createPathObject(THREE, source, colliders, terrainHeight) {
     dispose(){if(disposed)return;disposed=true;selected=false;helpers();geometry.dispose();mesh.material.map?.dispose();mesh.material.dispose();const i=colliders.indexOf(collider);if(i>=0)colliders.splice(i,1);mesh.removeFromParent();}};
   Object.assign(mesh.userData,{nvType:'physical-path',metaWorldLayerId:def.id,pathRuntime:runtime,colliderRef:collider,isSolid:def.collision,breakable:true,placedByPlayer:true});
   // A temporary authored-elevation fallback also keeps orphaned follow-terrain paths selectable.
-  if(def.elevationMode==='authored'||terrainHeight)rebuild();
+  if(def.elevationMode!=='follow-terrain'||terrainHeight)rebuild();
   else {
     const mode=def.elevationMode;def.elevationMode='authored';rebuild();def.elevationMode=mode;
     runtime.warning='Follow terrain is waiting for an underlying heightfield.';
   }
   colliders.push(collider);
-  runtime.ready=resolveWorldObjectMaterial(def.surfaceMaterial).then(entry=>{
+  runtime.ready=resolveWorldObjectMaterial(materialId).then(entry=>{
     if(disposed)return false;
-    const material=createTerrainMaterial(THREE,{...entry.rendering,kind:entry.rendering.terrainKind});material.side=THREE.DoubleSide;
+    const material=createTerrainMaterial(THREE,{...entry.rendering,kind:entry.rendering.terrainKind,...(def.surfaceMaterial==='paved'?{texture:'none',roughness:.8}:{})});material.side=THREE.DoubleSide;
     mesh.material.dispose();mesh.material=material;Object.assign(mesh.userData,{physicsMaterialId:entry.physicsMaterialId,physicsMaterialFile:entry.materialFile});return true;
   }).catch(error=>{runtime.materialError=error;return false;});
   return mesh;

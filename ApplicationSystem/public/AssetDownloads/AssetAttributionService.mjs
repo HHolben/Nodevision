@@ -11,7 +11,7 @@ export function assetLicenseState(asset) {
   return 'optional';
 }
 export async function recordAttribution(download, document, referenced) {
-  const response = await fetch('/api/asset-downloads/attributions', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+  const response = await fetch('/api/asset-downloads/attributions', { method: 'POST', signal: AbortSignal.timeout(30000), headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ authorized: true, download, document, referenced }) });
   const result = await response.json();
   if (!response.ok || result.error) throw new Error(result.error || 'Attribution could not be recorded');

@@ -7,6 +7,7 @@ export function validateAssetSignature(bytes, extension) {
     : extension === 'jpg' ? starts(255, 216, 255)
     : extension === 'exr' ? starts(118, 47, 49, 1)
     : extension === 'hdr' ? /^#\?(RADIANCE|RGBE)\n/.test(text)
+    : extension === 'gox' ? text.startsWith('GOX ') && bytes.length >= 8 && [1, 2].includes(bytes.readUInt32LE(4))
     : extension === 'glb' ? text.startsWith('glTF') && bytes.length >= 12 && bytes.readUInt32LE(4) === 2
     : false;
   if (!valid) throw new Error('Downloaded content does not match the selected file type');

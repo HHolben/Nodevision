@@ -1,6 +1,15 @@
 [
   {
     "ToolbarCategory": "View",
+    "heading": "Voxel Interaction",
+    "script": "goxBuildToolbar.mjs",
+    "modes": [
+      "GOXediting",
+      "GOXviewing"
+    ]
+  },
+  {
+    "ToolbarCategory": "View",
     "heading": "Analysis Tools",
     "callbackKey": "AnalysisTools",
     "preventAutoSubToolbar": true,

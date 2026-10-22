@@ -272,3 +272,4 @@ woff2,DataStorage,ViewFont.mjs,BinaryFamilyEditor.mjs
 xigt.xml,DataStorage,ViewXML.mjs,XMLFamilyEditor.mjs
 xml,DataStorage,ViewXML.mjs,XMLFamilyEditor.mjs
 xmp,DataStorage,ViewXMP.mjs,XMLFamilyEditor.mjs
+gox,Model,ViewGOX.mjs,GOXeditor.mjs,GoxCursorProvider.mjs

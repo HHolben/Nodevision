@@ -1,6 +1,7 @@
 // Nodevision/ApplicationSystem/routes/api/fileSaveRoutes.js
 // This file defines notebook file save and filesystem manipulation routes so that the Nodevision client can create, update, move, and delete notebook content.
 
+import { syncAttributionFileOperation } from '../../AssetDownloads/AttributionFileOperations.mjs';
 import express from 'express';
 import fs from 'node:fs/promises';
 import path from 'node:path';
@@ -145,7 +146,10 @@ export default function createFileSaveRouter(ctx = BASE_CONTEXT) {
     const filePath = resolveNotebookPath({ notebookRoot: NOTEBOOK_ROOT, relativePath });
     try {
       await fs.mkdir(path.dirname(filePath), { recursive: true });
-      await fs.writeFile(filePath, '', { flag: 'wx' });
+      const initial = /\.gox$/i.test(filePath)
+        ? await (await import('../../public/Voxels/GoxCodec.mjs')).encodeGox((await import('../../public/Voxels/VoxelModel.mjs')).newModel())
+        : '';
+      await fs.writeFile(filePath, initial, { flag: 'wx' });
       res.json({ success: true, path: relativePath });
     } catch (err) {
       if (err.code === 'EEXIST') {
@@ -196,8 +200,9 @@ export default function createFileSaveRouter(ctx = BASE_CONTEXT) {
         targetPath,
         deletingFromUserSettings,
       });
+      const attribution = deletingFromUserSettings ? null : await syncAttributionFileOperation(ctx, normalizedClientPath);
       res.json({
-        success: true,
+        success: true, attribution,
         originalPath: relativePath,
         permanentlyDeleted: Boolean(result.permanentlyDeleted),
         trashedPath: result.trashedPath,
@@ -225,8 +230,9 @@ export default function createFileSaveRouter(ctx = BASE_CONTEXT) {
     try {
       await fs.mkdir(path.dirname(dest), { recursive: true });
       await fs.rename(src, dest);
+      const attribution = await syncAttributionFileOperation(ctx, oldPath, newPath);
       const directoryAppearance = await remapDirectoryAppearanceAfterMove(oldPath, newPath);
-      res.json({ success: true, oldPath, newPath, directoryAppearance });
+      res.json({ success: true, oldPath, newPath, directoryAppearance, attribution });
     } catch (err) {
       console.error('Error renaming/moving:', err);
       res.status(500).send('Error renaming/moving');
@@ -275,8 +281,9 @@ export default function createFileSaveRouter(ctx = BASE_CONTEXT) {
     try {
       await fs.mkdir(path.dirname(dest), { recursive: true });
       await fs.rename(src, dest);
+      const attribution = await syncAttributionFileOperation(ctx, source, destination);
       const directoryAppearance = await remapDirectoryAppearanceAfterMove(source, destination);
-      res.json({ success: true, source, destination, directoryAppearance });
+      res.json({ success: true, source, destination, directoryAppearance, attribution });
     } catch (err) {
       console.error('Error cutting/moving:', err);
       res.status(500).send('Error cutting/moving');

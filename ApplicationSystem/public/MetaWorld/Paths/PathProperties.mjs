@@ -27,9 +27,11 @@ export function createPathProperties(host,ordinaryControls) {
     }
     field('Name',def.name,name=>update({name}));
     field('Width (m)',def.width,width=>update({width}),{type:'number',min:.1,max:50,step:.1});
-    field('Interpolation',def.interpolation,interpolation=>update({interpolation}),{choices:['smooth','straight']});
-    field('Elevation',def.elevationMode,elevationMode=>update({elevationMode}),{choices:['authored','follow-terrain']});
-    field('Terrain',def.terrainInteraction,terrainInteraction=>update({terrainInteraction}),{choices:['grade','none']});
+    field('Interpolation',def.interpolation,interpolation=>update({interpolation}),{choices:['smooth','straight','mixed']});
+    field('Elevation',def.elevationMode,elevationMode=>update({elevationMode}),{choices:['authored','follow-terrain','locally-flat']});
+    field('Terrain',def.terrainInteraction,terrainInteraction=>update({terrainInteraction}),{choices:['grade','none','overlay']});
+    field('Smoothing',def.smoothing,smoothing=>update({smoothing}),{type:'number',min:0,max:1,step:.1});
+    field('Elevation offset (m)',def.elevationOffset,elevationOffset=>update({elevationOffset}),{type:'number',step:.25});
     field('Transition (m)',def.transitionWidth,transitionWidth=>update({transitionWidth}),{type:'number',min:0,max:50,step:.1});
     const material=field('Surface material',def.surfaceMaterial,surfaceMaterial=>update({surfaceMaterial}),{choices:[def.surfaceMaterial]});
     loadWorldObjectMaterialCatalog().then(entries=>{if(token!==generation)return;for(const entry of entries){if(entry.materialId===def.surfaceMaterial||entry.matterState==='liquid'||entry.matterState==='gas')continue;const option=document.createElement('option');option.value=entry.materialId;option.textContent=entry.displayName||entry.materialId;material.append(option);}}).catch(error=>{if(token===generation)status.textContent=error.message;});
@@ -43,10 +45,12 @@ export function createPathProperties(host,ordinaryControls) {
       const label=document.createElement('span');label.textContent=index+1;row.append(label);
       point.forEach((value,axis)=>{const input=document.createElement('input');input.type='number';input.step=.25;input.value=value;input.setAttribute('aria-label',`Point ${index+1} ${'XYZ'[axis]}`);input.style.minWidth='0';input.style.width='100%';input.style.boxSizing='border-box';input.onchange=()=>{const controlPoints=structuredClone(def.controlPoints);controlPoints[index][axis]=Number(input.value);update({controlPoints});};row.append(input);});
       const add=document.createElement('button');add.textContent='+';add.title='Insert point on next segment';add.disabled=index===def.controlPoints.length-1;
-      add.onclick=()=>{const controlPoints=structuredClone(def.controlPoints);controlPoints.splice(index+1,0,point.map((v,a)=>(v+controlPoints[index+1][a])/2));update({controlPoints});};
-      const remove=document.createElement('button');remove.textContent='-';remove.title='Remove control point';remove.disabled=def.controlPoints.length<=2;remove.onclick=()=>update({controlPoints:def.controlPoints.filter((_,i)=>i!==index)});
+      add.onclick=()=>{const controlPoints=structuredClone(def.controlPoints);controlPoints.splice(index+1,0,point.map((v,a)=>(v+controlPoints[index+1][a])/2));const segmentKinds=Array.from({length:def.controlPoints.length-1},(_,i)=>def.segmentKinds[i]||'straight');segmentKinds.splice(index,0,segmentKinds[index]);update({controlPoints,segmentKinds});};
+      const remove=document.createElement('button');remove.textContent='-';remove.title='Remove control point';remove.disabled=def.controlPoints.length<=2;remove.onclick=()=>{const segmentKinds=Array.from({length:def.controlPoints.length-1},(_,i)=>def.segmentKinds[i]||'straight');segmentKinds.splice(Math.max(0,index-1),1);update({controlPoints:def.controlPoints.filter((_,i)=>i!==index),segmentKinds});};
       row.append(add,remove);section.append(row);
+      if(def.interpolation==='mixed'&&index<def.controlPoints.length-1)field(`Segment ${index+1}`,def.segmentKinds[index]||'straight',value=>{const segmentKinds=Array.from({length:def.controlPoints.length-1},(_,i)=>def.segmentKinds[i]||'straight');segmentKinds[index]=value;update({segmentKinds});},{choices:['straight','smooth']});
     });
+    const extend=document.createElement('button');extend.textContent='Extend Path';extend.onclick=()=>{void import('./PathTool.mjs').then(m=>m.activatePathTool({editId:def.id}));};section.append(extend);
     const remove=document.createElement('button');remove.textContent='Delete Path';remove.onclick=()=>{getActiveMetaWorldLayerBridge()?.removeObjectLayer(def.id);hide();};section.append(remove,status);
     release=bindPathHandles(window.VRWorldContext,mesh,message=>{status.textContent=message;});
     runtime.ready.then(()=>{if(token===generation&&runtime.materialError)status.textContent=runtime.materialError.message;});

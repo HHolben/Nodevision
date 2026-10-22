@@ -52,11 +52,11 @@ export function installEditorModeFrameAbility(ctx) {
   function cleanupEditorOnlyManipulation(inEditorMode) {
     if (!inEditorMode && ctx.grabbedState) ctx.api.releaseGrabbedObject();
     if (!inEditorMode && ctx.stretchState) ctx.api.disposeStretchState();
-    if (ctx.stretchState && (!ctx.stretchState.target?.isMesh || !ctx.stretchState.target.parent)) ctx.api.disposeStretchState();
+    if (ctx.stretchState && ((!ctx.stretchState.target?.isMesh && !ctx.stretchState.target?.userData?.modelRuntime) || !ctx.stretchState.target.parent)) ctx.api.disposeStretchState();
     if (!inEditorMode && ctx.translateState) ctx.api.disposeTranslateState();
-    if (ctx.translateState && (!ctx.translateState.target?.isMesh || !ctx.translateState.target.parent)) ctx.api.disposeTranslateState();
+    if (ctx.translateState && ((!ctx.translateState.target?.isMesh && !ctx.translateState.target?.userData?.modelRuntime) || !ctx.translateState.target.parent)) ctx.api.disposeTranslateState();
     if (!inEditorMode && ctx.rotateState) ctx.api.disposeRotateState();
-    if (ctx.rotateState && (!ctx.rotateState.target?.isMesh || !ctx.rotateState.target.parent)) ctx.api.disposeRotateState();
+    if (ctx.rotateState && ((!ctx.rotateState.target?.isMesh && !ctx.rotateState.target?.userData?.modelRuntime) || !ctx.rotateState.target.parent)) ctx.api.disposeRotateState();
   }
 
   function handleCameraCommands(inputState) {

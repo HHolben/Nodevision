@@ -36,13 +36,14 @@ export function buildDownloadView(root) {
   return { credit, form, query, provider, category, formatFilter, license, search, status, results, more, details, format, destination, folder, download, cancel, progress, recent };
 }
 export function previewImage(asset, parent) {
+  if (!asset.preview) return null;
   const image = element('img', '', parent); image.src = asset.preview; image.alt = asset.name;
   image.loading = 'lazy'; image.referrerPolicy = 'no-referrer'; image.style.cssText = 'width:100%;max-width:256px;height:100px;object-fit:contain';
   image.onerror = () => image.remove(); return image;
 }
 export function renderAssetDetails(view, asset) {
   view.details.replaceChildren(); element('h3', asset.name, view.details); previewImage(asset, view.details);
-  element('p', `Creator: ${asset.creator}`, view.details); element('p', asset.description, view.details);
+  element('p', `Creator: ${asset.creator || 'Not provided'}`, view.details); element('p', asset.description, view.details);
   const link = element('a', `View source: ${asset.sourceName || asset.provider}`, view.details); link.href = asset.source; link.target = '_blank'; link.rel = 'noopener noreferrer';
   element('p', `License: ${asset.license}. ${asset.attribution}`, view.details);
   element('p', asset.note, view.details);

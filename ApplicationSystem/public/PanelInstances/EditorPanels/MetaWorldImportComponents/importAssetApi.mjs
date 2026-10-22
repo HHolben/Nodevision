@@ -2,13 +2,13 @@
 // This file wraps Meta World asset discovery and import API calls for the browser panel.
 
 const assetTypes = new Map([
-  ...['glb','gltf','obj','stl'].map(ext=>[ext,'model']),
+  ...['glb','gltf','obj','stl','gox'].map(ext=>[ext,'model']),
   ...['png','jpg','jpeg','svg','webp'].map(ext=>[ext,'billboard']),
   ...['mp3','wav','ogg'].map(ext=>[ext,'audio']),
   ...['mp4','webm'].map(ext=>[ext,'video']),
 ]);
 // The same shallow listing used by File Manager: never recurse or open assets.
-export async function listNotebookAssetDirectory(directory='', {signal}={}) {
+export async function listNotebookAssetDirectory(directory='', {signal,extensions}={}) {
   const res=await fetch('/api/files?path='+encodeURIComponent(directory),{cache:'no-store',signal});
   const payload=await res.json();
   if(!res.ok)throw Error(payload?.error || 'Failed to open Notebook folder.');
@@ -16,7 +16,7 @@ export async function listNotebookAssetDirectory(directory='', {signal}={}) {
   return payload.flatMap(entry=>{
     const notebookPath=String(entry.path||[directory,entry.name].filter(Boolean).join('/')).replaceAll('\\','/');
     if(entry.isDirectory)return [{name:entry.name,notebookPath,isDirectory:true}];
-    const extension=entry.name.split('.').pop().toLowerCase(),type=assetTypes.get(extension);
+    const extension=entry.name.split('.').pop().toLowerCase(),type=assetTypes.get(extension)||(extensions?.includes(extension)?"model":null);
     return type?[{name:entry.name,notebookPath,type,extension:'.'+extension,path:'/Notebook/'+notebookPath.split('/').map(encodeURIComponent).join('/')}]:[];
   });
 }

@@ -491,6 +491,8 @@ export function createObjectInspector({ THREE, panel, scene, sceneObjects, colli
   buttonRow.style.gap = "8px";
   root.appendChild(buttonRow);
 
+  const modelActions=document.createElement('div');modelActions.hidden=true;root.append(modelActions);
+  for(const [label,action] of [['Edit Source Model','edit-source'],['Reload Model','reload'],['Duplicate Model','duplicate'],['Delete Model','delete']]){const button=document.createElement('button');button.type='button';button.textContent=label;button.onclick=()=>{const id=activeTarget?.userData?.metaWorldLayerId;void import('/Models/ModelWorldCommands.mjs').then(m=>m.modelWorldCommand([action,{id}])).catch(error=>import('/StatusBar.mjs').then(m=>m.setStatus('3D Model',error.message)));};modelActions.append(button);}
   const applyBtn = document.createElement("button");
   applyBtn.type = "button";
   applyBtn.textContent = "Apply";
@@ -1100,6 +1102,8 @@ export function createObjectInspector({ THREE, panel, scene, sceneObjects, colli
   }
 
   function populateFormFromTarget(target, distance = null) {
+    modelActions.hidden=!target?.userData?.modelRuntime;
+    for(const input of [colorInput,alphaInput,materialSelect,colliderInput,physicsInput])input.disabled=!!target?.userData?.modelRuntime;
     if (!target) return;
     sxInput.value = String(Number(target.scale?.x || 1).toFixed(3));
     syInput.value = String(Number(target.scale?.y || 1).toFixed(3));
@@ -1140,7 +1144,7 @@ export function createObjectInspector({ THREE, panel, scene, sceneObjects, colli
 
     const kind = target.userData?.nvType || target.name || target.type || "Object";
     const distanceText = Number.isFinite(distance) ? ` | distance ${distance.toFixed(2)}m` : "";
-    infoLine.textContent = `Target: ${kind}${distanceText}`;
+    infoLine.textContent = `Target: ${kind}${distanceText}`+(target.userData?.modelLoadError?" · Missing model asset: "+target.userData.modelLoadError:"");
   }
 
   function applyFormToTarget() {
@@ -1159,9 +1163,11 @@ export function createObjectInspector({ THREE, panel, scene, sceneObjects, colli
       );
     }
 
+    if(!activeTarget.userData?.modelRuntime){
     applyColorToTarget(activeTarget, colorInput.value);
     if (!activeTarget.userData?.equationCollider?.infinite) applyMaterialType(THREE, activeTarget, materialSelect.value, colorInput.value);
     applyAlphaToTarget(activeTarget, alphaInput.value);
+    }
 
     if (isEquationColliderPlane(activeTarget)) {
       const materials = Array.isArray(activeTarget.material) ? activeTarget.material : [activeTarget.material];

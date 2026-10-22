@@ -1,5 +1,7 @@
 // Nodevision/ApplicationSystem/public/ToolbarJSONfiles/insertMediaWidget.mjs
 // Populates the Insert → Media subtoolbar using ModuleMap families and delegates to family-specific renderers.
+import { captureAssetEditorContext } from '/AssetDownloads/AssetEditorContext.mjs';
+import { appendOnlineMediaButton, supportsOnlineMedia } from './insertMediaOnline.mjs';
 import { loadModuleMapFamilies } from "./insertMediaCommon.mjs";
 import { renderInsertModel } from "./insertMediaModel.mjs";
 import { button, renderGenericLink } from "./insertMediaFamiliesBasic.mjs";
@@ -35,15 +37,16 @@ export async function initToolbarWidget(hostElement) {
 
   const currentMode = window.NodevisionState?.currentMode || "";
   const inVirtualWorld = currentMode === "Virtual World Editing" || currentMode === "VR World Editing";
-  const virtualWorldModelExts = new Set(["stl", "obj", "scad"]);
+  const virtualWorldModelExts = new Set(["stl", "obj", "scad", "gltf", "glb", "gox"]);
   const virtualWorldMediaFamilies = new Set(["Model", "Sound"]);
   const families = inVirtualWorld
     ? (moduleMap.families || []).filter((family) => virtualWorldMediaFamilies.has(family))
     : (moduleMap.families || []);
   const byFamily = moduleMap.extensionsByFamily || new Map();
 
-  const show = (family) => {
+  const show = async (family) => {
     const originContext = captureInsertMediaOriginContext({ familyKey: family, mediaFamily: family });
+    const bookmark = family === "Image" ? await captureAssetEditorContext(originContext.originCell) : null;
     detail.innerHTML = "";
     let exts = Array.from(byFamily.get(family) || []);
     if (inVirtualWorld && family === "Model") exts = exts.filter((ext) => virtualWorldModelExts.has(ext));
@@ -51,7 +54,7 @@ export async function initToolbarWidget(hostElement) {
     if (family === "Image") {
       const open = async () => {
         const panel = await openInsertMediaPanel("Insert Image", "Image", { originContext });
-        return renderImage(panel.mount, exts, { originContext: panel.originContext || originContext });
+        return renderImage(panel.mount, exts, { originContext: panel.originContext || originContext, bookmark });
       };
       open().then(() => {
         detail.textContent = "Opened Insert Image panel.";
@@ -92,4 +95,6 @@ export async function initToolbarWidget(hostElement) {
     b.addEventListener("click", () => show(fam));
     familyRow.appendChild(b);
   }
+  const onlineOrigin = await captureAssetEditorContext(captureInsertMediaOriginContext().originCell);
+  if (supportsOnlineMedia(onlineOrigin)) appendOnlineMediaButton(familyRow, () => ({ cell: onlineOrigin.cell }), message => { detail.textContent = message; });
 }

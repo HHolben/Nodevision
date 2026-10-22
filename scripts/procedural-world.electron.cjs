@@ -11,6 +11,11 @@ const stubs = {
   '/TemplateSystem/NodevisionOverlayPanel.mjs': 'export function openNodevisionOverlayPanel(){}',
   '/ToolbarJSONfiles/insertMediaPanel.mjs': 'export function registerSvgEditorContextForInsertMedia(){return {dispose(){}}} export function openInsertMediaPanel(){throw Error("Standalone media panels are not used by this fixture")}',
 };
+if (browserModule==='gox-world-browser.mjs') {
+ delete stubs['/ToolbarJSONfiles/insertMediaPanel.mjs'];
+ stubs['/panels/workspace.mjs']+=' export function ensureAdjacentPanelCell(){}';
+ stubs['/panels/panelFactory.mjs']='export function createPanelDOM(){const p=document.createElement("div");p.innerHTML="<div class=panel-content></div>";return {panel:p,content:p.firstElementChild};}';
+}
 if (['sandbox-session-browser.mjs','astronomy-sandbox-browser.mjs','voxel-world-sandbox-browser.mjs','aegean-seasons-browser.mjs'].includes(browserModule)) {
   stubs['/panels/workspace.mjs'] = `
     export { ensureSvgEditingSplit } from '/panels/workspaceParts/workspaceSvgSplit.mjs';
@@ -29,7 +34,7 @@ if (['sandbox-session-browser.mjs','astronomy-sandbox-browser.mjs','voxel-world-
 if (process.env.NV_AEGEAN_REFERENCE_MESHER === '1') stubs['/MetaWorld/ProceduralVoxelWorld/VoxelGreedyMesher.mjs'] = "export { meshVoxelChunk as meshGreedyVoxelChunk } from './VoxelChunkMesher.mjs';";
 const server = http.createServer((req,res)=>{
   const url = new URL(req.url,'http://localhost').pathname;
-  if(url==='/'){res.setHeader('Content-Type','text/html');res.end(('<div class="panel-cell"><div id="editor" style="width:800px;height:600px"></div></div><pre id="result">RUNNING</pre><script type="module" src="/scripts/procedural-world-browser.mjs"></script>').replace('procedural-world-browser.mjs',browserModule));return;}
+  if(url==='/'){res.setHeader('Content-Type','text/html');res.end(('<script type="importmap">{"imports":{"three":"/lib/three/three.module.js"}}</script><div class="panel-cell"><div id="editor" style="width:800px;height:600px"></div></div><pre id="result">RUNNING</pre><script type="module" src="/scripts/procedural-world-browser.mjs"></script>').replace('procedural-world-browser.mjs',browserModule));return;}
   if (url.startsWith('/sandbox-builtins/')) {
     const name=path.basename(url);
     if (!['SandboxBuild.NodevisionSession.js','SandboxPlay.NodevisionSession.js'].includes(name)) {res.writeHead(404);res.end();return;}
@@ -53,6 +58,7 @@ app.whenReady().then(async()=>{
       const result=await win.webContents.executeJavaScript('document.getElementById("result").textContent');
       if(result!=='RUNNING'){
         console.log(result);
+        if(result.startsWith('PASS:')&&browserModule==='paths-browser.mjs'&&process.env.NV_PATH_INSPECT!=='1')await require('./paths-native-input.cjs')(win);
         if(result.startsWith('PASS:') && process.env.NV_PATH_INSPECT==='1') {
           for(let wait=0;wait<1200;wait++) {
             if(await win.webContents.executeJavaScript('window.pathValidationComplete===true'))break;

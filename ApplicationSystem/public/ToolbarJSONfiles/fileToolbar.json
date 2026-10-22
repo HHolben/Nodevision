@@ -4,7 +4,7 @@
     "heading": "Download",
     "callbackKey": "downloadAssets",
     "icon": "icons/Download.png",
-    "modes": ["HTMLediting", "SVGediting", "PNGediting", "JPEGediting", "JPGediting", "CodeEditing", "GraphicalEditing", "Virtual World Editing", "VR World Editing"],
+    "modes": ["HTMLediting", "HTML Editing", "SVGediting", "SVG Editing", "PNGediting", "JPEGediting", "JPGediting", "CodeEditing", "GraphicalEditing", "Virtual World Editing", "VR World Editing"],
     "preventAutoSubToolbar": true
   },
   {
@@ -341,14 +341,6 @@
     "conditions": {
       "activeFileIsIno": true
     }
-  },
-  {
-    "ToolbarCategory": "File",
-    "heading": "Download File",
-    "hotkeyText": "",
-    "callbackKey": "downloadFile",
-    "icon": "icons/Download.png",
-    "availability": ["fileOpen"]
   },
   {
     "ToolbarCategory": "File",

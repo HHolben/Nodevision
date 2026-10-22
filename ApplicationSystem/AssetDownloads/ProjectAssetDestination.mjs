@@ -5,7 +5,7 @@ import path from 'node:path';
 import { normalizePortableRelativePath, resolveResourceSourceDirectory } from '../Resources/ResourcePathSafety.mjs';
 export function normalizeAssetDocument(value) {
   const document = normalizePortableRelativePath(String(value || '').replace(/^\/?Notebook\//, ''), 'Document path');
-  if (!/\.(html?|svg|php|png|jpe?g|gltf|glb)$/i.test(document)) throw new Error('Unsupported asset document');
+  if (!/\.(html?|svg|php|png|jpe?g|gltf|glb|gox)$/i.test(document)) throw new Error('Unsupported asset document');
   return document;
 }
 export async function projectAssetDestination(ctx, document) {

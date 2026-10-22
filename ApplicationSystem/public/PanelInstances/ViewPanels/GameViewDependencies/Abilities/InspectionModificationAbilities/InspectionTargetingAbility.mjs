@@ -94,7 +94,7 @@ export function installInspectionTargetingAbility(ctx) {
   function getInspectHit(options = {}) {
     ctx.raycaster.setFromCamera({ x: 0, y: 0 }, camera);
     const includeMeasurements = options.includeMeasurements === true;
-    const worldCandidates = (objects || []).filter((obj) => (obj?.isMesh || obj?.userData?.proceduralVoxelRuntime) && obj?.visible);
+    const worldCandidates = (objects || []).filter((obj) => (obj?.isMesh || obj?.userData?.modelRuntime || obj?.userData?.proceduralVoxelRuntime) && obj?.visible);
     const measureCandidates = includeMeasurements ? ctx.api.getMeasurementVisualsStore().filter((obj) => obj?.isMesh && obj?.visible) : [];
     const split = ctx.api.splitBoundsPickCandidates(worldCandidates);
     const meshHits = ctx.raycaster.intersectObjects(split.raycast.concat(measureCandidates), false)

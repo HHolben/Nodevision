@@ -8,6 +8,12 @@ const handlers = new Map();
 
 const load = (path, exportName) => async () => (await import(path))[exportName];
 const BUILTIN_HANDLER_LOADERS = Object.freeze({
+  "voxel.execute": load("../Voxels/GoxCommands.mjs", "executeVoxelCommand"),
+  "path.world": load("../MetaWorld/Paths/PathTool.mjs", "pathCommand"),
+  "model.insert": load("../ToolbarJSONfiles/insert3DModelWidget.mjs", "openModelInsertion"),
+  "model.world": load("../Models/ModelWorldCommands.mjs", "modelWorldCommand"),
+  "voxel.world": load("../Voxels/GoxWorldCommands.mjs", "goxWorldCommand"),
+  "voxel.place": load("../Voxels/GoxCommands.mjs", "placeVoxelCommand"),
   "overlay.open": load("./handlers/OverlayCommands.mjs", "openOverlayCommand"),
   "overlay.show": load("./handlers/OverlayCommands.mjs", "showOverlayCommand"),
   "overlay.close": load("./handlers/OverlayCommands.mjs", "closeOverlayCommand"),

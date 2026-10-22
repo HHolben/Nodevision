@@ -1,0 +1,10 @@
+// Nodevision/ApplicationSystem/public/Voxels/VoxelBuildContext.mjs
+// Accessible contextual actions; a right drag remains pan and a stationary right click opens the menu.
+export function buildContext(api,viewport,signal){
+ const canvas=viewport.renderer.domElement,menu=document.createElement('div');menu.setAttribute('role','menu');menu.hidden=true;menu.style.cssText='position:absolute;z-index:30;background:#202833;padding:6px;border:1px solid #888;display:flex;flex-direction:column';menu.style.display='none';viewport.host.append(menu);let down=null;
+ const close=()=>{menu.hidden=true;menu.style.display='none';};
+ for(const [label,action,args] of [['Tool settings','settings-open',{}],['Orbit camera','tool',{name:'orbit'}],['Place voxel','tool',{name:'add'}],['Erase','tool',{name:'erase'}],['Paint','tool',{name:'paint'}],['Finish line','finish',{}],['Cancel','cancel',{}]]){const b=document.createElement('button');b.setAttribute('role','menuitem');b.textContent=label;b.onclick=()=>{close();api.safe(action,args);canvas.focus();};menu.append(b);}
+ canvas.addEventListener('pointerdown',e=>{close();if(e.button===2)down=[e.clientX,e.clientY];},{signal});canvas.addEventListener('contextmenu',e=>e.preventDefault(),{signal});
+ canvas.addEventListener('pointerup',e=>{if(e.button!==2||!down||Math.hypot(e.clientX-down[0],e.clientY-down[1])>4)return;const r=viewport.host.getBoundingClientRect();menu.style.left=Math.max(0,Math.min(r.width-150,e.clientX-r.left))+'px';menu.style.top=Math.max(0,Math.min(r.height-220,e.clientY-r.top))+'px';menu.hidden=false;menu.style.display='flex';menu.querySelector('button').focus();down=null;},{signal});
+ menu.addEventListener('keydown',e=>{if(e.key==='Escape'){close();canvas.focus();}if(['ArrowDown','ArrowUp'].includes(e.key)){e.preventDefault();const buttons=[...menu.querySelectorAll('button')],i=buttons.indexOf(document.activeElement);buttons[(i+(e.key==='ArrowDown'?1:buttons.length-1))%buttons.length].focus();}},{signal});signal.addEventListener('abort',()=>menu.remove(),{once:true});
+}

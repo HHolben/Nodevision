@@ -1,5 +1,6 @@
 // Nodevision/ApplicationSystem/public/PanelInstances/InfoPanels/DownloadAssetsPanel.mjs
 // Coordinates cancellable discovery and explicit downloads within a normal Nodevision panel.
+import { renderProviderDirectory } from '/AssetDownloads/ProviderDirectoryView.mjs';
 import { createDownloadWorkflow } from '/AssetDownloads/DownloadWorkflow.mjs';
 import { assetRequest, saveAsset } from '/AssetDownloads/DownloadClient.mjs';
 import { buildDownloadView, element, fillOptions, previewImage, renderAssetDetails } from '/AssetDownloads/DownloadView.mjs';
@@ -11,8 +12,8 @@ export function createPanel(content, vars = {}, panel = null) {
   const signalFor = controller => AbortSignal.any([controller.signal, lifetime.signal]);
   const status = text => { view.status.textContent = text; };
   let configRequest = null;
-  const workflow = createDownloadWorkflow(view, { getState: () => ({ selected, transfer, config }), changedTarget: loadConfig, status });
-  if (panel) panel.__nvSetAssetOrigin = workflow.setOrigin;
+  const workflow = createDownloadWorkflow(view, { getState: () => ({ selected, transfer, config }), changedTarget: loadConfig, status, mode: vars.mode, settings: vars.settings });
+  if (panel) { panel.__nvSetAssetOrigin = workflow.setOrigin; panel.__nvSetAssetLaunch = workflow.setLaunch; }
   function showRecent() {
     view.recent.replaceChildren();
     for (const item of recentDownloads) element('li', `${item.name} — ${item.path} (${item.license})`, view.recent);
@@ -27,7 +28,7 @@ export function createPanel(content, vars = {}, panel = null) {
   }
   async function inspect(item) {
     inspecting?.abort(); const controller = inspecting = new AbortController();
-    selected = null; view.download.disabled = true; view.details.textContent = 'Loading asset details…';
+    selected = null; workflow.refresh(); view.download.disabled = true; view.details.textContent = 'Loading asset details…';
     try {
       const asset = await assetRequest('inspect', { provider: view.provider.value, asset: item.id }, signalFor(controller));
       if (controller.signal.aborted || lifetime.signal.aborted) return;
@@ -39,7 +40,7 @@ export function createPanel(content, vars = {}, panel = null) {
   }
   async function search(offset = 0) {
     browsing?.abort(); inspecting?.abort(); const controller = browsing = new AbortController();
-    selected = null; view.download.disabled = true; view.more.hidden = true; view.results.replaceChildren();
+    selected = null; workflow.refresh(); view.download.disabled = true; view.more.hidden = true; view.results.replaceChildren();
     view.details.textContent = 'Select an asset to inspect its license and formats.'; view.format.replaceChildren();
     status('Searching…');
     try {
@@ -61,6 +62,10 @@ export function createPanel(content, vars = {}, panel = null) {
   view.destination.addEventListener('change', () => { view.folder.value = config?.destinations.find(item => item.id === view.destination.value)?.subdirectory || ''; workflow.refresh(); });
   view.provider.onchange = () => {
     const provider = config.providers.find(item => item.id === view.provider.value);
+    const previousCategory = view.category.value;
+    const providerCategories = provider.categories || config.categories;
+    fillOptions(view.category, providerCategories, 'All categories');
+    if (providerCategories.some(item => item.id === previousCategory)) view.category.value = previousCategory;
     view.credit.textContent = provider.credit?.label || provider.name;
     if (provider.credit?.url) view.credit.href = provider.credit.url; else view.credit.removeAttribute('href');
     fillOptions(view.formatFilter, provider.formats, 'All formats'); fillOptions(view.license, provider.licenses, 'All licenses');
@@ -73,7 +78,7 @@ export function createPanel(content, vars = {}, panel = null) {
     view.download.disabled = true; view.cancel.disabled = false; view.progress.value = 0; status('Starting download…');
     try {
       const result = await saveAsset({ provider: selected.provider, asset: selected.id, format: view.format.value,
-        destination: view.destination.value, subdirectory: view.folder.value, document: job.origin?.path || '' }, signalFor(controller), progress => {
+        destination: view.destination.value, subdirectory: view.folder.value, document: /\.(html?|svg|php|png|jpe?g|gltf|glb)$/i.test(job.origin?.path || '') ? job.origin.path : '' }, signalFor(controller), progress => {
         view.progress.value = progress.received / progress.total;
         status(`Downloading: ${Math.round(view.progress.value * 100)}%`);
       });
@@ -93,6 +98,7 @@ export function createPanel(content, vars = {}, panel = null) {
       const data = await assetRequest('config', document ? { document } : {}, signalFor(controller));
       if (controller.signal.aborted || lifetime.signal.aborted) return;
       const first = !config; config = data;
+      renderProviderDirectory(content, data.sourceDirectory || []);
       if (first) { fillOptions(view.provider, data.providers); fillOptions(view.category, data.categories, 'All categories'); }
       destinations();
       const project = data.destinations.find(item => item.type === 'project');

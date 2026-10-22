@@ -5,25 +5,31 @@ import { captureAssetEditorContext, listAssetEditorCells } from './AssetEditorCo
 import { planAssetInsertion, insertDownloadedAsset } from './AssetInsertionService.mjs';
 import { assetCredit, recordAttribution, exportAssetCredits } from './AssetAttributionService.mjs';
 import { assetRequest } from './DownloadClient.mjs';
-export function createDownloadWorkflow(view, { getState, changedTarget, status }) {
+export function createDownloadWorkflow(view, { getState, changedTarget, status, mode = 'standalone', settings = {} }) {
   const ui = addDownloadWorkflowView(view); let origin = null; let saved = null; let lastSelection = null; let cells = []; let disposed = false;
-  function options() { return { strategy: ui.strategy.value, creditPlacement: ui.creditPlacement.value,
-    attribute: ui.action.value === 'attribute', acceptLicenseResponsibility: ui.consent.checked, confirmPathInsertion: ui.confirmPath.checked }; }
+  ui.storage.value = settings.storageMode;
+  function options() { return { strategy: ui.strategy.value, creditPlacement: ui.action.value === 'attribute' ? ui.creditPlacement.value : 'project',
+    storageMode: ui.storage.value, fallbacks: settings.fallbacks || [], attribute: ui.action.value === 'attribute', acceptLicenseResponsibility: ui.consent.checked, confirmPathInsertion: ui.confirmPath.checked }; }
   function refresh() {
     const { selected, transfer } = getState(); const format = selected?.formats.find(item => item.id === view.format.value);
+    if (origin?.kind === 'world' || ui.strategy.value === 'path') ui.creditPlacement.value = 'project';
     const plan = planAssetInsertion(origin, selected || {}, format, options());
     const key = `${selected?.id}:${format?.id}:${origin?.capturedAt}`;
-    if (lastSelection !== key) { ui.action.value = plan.compatible ? 'attribute' : 'only'; ui.consent.checked = false; ui.confirmPath.checked = false; lastSelection = key; }
+    if (lastSelection !== key) { ui.action.value = mode === 'insert' && plan.compatible ? 'attribute' : 'only'; ui.consent.checked = false; ui.confirmPath.checked = false; lastSelection = key; }
     for (const option of ui.action.options) option.disabled = option.value !== 'only' && !plan.compatible;
     if (!plan.compatible) ui.action.value = 'only';
     ui.strategy.disabled = origin?.kind !== 'code';
-    ui.creditPlacement.disabled = ui.action.value !== 'attribute';
+    const inline = ui.storage.element.querySelector('[value=inline]'); inline.disabled = origin?.kind === 'world';
+    if (inline.disabled) ui.storage.value = 'referenced';
+    ui.creditPlacement.disabled = ui.action.value !== 'attribute' || origin?.kind === 'world' || ui.strategy.value === 'path';
     const explicitLicense = plan.licenseState === 'unknown' || (plan.licenseState === 'required' && ui.action.value !== 'attribute');
     const needsPath = ui.action.value !== 'only' && ui.strategy.value === 'path';
     view.download.textContent = ui.action.value === 'only' ? 'Download Only' : ui.action.value === 'insert' ? 'Download and Insert' : 'Download, Insert, and Attribute';
-    view.download.disabled = !format || !view.destination.value || !!transfer || (ui.action.value !== 'only' && ((explicitLicense && !ui.consent.checked) || (needsPath && !ui.confirmPath.checked)));
+    view.download.disabled = !format || !view.destination.value || !!transfer || !!saved?.pendingPlacement || (ui.action.value !== 'only' && ((explicitLicense && !ui.consent.checked) || (needsPath && !ui.confirmPath.checked)));
     const destination = getState().config?.destinations.find(item => item.id === view.destination.value);
     ui.preview.textContent = [
+      `Workflow: ${mode === 'insert' ? 'Insert Media — online source' : 'Standalone download'}`,
+      `Storage: ${ui.storage.value}; Notebook destinations are local, managed destinations are shared. Provider hotlinking is unavailable.`,
       `Asset: ${selected?.name || 'None'} · Source: ${selected?.sourceName || selected?.provider || ''}`,
       `License: ${selected?.license || 'unknown'} (${plan.licenseState} attribution)`,
       `Destination: ${destination?.path || ''}/${view.folder.value} (duplicate-safe filename assigned at download)`,
@@ -43,7 +49,7 @@ export function createDownloadWorkflow(view, { getState, changedTarget, status }
   async function setOrigin(next) {
     if (!next || disposed) return; origin = next;
     if (saved && !saved.inserted && saved.origin?.path === next.path) saved.origin = next; lastSelection = null; ui.strategy.value = 'markup';
-    ui.creditPlacement.value = ['html', 'svg', 'raster'].includes(origin.kind) || origin.kind === 'code' && origin.extension !== 'php' ? 'visible' : 'project';
+    ui.creditPlacement.value = 'project';
     targets(); refresh(); await changedTarget(origin);
   }
   ui.target.onfocus = targets;
@@ -51,22 +57,23 @@ export function createDownloadWorkflow(view, { getState, changedTarget, status }
     try { const next = await captureAssetEditorContext(cells[Number(ui.target.value)]); if (!next) throw Error('Choose an open supported editor.'); await setOrigin(next); }
     catch (error) { status(error.message); }
   };
-  for (const input of [ui.action, ui.strategy, ui.creditPlacement, ui.consent, ui.confirmPath, view.destination, view.folder]) input.addEventListener('change', refresh);
+  for (const input of [ui.storage.element, ui.action, ui.strategy, ui.creditPlacement, ui.consent, ui.confirmPath, view.destination, view.folder]) input.addEventListener('change', refresh);
   ui.copy.onclick = async () => { try { const plan = refresh(); await navigator.clipboard.writeText(plan.snippet || plan.reference || ''); status('Proposed snippet copied.'); } catch (error) { status(`Could not copy snippet: ${error.message}`); } };
   async function finish(job) {
     if (disposed) return;
     ui.retry.hidden = true;
     try {
       if (job.action !== 'only' && !job.inserted) {
-        const result = await insertDownloadedAsset(job.origin, job.asset, job.format, job.download, job.options);
-        job.inserted = true; job.pendingPlacement = result.pendingPlacement;
+        const result = await insertDownloadedAsset(job.origin, job.asset, job.format, job.download, { ...job.options, isCancelled: () => disposed });
+        job.inserted = true; job.pendingPlacement = result.pendingPlacement;job.placement=result.placement;
+        if(job.placement)job.placement.finished.then(async committed=>{job.pendingPlacement=false;job.inserted=!!committed;if(!committed)job.action='only';if(saved===job){ui.commit.hidden=ui.discard.hidden=true;if(!disposed){await finish(job);refresh();}}});
         if (job.pendingPlacement) { ui.commit.hidden = false; ui.discard.hidden = false; }
       }
       if (job.origin?.path && /\.(html?|svg|php|png|jpe?g|gltf|glb)$/i.test(job.origin.path)) {
         const result = await recordAttribution(job.download, job.origin.path, job.inserted && !job.pendingPlacement);
         ui.creditsText.textContent = result.text;
       }
-      status(`Saved to ${job.download.path}.${job.inserted ? job.pendingPlacement ? ' Position/resize the raster selection, then commit or cancel placement.' : ' Inserted into ' + job.origin.path + '; use the editor’s normal save command.' : ' Download Only; document unchanged.'}${job.options.attribute ? ' Credits recorded; include them when distributing the document.' : ''}`);
+      status(`Saved to ${job.download.path}.${job.inserted ? job.pendingPlacement ? ' Position the asset, then commit or cancel placement.' : ' Inserted into ' + job.origin.path + '; use the editor’s normal save command.' : ' Download Only; document unchanged.'}${job.options.attribute ? ' Credits recorded; include them when distributing the document.' : ''}`);
     } catch (error) {
       ui.retry.hidden = false;
       status(`Asset remains saved at ${job.download.path}. ${job.inserted ? 'Insertion succeeded, but attribution failed' : job.action === 'only' ? 'Provenance sidecar saved, but project credits failed' : 'Insertion failed'}: ${error.message}`);
@@ -75,15 +82,16 @@ export function createDownloadWorkflow(view, { getState, changedTarget, status }
   ui.retry.onclick = () => { if (saved) void finish(saved); };
   ui.commit.onclick = async () => {
     if (!saved?.pendingPlacement) return;
-    if (!saved.origin.api.commitAssetPlacement()) { status('The raster placement is no longer pending.'); return; }
-    saved.pendingPlacement = false; ui.commit.hidden = ui.discard.hidden = true; await finish(saved);
+    if(saved.placement){try{await saved.placement.commit();}catch(error){status(error.message);}return;}
+    if (!saved.origin.api.commitAssetPlacement()) { saved.pendingPlacement = false; saved.inserted = false; saved.action = 'only'; ui.commit.hidden = ui.discard.hidden = true; refresh(); status('The raster placement is no longer pending.'); return; }
+    saved.pendingPlacement = false; ui.commit.hidden = ui.discard.hidden = true; await finish(saved); refresh();
   };
-  ui.discard.onclick = () => { saved?.origin?.api?.cancelAssetPlacement?.(); ui.commit.hidden = ui.discard.hidden = true; if (saved) { saved.pendingPlacement = false; saved.inserted = false; saved.action = 'only'; } status('Raster placement cancelled. The downloaded asset remains saved.'); };
+  ui.discard.onclick = () => { if(saved?.placement){saved.placement.cancel();return;}saved?.origin?.api?.cancelAssetPlacement?.(); ui.commit.hidden = ui.discard.hidden = true; if (saved) { saved.pendingPlacement = false; saved.inserted = false; saved.action = 'only'; } refresh(); status('Raster placement cancelled. The downloaded asset remains saved.'); };
   ui.refreshCredits.onclick = async () => { try { if (!origin?.path) throw Error('Capture an editor first.'); const data = await assetRequest('attributions', { document: origin.path }); ui.creditsText.textContent = data.text || 'No project credits yet.'; } catch (error) { status(error.message); } };
   ui.exportCredits.onclick = () => exportAssetCredits(ui.creditsText.textContent || assetCredit(getState().selected || {}));
-  return { refresh, setOrigin, getOrigin: () => origin,
+  return { refresh, setOrigin, async setLaunch(launch) { mode = launch.mode || 'standalone'; settings = launch.settings || {}; ui.storage.value = settings.storageMode; lastSelection = null; if (launch.origin) await setOrigin(launch.origin); else refresh(); }, getOrigin: () => origin,
     snapshot() { const state = getState(); return { origin, asset: state.selected, format: state.selected?.formats.find(item => item.id === view.format.value), action: ui.action.value, options: options() }; },
     async complete(download, job) { saved = { ...job, download }; await finish(saved); },
-    dispose() { disposed = true; if (saved?.pendingPlacement) saved.origin.api.cancelAssetPlacement(); },
+    dispose() { disposed = true; if (saved?.pendingPlacement) {if(saved.placement)saved.placement.cancel();else saved.origin.api.cancelAssetPlacement();} },
   };
 }

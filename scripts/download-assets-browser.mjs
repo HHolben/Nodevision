@@ -1,5 +1,7 @@
 // Nodevision/scripts/download-assets-browser.mjs
 // Verifies real workspace docking, singleton lifecycle, text safety, cancellation and explicit download behavior.
+import { appendOnlineMediaButton } from '/ToolbarJSONfiles/insertMediaOnline.mjs';
+import { captureAssetEditorContext } from '/AssetDownloads/AssetEditorContext.mjs';
 import open from '/ToolbarCallbacks/file/downloadAssets.mjs';
 import { ensureWorkspace, ensureTopRow, createCell } from '/panels/workspaceParts/workspaceCells.mjs';
 let count = 0;
@@ -13,11 +15,13 @@ try {
   window.activeCell = editor; window.activePanel = 'GraphicalEditor'; window.NodevisionState = { selectedFile: 'world.html' };
   const selection = getSelection(); selection.selectAllChildren(content); selection.collapse(content.firstChild, 3);
   const requests = []; const downloads = []; let pendingTransfer;
-  const config = { providers: [{ id: 'polyhaven', name: 'Poly Haven', formats: ['png', 'glb'], licenses: ['CC0-1.0'] }],
+  const config = { providers: [{ id: 'polyhaven', name: 'Poly Haven', formats: ['png', 'glb'], licenses: ['CC0-1.0'] }, { id: 'wikimedia', name: 'Wikimedia Commons', formats: ['jpg', 'png'], licenses: ['CC-BY-SA-4.0', 'unknown'], categories: [{ id: 'images', name: 'Photos and illustrations' }] }, { id: 'metmuseum', name: 'The Met Open Access', formats: ['jpg'], licenses: ['CC0-1.0'], categories: [{ id: 'images', name: 'Artwork' }] }],
+    sourceDirectory: [{ id: 'polyhaven', name: 'Poly Haven', website: 'https://polyhaven.com', status: 'available', assetTypes: ['models'], support: { search: true, download: true }, integrationNote: 'Enabled formats: png, glb.', authentication: 'No credentials required' }, { id: 'sketchfab', name: 'Sketchfab', website: 'https://sketchfab.com', status: 'planned', assetTypes: ['models'], support: { search: false, download: false }, integrationNote: 'Adapter not implemented.', authentication: 'Access review pending' }],
     categories: [{ id: 'textures', name: 'Textures' }, { id: 'voxels', name: 'Voxel structures' }],
     destinations: [{ id: 'image:notebook', name: 'Notebook images', type: 'image', path: 'Resources/Images' }, { id: 'image:managed', name: 'Shared library', type: 'image', path: 'Resources/Images' }] };
-  const asset = { id: 'rock', name: '<img src=x onerror=alert(1)>', provider: 'polyhaven', creator: 'Artist', description: 'A rock', source: 'https://polyhaven.com/a/rock', preview: 'data:image/png;base64,', license: 'CC0-1.0', attribution: 'No attribution required', formats: [{ id: '1k/png', label: '1k PNG', extension: 'png', size: 123 }] };
+  const asset = { id: 'rock', name: '<img src=x onerror=alert(1)>', provider: 'polyhaven', creator: 'Artist', description: 'A rock', source: 'https://polyhaven.com/a/rock', preview: 'data:image/png;base64,', license: 'CC0-1.0', licenseVerified: true, attribution: 'No attribution required', formats: [{ id: '1k/png', label: '1k PNG', extension: 'png', size: 123 }] };
   window.fetch = (url, options = {}) => {
+    if (String(url).endsWith('/attributions') && options.method === 'POST') return Promise.resolve(new Response(JSON.stringify({ text: 'Rock — CC0', manifest: { assets: [] } })));
     if (String(url).endsWith('/download')) {
       downloads.push(JSON.parse(options.body));
       const stream = new ReadableStream({ start(controller) { pendingTransfer = { controller, signal: options.signal }; options.signal.addEventListener('abort', () => controller.error(new DOMException('Aborted', 'AbortError'))); } });
@@ -36,26 +40,54 @@ try {
   requests[0].resolve(config); await wait(() => requests.length === 2);
   requests[1].resolve({ items: [asset], next: 12 }); await wait(() => panel.textContent.includes(asset.name));
   check(!panel.querySelector('[onerror]'), 'Provider title is inert text');
+  check(panel.querySelector('[data-provider-directory]')?.textContent.includes('Sketchfab') && ![...panel.querySelector('[aria-label=Source]').options].some(option => option.value === 'sketchfab'), 'Planned sources are discoverable without pretending to be working integrations');
   check(downloads.length === 0, 'Search does not download or insert');
   const button = text => [...panel.querySelectorAll('button')].find(node => node.textContent === text);
   [...panel.querySelectorAll('button')].find(node => node.textContent.includes(asset.name)).click();
-  requests.at(-1).resolve(asset); await wait(() => !button('Download').disabled);
+  requests.at(-1).resolve(asset); await wait(() => !button('Download Only').disabled);
   check(panel.textContent.includes('Artist') && panel.textContent.includes('CC0-1.0') && panel.textContent.includes('0.00 MB'), 'Inspection shows creator license and size');
-  button('Download').click(); await wait(() => pendingTransfer);
+  button('Download Only').click(); await wait(() => pendingTransfer);
   check(downloads[0].authorized === true && downloads[0].asset === 'rock', 'Only explicit click authorizes selected download');
   pendingTransfer.controller.enqueue(new TextEncoder().encode('{"progress":{"received":50,"total":100}}\n'));
   await wait(() => panel.querySelector('progress').value === 0.5);
   button('Cancel download').click(); await wait(() => panel.textContent.includes('Download cancelled'));
   check(pendingTransfer.signal.aborted, 'Cancellation aborts transport');
-  pendingTransfer = null; button('Download').click(); await wait(() => pendingTransfer);
+  pendingTransfer = null; button('Download Only').click(); await wait(() => pendingTransfer);
   pendingTransfer.controller.enqueue(new TextEncoder().encode('{"result":{"name":"Rock","path":"Notebook/Resources/Images/rock.png","license":"CC0-1.0"}}\n')); pendingTransfer.controller.close();
   await wait(() => panel.textContent.includes('Saved to Notebook/Resources/Images/rock.png'));
   check(panel.querySelector('li').textContent.includes('rock.png'), 'Recent downloads expose exact File Manager location');
+  let insertions = 0;
+  content.__nvAssetInsertionTools = { insertHTMLAtCaret(html) { insertions++; return document.execCommand('insertHTML', false, html); } };
+  editor.__nvHtmlEditorContext = { filePath: 'world.html', getEditorElement: () => content, selection: { capture() {}, getRange: () => selection.getRangeAt(0).cloneRange() } };
+  selection.selectAllChildren(content); selection.collapse(content.firstChild, 3);
+  const insertionOrigin = await captureAssetEditorContext(editor);
+  const commandHost = document.createElement('div'); document.body.append(commandHost);
+  const online = appendOnlineMediaButton(commandHost, () => ({ origin: insertionOrigin }));
+  window.activeCell = other; online.click();
+  await wait(() => !!button('Download, Insert, and Attribute'));
+  check(document.querySelectorAll('[data-instance-name="DownloadAssetsPanel"]').length === 1, 'Insert Media online entry reuses File Download panel');
+  check(panel.textContent.includes('Insert Media — online source'), 'Shared panel knows insertion launch intent');
+  requests.at(-1).resolve(config); await new Promise(resolve => setTimeout(resolve, 0));
+  pendingTransfer = null; button('Download, Insert, and Attribute').click(); await wait(() => pendingTransfer);
+  pendingTransfer.controller.enqueue(new TextEncoder().encode(JSON.stringify({ result: { name: 'Rock', path: 'Notebook/Resources/Images/rock.png', url: '/Notebook/Resources/Images/rock.png', license: 'CC0-1.0' } }) + '\n')); pendingTransfer.controller.close();
+  await wait(() => insertions === 1);
+  check(content.querySelector('img')?.getAttribute('src') === 'Resources/Images/rock.png' && content.firstChild.textContent === 'Wor', 'Online command inserts through existing HTML command at original caret after focus changes');
+  window.activeCell = editor; await open(); requests.at(-1).resolve(config);
+  await wait(() => !!button('Download Only'));
+  check(insertions === 1 && panel.textContent.includes('Standalone download'), 'File launch resets standalone intent without inserting');
+  const source = panel.querySelector('[aria-label="Source"]');
+  source.value = 'wikimedia'; source.dispatchEvent(new Event('change')); requests.at(-1).resolve({ items: [], next: null });
+  await wait(() => panel.textContent.includes('No matches'));
+  check([...panel.querySelector('[aria-label="Category"]').options].some(option => option.value === 'images') && ![...panel.querySelector('[aria-label="Category"]').options].some(option => option.value === 'voxels'), 'Source switch shows provider-specific categories');
+  check([...panel.querySelector('[aria-label="License"]').options].some(option => option.value === 'CC-BY-SA-4.0'), 'Commons license filters replace Poly Haven filters');
+  source.value = 'metmuseum'; source.dispatchEvent(new Event('change')); requests.at(-1).resolve({ items: [], next: null });
+  await wait(() => panel.textContent.includes('No matches'));
+  check([...panel.querySelector('[aria-label="File format"]').options].map(option => option.value).join(',') === ',jpg', 'Met exposes only supported JPEG format');
   const form = panel.querySelector('form'); form.dispatchEvent(new Event('submit', { cancelable: true })); const stale = requests.at(-1);
   form.dispatchEvent(new Event('submit', { cancelable: true })); check(stale.signal.aborted, 'Superseded search aborted');
   requests.at(-1).resolve({ items: [], next: null }); stale.resolve({ items: [asset], next: null });
   await wait(() => panel.textContent.includes('No matches')); check(!panel.textContent.includes(asset.name), 'Stale search cannot overwrite latest results');
-  const before = document.querySelectorAll('.panel-cell').length; await open(); check(document.querySelectorAll('.panel-cell').length === before, 'Repeated open does not split again');
+  const before = document.querySelectorAll('.panel-cell').length; await open(); if (requests.at(-1).url.includes('/config?')) requests.at(-1).resolve(config); check(document.querySelectorAll('.panel-cell').length === before, 'Repeated open does not split again');
   form.dispatchEvent(new Event('submit', { cancelable: true })); const closing = requests.at(-1);
   panel.querySelector('.panel-close-btn').click(); await wait(() => closing.signal.aborted);
   check(!panel.isConnected, 'Normal close cleans up pending work');

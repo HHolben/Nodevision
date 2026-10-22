@@ -16,7 +16,7 @@ export function installSvgSelectionTranslation(scope) {
   };
   scope.svgSession.appendElement = function (el, insertion = {}) {
     if (insertion.layerId) {
-      const layer = scope.svgSession.getLayers().find(item => item.id === insertion.layerId);
+      const layer = scope.svgSession.svgRoot.id === insertion.layerId ? scope.svgSession.svgRoot : scope.svgSession.getLayers().find(item => item.id === insertion.layerId);
       if (!scope.svgSession.svgRoot.isConnected || !layer?.isConnected) throw new Error("Captured SVG layer is unavailable.");
       for (let node = layer; node; node = node.parentElement) {
         if (node.getAttribute?.("data-nv-locked") === "true") throw new Error("Captured SVG layer is locked.");

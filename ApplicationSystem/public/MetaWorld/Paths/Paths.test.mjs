@@ -73,3 +73,14 @@ test('feature exclusion clears real generated trees and returns them after delet
   assert.ok(!g.features.query([0,0,0],[512,256,512]).some(f=>f.id===tree.id));
   g.setPathConstraints([]);assert.ok(g.features.query([0,0,0],[512,256,512]).some(f=>f.id===tree.id));
 });
+test('locally flat smoothing retains the overall incline and deterministically grades only its corridor',()=>{
+ const d=path({elevationMode:'locally-flat',smoothing:.8,controlPoints:[[2,10,8],[12,18,8],[28,20,8]],elevationOffset:.5});
+ const samples=samplePath(THREE,d);assert.equal(samples[0][1],10.5);assert.equal(samples.at(-1)[1],20.5);assert.ok(samples.every(p=>p[1]>=10.5&&p[1]<=20.5));
+ const r=ribbonForPath(d,samples),g=createVoxelGenerator(world),outside=g.getTerrainHeight(0,0);g.setPathConstraints([r]);const first=Array.from(g.generateChunk(1,1,1));g.setPathConstraints([r]);assert.deepEqual(Array.from(g.generateChunk(1,1,1)),first);assert.equal(g.getTerrainHeight(0,0),outside);
+});
+test('mixed geometry and new placement settings roundtrip, while overlays leave terrain unchanged',()=>{
+ const d=path({interpolation:'mixed',segmentKinds:['straight','smooth'],controlPoints:[[2,15,2],[12,16,7],[28,18,8]],snap:'endpoints',terrainInteraction:'overlay',smoothing:.5});
+ assert.deepEqual(validatePath(JSON.parse(JSON.stringify(d))),d);assert.ok(ribbon(d).vertices.length>4);
+ const g=createVoxelGenerator(world),before=Array.from(g.generateChunk(0,1,0));g.setPathConstraints([ribbon(d)]);assert.deepEqual(Array.from(g.generateChunk(0,1,0)),before);
+ assert.throws(()=>path({smoothing:2}));assert.throws(()=>path({gridSize:0}));assert.throws(()=>path({segmentKinds:['invalid']}));
+});

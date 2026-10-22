@@ -41,7 +41,7 @@ export function createPolyHavenProvider(json = providerJson) {
     cache.set(endpoint, { value, expires: Date.now() + 300000 });
     return value;
   }
-  function checkId(id) { if (!/^[a-z0-9_-]{1,120}$/.test(id || '')) throw new Error('Invalid asset ID'); }
+  function checkId(id) { if (!/^[A-Za-z0-9_-]{1,120}$/.test(id || '')) throw new Error('Invalid asset ID'); }
   async function inspect(id, signal) {
     checkId(id);
     const [info, files] = await Promise.all([get(`info/${id}`, signal), get(`files/${id}`, signal)]);

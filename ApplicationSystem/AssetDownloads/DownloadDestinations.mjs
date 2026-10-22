@@ -30,5 +30,5 @@ export async function resolveDownloadDestination(ctx, id, subdirectory = '', doc
   return { ...destination, directory: resolved.absoluteDirectory, relativePath: source.path };
 }
 export function destinationDisplayPath(destination, filename) {
-  return `${destination.source.sourceType === 'notebook' ? 'Notebook' : 'UserData'}/${destination.relativePath}/${filename}`;
+  return `${destination.source.sourceType === 'notebook' ? 'Notebook' : 'UserData'}/${path.posix.join(destination.relativePath, filename)}`;
 }

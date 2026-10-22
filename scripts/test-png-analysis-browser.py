@@ -19,6 +19,8 @@ class Handler(http.server.BaseHTTPRequestHandler):
             content = b'<html><body><pre id="result">RUNNING</pre><script type="module" src="/scripts/png-analysis-browser.mjs"></script></body></html>'
             if '--toolbar' in sys.argv:
                 content = content.replace(b'png-analysis-browser.mjs', b'png-analysis-toolbar-browser.mjs').replace(b'<body>', b'<body><div id="global-toolbar"></div><div id="sub-toolbar"></div>')
+            if '--smoke' in sys.argv:
+                content = content.replace(b'png-analysis-browser.mjs', b'png-analysis-smoke-browser.mjs')
             mime = 'text/html'
         elif path == '/Notebook/fixture.png':
             def chunk(kind, data):
@@ -33,7 +35,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
             content = b'[{"heading":"View","ToolbarCategory":"View"}]'
             mime = 'application/json'
         elif path == '/panels/createToolbar.mjs':
-            content = b'export function updateToolbarState() {}'
+            content = b'export function updateToolbarState() {} export function showToolbarSubToolbar() {} export function hideToolbarSubToolbar() {}'
             mime = 'text/javascript'
         else:
             file = root / path.lstrip('/') if path.startswith('/scripts/') else public / path.lstrip('/')

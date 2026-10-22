@@ -17,7 +17,7 @@ export async function loadSavedLayout(entry) {
   if (!workspace) throw Error('No workspace is open.');
   const hosts = [...workspace.querySelectorAll('*')];
   const dirty = window.NodevisionState?.fileIsDirty || hosts.some(host =>
-    contextIsDirty(host.__nvSvgEditorContext) || contextIsDirty(host.__nvHtmlEditorContext));
+    contextIsDirty(host.__nvGoxApi) || contextIsDirty(host.__nvSvgEditorContext) || contextIsDirty(host.__nvHtmlEditorContext));
   if (dirty) throw Error('Save or close unsaved documents before loading a layout.');
   const layout = sanitizeWorkspaceLayout(entry.layout);
   cleanupPanelCells(workspace); workspace.replaceChildren();

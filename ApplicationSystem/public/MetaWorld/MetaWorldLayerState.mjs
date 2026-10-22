@@ -1,6 +1,7 @@
 // Nodevision/ApplicationSystem/public/MetaWorld/MetaWorldLayerState.mjs
 // This module shares MetaWorld layer state between renderer panels and layer panels. The bridge emits DOM events, and panels react without tightly coupling to a renderer.
 
+import {renderSoundProperty} from './Sounds/SoundControls.mjs';
 import { createLayerPanelElement, renderFlatLayerPanel } from "/PanelInstances/Common/Layers/LayerPanelSurface.mjs";
 import { createEquationExpressionEditor } from "/Equation/EquationExpressionEditor.mjs";
 
@@ -481,7 +482,7 @@ function renderMetaWorldSvgStylePanel(panelEl) {
       renameMetaWorldLayer(entry.id, next);
     },
     onDeleteLayer: (entry) => removeMetaWorldLayerObject(entry.id),
-    renderLayerDetails: renderExpressionLayerDetails,
+    renderLayerDetails: (wrapper,entry)=>{renderExpressionLayerDetails(wrapper,entry);renderSoundProperty(wrapper,entry,bridge);},
     deleteDisabled: () => !(bridge && (typeof bridge.removeObjectLayer === "function" || typeof bridge.removeExpressionLayer === "function")),
   });
 }

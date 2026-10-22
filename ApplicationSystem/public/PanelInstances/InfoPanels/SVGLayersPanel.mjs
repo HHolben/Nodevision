@@ -5,6 +5,7 @@ import { getActiveSvgLayersContext } from "../Common/Layers/svgLayersContext.mjs
 
 function collectProviders(instanceVars = {}) {
   const providers = [];
+  if (window.GOXLayersContext?.attachHost) providers.push({ id: "gox", title: "Voxel Layers", attachHost: window.GOXLayersContext.attachHost, actions: [] });
   const preferredContext = String(instanceVars.preferredContext || instanceVars.providerId || "").trim().toLowerCase();
   const inKMLMode = String(window.NodevisionState?.currentMode || "").toLowerCase().startsWith("kml");
   const shouldIncludeKML = preferredContext === "kml" || inKMLMode;

@@ -1,6 +1,7 @@
 // Nodevision/ApplicationSystem/public/PanelInstances/ViewPanels/GameViewDependencies/renderLoop.mjs
 // This file runs the animation loop and renders each frame.
 
+import { createVoxelEnvironmentLighting } from './voxelEnvironmentLighting.mjs';
 import { installWorldAstronomy } from './worldAstronomy.mjs';
 import { installWorldWeather } from './worldWeather.mjs';
 
@@ -8,6 +9,7 @@ export function startRenderLoop(renderer, scene, cameraOrResolver, update) {
   let running = true;
   const weather = installWorldWeather(scene);
   const astronomy = installWorldAstronomy(scene);
+  let voxelLighting = null;
   const state = window.__nodevisionGameLoopState || { active: 0, nextId: 1 };
   window.__nodevisionGameLoopState = state;
   const loopId = state.nextId++;
@@ -23,6 +25,9 @@ export function startRenderLoop(renderer, scene, cameraOrResolver, update) {
       : cameraOrResolver;
     astronomy.update(activeCamera);
     weather.update(activeCamera);
+    const context = window.VRWorldContext;
+    if (!voxelLighting && context?.THREE) voxelLighting = createVoxelEnvironmentLighting(context.THREE, scene);
+    voxelLighting?.update(context);
     if (activeCamera) renderer.render(scene, activeCamera);
   }
   animate();
@@ -31,6 +36,7 @@ export function startRenderLoop(renderer, scene, cameraOrResolver, update) {
     running = false;
     weather.dispose();
     astronomy.dispose();
+    voxelLighting?.dispose();
     state.active = Math.max(0, state.active - 1);
     console.log(`[GameView] render loop stop id=${loopId} active=${state.active}`);
   };

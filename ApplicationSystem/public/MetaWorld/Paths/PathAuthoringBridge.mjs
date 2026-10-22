@@ -1,5 +1,6 @@
 // Nodevision/ApplicationSystem/public/MetaWorld/Paths/PathAuthoringBridge.mjs
 // This module installs path editing on the existing world layer/history bridge and synchronizes derived terrain constraints after edits, deletion, regeneration, and history restoration.
+import { worldAuthoringAllowed } from '../WorldAuthoringPermissions.mjs';
 import { validatePath } from './PathDefinition.mjs';
 import { createPathObject } from './PathRuntime.mjs';
 import { samplePath, ribbonForPath } from './PathGeometry.mjs';
@@ -20,6 +21,7 @@ export function installPathAuthoring(bridge,{THREE,scene,objects,colliders,layer
     }
     return NaN;
   };
+  bridge.pathTerrainHeight=terrainHeight;
   bridge.syncPaths=()=>{
     const paths=[],next=new Map();let bounds=null;
     const extend=b=>{if(!b)return;bounds=bounds?{minX:Math.min(bounds.minX,b.minX),maxX:Math.max(bounds.maxX,b.maxX),minZ:Math.min(bounds.minZ,b.minZ),maxZ:Math.max(bounds.maxZ,b.maxZ)}:{...b};};
@@ -40,6 +42,7 @@ export function installPathAuthoring(bridge,{THREE,scene,objects,colliders,layer
   };
   bridge.getPathDefinition=id=>layerEntries.find(e=>e.id===id)?.object3d?.userData?.pathRuntime?.serialize();
   bridge.updatePath=(id,patch)=>{
+    if(!worldAuthoringAllowed(window.VRWorldContext?.movementState))throw Error('Path editing is unavailable in Play or read-only mode.');
     const entry=layerEntries.find(e=>e.id===id),old=entry?.object3d?.userData?.pathRuntime;
     if(id&&!old)throw Error('Path no longer exists.');
     const def=validatePath({...old?.serialize(),...patch,id:id||crypto.randomUUID()});

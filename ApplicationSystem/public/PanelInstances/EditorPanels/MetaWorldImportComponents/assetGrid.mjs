@@ -3,7 +3,7 @@
 
 import { createPreview, typeLabel } from "./assetTypes.mjs";
 
-export function renderAssetGrid(root, assets, { onImport } = {}) {
+export function renderAssetGrid(root, assets, { onImport, actionLabel = "Import to World" } = {}) {
   root.innerHTML = "";
   if (!assets.length) {
     const empty = document.createElement("div");
@@ -28,7 +28,7 @@ export function renderAssetGrid(root, assets, { onImport } = {}) {
 
     const button = document.createElement("button");
     button.type = "button";
-    button.textContent = "Import to World";
+    button.textContent = actionLabel;
     button.addEventListener("click", () => onImport?.(asset, button));
 
     card.append(title, meta, button);

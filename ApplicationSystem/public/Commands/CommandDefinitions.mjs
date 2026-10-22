@@ -8,6 +8,12 @@ import { WORKSPACE_COMMANDS } from './WorkspaceCommandDefinitions.mjs';
 
 export const NODEVISION_SHARED_COMMANDS = Object.freeze([
   ...WORKSPACE_COMMANDS,
+  { id: "path.world", category: "World", label: "Physical Path", description: "Activate, configure, finish, cancel, create, update, extend or delete a physical world path.", sessionSafe: false, arguments: [arg("action", "string", {default:"activate"}),arg("options", "any", {default:{}})] },
+  { id: "model.insert", category: "Model", label: "Insert 3D Model", description: "Open shared Notebook, local file and Download selection for the active editor.", sessionSafe: false, arguments: [] },
+  { id: "voxel.execute", category: "Voxel", label: "Voxel document action", description: "Run a GOX action on the active document; action parameters are listed in the voxel command form.", sessionSafe: false, arguments: [arg("action", "string", { required: true }), arg("parameters", "any", { default: {} })] },
+  { id: "voxel.world", category: "Voxel", label: "Goxel Model world tool", description: "Choose/place/settings/commit/cancel/inventory/select/transform/duplicate/delete/edit-source/reload GOX instances.", sessionSafe: false, arguments: [arg("action", "string", { default: "choose" }), arg("options", "any", { default: {} })] },
+  { id: "model.world", category: "Model", label: "3D Model world tool", description: "Choose/place/settings/commit/cancel/inventory/select/transform/duplicate/delete/edit-source/reload GLTF, GLB and GOX instances.", sessionSafe: false, arguments: [arg("action", "string", { default: "choose" }), arg("options", "any", { default: {} })] },
+  { id: "voxel.place", category: "Voxel", label: "Place GOX artwork", description: "Reference Notebook GOX artwork in the active world, with optional position, rotation and scale.", sessionSafe: false, arguments: [arg("path", "notebookPath", { required: true }), arg("options", "any", { default: {} })] },
   { id: "bridging.open", category: "Session", label: "Focus Session — Bridging", description: "Write toward a net word-growth goal or countdown in the HTML graphical editor.", sessionSafe: true, arguments: [], returns: "status", events: ["session.bridging.finished"] },
   { id: "templatePopulator.open", category: "Session", label: "Open Template Populator", description: "Assign images to document template placeholders.", sessionSafe: true, arguments: [], returns: "status", events: ["session.templatePopulator.finished"] },
   {
