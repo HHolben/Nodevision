@@ -39,6 +39,7 @@ try {
   await loaded;
   const result = await send('Runtime.evaluate', { awaitPromise: true, returnByValue: true, expression: `new Promise(resolve => { const poll = () => { const text = document.querySelector('#result')?.textContent; if (text && /^(PASS|FAIL):/.test(text)) resolve(text); else setTimeout(poll, 50); }; poll(); })` }, sessionId);
   const report = result.result?.value || JSON.stringify(result);
+  if(report.startsWith('PASS:')&&process.env.NODEVISION_NATIVE_PATHS==='1')await (await import('./paths-chromium-input.mjs')).runPathNativeChecks(send,sessionId);
   if (process.argv[5]) await writeFile(process.argv[5], report + '\n');
   console.log(report); process.exitCode = report.startsWith('PASS:') ? 0 : 1;
 } catch (error) { console.error(error); process.exitCode = 1; }

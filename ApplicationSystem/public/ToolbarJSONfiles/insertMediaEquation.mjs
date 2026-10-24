@@ -3,6 +3,7 @@
 
 import { createEquationExpressionEditor } from "/Equation/EquationExpressionEditor.mjs";
 import { DEFAULT_INLINE_EQUATION, insertInlineEquationAtCaret, normalizeInlineEquationFormat } from "/Equation/HtmlInlineEquation.mjs";
+import {createMediaBatch} from './insertMediaBatch.mjs';
 import { escapeHtml, getActiveEditorNotebookPath, dirname, joinNotebookPath, normalizeNotebookPath, notebookHrefFromPath, saveNotebookText, insertHtmlAtCaret } from "./insertMediaCommon.mjs";
 import { fetchUrlAsText, looksLikeUrlOrAbsPath, notebookSourceFromPath } from "./insertMediaIO.mjs";
 import { openInsertMediaPanel } from "./insertMediaPanel.mjs";
@@ -74,6 +75,7 @@ export function renderEquation(root, exts = []) {
   root.innerHTML = `<form style="display:flex;flex-direction:column;gap:10px;font:12px monospace;min-width:300px;max-width:620px;"><div style="font-weight:600;">Equation</div><fieldset style="border:1px solid #c6c6c6;padding:8px;"><legend>Source</legend><label style="display:block;margin-bottom:6px;"><input type="radio" name="nv-equation-source" value="new" checked> New</label><label style="display:block;"><input type="radio" name="nv-equation-source" value="existing"> Existing</label></fieldset><fieldset style="border:1px solid #c6c6c6;padding:8px;"><legend>Storage Mode</legend><label style="display:block;margin-bottom:6px;"><input type="radio" name="nv-equation-storage" value="inline" checked> Inline</label><label style="display:block;"><input type="radio" name="nv-equation-storage" value="referenced"> Referenced</label></fieldset><label data-field="format-wrap">Format<select data-field="format" style="display:block;width:100%;margin-top:4px;">${optionHtml}</select></label><div data-field="editor-host"></div><label data-field="new-name-wrap">New File Name<input data-field="newName" type="text" placeholder="equation.tex" style="display:block;width:100%;margin-top:4px;" /></label><div data-field="existing-wrap" style="display:none;"><label>Existing Source (Notebook path or URL)<input data-field="existingSource" type="text" placeholder="assets/equations/equation.tex" style="display:block;width:100%;margin-top:4px;" /></label></div><div style="display:flex;gap:10px;justify-content:flex-end;"><button type="submit" style="font:12px monospace;padding:6px 10px;border:1px solid #333;background:#eee;cursor:pointer;">Insert</button></div><div data-field="status" style="font-size:11px;color:#b00;min-height:14px;"></div></form>`;
 
   const form = root.querySelector("form");
+  const batch=createMediaBatch(form);
   const editorHost = root.querySelector('[data-field="editor-host"]');
   const formatWrap = root.querySelector('[data-field="format-wrap"]');
   const newNameWrap = root.querySelector('[data-field="new-name-wrap"]');
@@ -109,8 +111,8 @@ export function renderEquation(root, exts = []) {
   storageEls().forEach((radio) => radio.addEventListener("change", sync));
   sync();
 
-  form.addEventListener("submit", async (evt) => {
-    evt.preventDefault();
+  batch.addSources(path=>{existingSourceEl.value=path;});
+  batch.onSubmit(async () => {
     setStatus("");
     try {
       const source = valueOf(sourceEls());
@@ -130,15 +132,16 @@ export function renderEquation(root, exts = []) {
           equationText: editor.getValue(),
           editorPath,
         });
-        insertHtmlAtCaret(linkHtmlForEquationSource(notebookPath, editorPath));
+        batch.insertHtml(linkHtmlForEquationSource(notebookPath, editorPath));
       } else {
-        insertHtmlAtCaret(linkHtmlForEquationSource(existingSourceEl?.value, editorPath));
+        batch.insertHtml(linkHtmlForEquationSource(existingSourceEl?.value, editorPath));
       }
 
       setStatus("Inserted.");
     } catch (err) {
       console.warn("[insertMediaEquation]", err);
       setStatus(err?.message || String(err), true);
+      return false;
     }
   });
 }

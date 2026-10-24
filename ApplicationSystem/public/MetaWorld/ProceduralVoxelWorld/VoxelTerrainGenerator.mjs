@@ -1,5 +1,7 @@
 // Nodevision/ApplicationSystem/public/MetaWorld/ProceduralVoxelWorld/VoxelTerrainGenerator.mjs
 // This module composes base terrain and bounded procedural features into a deterministic final voxel field shared by rendering, collision, and future overrides.
+import { terrainChunkSteps } from './ProgressiveTerrain.mjs';
+import { geographicVegetation } from '../Geographic/Vegetation.mjs';
 import { excludesProtectedFeature } from '../Aegean/ProtectedRegions.mjs';
 import { createAegeanPlacement } from '../Aegean/PlantPlacement.mjs';
 import { createChunkLevelQuery } from './VoxelChunkLevels.mjs';
@@ -12,9 +14,10 @@ import { chunkToVoxel, voxelIndex, containsVoxel } from './VoxelCoordinates.mjs'
 const priority=featureMaterialPriority;
 export function createVoxelGenerator(source) {
   const def={...source,environment:source.environment?{...source.environment}:undefined};
-  const original=createBaseTerrain(def),base=createPathTerrainField(original,def),provider=def.environment?.id==='aegean'?createAegeanPlacement(original,def):createTreePlacement(original,def.generator.seed);
-  const filtered={...provider,candidate(x,z){const f=provider.candidate(x,z);return base.excludesFeature(f)||excludesProtectedFeature(def,f)?null:f;}};
-  const features=createFeatureField(def.generation?.vegetation === false ? [] : [filtered],priority);
+  const original=createBaseTerrain(def),base=createPathTerrainField(original,def),providers=def.terrainSource==='geographic'?geographicVegetation(original,def):[def.environment?.id==='aegean'?createAegeanPlacement(original,def):createTreePlacement(original,def.generator.seed)];
+  const provider={reach:Math.max(...providers.map(p=>p.reach)),maxHeight:Math.max(...providers.map(p=>p.maxHeight))};
+  const filtered=providers.map(provider=>({...provider,candidate(x,z){const f=provider.candidate(x,z);return (base.allowsFeature&&!base.allowsFeature(f))||base.excludesFeature(f)||excludesProtectedFeature(def,f)?null:f;}}));
+  const features=createFeatureField(def.generation?.vegetation === false ? [] : filtered,priority);
   let levels=createChunkLevelQuery(base,features);
   const featureStats={lookupMs:0,samplingMs:0,candidates:0};
   function getFeatureVoxel(x,y,z,list) {
@@ -42,7 +45,7 @@ export function createVoxelGenerator(source) {
     featureStats.samplingMs+=performance.now()-sampleStart;
     return data;
   }
-  return { ...base,getChunkLevels:(x,z)=>levels(x,z),features,featureStats,getFeatureVoxel,getVoxel,generateChunk,
+  return { ...base,generateChunkSteps:(...cell)=>terrainChunkSteps(base,features,...cell),getChunkLevelsSteps:(x,z)=>levels.steps(x,z),cacheStats:()=>({...base.cacheStats?.(),...features.cacheStats(),levels:levels.cacheSize()}),getChunkLevels:(x,z)=>levels(x,z),features,featureStats,getFeatureVoxel,getVoxel,generateChunk,
     get season(){return def.environment?.season;},
     setSeason(season){
       if(def.environment?.id!=='aegean'||def.environment.season===season)return false;

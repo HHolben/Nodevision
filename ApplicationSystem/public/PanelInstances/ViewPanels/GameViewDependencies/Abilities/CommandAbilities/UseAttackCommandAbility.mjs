@@ -19,6 +19,8 @@ export function installUseAttackCommandAbility(ctx) {
   }
 
   function handleUsePhase({ inputState, using, nowMs }) {
+    // Path endpoints are discrete presses; holding Use must not place repeated segments.
+    if(using&&movementState.useLatch&&window.VRWorldContext?.inventory?.getSelectedItem?.()?.id==='path')return true;
     const lastUseActionMs = Number(movementState.lastUseActionMs || 0);
     const canRepeatUse = movementState.useLatch && (nowMs - lastUseActionMs >= ctx.useRepeatMs);
     if (!using || (movementState.useLatch && !canRepeatUse)) return false;

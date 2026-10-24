@@ -1,5 +1,6 @@
 // Nodevision/ApplicationSystem/public/ToolbarJSONfiles/insertMediaImage.mjs
 // Insert -> Media image picker shared by graphical editors that can place images.
+import {createMediaBatch} from './insertMediaBatch.mjs';
 import { imageStorageMarkup } from './insertMediaStorage.mjs';
 import { captureAssetEditorContext } from '/AssetDownloads/AssetEditorContext.mjs';
 import { appendOnlineMediaButton, supportsOnlineMedia } from './insertMediaOnline.mjs';
@@ -155,6 +156,7 @@ function renderImageForm(root, onInsert, { svgMode = false, exts = [], initialSt
   </form>`;
 
   const form = root.querySelector("form");
+  const batch=createMediaBatch(form);
   if (supportsOnlineMedia(bookmark)) {
     const onlineRow = document.createElement('div'); form.querySelector('[data-field="status"]').before(onlineRow);
     appendOnlineMediaButton(onlineRow, () => ({ origin: bookmark, mediaFamily: 'Image', settings: { storageMode: selectedValue(root, 'nv-image-storage'), fallbacks: fallbackList.getFallbacks() } }), message => { root.querySelector('[data-field="status"]').textContent = message; });
@@ -280,10 +282,7 @@ function renderImageForm(root, onInsert, { svgMode = false, exts = [], initialSt
       },
     };
   }, { setStatus });
-  hiddenExisting.addEventListener("change", async () => {
-    const file = hiddenExisting.files?.[0] || null;
-    hiddenExisting.value = "";
-    if (!file) return;
+  batch.bind(hiddenExisting, async (file) => {
 
     const name = file.name || "image.png";
     const notebookPath = notebookPathFromPickedFile(file);
@@ -300,6 +299,7 @@ function renderImageForm(root, onInsert, { svgMode = false, exts = [], initialSt
       existingFile = { dataUrl: "", name: "", notebookPath: "", sourceValue: "" };
       delete existingSourceEl.dataset.localFile;
       setStatus(err?.message || String(err));
+      return false;
     } finally {
       existingFilePending = null;
       updateExistingStatus();
@@ -318,8 +318,9 @@ function renderImageForm(root, onInsert, { svgMode = false, exts = [], initialSt
     }
   });
 
-  form.addEventListener("submit", async (evt) => {
-    evt.preventDefault();
+  const loadNotebookSource=batch.addSources(path=>{existingFile = {dataUrl:"",name:"",notebookPath:"",sourceValue:""};existingSourceEl.value=path;delete existingSourceEl.dataset.localFile;existingSourceEl.dispatchEvent(new Event("input",{bubbles:true}));});
+
+  batch.onSubmit(async () => {
     setStatus("");
     try {
       const sourceMode = selectedValue(root, "nv-image-source");
@@ -387,7 +388,7 @@ function renderImageForm(root, onInsert, { svgMode = false, exts = [], initialSt
         sourceName,
         mode: storageMode + "-" + sourceMode,
         fallbacks,
-        resource
+        resource, batchIndex:batch.index
       });
       if (inserted === false || inserted == null) throw new Error("Image insertion failed.");
       refreshLinkedManagers(linkedNotebookPath);
@@ -395,6 +396,7 @@ function renderImageForm(root, onInsert, { svgMode = false, exts = [], initialSt
     } catch (err) {
       console.warn("[insertMediaImage]", err);
       setStatus(err?.message || String(err));
+      return false;
     }
   });
 }
@@ -420,7 +422,7 @@ async function insertImageIntoOriginatingSvg(insertion = {}, originContext = nul
     console.warn("[insertMediaImage] SVG insertion API unavailable", resolved.diagnostic || {});
     throw new Error("SVG insertion API unavailable for the originating editor.");
   }
-  const inserted = await api.insertImageFromInsertion(insertion);
+  const inserted = await api.insertImageFromInsertion({...insertion,offset:(insertion.batchIndex||0)*24});
   if (!inserted) {
     console.warn("[insertMediaImage] SVG element insertion failed", resolved.diagnostic || {});
     throw new Error("SVG element insertion failed.");
@@ -433,13 +435,16 @@ export function renderImage(root, exts = [], renderOptions = {}) {
   if (renderOptions.bookmark?.path && supportsOnlineMedia(renderOptions.bookmark)) {
     let localBookmark = renderOptions.bookmark;
     renderImageForm(root, async insertion => {
+      // Undo or editing can replace the HTML DOM between uses of this panel.
+      if (localBookmark.kind === "html" && localBookmark.root.innerHTML !== localBookmark.snapshot) {
+        const refreshed = await captureAssetEditorContext(localBookmark.cell);
+        if (refreshed?.kind === "html" && refreshed.root === localBookmark.root) localBookmark = refreshed;
+      }
       const resource = insertion.resource;
       resource.previewUrl = insertion.src.startsWith('data:') ? insertion.src : insertion.linkedNotebookPath ? notebookHrefFromPath(insertion.linkedNotebookPath) : insertion.src;
-      const current = await captureAssetEditorContext(localBookmark.cell);
-      if (current?.path === localBookmark.path && current.kind === localBookmark.kind) localBookmark = current;
-      const result = await insertMediaResource(localBookmark, resource, { extension: 'png' }, { local: true });
+      const result = await insertMediaResource(localBookmark, resource, { extension: 'png' }, { local: true, batchIndex:insertion.batchIndex });
       const next = await captureAssetEditorContext(localBookmark.cell);
-      if (next) localBookmark = next;
+      if (next) localBookmark = next.kind === "svg" ? {...next,layer:localBookmark.layer} : next;
       return result;
     }, { svgMode: isSvgInsertOrigin(originContext), exts, originContext, bookmark: renderOptions.bookmark });
     return;

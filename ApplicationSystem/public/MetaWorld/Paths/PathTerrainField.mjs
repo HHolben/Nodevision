@@ -2,14 +2,20 @@
 // This module derives deterministic cut/fill columns and generated-feature exclusions from world-space path ribbons while retaining an unmodified terrain sampler for follow-terrain paths.
 import { voxelIndex, chunkToVoxel, containsVoxel } from '../ProceduralVoxelWorld/VoxelCoordinates.mjs';
 export function createPathTerrainField(base, definition) {
-  let paths=[], cache=new Map();
+  let paths=[], cache=new Map(),nearby=new Map();
   const origin=definition.position.slice();origin[1]+=definition.heightLimits?.min || 0;
+  function candidates(x,z,padding=0){
+    const cx=Math.floor(x/64),cz=Math.floor(z/64),pad=Math.ceil(padding),key=`${cx},${cz},${pad}`;
+    if(!nearby.has(key)){if(nearby.size>=128)nearby.delete(nearby.keys().next().value);
+      nearby.set(key,paths.filter(p=>p.bounds.maxX>=cx*64-pad&&p.bounds.minX<=(cx+1)*64+pad&&p.bounds.maxZ>=cz*64-pad&&p.bounds.minZ<=(cz+1)*64+pad));}
+    return nearby.get(key);
+  }
   function column(x,z) {
     if(!paths.length)return null;
     const key=`${x},${z}`;if(cache.has(key))return cache.get(key);
     const wx=origin[0]+(x+.5)*.25,wz=origin[2]+(z+.5)*.25;
     let height=base.getTerrainHeight(x,z),changed=false;
-    for(const path of paths) {
+    for(const path of candidates(wx,wz)) {
       const b=path.bounds;
       if(path.def.terrainInteraction!=='grade'||wx<b.minX||wx>b.maxX||wz<b.minZ||wz>b.maxZ)continue;
       const exact=path.heightAt(wx,wz),near=Number.isFinite(exact)?null:path.nearest(wx,wz);
@@ -43,14 +49,14 @@ export function createPathTerrainField(base, definition) {
     if(!feature)return false;
     const x=origin[0]+(feature.min[0]+feature.max[0])*.125,z=origin[2]+(feature.min[2]+feature.max[2])*.125;
     const radius=Math.hypot(feature.max[0]-feature.min[0],feature.max[2]-feature.min[2])*.125;
-    return paths.some(p=>{const limit=p.def.width/2+p.def.transitionWidth+radius,b=p.bounds;
+    return candidates(x,z,radius).some(p=>{const limit=p.def.width/2+p.def.transitionWidth+radius,b=p.bounds;
       return p.def.proceduralExclusion&&x>=b.minX-radius&&x<=b.maxX+radius&&z>=b.minZ-radius&&z<=b.maxZ+radius&&p.nearest(x,z,limit).distance<=limit;});
   }
-  return {...base, base, getVoxel, generateChunk, excludesFeature,
-    setPathOrigin(position){origin.splice(0,3,...position);origin[1]+=definition.heightLimits?.min||0;cache.clear();},
-    setPathConstraints(next){paths=next.filter(p=>p.def.visible).slice().sort((a,b)=>a.def.id.localeCompare(b.def.id));cache.clear();},
+  return {...base, base, cacheStats:()=>({...base.cacheStats?.(),pathColumns:cache.size,pathLookupTiles:nearby.size}), getVoxel, generateChunk, excludesFeature,
+    setPathOrigin(position){origin.splice(0,3,...position);origin[1]+=definition.heightLimits?.min||0;cache.clear();nearby.clear();},
+    setPathConstraints(next){paths=next.filter(p=>p.def.visible).slice().sort((a,b)=>a.def.id.localeCompare(b.def.id));cache.clear();nearby.clear();},
     getTerrainHeight:(x,z)=>column(x,z) ?? base.getTerrainHeight(x,z),
     getSolidHeight:(x,z,max)=>column(x,z) ?? base.getSolidHeight(x,z,max),
     getWaterTop:(x,z)=>column(x,z)===null?base.getWaterTop(x,z):0,
-    clearColumns(){cache.clear();base.clearColumns();}};
+    clearColumns(){cache.clear();nearby.clear();base.clearColumns();}};
 }

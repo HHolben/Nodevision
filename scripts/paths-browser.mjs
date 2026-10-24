@@ -87,6 +87,19 @@ try {
   const commanded=await pathCommand(['create',{controlPoints:[[4,12,28],[12,13,28]],width:1,elevationMode:'locally-flat',terrainInteraction:'grade',smoothing:.5,surfaceMaterial:'dirt'}]);const commandMesh=context.objects.find(o=>o.userData.metaWorldLayerId===commanded.id);await commandMesh.userData.pathRuntime.ready;ok(!commandMesh.userData.pathRuntime.materialError,'dirt uses existing soil material');
   await pathCommand(['extend',{id:commanded.id}]);ok(pathToolState().points.length===2,'extend starts with existing world-space points');eventAt(point(24,28));key('Enter');ok(bridge.getPathDefinition(commanded.id).controlPoints.length===3,'extending updates the same path');bridge.undo();ok(bridge.getPathDefinition(commanded.id).controlPoints.length===2,'extension is one undo transaction');bridge.redo();
   await pathCommand(['update',{id:commanded.id,surfaceMaterial:'paved'}]);const paved=context.objects.find(o=>o.userData.metaWorldLayerId===commanded.id);await paved.userData.pathRuntime.ready;ok(!paved.userData.pathRuntime.materialError,'paved resolves an existing solid surface material');await pathCommand(['delete',{id:commanded.id}]);ok(!bridge.getPathDefinition(commanded.id),'command deletion uses normal layer history');context.inventory.dispose();window.NodevisionState.currentMode='Virtual World Editing';
+  // The first-person use action places endpoints at the crosshair without releasing pointer lock.
+  const {pathToolAction}=await import('/MetaWorld/Paths/PathTool.mjs');
+  context.inventory=null;const beforeUse=paths().length,oldPosition=camera.position.clone(),oldQuaternion=camera.quaternion.clone();
+  context.controls.isLocked=true;
+  camera.position.set(20,50,10);camera.lookAt(...point(20,4));camera.updateMatrixWorld(true);
+  await pathToolAction('use');ok(pathToolState().points.length===1&&context.controls.isLocked,'Use places the first crosshair point while locked');
+  camera.lookAt(...point(26,4));camera.updateMatrixWorld(true);await pathToolAction('use');ok(paths().length===beforeUse+1,'Second use places crosshair endpoint');
+  context.cancelPathDrawing();bridge.removeObjectLayer(paths().at(-1).userData.metaWorldLayerId);context.controls.isLocked=false;camera.position.copy(oldPosition);camera.quaternion.copy(oldQuaternion);camera.updateMatrixWorld(true);
+  const {installUseAttackCommandAbility}=await import('/PanelInstances/ViewPanels/GameViewDependencies/Abilities/CommandAbilities/UseAttackCommandAbility.mjs');
+  let uses=0;const useContext={controls:context.controls,movementState:{},useRepeatMs:180,api:{tryUseFlyingCarpet:()=>false,handleSelectedItemAction:()=>{uses++;return true;}}};
+  installUseAttackCommandAbility(useContext);context.inventory={getSelectedItem:()=>({id:'path'})};
+  useContext.api.handleUsePhase({inputState:{},using:true,nowMs:1000});useContext.api.handleUsePhase({inputState:{},using:true,nowMs:2000});ok(uses===1,'Holding Use does not repeat path points');
+  useContext.movementState.useLatch=false;useContext.api.handleUsePhase({inputState:{},using:true,nowMs:3000});ok(uses===2,'Releasing and pressing Use places next point');context.inventory=null;
   window.pathFixture={context,renderer,bridge,camera,point,insertPath,
     async settle(){await Promise.all(context.objects.map(o=>(o.userData.proceduralVoxelRuntime||o.userData.pathRuntime)?.ready));for(let i=0;i<100;i++)context.objects.forEach(o=>o.userData.proceduralVoxelRuntime?.update(new THREE.Vector3(16,15,16)));context.objectInspector.hide();renderer.render(scene,camera);},
     screenPoint(p){scene.updateMatrixWorld(true);camera.updateMatrixWorld(true);const v=new THREE.Vector3(...p).project(camera),r=canvas.getBoundingClientRect();return {x:r.left+(v.x+1)*r.width/2,y:r.top+(1-v.y)*r.height/2};},

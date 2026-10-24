@@ -1,5 +1,6 @@
 // Nodevision/ApplicationSystem/public/MetaWorld/ProceduralVoxelWorld/VoxelWorldDialog.mjs
 // This dialog collects a compact procedural terrain definition using the existing floating-panel component. Validation and cancellation happen before scene mutation, and the dialog closes when its owning world bridge changes.
+import { mountGeographicPanel } from '../Geographic/ImportPanel.mjs';
 import { createFloatingInventoryPanel } from '../../PanelInstances/InfoPanels/PlayerInventory.mjs';
 import { getActiveMetaWorldLayerBridge, META_WORLD_LAYER_EVENTS } from '../MetaWorldLayerState.mjs';
 import { worldAuthoringAllowed } from '../WorldAuthoringPermissions.mjs';
@@ -11,9 +12,9 @@ export function openVoxelWorldDialog(bridge = getActiveMetaWorldLayerBridge(), o
   const previous=objectId ? bridge.getVoxelWorldDefinition(objectId) : null;
   if(objectId && !previous)return false;
   const values=options.values || voxelWorldForm(previous), fields={};
-  let closed=false;
+  let closed=false,geographicPanel=null;
   function close(){
-    if(closed)return;closed=true;
+    if(closed)return;closed=true;geographicPanel?.dispose();
     window.removeEventListener(META_WORLD_LAYER_EVENTS.bridgeChanged,close);
     window.removeEventListener("nv-contextual-cursor-family-changed",toolChanged);
     panel.dispose();delete bridge.voxelWorldDialog;
@@ -38,6 +39,14 @@ export function openVoxelWorldDialog(bridge = getActiveMetaWorldLayerBridge(), o
     for(const [value,text] of options)input.add(new Option(text,value));
     input.value=values[key];fields[key]=input;row.append(input);form.append(row);return input;
   }
+  const source=choice('terrainSource','Terrain source',[['procedural','Procedural'],['geographic','Geographic']]);
+  geographicPanel=mountGeographicPanel(form,values);
+  const updateSource=()=>{
+    const geographic=source.value==='geographic';geographicPanel.host.hidden=!geographic;geographicPanel.host.disabled=!geographic;
+    for(const key of ['sizeX','sizeZ','maxHeight','minHeight','startingBiome','water','caves'])if(fields[key]){fields[key].parentElement.hidden=geographic;fields[key].disabled=geographic;}
+    biomeNote.hidden=geographic;preset.dispatchEvent(new Event('change'));
+  };
+  source.onchange=updateSource;
   const preset=choice('startingBiome','Starting biome',STARTING_BIOMES);
   const biomeNote=document.createElement('p');biomeNote.textContent='Temperate and snowy starts apply around the placement center and blend into seeded biomes farther away. Aegean uses its coastal landscape and Mediterranean habitats throughout the world.';form.append(biomeNote);
   const aegean=document.createElement('fieldset');form.append(aegean);
@@ -50,11 +59,12 @@ export function openVoxelWorldDialog(bridge = getActiveMetaWorldLayerBridge(), o
   field('seaLevel','Sea level (m)','number',aegean);
   const density=field('vegetationDensity','Vegetation density','number',aegean);density.min=0;density.max=1;density.step='.05';
   field('uplandOak','Include upland oak woodland','checkbox',aegean);field('mountains','Include rocky mountains','checkbox',aegean);
-  const updatePreset=()=>{aegean.hidden=preset.value!=='aegean';aegean.disabled=aegean.hidden;};preset.onchange=updatePreset;updatePreset();
+  const updatePreset=()=>{aegean.hidden=source.value==='geographic'||preset.value!=='aegean';aegean.disabled=aegean.hidden;};preset.onchange=updatePreset;updatePreset();
   const advanced=document.createElement('details'),summary=document.createElement('summary');summary.textContent='Advanced';advanced.append(summary);form.append(advanced);
   const radius=field('loadRadius','Render distance (chunks)','number',advanced);radius.min=1;radius.max=8;radius.step=1;
   field('vegetation','Trees and vegetation','checkbox',advanced);field('water','Generate water','checkbox',advanced);field('caves','Generate caves','checkbox',advanced);
-  const note=document.createElement('p');note.textContent='V1 uses 0.25 m voxels and 32-voxel chunks. Heights are relative to the object origin; terrain streams near the camera. Aegean uses coastal terrain and Mediterranean vegetation. Aegean caves use bounded coastal passages; a memory palace is not yet included. Regeneration protects ground under authored objects and preserves existing path grading. Generated cells are read-only; manual cell edits are not saved.';form.append(note);
+  const note=document.createElement('p');note.textContent='V1 uses 0.25 m voxels and 32-voxel chunks. Heights are relative to the object origin; terrain streams near the camera. Aegean uses coastal terrain and Mediterranean vegetation. Aegean caves use bounded coastal passages; a memory palace is not yet included. Aegean regeneration protects ground under authored objects and preserves existing path grading. Generated cells are read-only; manual cell edits are not saved.';form.append(note);
+  updateSource();
   const status=document.createElement('div');status.setAttribute('role','status');form.append(status);
   const actions=document.createElement('div'),generate=document.createElement('button'),cancel=document.createElement('button');
   generate.type='submit';generate.textContent=objectId?'Regenerate':options.onConfigure?'Apply Settings':'Generate';cancel.type='button';cancel.textContent='Cancel';cancel.onclick=close;actions.append(generate,cancel);form.append(actions);
@@ -64,6 +74,7 @@ export function openVoxelWorldDialog(bridge = getActiveMetaWorldLayerBridge(), o
     try {
       if(getActiveMetaWorldLayerBridge()!==bridge)throw Error('The active world changed. Reopen Insert → Voxel World.');
       const input=Object.fromEntries(Object.entries(fields).map(([key,field])=>[key,field.type==='checkbox'?field.checked:field.value]));
+      if(input.terrainSource==='geographic')input.geographic=geographicPanel.get();
       const def=definitionFromVoxelForm(input,previous);generate.disabled=true;
       const result=options.onConfigure ? (options.onConfigure(input,def), true) : objectId?bridge.regenerateVoxelWorld(objectId,def):bridge.addVoxelWorld(def);
       if(!result)throw Error('This world is not currently editable.');

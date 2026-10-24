@@ -51,6 +51,7 @@ try {
  window.fetch=async(url,options)=>{if(url==='/api/save'){saved=JSON.parse(options.body).content;return {ok:true};}return fetchOriginal(url,options);};
  await window.saveWYSIWYGFile('fixture.svg');ok(saved.includes('id="object-a"'),'normal save serializes moved node');ok(!context.isDirty(),'normal save clears dirty');window.fetch=fetchOriginal;
  await setupPanel(panel);ok(!getActiveSvgLayersContext().readOnly,'panel follows promoted editor');
+
  const a=root.querySelector('#layer-a'), b=root.querySelector('#layer-b');
  const many=document.createElementNS(root.namespaceURI,'g');
  for(let i=0;i<1200;i++){const node=document.createElementNS(root.namespaceURI,'path');node.setAttribute('d',`M ${i} 0 h 1`);many.appendChild(node);}
@@ -125,6 +126,22 @@ try {
  equal(controlled.parentElement,authoredB,'objects drag between authored Nodevision layers');
  const reorder=new DataTransfer();drag('dragstart',rowFor(authoredA).children[2],reorder);drag('drop',rowFor(authoredB),reorder);await tick();
  equal(root.querySelectorAll(':scope > g[data-layer]')[1],authoredA,'existing layer reorder from name button');
+ // Object arrows reorder siblings inside nested groups and use native history.
+ const nested=document.createElementNS(root.namespaceURI,'g');nested.id='arrow-group';nested.setAttribute('transform','translate(10 20)');
+ nested.innerHTML='<rect id="arrow-back" width="20" height="20"/><g id="arrow-nested"><circle id="arrow-first" r="5"/><circle id="arrow-second" r="8"/><circle id="arrow-third" r="10"/></g>';
+ root.querySelector('#authored-b').append(nested);await tick();
+ if(!rowFor(root.querySelector('#arrow-first'))){rowFor(root.querySelector('#authored-b')).children[0].click();await tick();}
+ const arrow=(id,title)=>rowFor(root.querySelector('#'+id)).querySelector(`button[title="${title}"]`);
+ const order=()=>Array.from(root.querySelector('#arrow-nested').children).map(n=>n.id).join(',');
+ ok(arrow('arrow-third','Move Up').disabled && arrow('arrow-first','Move Down').disabled,'sibling boundaries disable arrows');
+ arrow('arrow-first','Move Up').click();await tick();equal(order(),'arrow-second,arrow-first,arrow-third','up brings grouped object forward one sibling');
+ equal(root.querySelector('#arrow-first').parentNode.id,'arrow-nested','object stays inside nested group');
+ context.undo();await tick();equal(order(),'arrow-first,arrow-second,arrow-third','arrow reorder undo');
+ context.redo();await tick();equal(order(),'arrow-second,arrow-first,arrow-third','arrow reorder redo');
+ arrow('arrow-first','Move Down').click();await tick();equal(order(),'arrow-first,arrow-second,arrow-third','down sends grouped object back one sibling');
+ equal(root.querySelector('#arrow-group').getAttribute('transform'),'translate(10 20)','group transform unchanged');
+ rowFor(root.querySelector('#arrow-nested')).querySelector('button[title="Lock element"]').click();await tick();ok(arrow('arrow-first','Move Up').disabled,'locked ancestor disables reorder');
+ root.querySelector('#arrow-group').remove();await tick();
  document.getElementById("result").textContent="RUNNING: chrome";
  await checkSvgSaveRecovery(context);
  await checkSvgChrome(context,edit,cleanupEditor);cleanupEditor=null;

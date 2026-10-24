@@ -22,7 +22,7 @@ export async function activatePathTool({editId}={}){
  if(!beginPathDrawing(context))throw Error('The world canvas is unavailable.');return true;
  }catch(error){setStatus('Path',error.message);return false;}
 }
-export async function pathToolAction(action='use'){if(action==='attack'){window.VRWorldContext?.cancelPathDrawing?.();return true;}if(!window.VRWorldContext?.pathDrawing&&!await activatePathTool())return false;if(action==='adjust')return(await import('./PathToolSettings.mjs')).openPathToolSettings();return true;}
+export async function pathToolAction(action='use'){if(action==='attack'){window.VRWorldContext?.cancelPathDrawing?.();return true;}if(!window.VRWorldContext?.pathDrawing&&!await activatePathTool())return false;if(action==='adjust')return(await import('./PathToolSettings.mjs')).openPathToolSettings();if(action==='use')window.VRWorldContext?.pathDrawing?.placeEndpoint();return true;}
 export async function pathCommand([action='activate',options={}]=[]){
  if(action==='activate')return activatePathTool(options);
  if(!window.VRWorldContext||!worldAuthoringAllowed(window.VRWorldContext.movementState))throw Error('Path editing requires an editable world.');

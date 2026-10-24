@@ -1,6 +1,7 @@
 // Nodevision/ApplicationSystem/public/MetaWorld/ProceduralVoxelWorld/VoxelWorldDefinition.mjs
 // This module validates trusted declarative voxel terrain settings before any runtime allocation.
 
+import { validateGeographic } from '../Geographic/Definition.mjs';
 import { validateVegetationRevisions } from '../Aegean/Regeneration.mjs';
 import { validateProtectedRegions } from '../Aegean/ProtectedRegions.mjs';
 import { validateAuthoringTerrain } from "./VoxelAuthoringDefinition.mjs";
@@ -16,7 +17,7 @@ export function validateVoxelWorld(def) {
   const position = vector(def.position ?? [0, 0, 0], "position");
   const size = vector(def.size, "size");
   if (def.voxelSize !== 0.25) fail("version 1 requires voxelSize 0.25");
-  if (!size.every(n => n > 0 && n <= 4096 && Number.isSafeInteger(n / 0.25))) fail("size must be positive voxel multiples up to 4096 meters");
+  if (!size.every(n => n > 0 && n <= (def.geographic?.version===2?1000000:4096) && Number.isSafeInteger(n / 0.25))) fail("size must be positive voxel multiples within the supported terrain extent");
   if (size[0] < 1 || size[2] < 1) fail("horizontal dimensions must fit a player (at least 1 meter)");
   if (!position.every(n => Math.abs(n) <= 1e6)) fail("position exceeds supported range");
   if (def.rotation && !vector(def.rotation, "rotation").every(n => n === 0)) fail("rotation is unsupported");
@@ -27,6 +28,7 @@ export function validateVoxelWorld(def) {
   const radius = def.chunks.loadRadius;
   if (!Number.isInteger(radius) || radius < 1 || radius > 8) fail("loadRadius must be an integer from 1 to 8");
   if (def.voxelPattern || def.isVoxel || def.voxelPlacer) fail("authored voxel metadata is unsupported");
+  validateGeographic(def);
   validateAuthoringTerrain(def);
   validateProtectedRegions(def);
   validateVegetationRevisions(def);

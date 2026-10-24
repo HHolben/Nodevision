@@ -1,17 +1,18 @@
 // Nodevision/ApplicationSystem/public/MetaWorld/ProceduralVoxelWorld/VoxelChunkManager.mjs
 // This module bounds chunk residency and synchronous work while exposing cumulative and resident generation measurements.
 
+import { advanceProgressive,cancelProgressive } from './ProgressiveChunks.mjs';
 import { CHUNK_SIZE, chunkKey, voxelToChunk } from "./VoxelCoordinates.mjs";
 export class VoxelChunkManager {
-  constructor(generator, radius, build, release) {
-    Object.assign(this, { generator, radius, build, release });
+  constructor(generator, radius, build, release, options=null) {
+    Object.assign(this, { generator, radius, build, release, options });
     this.loaded = new Map(); this.invalidated = new Set(); this.queue = []; this.center = "";
-    this.stats = { loaded: 0, queued: 0, generated: 0, voxels: 0, faces: 0, generationMs: 0, meshingMs: 0, maxBuildMs: 0 };
+    this.stats = { residentBytes:0,peakLoaded:0,maxUpdateMs:0,cancelled:0, loaded: 0, queued: 0, generated: 0, voxels: 0, faces: 0, generationMs: 0, meshingMs: 0, maxBuildMs: 0 };
   }
   update(voxel) {
     const [cx,,cz] = voxelToChunk(voxel), center = `${cx},${cz}`;
     if (center !== this.center) {
-      this.center = center;
+      cancelProgressive(this);this.center = center;
       const wanted = [];
       const [width,,depth] = this.generator.dimensions;
       for (let z = Math.max(0, cz-this.radius); z <= Math.min(Math.ceil(depth/CHUNK_SIZE)-1, cz+this.radius); z++) {
@@ -22,12 +23,13 @@ export class VoxelChunkManager {
       for (const [key, entry] of this.loaded) {
         if (Math.abs(entry.cell[0]-cx)>this.radius+1 || Math.abs(entry.cell[2]-cz)>this.radius+1) {
           this.release(entry); this.loaded.delete(key); this.invalidated.delete(key);
-          this.stats.voxels -= entry.solidVoxels; this.stats.faces -= entry.faceCount;
+          this.stats.residentBytes-=entry.residentBytes??0;this.stats.voxels -= entry.solidVoxels; this.stats.faces -= entry.faceCount;
         }
       }
       this.queue = wanted
         .sort((a,b) => (a[0]-cx)**2+(a[2]-cz)**2 - ((b[0]-cx)**2+(b[2]-cz)**2));
     }
+    if(this.options){advanceProgressive(this);return;}
     // One fixed-size chunk per update; workers can later replace build without changing residency.
     let cell = this.queue.shift();
     if (cell && cell[1] === null) {
@@ -42,16 +44,26 @@ export class VoxelChunkManager {
     if (cell) {
       const start = performance.now(), entry = this.build(cell);
       const key=chunkKey(cell),previous=this.loaded.get(key);
-      if(previous){this.release(previous);this.stats.voxels-=previous.solidVoxels;this.stats.faces-=previous.faceCount;}
+      if(previous){this.release(previous);this.stats.residentBytes-=previous.residentBytes??0;this.stats.voxels-=previous.solidVoxels;this.stats.faces-=previous.faceCount;}
       this.invalidated.delete(key);
       this.loaded.set(chunkKey(cell), { ...entry, cell });
-      this.stats.generated++; this.stats.voxels += entry.solidVoxels; this.stats.faces += entry.faceCount;
+      this.stats.residentBytes+=entry.residentBytes??0;this.stats.generated++; this.stats.voxels += entry.solidVoxels; this.stats.faces += entry.faceCount;
       this.stats.generationMs += entry.generationMs; this.stats.meshingMs += entry.meshingMs;
       this.stats.maxBuildMs = Math.max(this.stats.maxBuildMs, performance.now()-start);
     }
     this.stats.loaded = this.loaded.size; this.stats.queued = this.queue.length;
   }
+  releaseEntry(key){
+    const e=this.loaded.get(key);if(!e)return;this.release(e);this.loaded.delete(key);this.invalidated.delete(key);
+    this.stats.voxels-=e.solidVoxels;this.stats.faces-=e.faceCount;this.stats.residentBytes-=e.residentBytes??0;
+  }
+  storeEntry(cell,entry){
+    const key=chunkKey(cell);this.releaseEntry(key);this.loaded.set(key,{...entry,cell});this.invalidated.delete(key);
+    this.stats.generated++;this.stats.voxels+=entry.solidVoxels;this.stats.faces+=entry.faceCount;this.stats.residentBytes+=entry.residentBytes??0;
+    this.stats.generationMs+=entry.generationMs;this.stats.meshingMs+=entry.meshingMs;this.stats.maxBuildMs=Math.max(this.stats.maxBuildMs,entry.buildMs??0);
+  }
   invalidateBounds(bounds) {
+    cancelProgressive(this);
     for (const [key,entry] of this.loaded) {
       const [x,,z]=entry.cell;
       if ((x+1)*32<bounds.minX || x*32>bounds.maxX || (z+1)*32<bounds.minZ || z*32>bounds.maxZ) continue;
@@ -60,8 +72,9 @@ export class VoxelChunkManager {
     this.queue.length=0;this.center='';this.stats.loaded=this.loaded.size;
   }
   dispose() {
+    cancelProgressive(this);
     for (const entry of this.loaded.values()) this.release(entry);
     this.loaded.clear(); this.invalidated.clear(); this.queue.length = 0; this.center = "";
-    Object.assign(this.stats, { loaded: 0, queued: 0, voxels: 0, faces: 0 });
+    Object.assign(this.stats, { loaded: 0, queued: 0, voxels: 0, faces: 0,residentBytes:0 });
   }
 }

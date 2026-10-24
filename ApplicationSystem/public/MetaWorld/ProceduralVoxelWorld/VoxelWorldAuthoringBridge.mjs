@@ -1,5 +1,6 @@
 // Nodevision/ApplicationSystem/public/MetaWorld/ProceduralVoxelWorld/VoxelWorldAuthoringBridge.mjs
 // This adapter inserts and regenerates procedural terrain through the existing world hierarchy and snapshot history. It owns no global scene state and disposes the replaced runtime before registering its successor.
+import { geographicRegenerationPosition } from '../Geographic/Placement.mjs';
 import { preserveAuthoredGround } from '../Aegean/ProtectedRegions.mjs';
 import { createProceduralVoxelWorld } from './ProceduralVoxelWorldRuntime.mjs';
 import { validateVoxelWorld } from './VoxelWorldDefinition.mjs';
@@ -41,7 +42,7 @@ export function installVoxelWorldAuthoring(bridge, { THREE, scene, objects, coll
     const entry=entryFor(id); if(!entry)throw Error('The selected Voxel World no longer exists.');
     const current=bridge.getVoxelWorldDefinition(id);
     const protectionSource=current.environment?{...current,environment:{...current.environment,season:entry.object3d.userData.proceduralVoxelRuntime.generator.season}}:current;
-    const def=validateVoxelWorld(preserveAuthoredGround(THREE,protectionSource,{...structuredClone(source),id,position:current.position,visible:current.visible,hidden:current.hidden},objects));
+    const def=validateVoxelWorld(preserveAuthoredGround(THREE,protectionSource,{...structuredClone(source),id,position:geographicRegenerationPosition(current,source),visible:current.visible,hidden:current.hidden},objects));
     return register(def,entry);
   };
 }

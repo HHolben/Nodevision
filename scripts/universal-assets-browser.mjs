@@ -97,6 +97,7 @@ try {
   for (let i = 0; i < 50 && !localRoot.querySelector('img'); i++) await tick();
   check(localRoot.querySelector('img')?.getAttribute('src') === 'assets/rock.png' && blockedRequests === 0, 'Existing local file inserts offline through shared pipeline with relative reference');
   check(localRoot.querySelector('img')?.dataset.nvLinkedPath === 'Notebook/Project/assets/rock.png', 'Local linked Notebook identity is retained');
+  for (let i = 0; i < 50 && !formHost.querySelector('[data-media-batch] > button').hidden; i++) await tick();
   localRoot.__nvAssetInsertionTools.undo(); check(!localRoot.querySelector('img'), 'Local insertion keeps native undo');
   formHost.querySelector('[data-field="existingSource"]').value = 'https://example.invalid/existing.png';
   formHost.querySelector('form').dispatchEvent(new Event('submit', { cancelable: true }));

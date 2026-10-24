@@ -1,5 +1,6 @@
 // Nodevision/ApplicationSystem/public/ToolbarJSONfiles/insertMediaCircuit.mjs
 // Insert Media form for creating or referencing .cir files from the HTML graphical editor.
+import {createMediaBatch} from './insertMediaBatch.mjs';
 
 import {
   dirname,
@@ -107,6 +108,7 @@ export function renderCircuit(root) {
   const heightEl = root.querySelector('[data-field="height"]');
   const statusEl = root.querySelector('[data-field="status"]');
   const hiddenExisting = document.createElement("input");
+  const batch=createMediaBatch(root.querySelector("form"));
   hiddenExisting.type = "file";
   hiddenExisting.accept = ".cir";
   hiddenExisting.style.display = "none";
@@ -127,10 +129,7 @@ export function renderCircuit(root) {
   root.querySelectorAll('input[name="nv-circuit-source"]').forEach((el) => el.addEventListener("change", updateHint));
   newNameEl.addEventListener("input", updateHint);
   root.querySelector('[data-action="choose-existing"]').addEventListener("click", () => hiddenExisting.click());
-  hiddenExisting.addEventListener("change", async () => {
-    const file = hiddenExisting.files?.[0] || null;
-    hiddenExisting.value = "";
-    if (!file) return;
+  batch.bind(hiddenExisting, async (file) => {
     const notebookPath = notebookPathFromPickedFile(file);
     existingFileStatusEl.textContent = `Loading: ${file.name || "circuit.cir"}`;
     try {
@@ -143,11 +142,13 @@ export function renderCircuit(root) {
       delete existingSourceEl.dataset.localFile;
       existingFileStatusEl.textContent = "No local file selected.";
       setStatus(err?.message || String(err));
+      return false;
     }
   });
 
-  root.querySelector("form").addEventListener("submit", async (event) => {
-    event.preventDefault();
+  const loadNotebookSource=batch.addSources(path=>{existingFile = {text:"",name:"",notebookPath:""};existingSourceEl.value=path;delete existingSourceEl.dataset.localFile;existingSourceEl.dispatchEvent(new Event("input",{bubbles:true}));});
+
+  batch.onSubmit(async () => {
     setStatus("");
     try {
       const sourceMode = selectedValue(root, "nv-circuit-source");
@@ -178,7 +179,7 @@ export function renderCircuit(root) {
         height: clampDimension(heightEl.value, 320),
         title: linkedNotebookPath.split("/").pop() || "Circuit",
       });
-      const inserted = insertHtmlAtCaret(html);
+      const inserted = batch.insertHtml(html);
       if (inserted === false) throw new Error("Circuit insertion was not available.");
       window.HTMLWysiwygTools?.hydrateReferencedCircuits?.();
       refreshLinkedManagers(linkedNotebookPath);
@@ -186,6 +187,7 @@ export function renderCircuit(root) {
     } catch (err) {
       console.warn("[insertMediaCircuit]", err);
       setStatus(err?.message || String(err));
+      return false;
     }
   });
 }

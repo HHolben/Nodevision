@@ -1,0 +1,208 @@
+{
+  "kind": "Headless Chromium / SwiftShader, real requestAnimationFrame; software rendering is not a hardware GPU guarantee",
+  "worldMeters": [
+    5000,
+    33.75,
+    5000
+  ],
+  "importMs": 839.5,
+  "pathPrepareMs": 127.90000000596046,
+  "frames": 450,
+  "frameIntervalMs": {
+    "mean": 16.68533333334658,
+    "p95": 17.099999994039536,
+    "max": 24.80000001192093
+  },
+  "rafTimestampIntervalMs": {
+    "mean": 16.702937777777777,
+    "p95": 16.799999999999272,
+    "max": 33.399999999999636
+  },
+  "streamingUpdateMs": {
+    "mean": 4.29644444445769,
+    "p95": 6.200000017881393,
+    "max": 15.800000011920929
+  },
+  "renderSubmitMs": {
+    "mean": 0.24244444462988113,
+    "p95": 0.5,
+    "max": 8.700000017881393
+  },
+  "maxLoaded": 4,
+  "maxMeshBytes": 1138936,
+  "maxTriangles": 14986,
+  "savedBytes": 5415150,
+  "access": {
+    "transferredBytes": 2031616,
+    "requestedBytes": 2031616,
+    "requests": 26,
+    "sourceBytes": 16779648
+  },
+  "peakImportMemoryProxyBytes": 235405912,
+  "stats": {
+    "residentBytes": 900600,
+    "peakLoaded": 4,
+    "maxUpdateMs": 15.800000011920929,
+    "cancelled": 9,
+    "loaded": 4,
+    "queued": 8,
+    "generated": 31,
+    "voxels": 44821,
+    "faces": 5925,
+    "generationMs": 761.9999997317791,
+    "meshingMs": 440.5999998450279,
+    "maxBuildMs": 54.799999952316284
+  },
+  "visits": [
+    {
+      "round": 0,
+      "x": 100,
+      "z": 100,
+      "loaded": 3,
+      "caches": {
+        "columns": 8192,
+        "pathColumns": 3981,
+        "pathLookupTiles": 5,
+        "features": 153,
+        "neighborhoods": 8,
+        "levels": 3
+      },
+      "ground": 1.25
+    },
+    {
+      "round": 0,
+      "x": 4800,
+      "z": 100,
+      "loaded": 4,
+      "caches": {
+        "columns": 8192,
+        "pathColumns": 7313,
+        "pathLookupTiles": 12,
+        "features": 231,
+        "neighborhoods": 9,
+        "levels": 5
+      },
+      "ground": 8.25
+    },
+    {
+      "round": 0,
+      "x": 4800,
+      "z": 4800,
+      "loaded": 3,
+      "caches": {
+        "columns": 8192,
+        "pathColumns": 2244,
+        "pathLookupTiles": 24,
+        "features": 301,
+        "neighborhoods": 10,
+        "levels": 7
+      },
+      "ground": 13
+    },
+    {
+      "round": 0,
+      "x": 100,
+      "z": 4800,
+      "loaded": 2,
+      "caches": {
+        "columns": 8192,
+        "pathColumns": 5576,
+        "pathLookupTiles": 30,
+        "features": 367,
+        "neighborhoods": 10,
+        "levels": 10
+      },
+      "ground": 5.75
+    },
+    {
+      "round": 0,
+      "x": 2500,
+      "z": 2500,
+      "loaded": 2,
+      "caches": {
+        "columns": 8192,
+        "pathColumns": 7820,
+        "pathLookupTiles": 41,
+        "features": 434,
+        "neighborhoods": 10,
+        "levels": 12
+      },
+      "ground": 12
+    },
+    {
+      "round": 1,
+      "x": 100,
+      "z": 100,
+      "loaded": 3,
+      "caches": {
+        "columns": 8192,
+        "pathColumns": 3119,
+        "pathLookupTiles": 41,
+        "features": 434,
+        "neighborhoods": 10,
+        "levels": 12
+      },
+      "ground": 1.25
+    },
+    {
+      "round": 1,
+      "x": 4800,
+      "z": 100,
+      "loaded": 3,
+      "caches": {
+        "columns": 8192,
+        "pathColumns": 5359,
+        "pathLookupTiles": 41,
+        "features": 434,
+        "neighborhoods": 10,
+        "levels": 12
+      },
+      "ground": 8.25
+    },
+    {
+      "round": 1,
+      "x": 4800,
+      "z": 4800,
+      "loaded": 4,
+      "caches": {
+        "columns": 8192,
+        "pathColumns": 7599,
+        "pathLookupTiles": 41,
+        "features": 434,
+        "neighborhoods": 10,
+        "levels": 12
+      },
+      "ground": 13
+    },
+    {
+      "round": 1,
+      "x": 100,
+      "z": 4800,
+      "loaded": 3,
+      "caches": {
+        "columns": 8192,
+        "pathColumns": 3890,
+        "pathLookupTiles": 41,
+        "features": 439,
+        "neighborhoods": 10,
+        "levels": 13
+      },
+      "ground": 5.75
+    },
+    {
+      "round": 1,
+      "x": 2500,
+      "z": 2500,
+      "loaded": 4,
+      "caches": {
+        "columns": 8192,
+        "pathColumns": 6065,
+        "pathLookupTiles": 41,
+        "features": 461,
+        "neighborhoods": 17,
+        "levels": 13
+      },
+      "ground": 12
+    }
+  ]
+}

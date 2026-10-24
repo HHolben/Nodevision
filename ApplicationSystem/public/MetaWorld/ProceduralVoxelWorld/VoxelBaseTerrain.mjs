@@ -1,6 +1,7 @@
 // Nodevision/ApplicationSystem/public/MetaWorld/ProceduralVoxelWorld/VoxelBaseTerrain.mjs
 // This module produces deterministic finite heightfield terrain without depending on rendering or scene state.
 
+import { createGeographicTerrain } from '../Geographic/Terrain.mjs';
 import { createProtectedField } from '../Aegean/ProtectedRegions.mjs';
 import { createCoastalField } from '../Aegean/CoastalField.mjs';
 import { VOXEL_MATERIAL_IDS } from './VoxelMaterialIds.mjs';
@@ -17,6 +18,7 @@ import { createLandforms } from './VoxelLandforms.mjs';
 import { cavernColumn, sampleCavern } from './VoxelCaverns.mjs';
 const materialIndices=new Map(VOXEL_MATERIAL_IDS.map((id,index)=>[id,index]));
 export function createBaseTerrain(def) {
+  if(def.terrainSource==='geographic')return createGeographicTerrain(def);
   const dimensions = voxelDimensions(def.size), seed = def.generator.seed;
   const startingBiomeAt = createStartingBiomeSampler(def, dimensions);
   const coast=def.environment?.id==='aegean'?createProtectedField(def,dimensions,createCoastalField(def,dimensions)):null;

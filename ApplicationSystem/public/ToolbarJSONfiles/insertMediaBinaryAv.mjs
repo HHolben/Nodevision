@@ -1,5 +1,6 @@
 // Nodevision/ApplicationSystem/public/ToolbarJSONfiles/insertMediaBinaryAv.mjs
 // Shared renderer for binary A/V inserts (Video + Sound) with New/Existing and Referenced/Inline.
+import {createMediaBatch} from './insertMediaBatch.mjs';
 import { escapeHtml, getActiveEditorNotebookPath, dirname, joinNotebookPath, normalizeNotebookPath, notebookHrefFromPath, insertHtmlAtCaret } from "./insertMediaCommon.mjs";
 import { fetchUrlAsDataUrl, looksLikeUrlOrAbsPath, notebookSourceFromPath, readFileAsDataUrl, saveNotebookBinaryFromDataUrl } from "./insertMediaIO.mjs";
 import { attachFallbackReferenceList } from "./referenceFallbackRows.mjs";
@@ -48,7 +49,7 @@ function resourceFromAv({ kind = "Media", src = "", linked = "", label = "", fal
   });
 }
 
-async function insertWorldSoundObject({ src = "", linked = "", label = "", inline = false, resource = null } = {}) {
+async function insertWorldSoundObject({ src = "", linked = "", label = "", inline = false, resource = null, batchIndex=0, validate=()=>true } = {}) {
   const ref = resource || null;
   const source = String(ref?.src || src || "").trim();
   const linkedPath = String(ref?.notebookPath || linked || "").trim();
@@ -59,7 +60,7 @@ async function insertWorldSoundObject({ src = "", linked = "", label = "", inlin
     tag: "",
     name: name || "Sound Object",
     type: "sound-object",
-    position: readCameraPlacement(),
+    position: readCameraPlacement().map((n,i)=>i===0?n+batchIndex*2:n),
     size: [0.25],
     color: "#44aaff",
     src: source,
@@ -74,7 +75,9 @@ async function insertWorldSoundObject({ src = "", linked = "", label = "", inlin
     breakable: true
   };
   if (inline && source.startsWith("data:")) def.audioDataUrl = source;
+  if(!validate())throw Error("The originating world changed.");
   const bridge = await ensureEditableMetaWorldBridge();
+  if(!validate())throw Error("The originating world changed.");
   if (!bridge?.addSoundObjectLayer) throw new Error("Open a MetaWorld editor before inserting Sound Objects.");
   const added = bridge.addSoundObjectLayer(def);
   if (!added) throw new Error("Could not add Sound Object to the virtual world.");
@@ -134,6 +137,8 @@ export function renderBinaryAv(root, cfg) {
   root.innerHTML = `<form style="display:flex;flex-direction:column;gap:10px;font:12px monospace;min-width:280px;max-width:540px;"><fieldset style="border:1px solid #c6c6c6;padding:8px;"><legend>${escapeHtml(kind)} Source</legend><label style="display:block;margin-bottom:6px;"><input type="radio" name="nv-source" value="new" checked> New ${escapeHtml(kind)}</label><label style="display:block;"><input type="radio" name="nv-source" value="existing"> Existing ${escapeHtml(kind)}</label></fieldset><fieldset style="border:1px solid #c6c6c6;padding:8px;"><legend>Storage Mode</legend><label style="display:block;margin-bottom:6px;"><input type="radio" name="nv-storage" value="referenced" checked> Referenced (src points to file path)</label><label style="display:block;"><input type="radio" name="nv-storage" value="inline"> Inline (embed as data URL)</label></fieldset><div data-section="new" style="display:flex;flex-direction:column;gap:8px;"><div style="display:flex;gap:8px;align-items:flex-end;"><button type="button" data-action="choose-new" style="font:12px monospace;padding:6px 10px;border:1px solid #333;background:#eee;cursor:pointer;">${escapeHtml(newChooserLabel)}</button><span data-field="newFileStatus" style="font-size:11px;color:#4b4b4b;">${escapeHtml(newChooserDefault)}</span></div><div data-section="new-ref" style="display:flex;flex-direction:column;gap:8px;"><label>New ${escapeHtml(kind)} Format<select data-field="format" style="display:block;width:100%;margin-top:4px;">${extensions.map((e) => `<option value="${escapeHtml(e)}"${e === defaultExt ? " selected" : ""}>${escapeHtml(e)}</option>`).join("")}</select></label><label>Destination File Name (optional)<input data-field="newName" type="text" placeholder="${escapeHtml(kind.toLowerCase())}.${escapeHtml(defaultExt)}" style="display:block;width:100%;margin-top:4px;" /></label></div></div><div data-section="existing" style="display:none;flex-direction:column;gap:8px;"><div style="display:flex;gap:8px;align-items:flex-end;"><label style="flex:1;">Existing Source (Notebook path or URL)<input data-field="existingSource" type="text" placeholder="${escapeHtml(dirName)}/example.${escapeHtml(defaultExt)} or https://..." style="display:block;width:100%;margin-top:4px;" /></label><button type="button" data-action="choose-existing" style="font:12px monospace;padding:6px 10px;border:1px solid #333;background:#eee;cursor:pointer;">Choose File...</button></div><div data-field="existingFileStatus" style="font-size:11px;color:#4b4b4b;">No local file selected.</div></div><div data-field="fallbackHost"></div><div style="display:flex;gap:10px;justify-content:flex-end;"><button type="submit" style="font:12px monospace;padding:6px 10px;border:1px solid #333;background:#eee;cursor:pointer;">Insert</button></div><div data-field="status" style="font-size:11px;color:#b00;min-height:14px;"></div></form>`;
 
   const form = root.querySelector("form");
+  const batch=createMediaBatch(form);
+  const originatingWorld=target==="virtualWorld"?window.VRWorldContext:null;
   const sourceEls = () => Array.from(root.querySelectorAll('input[name="nv-source"]'));
   const storageEls = () => Array.from(root.querySelectorAll('input[name="nv-storage"]'));
   const newSection = root.querySelector('[data-section="new"]');
@@ -216,10 +221,8 @@ export function renderBinaryAv(root, cfg) {
   });
   root.querySelector('[data-action="choose-existing"]').addEventListener("click", () => hiddenExisting.click());
 
-  hiddenNew.addEventListener("change", async () => {
-    const file = hiddenNew.files?.[0];
-    hiddenNew.value = "";
-    if (!file) return;
+  batch.bind(hiddenNew, async (file) => {
+    if(batch.multiple){newNameEl.value=file.name;const ext=file.name.split(".").pop().toLowerCase();if([...formatEl.options].some(option=>option.value===ext))formatEl.value=ext;}
     newFile = { dataUrl: "", name: file.name };
     newFileObj = file;
     newFilePending = readFileAsDataUrl(file);
@@ -231,16 +234,14 @@ export function renderBinaryAv(root, cfg) {
       newFile = { dataUrl: "", name: "" };
       newFileObj = null;
       setStatus(e?.message || String(e));
+      return false;
     } finally {
       newFilePending = null;
       updateFileLabels();
     }
-  });
+  }, 'new');
 
-  hiddenExisting.addEventListener("change", async () => {
-    const file = hiddenExisting.files?.[0];
-    hiddenExisting.value = "";
-    if (!file) return;
+  batch.bind(hiddenExisting, async (file) => {
     existingFile = { dataUrl: "", name: file.name };
     existingFileObj = file;
     existingFilePending = readFileAsDataUrl(file);
@@ -254,6 +255,7 @@ export function renderBinaryAv(root, cfg) {
       delete existingSourceEl.dataset.localFile;
       existingFileObj = null;
       setStatus(e?.message || String(e));
+      return false;
     } finally {
       existingFilePending = null;
       updateFileLabels();
@@ -302,8 +304,9 @@ export function renderBinaryAv(root, cfg) {
     }
   };
 
-  form.addEventListener("submit", async (evt) => {
-    evt.preventDefault();
+  const loadNotebookSource=batch.addSources(path=>{existingFile = {dataUrl:"",name:""};existingFileObj=null;existingSourceEl.value=path;delete existingSourceEl.dataset.localFile;existingSourceEl.dispatchEvent(new Event("input",{bubbles:true}));});
+
+  batch.onSubmit(async () => {
     setStatus("");
     try {
       const sourceMode = valueOf(sourceEls());
@@ -418,7 +421,7 @@ export function renderBinaryAv(root, cfg) {
           linked: resource.notebookPath,
           label: resource.metadata?.title || label,
           inline: storageMode === "inline",
-          resource
+          resource, batchIndex:batch.index,validate:()=>window.VRWorldContext===originatingWorld
         });
         try {
           if (linked) {
@@ -439,7 +442,7 @@ export function renderBinaryAv(root, cfg) {
       const linkedAttr = resource.notebookPath ? " data-nv-linked-path=\"" + escapeHtml(resource.notebookPath) + "\"" : "";
       const styleAttr = elementStyle ? " style=\"" + escapeHtml(elementStyle) + "\"" : "";
       const fallbackAttrs = serializeFallbackAttributes(resource.fallbacks || fallbacks, { primary: mediaSrc });
-      insertHtmlAtCaret("<" + tag + " controls" + styleAttr + " src=\"" + escapeHtml(mediaSrc) + "\"" + linkedAttr + fallbackAttrs + "></" + tag + ">");
+      batch.insertHtml("<" + tag + " controls" + styleAttr + " src=\"" + escapeHtml(mediaSrc) + "\"" + linkedAttr + fallbackAttrs + "></" + tag + ">");
       try {
         // Update managers so the new media shows up immediately.
         if (linked) {
@@ -460,6 +463,7 @@ export function renderBinaryAv(root, cfg) {
     } catch (err) {
       console.warn("[insertMediaBinaryAv]", err);
       setStatus(err?.message || String(err));
+      return false;
     }
   });
 }

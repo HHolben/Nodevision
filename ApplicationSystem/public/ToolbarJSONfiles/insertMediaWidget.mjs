@@ -38,7 +38,7 @@ export async function initToolbarWidget(hostElement) {
   const currentMode = window.NodevisionState?.currentMode || "";
   const inVirtualWorld = currentMode === "Virtual World Editing" || currentMode === "VR World Editing";
   const virtualWorldModelExts = new Set(["stl", "obj", "scad", "gltf", "glb", "gox"]);
-  const virtualWorldMediaFamilies = new Set(["Model", "Sound"]);
+  const virtualWorldMediaFamilies = new Set(["Image", "Model", "Sound"]);
   const families = inVirtualWorld
     ? (moduleMap.families || []).filter((family) => virtualWorldMediaFamilies.has(family))
     : (moduleMap.families || []);

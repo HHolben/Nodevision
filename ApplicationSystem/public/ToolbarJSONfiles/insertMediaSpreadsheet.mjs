@@ -1,5 +1,6 @@
 // Nodevision/ApplicationSystem/public/ToolbarJSONfiles/insertMediaSpreadsheet.mjs
 // Insert → Media: Spreadsheet renderer with New/Existing and Referenced/Inline (mirrors Insert Image panel structure).
+import {createMediaBatch} from './insertMediaBatch.mjs';
 
 import { escapeHtml, getActiveEditorNotebookPath, dirname, joinNotebookPath, normalizeNotebookPath, notebookHrefFromPath, saveNotebookText, insertHtmlAtCaret } from "./insertMediaCommon.mjs";
 import { dataUrlFromText, fetchUrlAsText, looksLikeUrlOrAbsPath, notebookSourceFromPath, readFileAsText } from "./insertMediaIO.mjs";
@@ -49,6 +50,7 @@ export function renderSpreadsheet(root, exts = []) {
   </form>`;
 
   const form = root.querySelector("form");
+  const batch=createMediaBatch(form);
   const sourceEls = () => Array.from(root.querySelectorAll('input[name="nv-source"]'));
   const storageEls = () => Array.from(root.querySelectorAll('input[name="nv-storage"]'));
   const renderEls = () => Array.from(root.querySelectorAll('input[name="nv-render"]'));
@@ -93,10 +95,7 @@ export function renderSpreadsheet(root, exts = []) {
   updateExistingLabel();
   root.querySelector('[data-action="choose-existing"]').addEventListener("click", () => hiddenExisting.click());
 
-  hiddenExisting.addEventListener("change", async () => {
-    const file = hiddenExisting.files?.[0];
-    hiddenExisting.value = "";
-    if (!file) return;
+  batch.bind(hiddenExisting, async (file) => {
     try {
       const text = await readFileAsText(file);
       existingFile = { text, name: file.name };
@@ -106,6 +105,7 @@ export function renderSpreadsheet(root, exts = []) {
       existingFile = { text: "", name: "" };
       delete existingSourceEl.dataset.localFile;
       setStatus(e?.message || String(e));
+      return false;
     }
     updateExistingLabel();
   });
@@ -118,8 +118,9 @@ export function renderSpreadsheet(root, exts = []) {
     }
   });
 
-  form.addEventListener("submit", async (evt) => {
-    evt.preventDefault();
+  const loadNotebookSource=batch.addSources(path=>{existingFile = {text:"",name:""};existingSourceEl.value=path;delete existingSourceEl.dataset.localFile;existingSourceEl.dispatchEvent(new Event("input",{bubbles:true}));});
+
+  batch.onSubmit(async () => {
     setStatus("");
     try {
       const sourceMode = valueOf(sourceEls());
@@ -181,14 +182,15 @@ export function renderSpreadsheet(root, exts = []) {
       }), { primary: src });
 
       if (renderMode === "flashcards") {
-        insertHtmlAtCaret(`<div id="${id}" data-src="${escapedSrc}"${linkedAttr}${fallbackAttrs} style="border:1px solid #ccc;padding:10px;max-width:520px;"></div><script>(function(){const el=document.getElementById(${JSON.stringify(id)});if(!el)return;fetch(${JSON.stringify(escapedSrc)}).then(r=>r.text()).then(t=>{const lines=t.split(/\\r?\\n/).filter(Boolean);const rows=lines.slice(1).map(l=>l.split(','));const cards=rows.map(r=>({front:(r[0]||'').trim(),back:(r[1]||'').trim()})).filter(c=>c.front&&c.back);if(!cards.length){el.textContent='No cards';return;}let i=0,side='front';const card=document.createElement('div');card.style.cursor='pointer';card.style.textAlign='center';card.style.padding='12px';card.style.userSelect='none';const nav=document.createElement('div');nav.style.display='flex';nav.style.justifyContent='space-between';nav.style.marginTop='8px';const prev=document.createElement('button');prev.textContent='Prev';const next=document.createElement('button');next.textContent='Next';nav.append(prev,next);el.append(card,nav);const render=()=>{card.textContent=cards[i][side];};card.onclick=()=>{side=side==='front'?'back':'front';render();};prev.onclick=()=>{i=(i-1+cards.length)%cards.length;side='front';render();};next.onclick=()=>{i=(i+1)%cards.length;side='front';render();};render();});})();</script>`);
+        batch.insertHtml(`<div id="${id}" data-src="${escapedSrc}"${linkedAttr}${fallbackAttrs} style="border:1px solid #ccc;padding:10px;max-width:520px;"></div><script>(function(){const el=document.getElementById(${JSON.stringify(id)});if(!el)return;fetch(${JSON.stringify(escapedSrc)}).then(r=>r.text()).then(t=>{const lines=t.split(/\\r?\\n/).filter(Boolean);const rows=lines.slice(1).map(l=>l.split(','));const cards=rows.map(r=>({front:(r[0]||'').trim(),back:(r[1]||'').trim()})).filter(c=>c.front&&c.back);if(!cards.length){el.textContent='No cards';return;}let i=0,side='front';const card=document.createElement('div');card.style.cursor='pointer';card.style.textAlign='center';card.style.padding='12px';card.style.userSelect='none';const nav=document.createElement('div');nav.style.display='flex';nav.style.justifyContent='space-between';nav.style.marginTop='8px';const prev=document.createElement('button');prev.textContent='Prev';const next=document.createElement('button');next.textContent='Next';nav.append(prev,next);el.append(card,nav);const render=()=>{card.textContent=cards[i][side];};card.onclick=()=>{side=side==='front'?'back':'front';render();};prev.onclick=()=>{i=(i-1+cards.length)%cards.length;side='front';render();};next.onclick=()=>{i=(i+1)%cards.length;side='front';render();};render();});})();</script>`);
       } else {
-        insertHtmlAtCaret(`<table id="${id}" data-src="${escapedSrc}"${linkedAttr}${fallbackAttrs} style="border-collapse:collapse;width:100%;max-width:700px;"></table><script>(function(){const t=document.getElementById(${JSON.stringify(id)});if(!t)return;fetch(${JSON.stringify(escapedSrc)}).then(r=>r.text()).then(txt=>{const lines=txt.split(/\\r?\\n/).filter(l=>l.trim().length);const rows=lines.map(l=>l.split(','));if(!rows.length)return;const thead=document.createElement('thead');const trh=document.createElement('tr');rows[0].forEach(h=>{const th=document.createElement('th');th.textContent=h.trim();th.style.border='1px solid #ccc';th.style.padding='4px 6px';trh.appendChild(th);});thead.appendChild(trh);const tbody=document.createElement('tbody');rows.slice(1).forEach(r=>{const tr=document.createElement('tr');r.forEach(c=>{const td=document.createElement('td');td.textContent=c.trim();td.style.border='1px solid #ccc';td.style.padding='4px 6px';tr.appendChild(td);});tbody.appendChild(tr);});t.append(thead,tbody);});})();</script>`);
+        batch.insertHtml(`<table id="${id}" data-src="${escapedSrc}"${linkedAttr}${fallbackAttrs} style="border-collapse:collapse;width:100%;max-width:700px;"></table><script>(function(){const t=document.getElementById(${JSON.stringify(id)});if(!t)return;fetch(${JSON.stringify(escapedSrc)}).then(r=>r.text()).then(txt=>{const lines=txt.split(/\\r?\\n/).filter(l=>l.trim().length);const rows=lines.map(l=>l.split(','));if(!rows.length)return;const thead=document.createElement('thead');const trh=document.createElement('tr');rows[0].forEach(h=>{const th=document.createElement('th');th.textContent=h.trim();th.style.border='1px solid #ccc';th.style.padding='4px 6px';trh.appendChild(th);});thead.appendChild(trh);const tbody=document.createElement('tbody');rows.slice(1).forEach(r=>{const tr=document.createElement('tr');r.forEach(c=>{const td=document.createElement('td');td.textContent=c.trim();td.style.border='1px solid #ccc';td.style.padding='4px 6px';tr.appendChild(td);});tbody.appendChild(tr);});t.append(thead,tbody);});})();</script>`);
       }
       setStatus("Inserted.");
     } catch (err) {
       console.warn("[insertMediaSpreadsheet]", err);
       setStatus(err?.message || String(err));
+      return false;
     }
   });
 }

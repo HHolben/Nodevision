@@ -23,6 +23,7 @@ function normalizeNotebookPath(rawPath) {
 
 export function resolveNotebookUrl(rawPath, options = {}) {
   if (String(rawPath).startsWith("/api/resource-paths/resource-file?")) return rawPath;
+  if (/^(data:image\/|blob:|https?:\/\/)/i.test(String(rawPath))) return String(rawPath);
   const normalized = normalizeNotebookPath(rawPath);
   if (!normalized) return "";
   const segments = normalized.split("/").filter(Boolean).map((segment) => encodeURIComponent(segment));

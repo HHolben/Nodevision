@@ -33,13 +33,14 @@ export function validateAuthoringTerrain(def) {
   if (def.biomeSource !== undefined && def.biomeSource !== 'nodevision-biomes-v1') throw Error('Unsupported terrain biome source.');
 }
 export function voxelWorldForm(def = null) {
-  return { startingBiome:def?.startingBiome || (def?.environment?.id === 'aegean' ? 'aegean' : 'auto'), environmentPreset:def?.environment?.id || 'legacy', ...AEGEAN_DEFAULTS, ...def?.environment, name: def?.name || 'Voxel World', seed: def ? String(def.generator.seed) : String(crypto.getRandomValues(new Int32Array(1))[0]),
+  return { terrainSource:def?.terrainSource??'procedural', geographic:def?.geographic??null, startingBiome:def?.startingBiome || (def?.environment?.id === 'aegean' ? 'aegean' : 'auto'), environmentPreset:def?.environment?.id || 'legacy', ...AEGEAN_DEFAULTS, ...def?.environment, name: def?.name || 'Voxel World', seed: def ? String(def.generator.seed) : String(crypto.getRandomValues(new Int32Array(1))[0]),
     sizeX: def?.size[0] ?? 256, sizeZ: def?.size[2] ?? 256,
     minHeight: def ? (def.heightLimits?.min ?? 0) : -16, maxHeight: def?.heightLimits?.max ?? def?.size[1] ?? 64,
     voxelSize: .25, chunkSize: 32, loadRadius: def?.chunks?.loadRadius ?? 2, vegetation: def?.generation?.vegetation !== false,
     water: def?.generation?.water !== false, caves: def?.generation?.caves !== false };
 }
 export function definitionFromVoxelForm(values, previous = null) {
+  if(values.terrainSource==='geographic'&&values.geographic)values={...values,sizeX:values.geographic.size[0],sizeZ:values.geographic.size[2],minHeight:0,maxHeight:values.geographic.size[1],startingBiome:'auto'};
   const number = key => {
     if (String(values[key] ?? '').trim() === '') throw Error(key + ' is required.');
     const n = Number(values[key]);
@@ -49,7 +50,7 @@ export function definitionFromVoxelForm(values, previous = null) {
   const name = String(values.name || '').trim();
   if (!name || name.length > 120) throw Error('World Name must contain 1–120 characters.');
   const sizeX=number('sizeX'), sizeZ=number('sizeZ'), min=number('minHeight'), max=number('maxHeight');
-  if (![sizeX,sizeZ].every(n => n >= 1 && n <= 4096 && Number.isInteger(n*4))) throw Error('Dimensions must be quarter-meter values from 1 to 4096 m.');
+  if (![sizeX,sizeZ].every(n => n >= 1 && n <= (values.terrainSource==='geographic'&&values.geographic?.version===2?1000000:4096) && Number.isInteger(n*4))) throw Error('Dimensions must be quarter-meter values within the supported terrain extent.');
   if (number('voxelSize') !== .25 || number('chunkSize') !== 32) throw Error('This generator requires 0.25 m voxels and 32-voxel chunks.');
   const def = { ...previous, id: previous?.id || 'voxel-world', name, type:'procedural-voxel-world',
     position: previous?.position?.slice() || [-sizeX/2,0,-sizeZ/2], size:[sizeX,max-min,sizeZ], heightLimits:{min,max},
@@ -62,6 +63,14 @@ export function definitionFromVoxelForm(values, previous = null) {
   if(startingBiome==='aegean')def.environment={...AEGEAN_DEFAULTS,...previous?.environment,landform:values.landform,geology:values.geology,season:values.season,seasonMode:values.seasonMode??previous?.environment?.seasonMode??'manual',seaLevel:number('seaLevel'),vegetationDensity:number('vegetationDensity'),uplandOak:values.uplandOak===true,mountains:values.mountains===true};
   else delete def.environment;
   if (!Number.isInteger(def.chunks.loadRadius) || def.chunks.loadRadius < 1 || def.chunks.loadRadius > 8) throw Error('Render distance must be an integer from 1 to 8 chunks.');
+  def.terrainSource=values.terrainSource??'procedural';
+  if(def.terrainSource==='geographic'){
+    if(!values.geographic)throw Error('Import and preview an elevation raster first.');
+    def.geographic=structuredClone(values.geographic);def.size=def.geographic.size.slice();
+    def.heightLimits={min:0,max:def.size[1]};delete def.environment;delete def.startingBiome;
+    def.generation.water=false;def.generation.caves=false;
+    if(!previous)def.position=[-def.size[0]/2,0,-def.size[2]/2];
+  }else delete def.geographic;
   validateAuthoringTerrain(def);
   return def;
 }

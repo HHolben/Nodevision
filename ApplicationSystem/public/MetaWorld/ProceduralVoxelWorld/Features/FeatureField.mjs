@@ -1,8 +1,9 @@
 // Nodevision/ApplicationSystem/public/MetaWorld/ProceduralVoxelWorld/Features/FeatureField.mjs
 // This bounded spatial feature field separates deterministic placement from shape sampling and composes priorities without retaining a whole-world feature inventory.
+import { drainSteps } from '../ProgressiveTerrain.mjs';
 export function createFeatureField(providers,priority) {
   const cache=new Map(), neighborhoods=new Map();
-  function query(min,max) {
+  function* querySteps(min,max) {
     const found=[];
     for(let i=0;i<providers.length;i++){
       const p=providers[i],s=p.cellSize,r=p.reach;
@@ -12,12 +13,13 @@ export function createFeatureField(providers,priority) {
           if(cache.size>=512)cache.delete(cache.keys().next().value);
           cache.set(key,p.candidate(x,z));
         }
-        const f=cache.get(key);
+        yield;const f=cache.get(key);
         if(f&&f.min.every((v,a)=>v<max[a]&&f.max[a]>min[a]))found.push(f);
       }
     }
     return found;
   }
+  const query=(min,max)=>drainSteps(querySteps(min,max));
   function sample(features,x,y,z) {
     let result=0;
     for(const f of features){
@@ -35,5 +37,5 @@ export function createFeatureField(providers,priority) {
     }
     return sample(neighborhoods.get(key),x,y,z);
   }
-  return { query,sample,at,clear(){cache.clear();neighborhoods.clear();},get cacheSize(){return cache.size;} };
+  return { query,querySteps,sample,at,cacheStats:()=>({features:cache.size,neighborhoods:neighborhoods.size}),clear(){cache.clear();neighborhoods.clear();},get cacheSize(){return cache.size;} };
 }

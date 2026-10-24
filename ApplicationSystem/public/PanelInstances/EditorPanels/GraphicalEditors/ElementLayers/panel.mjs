@@ -179,11 +179,11 @@ function renderLayerContents({
     return;
   }
 
-  children.forEach((child) => {
+  children.forEach((child, childIndex) => {
     const item = document.createElement("div");
     Object.assign(item.style, {
       display: "grid",
-      gridTemplateColumns: "52px 48px 48px 1fr auto",
+      gridTemplateColumns: "52px 48px 48px minmax(0, 1fr) auto auto auto",
       alignItems: "center",
       gap: "4px",
       padding: "2px 4px",
@@ -258,6 +258,28 @@ function renderLayerContents({
       rerender?.();
     };
     item.appendChild(contentsBtn);
+
+    // The panel lists frontmost objects first, opposite SVG DOM paint order.
+    for (const [direction, text, title] of [[-1, "↑", "Move Up"], [1, "↓", "Move Down"]]) {
+      const neighbor = children[childIndex + direction];
+      const button = document.createElement("button");
+      button.type = "button";
+      button.textContent = text;
+      button.title = title;
+      button.setAttribute("aria-label", `${title}: ${describeSvgElement(child)}`);
+      const isLocked = () => Boolean(child.closest('[data-nv-locked="true"]'));
+      button.disabled = state.readOnly || !neighbor || isLocked();
+      button.onclick = () => {
+        if (state.readOnly || isLocked() || child.parentNode !== layer || neighbor?.parentNode !== layer) return;
+        withSvgSnapshot("element-order", () => {
+          layer.insertBefore(child, direction < 0 ? neighbor.nextSibling : neighbor);
+          return true;
+        });
+        rerender?.();
+      };
+      item.appendChild(button);
+    }
+
 
     const selectedElements = Array.isArray(state?.selectedElements)
       ? state.selectedElements

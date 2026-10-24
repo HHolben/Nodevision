@@ -1,5 +1,6 @@
 // Nodevision/ApplicationSystem/public/ToolbarJSONfiles/insertMediaModel.mjs
 // Renders and executes the Insert Model workflow with New/Existing, inline previews, and static linked 3D viewer panels.
+import {createMediaBatch} from './insertMediaBatch.mjs';
 import {createAssetBrowser} from '/PanelInstances/EditorPanels/MetaWorldImportComponents/assetBrowser.mjs';
 import {appendOnlineMediaButton} from './insertMediaOnline.mjs';
 
@@ -388,7 +389,7 @@ async function insertWorldModelObject(model = {}) {
     tag: "",
     name: label,
     type: "object-file",
-    position: readCameraPlacement(),
+    position: readCameraPlacement().map((n,i)=>i===0?n+(model.batchIndex||0)*2:n),
     size: [1, 1, 1],
     color: "#8aa0b8",
     objectFile: String(refPath || ""),
@@ -409,7 +410,7 @@ async function insertWorldModelObject(model = {}) {
   if (["gox","gltf","glb"].includes(ext)) {
     if (!refPath || refDataUrl) throw new Error("Save the model to the Notebook before placing it.");
     const {startModelPlacement}=await import('/Models/ModelPlacement.mjs');
-    return startModelPlacement(refPath,{name:label,assetProvenance:ref?.metadata,validate:model.validate,repeat:window.VRWorldContext?.inventory?.getSelectedItem?.()?.id==="3d-model"});
+    return startModelPlacement(refPath,{name:label,assetProvenance:ref?.metadata,validate:model.validate,repeat:model.batchMultiple?false:window.VRWorldContext?.inventory?.getSelectedItem?.()?.id==="3d-model"});
   }
   if (!bridge?.addObjectFileLayer) throw new Error("Open a MetaWorld editor before inserting 3D models.");
   const added = bridge.addObjectFileLayer(def);
@@ -442,6 +443,7 @@ export function renderInsertModel(root, exts = [], renderOptions = {}) {
   root.innerHTML = `<form style="display:flex;flex-direction:column;gap:10px;font:12px monospace;min-width:300px;max-width:660px;"><fieldset style="border:1px solid #c6c6c6;padding:8px;"><legend>${escapeHtml(sourceLegend)}</legend><label style="display:block;margin-bottom:6px;"><input type="radio" name="nv-source" value="new" checked> ${escapeHtml(newSourceLabel)}</label><label style="display:block;"><input type="radio" name="nv-source" value="existing"> ${escapeHtml(existingSourceLabel)}</label></fieldset><fieldset style="border:1px solid #c6c6c6;padding:8px;"><legend>Storage Mode</legend><label style="display:block;margin-bottom:6px;"><input type="radio" name="nv-storage" value="referenced" checked> ${escapeHtml(referencedLabel)}</label><label style="display:block;"><input type="radio" name="nv-storage" value="inline"> ${escapeHtml(inlineLabel)}</label></fieldset>${colliderHtml}<div data-section="new" style="display:flex;flex-direction:column;gap:8px;"><div data-section="new-ref" style="display:flex;flex-direction:column;gap:8px;"><label>New Model Format<select data-field="format" style="display:block;width:100%;margin-top:4px;">${options.map((e) => `<option value="${escapeHtml(e)}"${e === defaultExt ? " selected" : ""}>${escapeHtml(e)}</option>`).join("")}</select></label><label>New Model File Name<input data-field="fileName" type="text" placeholder="model.${escapeHtml(defaultExt)}" style="display:block;width:100%;margin-top:4px;" /></label></div><div style="font-size:11px;color:#666;line-height:1.3;">${escapeHtml(storageHint)}</div></div><div data-section="existing" style="display:none;flex-direction:column;gap:8px;"><div style="display:flex;gap:8px;align-items:flex-end;"><label style="flex:1;">Existing Source (Notebook path or URL)<input data-field="existingSource" type="text" placeholder="models/example.${escapeHtml(defaultExt)} or https://..." style="display:block;width:100%;margin-top:4px;" /></label><button type="button" data-action="choose-existing" style="font:12px monospace;padding:6px 10px;border:1px solid #333;background:#eee;cursor:pointer;">Choose File...</button><button type="button" data-action="browse-web-resource" style="font:12px monospace;padding:6px 10px;border:1px solid #333;background:#eee;cursor:pointer;">Browse Web...</button></div><div data-field="existingFileStatus" style="font-size:11px;color:#4b4b4b;">No local file selected.</div></div><div data-field="fallbackHost"></div><div style="display:flex;gap:10px;justify-content:flex-end;"><button type="submit" style="font:12px monospace;padding:6px 10px;border:1px solid #333;background:#eee;cursor:pointer;">Insert</button></div><div data-field="status" style="font-size:11px;color:#b00;min-height:14px;"></div></form>`;
 
   const form = root.querySelector("form");
+  const batch=createMediaBatch(form);
   const sourceEls = () => Array.from(root.querySelectorAll('input[name="nv-source"]'));
   const storageEls = () => Array.from(root.querySelectorAll('input[name="nv-storage"]'));
   const newSection = root.querySelector('[data-section="new"]');
@@ -494,9 +496,9 @@ export function renderInsertModel(root, exts = [], renderOptions = {}) {
   browse.type='button';browse.textContent='Notebook…';sources.append(browse);form.prepend(sources);sources.after(browser);
   let releaseBrowser=null;
   browse.onclick=()=>{if(releaseBrowser){releaseBrowser();releaseBrowser=null;browser.replaceChildren();return;}
-    releaseBrowser=createAssetBrowser(browser,{extensions:options,actionLabel:'Choose model',onStatus:message=>{statusEl.textContent=message;},onImport:asset=>{
-      existingLocal={name:'',dataUrl:''};existingSourceEl.value=asset.notebookPath;delete existingSourceEl.dataset.localFile;
-      sourceEls().find(r=>r.value==='existing').checked=true;storageEls().find(r=>r.value==='referenced').checked=true;sync();releaseBrowser?.();releaseBrowser=null;browser.replaceChildren();
+    releaseBrowser=createAssetBrowser(browser,{extensions:options,multiple:true,actionLabel:'Choose model',onStatus:message=>{statusEl.textContent=message;},onImport:assets=>{
+      storageEls().find(r=>r.value==='referenced').checked=true;
+      batch.sources(assets.map(asset=>asset.notebookPath),loadNotebookSource);sync();releaseBrowser?.();releaseBrowser=null;browser.replaceChildren();
     }});
   };
   appendOnlineMediaButton(sources,()=>({cell:originContext?.originCell,mediaFamily:'Model'}),message=>{statusEl.textContent=message;});
@@ -551,10 +553,7 @@ export function renderInsertModel(root, exts = [], renderOptions = {}) {
       },
     };
   }, { setStatus });
-  hiddenExisting.addEventListener("change", async () => {
-    const file = hiddenExisting.files?.[0];
-    hiddenExisting.value = "";
-    if (!file) return;
+  batch.bind(hiddenExisting, async (file) => {
     try {
       await (await import('/Models/ValidateModelFile.mjs')).validateModelFile(file);
       const dataUrl = await readFileAsDataUrl(file);
@@ -569,6 +568,7 @@ export function renderInsertModel(root, exts = [], renderOptions = {}) {
       existingLocal = { dataUrl: "", text: "", name: "" };
       delete existingSourceEl.dataset.localFile;
       setStatus(e?.message || String(e));
+      return false;
     }
     updateExistingLabel();
   });
@@ -581,8 +581,9 @@ export function renderInsertModel(root, exts = [], renderOptions = {}) {
     }
   });
 
-  form.addEventListener("submit", async (evt) => {
-    evt.preventDefault();
+  const loadNotebookSource=batch.addSources(path=>{existingLocal = {dataUrl:"",text:"",name:""};existingSourceEl.value=path;delete existingSourceEl.dataset.localFile;existingSourceEl.dispatchEvent(new Event("input",{bubbles:true}));});
+
+  batch.onSubmit(async () => {
     setStatus("");
     try {
       const sourceMode = valueOf(sourceEls());
@@ -667,7 +668,8 @@ export function renderInsertModel(root, exts = [], renderOptions = {}) {
           ext: worldModel.ext || "",
           sourcePath: editorPath,
         });
-        await insertWorldModelObject({ ...worldModel, bindCollider, resource, validate:()=>window.VRWorldContext===originatingWorld });
+        const placement=await insertWorldModelObject({ ...worldModel, bindCollider, resource, batchIndex:batch.index,batchMultiple:batch.queued,validate:()=>window.VRWorldContext===originatingWorld });
+        if(batch.queued)await batch.waitForPlacement(placement);
         setStatus("Inserted.");
         return;
       }
@@ -750,14 +752,15 @@ export function renderInsertModel(root, exts = [], renderOptions = {}) {
         });
         const sceneExt = modelExtensionFromSource(modelViewer.src || modelViewer.label || "", modelViewer.ext || "");
         if (USD_SCENE_EXTENSIONS.has(sceneExt)) insertUSDScenePanelAtCaret(modelViewer);
-        else insertLinkedModelViewerAtCaret(modelViewer);
+        else insertLinkedModelViewerAtCaret({...modelViewer,tools:{...window.HTMLWysiwygTools,insertHTMLAtCaret:html=>batch.insertHtml(html)}});
       } else {
-        insertHtmlAtCaret(html);
+        batch.insertHtml(html);
       }
       setStatus("Inserted.");
     } catch (err) {
       console.warn("[insertMediaModel]", err);
       setStatus(err?.message || String(err));
+      return false;
     }
   });
 }

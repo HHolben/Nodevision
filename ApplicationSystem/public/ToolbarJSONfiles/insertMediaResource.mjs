@@ -56,11 +56,11 @@ export async function insertMediaResource(context, resource, format, options = {
     if(['gltf','glb','gox'].includes(format.extension)){const {insertLinkedModelViewerAtCaret}=await import('./insertMediaModel.mjs');insertLinkedModelViewerAtCaret({resource,ext:format.extension,tools:context.api});if(credit)context.api.insertHTMLAtCaret('<small class="asset-credit">'+escape(credit)+'</small>');result=true;}else result = context.api.insertHTMLAtCaret(plan.snippet);
   }
   if (context.kind === 'svg') result = await context.api.insertImageFromInsertion({ src: download.url, previewSrc: download.url,
-    linkedNotebookPath: download.path.startsWith('Notebook/') ? download.path : '', sourceName: asset.name, fallbacks: resource.fallbacks, layerId: context.layer.id, credit });
+    linkedNotebookPath: download.path.startsWith('Notebook/') ? download.path : '', sourceName: asset.name, fallbacks: resource.fallbacks, layerId: context.layer.id, offset:(options.batchIndex||0)*24, credit });
   if (context.kind === 'raster') result = await context.api.insertImageFromInsertion({ src: download.url, credit,
     validate: () => !options.isCancelled?.() && !validateAssetEditorContext(context) });
   if (context.kind === 'world' && ['gltf','glb','gox'].includes(format.extension)) {const {startModelPlacement}=await import('/Models/ModelPlacement.mjs');const placement=await startModelPlacement(download.path,{name:asset.name,assetProvenance:resource.metadata,validate:()=>!options.isCancelled?.()&&!validateAssetEditorContext(context)});result={pendingPlacement:true,placement};}
-  else if (context.kind === 'world') result = await context.api.insertDownloadedImage({ imageFile: download.path.startsWith('Notebook/') ? download.path : download.url, name: asset.name, position: context.position,
+  else if (context.kind === 'world') result = await context.api.insertDownloadedImage({ imageFile: download.path.startsWith('Notebook/') ? download.path : download.url, name: asset.name, position: context.position.map((n,i)=>i===0?n+(options.batchIndex||0)*2:n),
     assetProvenance: { title: asset.name, creator: asset.creator || '', source: asset.source, license: asset.license, licenseUrl: asset.licenseUrl, credit: assetCredit(asset) },
     validate: () => !options.isCancelled?.() && !validateAssetEditorContext(context) });
   if (!result) throw new Error('The editor rejected insertion; the downloaded asset remains saved.');

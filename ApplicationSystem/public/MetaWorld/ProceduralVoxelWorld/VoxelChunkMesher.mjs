@@ -1,6 +1,7 @@
 // Nodevision/ApplicationSystem/public/MetaWorld/ProceduralVoxelWorld/VoxelChunkMesher.mjs
 // This module emits indexed exposed voxel faces and queries neighboring cells across chunk boundaries to suppress seams.
 
+import { drainSteps } from './ProgressiveTerrain.mjs';
 import { isLiquidVoxel, isWaterVoxel } from "./VoxelMaterialIds.mjs";
 import { CHUNK_SIZE, VOXEL_SIZE, chunkToVoxel, voxelIndex } from "./VoxelCoordinates.mjs";
 const faces = [
@@ -11,13 +12,15 @@ const faces = [
   [[0,0,1], [[1,0,1],[1,1,1],[0,1,1],[0,0,1]]],
   [[0,0,-1], [[0,0,0],[0,1,0],[1,1,0],[1,0,0]]]
 ];
-export function meshVoxelChunk(data, chunk, getVoxel) {
+export const meshVoxelChunk=(data,chunk,getVoxel)=>drainSteps(meshVoxelChunkSteps(data,chunk,getVoxel));
+export function* meshVoxelChunkSteps(data, chunk, getVoxel) {
   const origin = chunkToVoxel(chunk), positions = [], uvs = [], normals = [], materials = [], indices = [];
   const indexBuckets = new Map();
   let solidVoxels = 0;
   const sample = (x,y,z) => [x,y,z].every(n => n >= 0 && n < CHUNK_SIZE)
     ? data[voxelIndex(x,y,z)] : getVoxel(origin[0]+x, origin[1]+y, origin[2]+z);
   for (let y=0;y<CHUNK_SIZE;y++) for (let z=0;z<CHUNK_SIZE;z++) for (let x=0;x<CHUNK_SIZE;x++) {
+    if(x===0)yield;
     const material = data[voxelIndex(x,y,z)];
     if (!material) continue;
     if (!isLiquidVoxel(material)) solidVoxels++;
