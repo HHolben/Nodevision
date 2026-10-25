@@ -1,5 +1,6 @@
 // Nodevision/ApplicationSystem/public/MetaWorld/Paths/PathProperties.mjs
 // This module adds path settings and control-point editing to the existing object inspector using the world layer bridge for validation, persistence, selection, and undo.
+import {clearanceFields} from './PathClearanceFields.mjs';
 import { getActiveMetaWorldLayerBridge, META_WORLD_LAYER_EVENTS } from '../MetaWorldLayerState.mjs';
 import { loadWorldObjectMaterialCatalog } from '../Materials/WorldObjectMaterialDefaults.mjs';
 import { bindPathHandles } from './PathInteraction.mjs';
@@ -29,11 +30,14 @@ export function createPathProperties(host,ordinaryControls) {
     field('Width (m)',def.width,width=>update({width}),{type:'number',min:.1,max:50,step:.1});
     field('Interpolation',def.interpolation,interpolation=>update({interpolation}),{choices:['smooth','straight','mixed']});
     field('Elevation',def.elevationMode,elevationMode=>update({elevationMode}),{choices:['authored','follow-terrain','locally-flat']});
-    field('Terrain',def.terrainInteraction,terrainInteraction=>update({terrainInteraction}),{choices:['grade','none','overlay']});
+    const terrainHeading=document.createElement('h4');terrainHeading.textContent='Terrain Interaction';section.append(terrainHeading);
+    field('Terrain',def.terrainInteraction,terrainInteraction=>update({terrainInteraction}),{choices:['excavate','grade','none','overlay']});
+    for(const [key,label,fallback,max] of clearanceFields)field(label,def[key]??fallback,value=>update({[key]:value}),{type:'number',min:0,max,step:.25});
+    field('Show Clearance Envelope',runtime.showClearanceEnvelope,value=>runtime.setClearancePreview(value),{type:'checkbox'});
     field('Smoothing',def.smoothing,smoothing=>update({smoothing}),{type:'number',min:0,max:1,step:.1});
     field('Elevation offset (m)',def.elevationOffset,elevationOffset=>update({elevationOffset}),{type:'number',step:.25});
     field('Transition (m)',def.transitionWidth,transitionWidth=>update({transitionWidth}),{type:'number',min:0,max:50,step:.1});
-    const material=field('Surface material',def.surfaceMaterial,surfaceMaterial=>update({surfaceMaterial}),{choices:[def.surfaceMaterial]});
+    const material=field('Path Surface Material',def.surfaceMaterial,surfaceMaterial=>update({surfaceMaterial}),{choices:[def.surfaceMaterial]});
     loadWorldObjectMaterialCatalog().then(entries=>{if(token!==generation)return;for(const entry of entries){if(entry.materialId===def.surfaceMaterial||entry.matterState==='liquid'||entry.matterState==='gas')continue;const option=document.createElement('option');option.value=entry.materialId;option.textContent=entry.displayName||entry.materialId;material.append(option);}}).catch(error=>{if(token===generation)status.textContent=error.message;});
     for(const [key,label] of [['visible','Visible'],['collision','Collision'],['proceduralExclusion','Clear vegetation']])field(label,def[key],value=>update({[key]:value}),{type:'checkbox'});
     for(let axis=0;axis<3;axis++)field(`Position ${'XYZ'[axis]}`,def.position[axis],value=>{const position=def.position.slice();position[axis]=value;update({position});},{type:'number',step:.25});

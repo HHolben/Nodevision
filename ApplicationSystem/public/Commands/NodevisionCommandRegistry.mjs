@@ -9,6 +9,7 @@ const handlers = new Map();
 const load = (path, exportName) => async () => (await import(path))[exportName];
 const BUILTIN_HANDLER_LOADERS = Object.freeze({
   "voxel.execute": load("../Voxels/GoxCommands.mjs", "executeVoxelCommand"),
+  "terrain.representation": load("../MetaWorld/TerrainRepresentation/Command.mjs", "terrainRepresentationCommand"),
   "path.world": load("../MetaWorld/Paths/PathTool.mjs", "pathCommand"),
   "model.insert": load("../ToolbarJSONfiles/insert3DModelWidget.mjs", "openModelInsertion"),
   "model.world": load("../Models/ModelWorldCommands.mjs", "modelWorldCommand"),

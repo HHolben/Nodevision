@@ -1,4 +1,5 @@
 [
+  {"ToolbarCategory":"View","heading":"Terrain Representation","script":"terrainRepresentationWidget.mjs","modes":["HTMLediting","Virtual World Editing"]},
   {
     "ToolbarCategory": "View",
     "heading": "Voxel Interaction",

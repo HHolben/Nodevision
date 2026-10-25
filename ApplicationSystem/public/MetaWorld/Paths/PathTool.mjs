@@ -10,7 +10,7 @@ export const PATH_TOOL_ID='path';
 const states=new WeakMap();
 export function pathToolState(bridge=getActiveMetaWorldLayerBridge()){
  if(!bridge)throw Error('Open an editable Virtual World first.');
- if(!states.has(bridge))states.set(bridge,{settings:{width:2,surfaceMaterial:'gravel',interpolation:'smooth',elevationMode:'locally-flat',terrainInteraction:'overlay',transitionWidth:1,smoothing:.5,elevationOffset:0,snap:'terrain',gridSize:.25},points:[],id:null});return states.get(bridge);
+ if(!states.has(bridge))states.set(bridge,{settings:{width:2,surfaceMaterial:'gravel',interpolation:'smooth',elevationMode:'locally-flat',terrainInteraction:'excavate',upperClearance:3,leftClearance:0,rightClearance:0,lowerClearance:0,transitionWidth:1,smoothing:.5,elevationOffset:0,snap:'terrain',gridSize:.25},points:[],id:null});return states.get(bridge);
 }
 export function configurePathTool(patch){const state=pathToolState(),next={...state.settings,...patch};validatePath({...next,id:'preview',controlPoints:[[0,0,0],[10,0,0]]});state.settings=next;window.VRWorldContext?.pathDrawing?.refresh();return next;}
 export async function activatePathTool({editId}={}){
@@ -28,6 +28,7 @@ export async function pathCommand([action='activate',options={}]=[]){
  if(!window.VRWorldContext||!worldAuthoringAllowed(window.VRWorldContext.movementState))throw Error('Path editing requires an editable world.');
  if(action==='settings')return Object.keys(options).length?configurePathTool(options):(await import('./PathToolSettings.mjs')).openPathToolSettings();
  if(action==='finish')return window.VRWorldContext?.pathDrawing?.finish();
+ if(action==='clearance-preview'){if(options.id)return getActiveMetaWorldLayerBridge()?.setPathClearancePreview(options.id,options.visible!==false);return configurePathTool({showClearanceEnvelope:options.visible!==false});}
  if(action==='cancel')return window.VRWorldContext?.cancelPathDrawing?.();
  const bridge=await ensureEditableMetaWorldBridge();if(action==='create')return bridge.updatePath(null,options);if(action==='update')return bridge.updatePath(options.id,options);if(action==='delete')return bridge.removeObjectLayer(options.id);if(action==='extend')return activatePathTool({editId:options.id});throw Error('Unknown path action.');
 }

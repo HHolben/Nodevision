@@ -1,6 +1,7 @@
 // Nodevision/ApplicationSystem/public/PanelInstances/ViewPanels/GameViewDependencies/TerrainTool/terrainSurfaceMesh.mjs
 // Shared helpers for continuous polygonal terrain surfaces used by the Meta World terrain tool.
 
+import { installGridRepresentation } from "../../../../MetaWorld/TerrainRepresentation/GridRepresentation.mjs";
 import { createTerrainMaterial } from "./terrainMaterial.mjs";
 
 function round3(value) {
@@ -171,6 +172,7 @@ export function createTerrainSurfaceMesh(THREE, {
     heights: normalizedHeights.map(round3),
     vertexColors: normalizedColors
   };
+  installGridRepresentation(THREE,mesh);
   return mesh;
 }
 
@@ -185,6 +187,7 @@ export function createTerrainSurfaceDefinition(mesh, options = {}) {
   const id = options.id || mesh?.userData?.metaWorldLayerId || terrain.id || "";
   const def = {
     type: "terrain-surface",
+    representation:mesh.userData.terrainRuntime?.representation??terrain.representation??"polygonal",
     position: [round3(mesh?.position?.x || 0), round3(mesh?.position?.y || 0), round3(mesh?.position?.z || 0)],
     color: terrain.color || materialColorHex(mesh),
     isSolid: mesh?.userData?.isSolid === true,
@@ -216,10 +219,10 @@ export function createTerrainSurfaceDefinition(mesh, options = {}) {
 export function createTerrainSurfaceColliderRef(THREE, mesh) {
   if (!THREE || !mesh?.isMesh || mesh.userData?.isSolid !== true) return null;
   return {
-    type: "box",
-    target: mesh,
-    materialId: mesh.userData?.physicsMaterialId || mesh.userData?.terrain?.physicsMaterialId || "",
-    box: new THREE.Box3().setFromObject(mesh)
+    type: "expression-heightfield", target:mesh,
+    materialId:mesh.userData?.physicsMaterialId||"",
+    sampleGroundY:(...args)=>mesh.userData.terrainRuntime.sampleGroundY(...args),
+    intersectsPlayer:(...args)=>mesh.userData.terrainRuntime.intersectsPlayer(...args)
   };
 }
 
@@ -230,8 +233,9 @@ export function refreshTerrainSurfaceMesh(THREE, mesh) {
   const rows = normalizeGridCount(terrain.rows, 8);
   const heights = normalizeHeights(terrain.heights, columns, rows);
   const colors = normalizeColors(terrain.vertexColors, columns, rows, terrain.color);
-  const positionAttr = mesh.geometry?.getAttribute?.("position");
-  const colorAttr = mesh.geometry?.getAttribute?.("color");
+  const geometry=mesh.userData.terrainRuntime?.sourceGeometry||mesh.geometry;
+  const positionAttr = geometry?.getAttribute?.("position");
+  const colorAttr = geometry?.getAttribute?.("color");
   if (!positionAttr || positionAttr.count !== heights.length) return;
   for (let i = 0; i < heights.length; i += 1) {
     positionAttr.setY(i, heights[i]);
@@ -254,9 +258,10 @@ export function refreshTerrainSurfaceMesh(THREE, mesh) {
       material.needsUpdate = true;
     });
   }
-  mesh.geometry.computeVertexNormals();
-  mesh.geometry.computeBoundingBox();
-  mesh.geometry.computeBoundingSphere();
+  geometry.computeVertexNormals();
+  geometry.computeBoundingBox();
+  geometry.computeBoundingSphere();
+  mesh.userData.terrainRuntime?.refresh();
 }
 
 export function pointInsideTerrainSurface(mesh, point) {

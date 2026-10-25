@@ -1,0 +1,36 @@
+{
+  "kind": "Headless Chromium / SwiftShader; 16 m procedural world, eight resident chunks; CPU preparation plus render submission, not GPU completion",
+  "workflow": "PASS: native GOX/STL/glTF/GLB independence, atomic terrain switching, camera/environment, View control, HTML save/reopen, legacy grid, undo/redo",
+  "switches": [
+    {
+      "mode": "polygonal",
+      "ms": 1909.7999999999884,
+      "geometries": 9,
+      "chunks": 8
+    },
+    {
+      "mode": "voxel",
+      "ms": 412,
+      "geometries": 9,
+      "chunks": 8
+    },
+    {
+      "mode": "polygonal",
+      "ms": 1093.0999999999767,
+      "geometries": 9,
+      "chunks": 8
+    },
+    {
+      "mode": "voxel",
+      "ms": 375.1000000000349,
+      "geometries": 9,
+      "chunks": 8
+    },
+    {
+      "mode": "polygonal",
+      "ms": 1130.2999999999884,
+      "geometries": 9,
+      "chunks": 8
+    }
+  ]
+}

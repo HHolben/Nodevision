@@ -11,6 +11,14 @@ import {VoxelChunkManager} from '../ProceduralVoxelWorld/VoxelChunkManager.mjs';
 const path=(patch={})=>validatePath({id:'road',controlPoints:[[2,15,8],[28,15,8]],...patch});
 const ribbon=d=>ribbonForPath(d,samplePath(THREE,d));
 const world={type:'procedural-voxel-world',id:'hills',position:[0,0,0],size:[32,64,32],voxelSize:.25,generator:{id:'nodevision-terrain-v1',version:1,seed:42},chunks:{voxelsPerAxis:32,loadRadius:2}};
+test('smooth three- and four-point turns remain valid at every elevation smoothing setting',()=>{
+  for(const count of [3,4])for(const smoothing of [0,.5,1])for(const interpolation of ['smooth','mixed']){
+    const controlPoints=[[0,0,0],[10,0,0],[10,0,10],[20,0,10]].slice(0,count);
+    const d=path({controlPoints,smoothing,interpolation,segmentKinds:['smooth','smooth','smooth'],elevationMode:'locally-flat'}),r=ribbon(d);
+    assert.deepEqual(r.samples[0],controlPoints[0]);assert.deepEqual(r.samples.at(-1),controlPoints.at(-1));
+    for(const p of r.samples)assert.ok(Math.abs(r.heightAt(p[0],p[2])-p[1])<1e-7);
+  }
+});
 test('definitions have durable defaults and reject invalid/near-coincident points',()=>{
   const d=path();assert.equal(d.width,2);assert.equal(d.crossSlope,0);assert.equal(d.surfaceMaterial,'gravel');
   assert.deepEqual(validatePath(JSON.parse(JSON.stringify(d))),d);

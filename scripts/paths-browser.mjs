@@ -31,10 +31,20 @@ try {
   scene.add(new THREE.HemisphereLight(0xffffff,0x888888,2));scene.background=new THREE.Color('#e9edf0');renderer.render(scene,camera);
   context.objectInspector=createObjectInspector({THREE,panel,scene,sceneObjects:context.objects,colliders:context.colliders,portals:context.portals,spawnPoints:context.spawnPoints});
   const canvas=renderer.domElement,paths=()=>context.objects.filter(o=>o.userData.pathRuntime);
+  const {checkPathExcavation}=await import("/scripts/path-excavation-browser.mjs");({bridge,runtime}=await checkPathExcavation({THREE,context,bridge,runtime,ok,async saveReload(){
+    await saveCurrentWorldFile({state,movementState,objects:context.objects,lights:[]});definition=JSON.parse(new DOMParser().parseFromString(savedHtml,"text/html").querySelector("script").textContent);await loadWorldFromFile("paths.html",state,THREE);return {bridge:getActiveMetaWorldLayerBridge(),runtime:context.objects.find(o=>o.userData.proceduralVoxelRuntime).userData.proceduralVoxelRuntime};
+  }}));
+  camera.position.set(16,55,36);camera.lookAt(16,0,12);camera.updateMatrixWorld(true);for(let i=0;i<100;i++)runtime.update(new THREE.Vector3(16,15,16));
   const point=(x,z)=>{const y=runtime.generator.base.getTerrainHeight(Math.floor(x*4),Math.floor(z*4))*.25;return [x,y,z];};
   function eventAt(p,type='pointerdown',detail=1){scene.updateMatrixWorld(true);const v=new THREE.Vector3(...p).project(camera),r=canvas.getBoundingClientRect();canvas.dispatchEvent(new PointerEvent(type,{clientX:r.left+(v.x+1)*r.width/2,clientY:r.top+(1-v.y)*r.height/2,button:0,pointerId:1,detail,bubbles:true,cancelable:true}));}
   const key=key=>window.dispatchEvent(new KeyboardEvent('keydown',{key,bubbles:true,cancelable:true}));
   ok(await insertPath(),'Insert Path opens');eventAt(point(4,8));ok(paths().length===0,'single click is only a draft');eventAt(point(10,8),'pointermove');key('Escape');ok(paths().length===0&&!context.cancelPathDrawing,'Escape cancels without a saved object');
+  for(const count of [3,4]){
+    await insertPath();for(const [x,z] of [[4,4],[14,4],[14,14],[24,14]].slice(0,count))eventAt(point(x,z));key('Enter');
+    ok(paths().length===1,`Enter commits a ${count}-point turn with default smoothing`);
+    ok(paths()[0].userData.pathRuntime.serialize().controlPoints.length===count,'turn retains every control point');
+    ok(!context.pathDrawing,'successful completion closes the draft');bridge.undo();ok(paths().length===0,'multi-point turn is one undo transaction');
+  }
   const {configurePathTool}=await import('/MetaWorld/Paths/PathTool.mjs');configurePathTool({terrainInteraction:'grade',elevationMode:'authored'});
   await insertPath();eventAt(point(4,8));eventAt(point(12,8));eventAt(point(24,8));key('Enter');
   ok(paths().length===1,'Enter commits a three-point path');let mesh=paths()[0],id=mesh.userData.metaWorldLayerId;
@@ -82,7 +92,7 @@ try {
   const {createPlayerInventory}=await import('/PanelInstances/ViewPanels/GameViewDependencies/playerInventory.mjs');context.inventory=createPlayerInventory({panel});context.inventory.assignItemToSlot(0,'path');context.inventory.assignItemToSlot(1,'3d-model');
   const {pathToolState,pathCommand}=await import('/MetaWorld/Paths/PathTool.mjs'),{createCursorFamilyProvider}=await import('/CursorFamilies/providers/WorldCursorProvider.mjs');
   window.NodevisionState.currentMode='Build Mode';context.inventory.selectDominantSlot(0);for(let i=0;i<100&&!context.pathDrawing;i++)await tick();ok(context.pathDrawing&&createCursorFamilyProvider().getActiveToolId()==='path','inventory selection activates same Path cursor even when Build mode label differs');
-  key('g');for(let i=0;i<100&&!document.querySelector('[data-path-settings]');i++)await tick();const settings=document.querySelector('[data-path-settings]');ok(settings,'G opens native settings');const widthSetting=settings.querySelector('[aria-label="Width (m)"]');widthSetting.value=1;widthSetting.dispatchEvent(new Event('change'));ok(pathToolState().settings.width===1,'settings configure shared tool');[...settings.querySelectorAll('button')].find(b=>b.textContent==='Done').click();
+  key('g');for(let i=0;i<100&&!document.querySelector('[data-path-settings]');i++)await tick();const settings=document.querySelector('[data-path-settings]');ok(settings,'G opens native settings');ok(settings.querySelector('[aria-label="Upper Clearance (m)"]')&&settings.querySelector('[aria-label="Show Clearance Envelope"]'),'G exposes clearance and preview');const widthSetting=settings.querySelector('[aria-label="Width (m)"]');widthSetting.value=1;widthSetting.dispatchEvent(new Event('change'));ok(pathToolState().settings.width===1,'settings configure shared tool');[...settings.querySelectorAll('button')].find(b=>b.textContent==='Done').click();
   eventAt(point(4,28));ok(pathToolState().points.length===1,'draft retained in controller');context.inventory.selectDominantSlot(1);ok(!context.pathDrawing&&pathToolState().points.length===1,'switching tools suspends without losing draft');context.inventory.selectDominantSlot(0);for(let i=0;i<100&&!context.pathDrawing;i++)await tick();ok(pathToolState().points.length===1,'reselect restores draft');key('Escape');ok(!context.pathDrawing&&pathToolState().points.length===0,'Escape explicitly discards draft');
   const commanded=await pathCommand(['create',{controlPoints:[[4,12,28],[12,13,28]],width:1,elevationMode:'locally-flat',terrainInteraction:'grade',smoothing:.5,surfaceMaterial:'dirt'}]);const commandMesh=context.objects.find(o=>o.userData.metaWorldLayerId===commanded.id);await commandMesh.userData.pathRuntime.ready;ok(!commandMesh.userData.pathRuntime.materialError,'dirt uses existing soil material');
   await pathCommand(['extend',{id:commanded.id}]);ok(pathToolState().points.length===2,'extend starts with existing world-space points');eventAt(point(24,28));key('Enter');ok(bridge.getPathDefinition(commanded.id).controlPoints.length===3,'extending updates the same path');bridge.undo();ok(bridge.getPathDefinition(commanded.id).controlPoints.length===2,'extension is one undo transaction');bridge.redo();
@@ -105,5 +115,5 @@ try {
     screenPoint(p){scene.updateMatrixWorld(true);camera.updateMatrixWorld(true);const v=new THREE.Vector3(...p).project(camera),r=canvas.getBoundingClientRect();return {x:r.left+(v.x+1)*r.width/2,y:r.top+(1-v.y)*r.height/2};},
     resize(w,h){panel.style.width=w+'px';panel.style.height=h+'px';renderer.setSize(w,h);camera.aspect=w/h;const fit=Math.max(1,1.33/camera.aspect);camera.position.set(16,55*fit,12+24*fit);camera.lookAt(16,0,12);camera.updateProjectionMatrix();renderer.render(scene,camera);},
     render(){renderer.render(scene,camera);}};
-  document.getElementById('result').textContent='PASS: Path creation, cancel, Enter/double-click, properties, add/remove points, materials, walking collision, grading, undo/redo, compact HTML save/load, regeneration, Sandbox Play guards, and rendered pixels';
+  document.getElementById('result').textContent='PASS: Terrain excavation, clearances, gravel floors, bridge collision, transient previews, representation switching, HTML save/reload, native Path creation/editing, grading, undo/redo, regeneration, Sandbox Play guards, and rendered pixels';
 }catch(error){document.getElementById('result').textContent='FAIL: '+error.stack;}

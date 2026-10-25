@@ -775,6 +775,7 @@ function serializeMeshGeometry(mesh) {
     def.collidable = false;
     def.isSolid = false;
   } else if (type === "terrain-surface") {
+    def.representation=mesh.userData.terrainRuntime?.representation??mesh.userData.terrain?.representation??"polygonal";
     const terrain = mesh.userData?.terrain || {};
     def.size = [
       round3(Number(terrain.width) || 1),

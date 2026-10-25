@@ -1,5 +1,6 @@
 // Nodevision/ApplicationSystem/public/MetaWorld/Paths/PathAuthoringBridge.mjs
 // This module installs path editing on the existing world layer/history bridge and synchronizes derived terrain constraints after edits, deletion, regeneration, and history restoration.
+import {pathSurface} from './PathSurface.mjs';
 import { worldAuthoringAllowed } from '../WorldAuthoringPermissions.mjs';
 import { validatePath } from './PathDefinition.mjs';
 import { createPathObject } from './PathRuntime.mjs';
@@ -21,7 +22,11 @@ export function installPathAuthoring(bridge,{THREE,scene,objects,colliders,layer
     }
     return NaN;
   };
+  const terrains=()=>objects.filter(o=>o.visible&&o.userData?.proceduralVoxelRuntime);
+  const supportFor=path=>{const candidates=terrains();return (x,z)=>{for(const o of candidates){const hit=o.userData.proceduralVoxelRuntime.generator.pathSupport(path,x,z);if(hit)return hit;}return null;};};
+  const gridOrigin=()=>terrains()[0]?.position.toArray()||[0,0,0];
   bridge.pathTerrainHeight=terrainHeight;
+  bridge.setPathClearancePreview=(id,value)=>{const runtime=layerEntries.find(e=>e.id===id)?.object3d?.userData?.pathRuntime;if(!runtime)throw Error('Select a path.');runtime.setClearancePreview(value);return true;};
   bridge.syncPaths=()=>{
     const paths=[],next=new Map();let bounds=null;
     const extend=b=>{if(!b)return;bounds=bounds?{minX:Math.min(bounds.minX,b.minX),maxX:Math.max(bounds.maxX,b.maxX),minZ:Math.min(bounds.minZ,b.minZ),maxZ:Math.max(bounds.maxZ,b.maxZ)}:{...b};};
@@ -38,16 +43,18 @@ export function installPathAuthoring(bridge,{THREE,scene,objects,colliders,layer
     }
     for(const [id,old] of previous)if(!next.has(id))extend(old.bounds);
     previous=next;
-    if(bounds)for(const o of objects)o.userData?.proceduralVoxelRuntime?.setPathConstraints(paths,bounds);
+    if(bounds){for(const o of objects)o.userData?.proceduralVoxelRuntime?.setPathConstraints(paths,bounds);
+      for(const entry of layerEntries){const r=entry.object3d?.userData?.pathRuntime;if(r?.ribbon)r.setTerrainSupport(supportFor(r.ribbon),gridOrigin());}
+    }
   };
   bridge.getPathDefinition=id=>layerEntries.find(e=>e.id===id)?.object3d?.userData?.pathRuntime?.serialize();
   bridge.updatePath=(id,patch)=>{
     if(!worldAuthoringAllowed(window.VRWorldContext?.movementState))throw Error('Path editing is unavailable in Play or read-only mode.');
     const entry=layerEntries.find(e=>e.id===id),old=entry?.object3d?.userData?.pathRuntime;
     if(id&&!old)throw Error('Path no longer exists.');
-    const def=validatePath({...old?.serialize(),...patch,id:id||crypto.randomUUID()});
-    ribbonForPath(def,samplePath(THREE,def,terrainHeight));
-    const mesh=createPathObject(THREE,def,colliders,terrainHeight);
+    const def=validatePath({...(old?old.serialize():{terrainInteraction:'excavate'}),...patch,id:id||crypto.randomUUID()});
+    const candidate=ribbonForPath(def,samplePath(THREE,def,terrainHeight));pathSurface(candidate,supportFor(candidate),gridOrigin());
+    const mesh=createPathObject(THREE,def,colliders,terrainHeight);mesh.userData.pathRuntime.setClearancePreview(old?.showClearanceEnvelope||false);
     bridge.recordHistory();
     if(entry){const i=worldData.objects.indexOf(entry.def);worldData.objects[i]=def;old.dispose();objects.splice(objects.indexOf(entry.object3d),1);entry.def=def;entry.object3d=mesh;}
     else {worldData.objects.push(def);layerEntries.push({id:def.id,def,object3d:mesh});}

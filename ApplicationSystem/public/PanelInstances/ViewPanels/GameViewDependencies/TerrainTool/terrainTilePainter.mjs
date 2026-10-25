@@ -71,6 +71,7 @@ export function createTerrainTilePainter({ THREE, scene, objects, colliders }) {
 
   function detachMesh(mesh) {
     if (!mesh) return;
+    if(mesh.userData?.terrainRuntime){mesh.userData.terrainRuntime.dispose();mesh.geometry.dispose();for(const material of [mesh.material].flat()){material.map?.dispose();material.dispose();}}
     if (mesh.parent) mesh.parent.remove(mesh);
     const objIdx = objects.indexOf(mesh);
     if (objIdx !== -1) objects.splice(objIdx, 1);

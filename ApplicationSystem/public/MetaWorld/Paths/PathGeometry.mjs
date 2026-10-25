@@ -1,5 +1,6 @@
 // Nodevision/ApplicationSystem/public/MetaWorld/Paths/PathGeometry.mjs
 // This module samples Three.js centripetal curves and builds unbanked horizontal-width ribbons with shared triangle-based height queries for terrain and player collision.
+import {pathTriangleField} from './PathTriangleField.mjs';
 import { indexPathSegments } from './PathSegments.mjs';
 export function samplePath(THREE, def, terrainHeight) {
   const points = def.controlPoints.map(p => new THREE.Vector3(...p).add(new THREE.Vector3(...def.position)));
@@ -10,14 +11,15 @@ export function samplePath(THREE, def, terrainHeight) {
   if (def.interpolation === 'smooth') {
     const curve = new THREE.CatmullRomCurve3(points, false, 'centripetal');
     curve.arcLengthDivisions = Math.max(200, Math.ceil(length * 4));
-    const count=Math.max(2,Math.ceil(length/.25)),strength=1-(def.smoothing||0)*.5;
-    if(strength===1)result.push(...curve.getSpacedPoints(count).map(p=>p.toArray()));
-    else for(let i=0;i<=count;i++){const t=i/count*(points.length-1),segment=Math.min(points.length-2,Math.floor(t)),linear=points[segment].clone().lerp(points[segment+1],t-segment);result.push(linear.lerp(curve.getPoint(i/count),strength).toArray());}
+    // Blending with the control polygon introduces tangent discontinuities at turns.
+    // Keep the horizontal curve smooth; the smoothing setting controls elevation.
+    const count=Math.max(2,Math.ceil(length/.25));
+    result.push(...curve.getSpacedPoints(count).map(p=>p.toArray()));
   } else {
     const curve=def.interpolation==='mixed'?new THREE.CatmullRomCurve3(points,false,'centripetal'):null;
     points.slice(1).forEach((p,i) => {
       const count = Math.max(1,Math.ceil(p.distanceTo(points[i]) / .25));
-      for (let j=0;j<count;j++) result.push(curve&&def.segmentKinds?.[i]==='smooth'?points[i].clone().lerp(p,j/count).lerp(curve.getPoint((i+j/count)/(points.length-1)),1-(def.smoothing||0)*.5).toArray():points[i].clone().lerp(p,j/count).toArray());
+      for (let j=0;j<count;j++) result.push(curve&&def.segmentKinds?.[i]==='smooth'?curve.getPoint((i+j/count)/(points.length-1)).toArray():points[i].clone().lerp(p,j/count).toArray());
     });
     result.push(points.at(-1).toArray());
   }
@@ -46,22 +48,9 @@ export function ribbonForPath(def, samples) {
       }
     }
   }
-  const padding=def.transitionWidth+1, bounds={minX:Infinity,maxX:-Infinity,minZ:Infinity,maxZ:-Infinity};
+  const padding=Math.max(def.transitionWidth,def.leftClearance||0,def.rightClearance||0)+1, bounds={minX:Infinity,maxX:-Infinity,minZ:Infinity,maxZ:-Infinity};
   for(const p of vertices) {bounds.minX=Math.min(bounds.minX,p[0]-padding);bounds.maxX=Math.max(bounds.maxX,p[0]+padding);bounds.minZ=Math.min(bounds.minZ,p[2]-padding);bounds.maxZ=Math.max(bounds.maxZ,p[2]+padding);}
-  const cells=new Map(), cellSize=Math.max(2,def.width), key=(x,z)=>`${x},${z}`;
-  for(const tri of triangles) {
-    const v=tri.map(i=>vertices[i]), xs=v.map(p=>p[0]), zs=v.map(p=>p[2]);
-    for(let z=Math.floor(Math.min(...zs)/cellSize);z<=Math.floor(Math.max(...zs)/cellSize);z++)for(let x=Math.floor(Math.min(...xs)/cellSize);x<=Math.floor(Math.max(...xs)/cellSize);x++) {
-      const k=key(x,z);if(!cells.has(k))cells.set(k,[]);cells.get(k).push(v);
-    }
-  }
-  function heightAt(x,z) {
-    for(const [a,b,c] of cells.get(key(Math.floor(x/cellSize),Math.floor(z/cellSize))) || []) {
-      const p=[x,0,z],area=cross(a,b,c),u=cross(p,b,c)/area,v=cross(a,p,c)/area,w=1-u-v;
-      if(Math.min(u,v,w)>=-1e-8)return a[1]*u+b[1]*v+c[1]*w;
-    }
-    return NaN;
-  }
+  const heightAt=pathTriangleField(vertices,triangles,Math.max(2,def.width));
   const nearest=indexPathSegments(samples,half+padding);
   const outline=[...vertices.filter((_,i)=>i%2===0),...vertices.filter((_,i)=>i%2===1).reverse(),vertices[0]];
   try { indexPathSegments(outline,half,true); }

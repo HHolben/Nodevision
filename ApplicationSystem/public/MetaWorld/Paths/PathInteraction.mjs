@@ -1,5 +1,6 @@
 // Nodevision/ApplicationSystem/public/MetaWorld/Paths/PathInteraction.mjs
 // This module adapts the shared sequential-line gesture to terrain raycasts and provides transactional control-point dragging without writing incomplete paths into the world.
+import {clearanceEnvelope} from './PathEnvelope.mjs';
 import {pickedPathPoint} from './PathJoin.mjs';
 import { createVectorInteraction } from '../../VectorDrawing/VectorInteraction.mjs';
 import { worldAuthoringAllowed } from '../WorldAuthoringPermissions.mjs';
@@ -33,13 +34,14 @@ export function beginPathDrawing(context=window.VRWorldContext) {
   const ribbon=new THREE.Mesh(new THREE.BufferGeometry(),new THREE.MeshBasicMaterial({color:0x00cbd4,transparent:true,opacity:.35,side:THREE.DoubleSide,depthWrite:false}));
   const marker=new THREE.Mesh(new THREE.SphereGeometry(.12,8,6),new THREE.MeshBasicMaterial({color:0xffdd44,depthTest:false}));marker.visible=false;
   for(const object of [line,ribbon,marker]){object.userData.runtimeGenerated=true;object.userData.isEditorHelper=true;object.renderOrder=20;scene.add(object);}
-  let hover=null,done=false,twoPoint=false,joined=state.joined===true;
+  let hover=null,done=false,twoPoint=false,joined=state.joined===true,envelope=null;
   const message=document.createElement('output');message.setAttribute('role','status');Object.assign(message.style,{position:'absolute',bottom:'8px',left:'8px',background:'#fff',color:'#a12424'});panel.append(message);
   const xyz=p=>[p.x,elevations.get(key(p))??hover?.[1]??0,p.y];
   function preview(_shape,points=[]) {
+    if(envelope){scene.remove(envelope);envelope.geometry.dispose();envelope.material.dispose();envelope=null;}
     let data=points.map(xyz);data=data.filter((p,i)=>!i||Math.hypot(p[0]-data[i-1][0],p[2]-data[i-1][2])>=.05);let samples=data;
     ribbon.visible=false;
-    try{if(data.length>=2){const def={...state.settings,...(joined?{elevationMode:'authored'}:{}),id:'draft',controlPoints:data,position:[0,0,0]};samples=samplePath(THREE,def,bridge.pathTerrainHeight);const r=ribbonForPath(def,samples);ribbon.geometry.dispose();ribbon.geometry=new THREE.BufferGeometry();ribbon.geometry.setAttribute('position',new THREE.Float32BufferAttribute(r.vertices.flatMap(p=>[p[0],p[1]+.04,p[2]]),3));ribbon.geometry.setIndex(r.triangles.flat());ribbon.visible=true;message.textContent='Right-click start, then endpoint; click a path to join. G settings; Escape cancels.';}}
+    try{if(data.length>=2){const def={...state.settings,...(joined?{elevationMode:'authored'}:{}),id:'draft',controlPoints:data,position:[0,0,0]};samples=samplePath(THREE,def,bridge.pathTerrainHeight);const r=ribbonForPath(def,samples);ribbon.geometry.dispose();ribbon.geometry=new THREE.BufferGeometry();ribbon.geometry.setAttribute('position',new THREE.Float32BufferAttribute(r.vertices.flatMap(p=>[p[0],p[1]+.04,p[2]]),3));ribbon.geometry.setIndex(r.triangles.flat());ribbon.visible=true;if(state.settings.showClearanceEnvelope){envelope=clearanceEnvelope(THREE,def,samples);scene.add(envelope);}message.textContent='Right-click start, then endpoint; click a path to join. G settings; Escape cancels.';}}
     catch(error){message.textContent=error.message;}
     line.geometry.dispose();line.geometry=new THREE.BufferGeometry().setFromPoints(samples.map(p=>new THREE.Vector3(p[0],p[1]+.05,p[2])));
   }

@@ -8,7 +8,8 @@ import { WORKSPACE_COMMANDS } from './WorkspaceCommandDefinitions.mjs';
 
 export const NODEVISION_SHARED_COMMANDS = Object.freeze([
   ...WORKSPACE_COMMANDS,
-  { id: "path.world", category: "World", label: "Physical Path", description: "Activate, configure, finish, cancel, create, update, extend or delete a physical world path.", sessionSafe: false, arguments: [arg("action", "string", {default:"activate"}),arg("options", "any", {default:{}})] },
+  { id: "terrain.representation", category: "World", label: "Terrain Representation", description: "List generated terrains or set voxel/polygonal representation for a terrain instance.", sessionSafe: false, arguments: [arg("mode", "string", {default:"list"}),arg("id", "string", {default:""})] },
+  { id: "path.world", category: "World", label: "Physical Path", description: "Activate, configure, finish, cancel, create, update, extend, delete or toggle clearance-preview for a physical world path.", sessionSafe: false, arguments: [arg("action", "string", {default:"activate"}),arg("options", "any", {default:{}})] },
   { id: "model.insert", category: "Model", label: "Insert 3D Model", description: "Open shared Notebook, local file and Download selection for the active editor.", sessionSafe: false, arguments: [] },
   { id: "voxel.execute", category: "Voxel", label: "Voxel document action", description: "Run a GOX action on the active document; action parameters are listed in the voxel command form.", sessionSafe: false, arguments: [arg("action", "string", { required: true }), arg("parameters", "any", { default: {} })] },
   { id: "voxel.world", category: "Voxel", label: "Goxel Model world tool", description: "Choose/place/settings/commit/cancel/inventory/select/transform/duplicate/delete/edit-source/reload GOX instances.", sessionSafe: false, arguments: [arg("action", "string", { default: "choose" }), arg("options", "any", { default: {} })] },

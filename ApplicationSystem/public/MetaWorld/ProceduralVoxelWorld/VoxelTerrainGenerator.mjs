@@ -22,11 +22,11 @@ export function createVoxelGenerator(source) {
   const featureStats={lookupMs:0,samplingMs:0,candidates:0};
   function getFeatureVoxel(x,y,z,list) {
     if(!containsVoxel([x,y,z],base.dimensions)||base.getVoxel(x,y,z))return 0;
-    return list?features.sample(list,x,y,z):features.at(x,y,z);
+    return base.applyExcavation(x,y,z,list?features.sample(list,x,y,z):features.at(x,y,z));
   }
   function getVoxel(x,y,z){
     if(!containsVoxel([x,y,z],base.dimensions))return 0;
-    return base.getVoxel(x,y,z)||features.at(x,y,z);
+    return base.applyExcavation(x,y,z,base.getVoxel(x,y,z)||features.at(x,y,z));
   }
   function generateChunk(cx,cy,cz){
     const data=base.generateChunk(cx,cy,cz),min=chunkToVoxel([cx,cy,cz]),max=min.map(v=>v+32);
@@ -42,6 +42,7 @@ export function createVoxelGenerator(source) {
         if(priority(value)>priority(old))data[index]=value;
       }
     }
+    if(base.hasExcavation)for(let z=0;z<32;z++)for(let x=0;x<32;x++)for(let y=0;y<32;y++){const i=voxelIndex(x,y,z);data[i]=base.applyExcavation(min[0]+x,min[1]+y,min[2]+z,data[i]);}
     featureStats.samplingMs+=performance.now()-sampleStart;
     return data;
   }

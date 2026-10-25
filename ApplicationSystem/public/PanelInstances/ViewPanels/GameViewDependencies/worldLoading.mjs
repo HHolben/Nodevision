@@ -5,6 +5,8 @@ import { createModelWorldObject, installModelWorldCommand } from "/Models/ModelW
 import { createDownloadedImagePlane, installDownloadedImageCommand } from "/MetaWorld/DownloadedImagePlane.mjs";
 import { createTextObject } from '../../../MetaWorld/Text/TextRuntime.mjs';
 import { installTextAuthoring } from '../../../MetaWorld/Text/TextAuthoringBridge.mjs';
+import { terrainGridFromDefinition } from "../../../MetaWorld/TerrainRepresentation/GridDefinition.mjs";
+import { installTerrainRepresentation } from "../../../MetaWorld/TerrainRepresentation/Authoring.mjs";
 import { installVoxelWorldAuthoring } from "../../../MetaWorld/ProceduralVoxelWorld/VoxelWorldAuthoringBridge.mjs";
 import { installSoundAuthoring } from '../../../MetaWorld/Sounds/SoundAuthoringBridge.mjs';
 import { installPathAuthoring } from "../../../MetaWorld/Paths/PathAuthoringBridge.mjs";
@@ -18,7 +20,7 @@ import { projectIframe } from "./iframeProjection.mjs";
 import { serializeMesh } from "./worldSave.mjs";
 import { createEquationColliderPlaneMesh, makePlaneColliderRef, syncPlaneWaterVolumeRef } from "./equationColliderTool.mjs";
 import { readWorldGravityModel } from "./gravityModel.mjs";
-import { createTerrainSurfaceColliderRef, createTerrainSurfaceMesh } from "./TerrainTool/terrainSurfaceMesh.mjs";
+import { createTerrainSurfaceColliderRef } from "./TerrainTool/terrainSurfaceMesh.mjs";
 import {
   DEFAULT_WORLD_GAS_MATERIAL_FILE,
   DEFAULT_WORLD_GAS_MATERIAL_ID,
@@ -1180,7 +1182,7 @@ export function registerMetaWorldLayerBridge({ state, filePath, worldData, layer
   const sourceId = "legacy-metaworld:" + (filePath || "active");
   const history = { undoStack: [], redoStack: [], isRestoring: false, limit: 80 };
   const readBridgeExpressionOptions = () => getExpressionLayerOptions(camera || window.VRWorldContext?.camera);
-  const managedObject = def => ['gox-model','model-asset'].includes(def?.type) || def?.type === 'image-plane' || PRIMITIVE_WORLD_OBJECT_TYPES.has(def?.type) || def?.type === "world-text" || def?.type === "physical-path" || def?.type === "procedural-voxel-world" || def?.type === "iframe" || def?.equationCollider?.infinite === true;
+  const managedObject = def => ['gox-model','model-asset'].includes(def?.type) || def?.type === 'image-plane' || def?.type === 'terrain-surface' || PRIMITIVE_WORLD_OBJECT_TYPES.has(def?.type) || def?.type === "world-text" || def?.type === "physical-path" || def?.type === "procedural-voxel-world" || def?.type === "iframe" || def?.equationCollider?.infinite === true;
   const snapshotWorldObjects = () => {
     const meshes = new Map(layerEntries.map(entry => [entry.def, entry.object3d]));
     return JSON.stringify((worldData.objects || []).map(def => {
@@ -1221,6 +1223,7 @@ export function registerMetaWorldLayerBridge({ state, filePath, worldData, layer
     object3d?.userData?.modelRuntime?.dispose();
     object3d?.userData?.textRuntime?.dispose();
     object3d?.userData?.pathRuntime?.dispose();
+    object3d?.userData?.terrainRuntime?.dispose();
     object3d?.userData?.proceduralVoxelRuntime?.dispose();
     disposeSoundObjectRuntime(object3d);
     disposeIframeObjectRuntime(object3d);
@@ -1311,6 +1314,7 @@ export function registerMetaWorldLayerBridge({ state, filePath, worldData, layer
           : def.type === 'image-plane' ? createDownloadedImagePlane(THREE, def)
           : def.type === 'world-text' ? createTextObject(THREE, def)
           : def.type === 'physical-path' ? createPathObject(THREE, def, colliders)
+          : def.type === "terrain-surface" ? terrainGridFromDefinition(THREE,def)
           : def.type === "procedural-voxel-world" ? createProceduralVoxelWorld(THREE, def, colliders)
           : def.type === "iframe" ? createIframeObjectMesh(THREE, def)
           : createEquationColliderPlaneMesh(THREE, def.equationCollider, { color: def.color, opacity: def.opacity });
@@ -1324,6 +1328,8 @@ export function registerMetaWorldLayerBridge({ state, filePath, worldData, layer
         if (PRIMITIVE_WORLD_OBJECT_TYPES.has(def.type)) {
           const collider=makeObjectColliderRef(THREE,mesh,def,def.type);
           if(collider){mesh.userData.colliderRef=collider;colliders.push(collider);}
+        } else if (def.type==='terrain-surface') {
+          const collider=createTerrainSurfaceColliderRef(THREE,mesh);if(collider){mesh.userData.colliderRef=collider;colliders.push(collider);}
         } else if (def.collider !== false && def.equationCollider?.infinite) {
           mesh.userData.colliderRef = makePlaneColliderRef(THREE, mesh);
           colliders.push(mesh.userData.colliderRef);
@@ -1895,6 +1901,9 @@ export function registerMetaWorldLayerBridge({ state, filePath, worldData, layer
     select: selectMetaWorldObject,
     changed(objectId) { markMetaWorldLayersDirty(worldData); syncBridgeWorldState(state,worldData); notifyMetaWorldLayersChanged({reason:"voxelWorldUpdated",objectId}); }
   });
+  installTerrainRepresentation(bridge,{layerEntries,worldData,
+    changed(objectId){markMetaWorldLayersDirty(worldData);syncBridgeWorldState(state,worldData);notifyMetaWorldLayersChanged({reason:'terrainRepresentation',objectId});}
+  });
   installPathAuthoring(bridge, { THREE, scene, objects, colliders, layerEntries, worldData, select:selectMetaWorldObject,
     changed(objectId) { markMetaWorldLayersDirty(worldData); syncBridgeWorldState(state,worldData); notifyMetaWorldLayersChanged({reason:'pathUpdated',objectId}); }
   });
@@ -2268,6 +2277,7 @@ function resetLegacyWorldScene(ctx, state, worldData = null) {
     obj?.userData?.modelRuntime?.dispose();
     obj?.userData?.textRuntime?.dispose();
     obj?.userData?.pathRuntime?.dispose();
+    obj?.userData?.terrainRuntime?.dispose();
     obj?.userData?.proceduralVoxelRuntime?.dispose();
     disposeSoundObjectRuntime(obj);
     disposeIframeObjectRuntime(obj);
@@ -2398,6 +2408,7 @@ async function loadStlWorld(filePath, state, THREE) {
     obj?.userData?.modelRuntime?.dispose();
     obj?.userData?.textRuntime?.dispose();
     obj?.userData?.pathRuntime?.dispose();
+    obj?.userData?.terrainRuntime?.dispose();
     obj?.userData?.proceduralVoxelRuntime?.dispose();
     disposeSoundObjectRuntime(obj);
     disposeIframeObjectRuntime(obj);
@@ -2677,6 +2688,7 @@ export async function loadWorldFromFile(filePath, state, THREE, options = {}) {
       obj?.userData?.modelRuntime?.dispose();
       obj?.userData?.textRuntime?.dispose();
       obj?.userData?.pathRuntime?.dispose();
+      obj?.userData?.terrainRuntime?.dispose();
       obj?.userData?.proceduralVoxelRuntime?.dispose();
       disposeSoundObjectRuntime(obj);
       disposeIframeObjectRuntime(obj);
@@ -3324,27 +3336,7 @@ export async function loadWorldFromFile(filePath, state, THREE, options = {}) {
       } else if (def.type === "procedural-voxel-world") {
         mesh = createProceduralVoxelWorld(THREE, def, colliders);
       } else if (def.type === "terrain-surface") {
-        const terrain = def.terrain && typeof def.terrain === "object" ? def.terrain : {};
-        mesh = createTerrainSurfaceMesh(THREE, {
-          columns: Number.isFinite(def.columns) ? def.columns : terrain.columns,
-          rows: Number.isFinite(def.rows) ? def.rows : terrain.rows,
-          tileSize: Number.isFinite(def.tileSize) ? def.tileSize : terrain.tileSize,
-          heights: Array.isArray(def.heights) ? def.heights : terrain.heights,
-          colors: Array.isArray(def.vertexColors) ? def.vertexColors : terrain.vertexColors,
-          color: def.color || terrain.color || "#3f8f46",
-          texture: def.texture || terrain.texture || "solid",
-          kind: def.kind || terrain.kind || "grass",
-          isSolid: def.isSolid === true || def.collidable === true,
-          metadata: {
-            ...terrain,
-            MatterState: def.MatterState || terrain.MatterState,
-            matterState: def.matterState || terrain.matterState,
-            isLiquid: def.isLiquid === true || terrain.isLiquid === true,
-            materialName: def.materialName || terrain.materialName,
-            physicsMaterialId: def.physicsMaterialId || terrain.physicsMaterialId,
-            physicsMaterialFile: def.physicsMaterialFile || terrain.physicsMaterialFile
-          }
-        });
+        mesh = terrainGridFromDefinition(THREE,def);
       } else if (portalShape === "box") {
         mesh = new THREE.Mesh(
           new THREE.BoxGeometry(...def.size),
@@ -3484,7 +3476,7 @@ export async function loadWorldFromFile(filePath, state, THREE, options = {}) {
         if (def.terrain && typeof def.terrain === "object") {
           const restoredTerrain = JSON.parse(JSON.stringify(def.terrain));
           mesh.userData.terrain = def.type === "terrain-surface"
-            ? { ...mesh.userData.terrain, ...restoredTerrain }
+            ? { ...mesh.userData.terrain, ...restoredTerrain, representation:def.representation??restoredTerrain.representation??'polygonal' }
             : restoredTerrain;
         }
         if (def.hidden === true || def.visible === false) mesh.visible = false;

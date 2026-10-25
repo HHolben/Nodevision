@@ -25,8 +25,8 @@ export function indexPathSegments(samples,radius,closed=false) {
     cellRange(p,p,limit,k=>{for(const {a,b,i} of cells.get(k)||[]) {
       if(seen.has(i))continue;seen.add(i);
       const dx=b[0]-a[0],dz=b[2]-a[2],den=dx*dx+dz*dz;if(den<1e-12)continue;
-      const t=Math.max(0,Math.min(1,((x-a[0])*dx+(z-a[2])*dz)/den)),distance=Math.hypot(x-a[0]-t*dx,z-a[2]-t*dz);
-      if(distance<best.distance)best={distance,height:a[1]+t*(b[1]-a[1])};
+      const raw=((x-a[0])*dx+(z-a[2])*dz)/den,t=Math.max(0,Math.min(1,raw)),distance=Math.hypot(x-a[0]-t*dx,z-a[2]-t*dz);
+      if(distance<best.distance)best={distance,height:a[1]+t*(b[1]-a[1]),signedDistance:(dx*(z-a[2])-dz*(x-a[0]))/Math.sqrt(den),endOutside:(i===0&&raw<0)||(i===segments.length-1&&raw>1)};
     }});return best;
   };
 }

@@ -18,6 +18,9 @@ export function* terrainChunkSteps(base,features,cx,cy,cz) {
       }yield;
     }
   }
+  if(base.hasExcavation)for(let z=0;z<32;z++)for(let x=0;x<32;x++){
+    for(let y=0;y<32;y++){const i=voxelIndex(x,y,z);data[i]=base.applyExcavation(min[0]+x,min[1]+y,min[2]+z,data[i]);}yield;
+  }
   return data;
 }
 export function* timedSteps(iterator) {
