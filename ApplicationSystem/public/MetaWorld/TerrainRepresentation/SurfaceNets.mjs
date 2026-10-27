@@ -5,7 +5,7 @@ import {voxelIndex} from '../ProceduralVoxelWorld/VoxelCoordinates.mjs';
 const corners=Array.from({length:8},(_,i)=>[i&1,(i>>1)&1,(i>>2)&1]);
 const edges=[];for(let i=0;i<8;i++)for(let a=0;a<3;a++)if(!(i&(1<<a)))edges.push([i,i|(1<<a)]);
 export function* surfaceNetSteps(data,chunk,getVoxel){
-  const origin=chunk.map(v=>v*32),cache=new Uint8Array(34**3),at=(x,y,z)=>(x+1)+34*((y+1)+34*(z+1));
+  const origin=chunk.map(v=>v*32),cache=new Uint16Array(34**3),at=(x,y,z)=>(x+1)+34*((y+1)+34*(z+1));
   for(let z=-1;z<=32;z++)for(let y=-1;y<=32;y++){for(let x=-1;x<=32;x++)cache[at(x,y,z)]=[x,y,z].every(v=>v>=0&&v<32)?data[voxelIndex(x,y,z)]:getVoxel(origin[0]+x,origin[1]+y,origin[2]+z);yield;}
   const positions=[],normals=[],uvs=[],indices=[],buckets=new Map();let solidVoxels=0;
   for(const m of data)if(m&&!isLiquidVoxel(m))solidVoxels++;

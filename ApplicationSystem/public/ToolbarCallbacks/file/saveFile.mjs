@@ -62,7 +62,7 @@ function pdfEditorPath() {
 export default async function saveFile(options = {}) {
   const requestedPath =
     typeof options === "string" ? options : options?.path;
-  const gox = window.activeCell?.querySelector?.("[data-nv-gox]")?.__nvGoxApi;
+  const gox = [...(window.activeCell?.querySelectorAll?.("[data-nv-gox]")||[])].find(node=>!node.closest('[hidden],[aria-hidden="true"]'))?.__nvGoxApi;
   if (gox) {
     if (typeof gox.save !== "function" || (requestedPath && !sameSavePath(requestedPath, gox.filePath))) return false;
     return gox.save();

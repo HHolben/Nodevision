@@ -18,5 +18,5 @@ export async function createVoxelMaterialPalette(THREE, options = {}) {
       materialFile: entry.materialFile, MatterState: entry.matterState };
     return material;
   });
-  return { entries, materials, dispose() { for (const material of materials) { material.map?.dispose(); material.dispose(); } } };
+  return { entries, materials, dispose() { for (const material of new Set(materials)) { material.map?.dispose(); material.dispose(); } } };
 }

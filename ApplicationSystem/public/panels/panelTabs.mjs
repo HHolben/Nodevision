@@ -333,7 +333,8 @@ function tabLooksDirty(tab, state = null) {
   return active && Boolean(window.__nvCodeEditorDirty || window.NodevisionState?.fileIsDirty);
 }
 
-function destroyTab(state, tab) {
+function destroyTab(state, tab, options = {}) {
+  if(!options.force&&tab.contentElement?.__nvBeforeClose?.()===false)return false;
   const index = state.tabs.indexOf(tab);
   destroyPanelContentLifecycle(tab.contentElement, { tab, cell: state.cell, reason: "tab-close" });
   tab.lifecycleState = "destroyed";
@@ -347,6 +348,7 @@ function destroyTab(state, tab) {
   }
   if (!state.tabs.length) emptyPanelTabs(state.cell);
   else renderPanelTabs(state.cell);
+  return true;
 }
 
 export function closePanelTab(cell, tabId, options = {}) {
@@ -355,11 +357,10 @@ export function closePanelTab(cell, tabId, options = {}) {
   if (!tab) return false;
   if (!options.force && tabLooksDirty(tab, state) && window.__nvGuardEditorSwitch) {
     if (tab.tabId !== state.activeTabId) activatePanelTab(cell, tab.tabId, { announce: false });
-    window.__nvGuardEditorSwitch(tab.resourcePath || "", () => destroyTab(state, tab));
+    window.__nvGuardEditorSwitch(tab.resourcePath || "", () => destroyTab(state, tab, options));
     return false;
   }
-  destroyTab(state, tab);
-  return true;
+  return destroyTab(state, tab, options);
 }
 
 export function emptyPanelTabs(cell) {

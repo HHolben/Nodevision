@@ -5,7 +5,7 @@ const SIZE=32,STRIDES=[1,1024,32],SCALE=.25;
 const liquid=new Uint8Array(256),water=new Uint8Array(256);
 for(let i=0;i<256;i++){liquid[i]=Number(isLiquidVoxel(i));water[i]=Number(isWaterVoxel(i));}
 export function meshGreedyVoxelChunk(data,chunk,getVoxel) {
-  const positions=[],uvs=[],normals=[],materials=[],indices=[],buckets=new Map(),mask=new Uint8Array(SIZE*SIZE);
+  const positions=[],uvs=[],normals=[],materials=[],indices=[],buckets=new Map(),mask=new Uint16Array(SIZE*SIZE);
   const origin=chunk.map(v=>v*SIZE);
   let solidVoxels=0,surfaceFaceCount=0;
   for(let i=0;i<data.length;i++)if(data[i]&&!liquid[data[i]])solidVoxels++;

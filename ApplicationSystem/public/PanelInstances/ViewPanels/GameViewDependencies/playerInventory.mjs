@@ -80,6 +80,7 @@ export function createPlayerInventory({ panel }) {
     selectedImageFile: "",
     activeInstruments: new Set([HOTBAR_INSTRUMENT_ID]),
     items: [
+      ...[['add','Add Block'],['brush','Voxel Brush'],['erase','Erase Voxels'],['paint','Paint Voxels'],['pick','Pick Voxel Material'],['revert','Revert to Persistent World']].map(([tool,label])=>({id:'session-voxel-'+tool,label:label+' (temporary; G: settings)',count:1,category:'tools',tool:true})),
       { id: "sound", label: "Sound", sprite: "/icons/SoundTool.svg", count: 1, category: "tools", tool: true },
       { id: "path", label: "Path (G: settings)", sprite: "/icons/PathTool.svg", count: 1, category: "tools", tool: true },
       { id: "3d-model", label: "3D Model (G: choose model)", count: 1, category: "tools", tool: true },
@@ -229,11 +230,12 @@ export function createPlayerInventory({ panel }) {
     return describeItem(getEquippedItem());
   }
 
+  let temporaryStatus="",constructionToolMode=false;const worldToolLabels=new Map();
   function renderStatus() {
     const objectInfo = state.selectedObjectFile ? `  |  Object: ${state.selectedObjectFile}` : "";
     const imageInfo = state.selectedImageFile ? `  |  Image: ${state.selectedImageFile}` : "";
     const handLabel = state.activeHand === "off" ? "Off hand" : (state.dominantSlot < 0 ? "Empty hand" : `Dominant ${state.dominantSlot + 1}`);
-    statusHud.textContent = `${handLabel}: ${getEquippedLabel()}${objectInfo}${imageInfo}`;
+    statusHud.textContent = `${handLabel}: ${getEquippedLabel()}${objectInfo}${imageInfo}${temporaryStatus}`;
   }
 
   function styleSlot(slot, selected, compact = false) {
@@ -1021,6 +1023,7 @@ export function createPlayerInventory({ panel }) {
   render();
 
   return {
+    setTemporaryVoxelStatus(count,settings,construction){const editing=!!construction;if(editing!==constructionToolMode){constructionToolMode=editing;for(const item of state.items){if(!item.id.startsWith('session-voxel-'))continue;if(!worldToolLabels.has(item.id))worldToolLabels.set(item.id,item.label);const label=worldToolLabels.get(item.id);item.label=editing?(item.id==='session-voxel-revert'?'Revert Construction':label.split(' (')[0])+' (construction; G: settings)':label;}render();}temporaryStatus=editing?` | Construction cells: ${construction.count} (Save Construction) | Ordinary temporary cells: ${count}`:'';temporaryStatus+=editing?` | ${settings.material.materialId} | ${settings.brush.shape} ${settings.brush.size}`:'';if(!editing)temporaryStatus=` | Temporary cells: ${count} (not saved) | ${settings.material.materialId} | ${settings.brush.shape} ${settings.brush.size}`;renderStatus();},
     addItem,
     assignItemToSlot,
     equipItemToActiveHand,

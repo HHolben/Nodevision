@@ -23,7 +23,7 @@ export function guardWorldMethods(api, state, names) {
   return api;
 }
 export function guardWorldLayerBridge(bridge, state) {
-  const readOnly = new Set(["getLayers", "getObjects", "listObjects", "getState", "getSnapshot", "getTerrainRepresentations", "getPathDefinition", "getTextDefinition", "syncTextParents", "setTextDisplayState", "updateTextVisibility"]);
+  const readOnly = new Set(["getTemporaryVoxelCount","getLayers", "getObjects", "listObjects", "getState", "getSnapshot", "getTerrainRepresentations", "getConstructionDefinition", "getScenePrimitives", "refreshPathTerrainSupport", "syncConstructions", "updateConstructionTransforms", "getPathDefinition", "getTextDefinition", "syncTextParents", "setTextDisplayState", "updateTextVisibility"]);
   return guardWorldMethods(bridge, state, Object.keys(bridge).filter(key => !readOnly.has(key)));
 }
 export function guardWorldControllers(context) {

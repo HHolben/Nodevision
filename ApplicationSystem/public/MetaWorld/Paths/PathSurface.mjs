@@ -8,10 +8,11 @@ function clip(points,axis,bound,greater){
   }return out;
 }
 export function pathSurface(ribbon,support,origin=[0,0,0]){
-  if(ribbon.def.terrainInteraction!=='excavate'||!support)return ribbon;
+  const excavating=ribbon.def.terrainInteraction==='excavate';
+  if(!support||(!excavating&&!support.suppresses))return ribbon;
   const vertices=[],triangles=[],cache=new Map();let work=0;
   const supported=(x,z)=>{const cx=Math.floor((x-origin[0])/.25),cz=Math.floor((z-origin[2])/.25),key=`${cx},${cz}`;
-    if(!cache.has(key))cache.set(key,support(origin[0]+(cx+.5)*.25,origin[2]+(cz+.5)*.25));return cache.get(key);};
+    if(!cache.has(key)){const hit=support(origin[0]+(cx+.5)*.25,origin[2]+(cz+.5)*.25);cache.set(key,excavating||hit?.suppressed?hit:null);}return cache.get(key);};
   for(const tri of ribbon.triangles){const points=tri.map(i=>ribbon.vertices[i]),zs=points.map(p=>p[2]);
     for(let z=Math.floor((Math.min(...zs)-origin[2])/.25);z<=Math.floor((Math.max(...zs)-origin[2])/.25);z++){
       const z0=origin[2]+z*.25,row=clip(clip(points,2,z0,true),2,z0+.25,false);if(row.length<3)continue;

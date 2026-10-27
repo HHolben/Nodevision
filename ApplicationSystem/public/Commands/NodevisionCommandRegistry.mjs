@@ -8,6 +8,15 @@ const handlers = new Map();
 
 const load = (path, exportName) => async () => (await import(path))[exportName];
 const BUILTIN_HANDLER_LOADERS = Object.freeze({
+  "construction.edit": load("../MetaWorld/ConstructionEditing/Command.mjs", "constructionEdit"),
+  "construction.edit-source": load("../MetaWorld/ConstructionEditing/Command.mjs", "constructionEditSource"),
+  "construction.make-unique": load("../MetaWorld/ConstructionEditing/Command.mjs", "constructionMakeUnique"),
+  "construction.save": load("../MetaWorld/ConstructionEditing/Command.mjs", "constructionSave"),
+  "construction.discard": load("../MetaWorld/ConstructionEditing/Command.mjs", "constructionDiscard"),
+  "construction.exit": load("../MetaWorld/ConstructionEditing/Command.mjs", "constructionExit"),
+  "construction.status": load("../MetaWorld/ConstructionEditing/Command.mjs", "constructionStatus"),
+  "construction.capture": load("../MetaWorld/ConstructionCapture/Tool.mjs", "constructionCaptureCommand"),
+  "voxel.session": load("../MetaWorld/SessionVoxels/Command.mjs", "sessionVoxelCommand"),
   "voxel.execute": load("../Voxels/GoxCommands.mjs", "executeVoxelCommand"),
   "terrain.representation": load("../MetaWorld/TerrainRepresentation/Command.mjs", "terrainRepresentationCommand"),
   "path.world": load("../MetaWorld/Paths/PathTool.mjs", "pathCommand"),

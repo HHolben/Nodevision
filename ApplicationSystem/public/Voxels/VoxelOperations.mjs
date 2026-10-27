@@ -1,5 +1,6 @@
 // Nodevision/ApplicationSystem/public/Voxels/VoxelOperations.mjs
 // Validated sparse editing, selection, layers and transaction history shared by GUI and terminal commands.
+import { extrudeVoxels } from './VoxelExtrusion.mjs';
 import { enclosedRegion } from './VoxelEmptyFill.mjs';
 import { editMaterial } from './GoxMaterials.mjs';
 import { key, point, position, rgba, chunkKey, newLayer, getVoxel, setVoxel, voxels } from './VoxelModel.mjs';
@@ -21,6 +22,7 @@ export class VoxelDocument {
   connected(start, sameColor=true) { position(start);const color=getVoxel(this.active,start),found=new Set();if(!color[3])return found;const queue=[start];found.add(key(start));for(let i=0;i<queue.length;i++){if(queue.length>262144)throw Error('Connected region exceeds operation limit');for(let axis=0;axis<3;axis++)for(const d of [-1,1]){const p=queue[i].slice();p[axis]+=d;const k=key(p),c=getVoxel(this.active,p);if(!found.has(k)&&c[3]&&(!sameColor||c.every((v,n)=>v===color[n]))){found.add(k);queue.push(p);}}}return found; }
   select(args={},visible=this.active?.visible) { if(!visible) throw Error("Choose a visible layer");const mode=args.mode||'replace';let found;if(args.kind==='connected')found=this.connected(args.at,args.sameColor!==false);else if(args.kind==='color')found=new Set([...voxels(this.active)].filter(v=>v.color.every((c,i)=>c===(args.color||getVoxel(this.active,args.at))[i])).map(v=>key(v.pos)));else if(args.kind==='all'||args.kind==='layer')found=new Set([...voxels(this.active)].map(v=>key(v.pos)));else if(args.to)found=new Set([...shapePoints('box',args.at,args.to)].filter(p=>getVoxel(this.active,p)[3]).map(key));else found=new Set(getVoxel(this.active,position(args.at))[3]?[key(args.at)]:[]);if(mode==='replace')this.selection.clear();for(const k of found){if(mode==='subtract'||(mode==='invert'&&this.selection.has(k)))this.selection.delete(k);else this.selection.add(k);}this.onChange(); }
   execute(action,args={}) {
+    if(action==='extrude')return extrudeVoxels(this,args);
     if(action==='undo'||action==='redo')return this.history(action==='redo');
     if(action==='cancel'){this.cancel();this.selection.clear();return this.onChange();}
     if(action==='select')return this.select(args);

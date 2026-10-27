@@ -23,10 +23,11 @@ export function installPathAuthoring(bridge,{THREE,scene,objects,colliders,layer
     return NaN;
   };
   const terrains=()=>objects.filter(o=>o.visible&&o.userData?.proceduralVoxelRuntime);
-  const supportFor=path=>{const candidates=terrains();return (x,z)=>{for(const o of candidates){const hit=o.userData.proceduralVoxelRuntime.generator.pathSupport(path,x,z);if(hit)return hit;}return null;};};
+  const supportFor=path=>{const candidates=terrains();return Object.assign((x,z)=>{for(const o of candidates){const hit=o.userData.proceduralVoxelRuntime.generator.pathSupport(path,x,z);if(hit)return hit;}return null;},{suppresses:candidates.some(o=>(o.userData.proceduralVoxelRuntime.generator.hasConstructions||o.userData.proceduralVoxelRuntime.generator.hasSession))});};
   const gridOrigin=()=>terrains()[0]?.position.toArray()||[0,0,0];
   bridge.pathTerrainHeight=terrainHeight;
   bridge.setPathClearancePreview=(id,value)=>{const runtime=layerEntries.find(e=>e.id===id)?.object3d?.userData?.pathRuntime;if(!runtime)throw Error('Select a path.');runtime.setClearancePreview(value);return true;};
+  bridge.refreshPathTerrainSupport=()=>{for(const entry of layerEntries){const r=entry.object3d?.userData?.pathRuntime;if(r?.ribbon)r.setTerrainSupport(supportFor(r.ribbon),gridOrigin());}};
   bridge.syncPaths=()=>{
     const paths=[],next=new Map();let bounds=null;
     const extend=b=>{if(!b)return;bounds=bounds?{minX:Math.min(bounds.minX,b.minX),maxX:Math.max(bounds.maxX,b.maxX),minZ:Math.min(bounds.minZ,b.minZ),maxZ:Math.max(bounds.maxZ,b.maxZ)}:{...b};};
@@ -44,7 +45,7 @@ export function installPathAuthoring(bridge,{THREE,scene,objects,colliders,layer
     for(const [id,old] of previous)if(!next.has(id))extend(old.bounds);
     previous=next;
     if(bounds){for(const o of objects)o.userData?.proceduralVoxelRuntime?.setPathConstraints(paths,bounds);
-      for(const entry of layerEntries){const r=entry.object3d?.userData?.pathRuntime;if(r?.ribbon)r.setTerrainSupport(supportFor(r.ribbon),gridOrigin());}
+      bridge.refreshPathTerrainSupport();
     }
   };
   bridge.getPathDefinition=id=>layerEntries.find(e=>e.id===id)?.object3d?.userData?.pathRuntime?.serialize();

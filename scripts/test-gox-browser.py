@@ -7,10 +7,9 @@ class Handler(http.server.SimpleHTTPRequestHandler):
  def log_message(self,*a):pass
  def do_GET(self):
   url=self.path.split('?')[0]
-  if url=='/':content='<pre id="result">RUNNING</pre><script type="module" src="/scripts/gox-browser.mjs"></script>';mime='text/html'
+  if url=='/':content='<div id="global-toolbar"></div><div id="sub-toolbar"></div><pre id="result">RUNNING</pre><script type="module" src="/scripts/gox-browser.mjs"></script>';mime='text/html'
   elif url.startswith('/scripts/'):content=(root/url.lstrip('/')).read_text();mime='text/javascript'
-  elif url=='/panels/createToolbar.mjs':content='export function updateToolbarState(patch){Object.assign(window.NodevisionState ||= {},patch);}';mime='text/javascript'
-  elif url=='/panels/workspace.mjs':content='export function ensureSvgEditingSplit(){return {};} export async function loadPanelIntoCell(){}';mime='text/javascript'
+  elif url=='/panels/workspace.mjs':content='export function createCell(){} export function ensureSvgEditingSplit(){return {};} export async function loadPanelIntoCell(){}';mime='text/javascript'
   elif url.startswith('/api/'):content='{}';mime='application/json'
   else:return super().do_GET()
   self.send_response(200);self.send_header('Content-Type',mime);self.end_headers();self.wfile.write(content.encode())

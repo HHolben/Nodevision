@@ -1,0 +1,9 @@
+// Reads exact byte revisions; the source update operation is distinct from new-region publication.
+import {validateConstruction,resolveReference} from '../Constructions/Definition.mjs';
+import {decodeGox} from '../../Voxels/GoxCodec.mjs';
+export const assetUrl=path=>'/Notebook/'+path.split('/').map(encodeURIComponent).join('/');
+export async function digest(bytes){return [...new Uint8Array(await crypto.subtle.digest('SHA-256',bytes))].map(n=>n.toString(16).padStart(2,'0')).join('');}
+export async function readBytes(path){const response=await fetch(assetUrl(path),{cache:'no-store'});if(!response.ok)throw Error('Could not read construction asset: '+path);return new Uint8Array(await response.arrayBuffer());}
+export async function readAssets(path){const definitionBytes=await readBytes(path),definition=validateConstruction(JSON.parse(new TextDecoder().decode(definitionBytes)));if(!definition.geometry)throw Error('Construction requires a linked GOX asset');const goxPath=resolveReference(path,definition.geometry.source),bytes=await readBytes(goxPath),model=await decodeGox(bytes);if(model.readOnly||model.layers.some(l=>!l.visible))throw Error('Read-only or hidden GOX layers cannot be edited in world context');return {definition,definitionPath:path,goxPath,bytes,definitionBytes,model,definitionHash:await digest(definitionBytes),goxHash:await digest(bytes)};}
+export async function verifyRevision(assets){const [d,g]=await Promise.all([readBytes(assets.definitionPath),readBytes(assets.goxPath)]);if(await digest(d)!==assets.definitionHash||await digest(g)!==assets.goxHash)throw Error('Source conflict: files changed externally. Reload source, Make Unique, or cancel and retain edits.');}
+export function base64(bytes){let result='';for(let i=0;i<bytes.length;i+=32768)result+=String.fromCharCode(...bytes.subarray(i,i+32768));return btoa(result);}

@@ -2,15 +2,6 @@
   {"ToolbarCategory":"View","heading":"Terrain Representation","script":"terrainRepresentationWidget.mjs","modes":["HTMLediting","Virtual World Editing"]},
   {
     "ToolbarCategory": "View",
-    "heading": "Voxel Interaction",
-    "script": "goxBuildToolbar.mjs",
-    "modes": [
-      "GOXediting",
-      "GOXviewing"
-    ]
-  },
-  {
-    "ToolbarCategory": "View",
     "heading": "Analysis Tools",
     "callbackKey": "AnalysisTools",
     "preventAutoSubToolbar": true,

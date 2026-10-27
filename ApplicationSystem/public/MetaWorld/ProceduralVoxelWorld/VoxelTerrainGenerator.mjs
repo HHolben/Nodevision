@@ -1,5 +1,6 @@
 // Nodevision/ApplicationSystem/public/MetaWorld/ProceduralVoxelWorld/VoxelTerrainGenerator.mjs
 // This module composes base terrain and bounded procedural features into a deterministic final voxel field shared by rendering, collision, and future overrides.
+import { composeConstructions } from '../Constructions/TerrainComposition.mjs';
 import { terrainChunkSteps } from './ProgressiveTerrain.mjs';
 import { geographicVegetation } from '../Geographic/Vegetation.mjs';
 import { excludesProtectedFeature } from '../Aegean/ProtectedRegions.mjs';
@@ -46,7 +47,7 @@ export function createVoxelGenerator(source) {
     featureStats.samplingMs+=performance.now()-sampleStart;
     return data;
   }
-  return { ...base,generateChunkSteps:(...cell)=>terrainChunkSteps(base,features,...cell),getChunkLevelsSteps:(x,z)=>levels.steps(x,z),cacheStats:()=>({...base.cacheStats?.(),...features.cacheStats(),levels:levels.cacheSize()}),getChunkLevels:(x,z)=>levels(x,z),features,featureStats,getFeatureVoxel,getVoxel,generateChunk,
+  return composeConstructions({ ...base,generateChunkSteps:(...cell)=>terrainChunkSteps(base,features,...cell),getChunkLevelsSteps:(x,z)=>levels.steps(x,z),cacheStats:()=>({...base.cacheStats?.(),...features.cacheStats(),levels:levels.cacheSize()}),getChunkLevels:(x,z)=>levels(x,z),features,featureStats,getFeatureVoxel,getVoxel,generateChunk,
     get season(){return def.environment?.season;},
     setSeason(season){
       if(def.environment?.id!=='aegean'||def.environment.season===season)return false;
@@ -56,5 +57,5 @@ export function createVoxelGenerator(source) {
     pathFeatureReach:provider.reach*2,
     setPathConstraints(paths){base.setPathConstraints(paths);features.clear();levels=createChunkLevelQuery(base,features);},
     maxSolidHeight:Math.min(base.dimensions[1],base.maxSolidHeight+provider.maxHeight),
-    getVoxelMaterialId:(x,y,z)=>voxelMaterialId(getVoxel(x,y,z)) };
+    getVoxelMaterialId:(x,y,z)=>voxelMaterialId(getVoxel(x,y,z)) },def);
 }

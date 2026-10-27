@@ -11,7 +11,15 @@
   },
   {
     "ToolbarCategory": "Insert",
-    "heading": "Voxel Building Tools",
+    "parentHeading": "Insert",
+    "heading": "Block",
+    "preventDropdown": true,
+    "modes": ["GOXediting", "GOXviewing"]
+  },
+  {
+    "ToolbarCategory": "Insert",
+    "parentHeading": "Block",
+    "heading": "Block Controls",
     "script": "goxBuildToolbar.mjs",
     "modes": [
       "GOXediting",
@@ -675,6 +683,13 @@
     "modes": [
       "SCADediting"
     ]
+  },
+  {
+    "ToolbarCategory": "Insert",
+    "parentHeading": "Insert",
+    "heading": "Construction",
+    "callbackKey": "insertConstruction",
+    "modes": ["Virtual World Editing", "VR World Editing"]
   },
   {
     "ToolbarCategory": "Insert",

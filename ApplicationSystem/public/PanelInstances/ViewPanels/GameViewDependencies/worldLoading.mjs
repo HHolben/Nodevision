@@ -1,6 +1,11 @@
+import {installConstructionEditing} from '../../../MetaWorld/ConstructionEditing/Session.mjs';
 // Nodevision/ApplicationSystem/public/PanelInstances/ViewPanels/GameViewDependencies/worldLoading.mjs
 // This file loads a world definition from the server and builds its scene objects. The loader registers live MetaWorld layer data for side panels.
 
+import {installSessionAuthoring} from '../../../MetaWorld/SessionVoxels/Authoring.mjs';
+import {worldSession,confirmWorldSessionReplacement} from '../../../MetaWorld/SessionVoxels/WorldSession.mjs';
+import {createConstruction} from '../../../MetaWorld/Constructions/ConstructionRuntime.mjs';
+import {installConstructionAuthoring} from '../../../MetaWorld/Constructions/Authoring.mjs';
 import { createModelWorldObject, installModelWorldCommand } from "/Models/ModelWorldAsset.mjs";
 import { createDownloadedImagePlane, installDownloadedImageCommand } from "/MetaWorld/DownloadedImagePlane.mjs";
 import { createTextObject } from '../../../MetaWorld/Text/TextRuntime.mjs';
@@ -1180,9 +1185,9 @@ export function registerMetaWorldLayerBridge({ state, filePath, worldData, layer
   }
 
   const sourceId = "legacy-metaworld:" + (filePath || "active");
-  const history = { undoStack: [], redoStack: [], isRestoring: false, limit: 80 };
+  const history = worldSession(filePath).history;
   const readBridgeExpressionOptions = () => getExpressionLayerOptions(camera || window.VRWorldContext?.camera);
-  const managedObject = def => ['gox-model','model-asset'].includes(def?.type) || def?.type === 'image-plane' || def?.type === 'terrain-surface' || PRIMITIVE_WORLD_OBJECT_TYPES.has(def?.type) || def?.type === "world-text" || def?.type === "physical-path" || def?.type === "procedural-voxel-world" || def?.type === "iframe" || def?.equationCollider?.infinite === true;
+  const managedObject = def => def?.type === 'construction' || ['gox-model','model-asset'].includes(def?.type) || def?.type === 'image-plane' || def?.type === 'terrain-surface' || PRIMITIVE_WORLD_OBJECT_TYPES.has(def?.type) || def?.type === "world-text" || def?.type === "physical-path" || def?.type === "procedural-voxel-world" || def?.type === "iframe" || def?.equationCollider?.infinite === true;
   const snapshotWorldObjects = () => {
     const meshes = new Map(layerEntries.map(entry => [entry.def, entry.object3d]));
     return JSON.stringify((worldData.objects || []).map(def => {
@@ -1192,13 +1197,14 @@ export function registerMetaWorldLayerBridge({ state, filePath, worldData, layer
   };
   const recordHistorySnapshot = () => {
     if (history.isRestoring) return;
+    window.VRWorldContext?.sessionVoxels?.finish();
     history.undoStack.push(snapshotWorldObjects());
     if (history.undoStack.length > history.limit) history.undoStack.shift();
     history.redoStack.length = 0;
   };
   const attachLayerBreakHandler = (entry) => {
     if (!entry?.object3d) return;
-    if (['physical-path','world-text','gox-model','model-asset'].includes(entry.def?.type)) { entry.object3d.userData.onBreakTarget = () => bridge.removeObjectLayer(entry.id); return; }
+    if (['construction','physical-path','world-text','gox-model','model-asset'].includes(entry.def?.type)) { entry.object3d.userData.onBreakTarget = () => bridge.removeObjectLayer(entry.id); return; }
     if (isExpressionLayerType(entry.def?.type)) {
       entry.object3d.userData.breakable = entry.def?.locked !== true;
       entry.object3d.userData.placedByPlayer = true;
@@ -1222,6 +1228,7 @@ export function registerMetaWorldLayerBridge({ state, filePath, worldData, layer
     for (const child of [...(object3d?.children || [])]) if (child.userData?.textRuntime) scene.add(child);
     object3d?.userData?.modelRuntime?.dispose();
     object3d?.userData?.textRuntime?.dispose();
+    object3d?.userData?.constructionRuntime?.dispose();
     object3d?.userData?.pathRuntime?.dispose();
     object3d?.userData?.terrainRuntime?.dispose();
     object3d?.userData?.proceduralVoxelRuntime?.dispose();
@@ -1313,6 +1320,7 @@ export function registerMetaWorldLayerBridge({ state, filePath, worldData, layer
           : ['gox-model','model-asset'].includes(def.type) ? createModelWorldObject(def)
           : def.type === 'image-plane' ? createDownloadedImagePlane(THREE, def)
           : def.type === 'world-text' ? createTextObject(THREE, def)
+          : def.type === 'construction' ? createConstruction(THREE,def,filePath,colliders)
           : def.type === 'physical-path' ? createPathObject(THREE, def, colliders)
           : def.type === "terrain-surface" ? terrainGridFromDefinition(THREE,def)
           : def.type === "procedural-voxel-world" ? createProceduralVoxelWorld(THREE, def, colliders)
@@ -1357,6 +1365,8 @@ export function registerMetaWorldLayerBridge({ state, filePath, worldData, layer
   const bridge = {
     sourceId,
     recordHistory: recordHistorySnapshot,
+    recordSessionTransaction(transaction){history.undoStack.push(transaction);if(history.undoStack.length>history.limit)history.undoStack.shift();history.redoStack.length=0;},
+    commitCapture(install,promotion,source){bridge.sessionVoxels.finish();const before=snapshotWorldObjects();try{install();promotion.redo();bridge.sessionVoxels.flush();const after=snapshotWorldObjects();history.undoStack.push({kind:'capture',before,after,promotion});if(history.undoStack.length>history.limit)history.undoStack.shift();history.redoStack.length=0;return source;}catch(error){promotion.undo();restoreWorldObjectsSnapshot(before);bridge.syncConstructions();throw error;}},
     recordObjectTransform(mesh) {
       const entry = layerEntries.find(item => item.object3d === mesh);
       if (!entry || !managedObject(entry.def)) return;
@@ -1364,8 +1374,11 @@ export function registerMetaWorldLayerBridge({ state, filePath, worldData, layer
       markMetaWorldLayersDirty(worldData);
     },
     undo() {
+      bridge.sessionVoxels?.finish();
       if (!history.undoStack.length) return false;
       const previous = history.undoStack.pop();
+      if(previous?.kind==='capture'){previous.promotion.undo();restoreWorldObjectsSnapshot(previous.before);history.redoStack.push(previous);return true;}
+      if(previous?.kind==='session'){previous.undo();history.redoStack.push(previous);return true;}
       history.redoStack.push(snapshotWorldObjects());
       history.isRestoring = true;
       const restored = restoreWorldObjectsSnapshot(previous);
@@ -1375,6 +1388,8 @@ export function registerMetaWorldLayerBridge({ state, filePath, worldData, layer
     redo() {
       if (!history.redoStack.length) return false;
       const next = history.redoStack.pop();
+      if(next?.kind==='capture'){restoreWorldObjectsSnapshot(next.after);next.promotion.redo();history.undoStack.push(next);return true;}
+      if(next?.kind==='session'){next.redo();history.undoStack.push(next);return true;}
       history.undoStack.push(snapshotWorldObjects());
       history.isRestoring = true;
       const restored = restoreWorldObjectsSnapshot(next);
@@ -1907,6 +1922,9 @@ export function registerMetaWorldLayerBridge({ state, filePath, worldData, layer
   installPathAuthoring(bridge, { THREE, scene, objects, colliders, layerEntries, worldData, select:selectMetaWorldObject,
     changed(objectId) { markMetaWorldLayersDirty(worldData); syncBridgeWorldState(state,worldData); notifyMetaWorldLayersChanged({reason:'pathUpdated',objectId}); }
   });
+  installConstructionAuthoring(bridge,{THREE,scene,objects,colliders,layerEntries,worldData,filePath,select:selectMetaWorldObject,changed(objectId){markMetaWorldLayersDirty(worldData);syncBridgeWorldState(state,worldData);notifyMetaWorldLayersChanged({reason:'constructionUpdated',objectId});}});
+  installSessionAuthoring(bridge,{objects,filePath});
+  installConstructionEditing(bridge,filePath);
   installSoundAuthoring(bridge, {layerEntries,
     attach:(mesh,sound)=>attachSoundObjectRuntime(mesh,sound,filePath),dispose:disposeSoundObjectRuntime,
     changed(objectId){markMetaWorldLayersDirty(worldData);syncBridgeWorldState(state,worldData);notifyMetaWorldLayersChanged({reason:'soundPropertyUpdated',objectId});}
@@ -1914,7 +1932,7 @@ export function registerMetaWorldLayerBridge({ state, filePath, worldData, layer
   installTextAuthoring(bridge, { THREE, scene, objects, layerEntries, worldData, select:selectMetaWorldObject,
     changed(objectId) { markMetaWorldLayersDirty(worldData); syncBridgeWorldState(state,worldData); notifyMetaWorldLayersChanged({reason:'textUpdated',objectId}); }
   });
-  if (window.VRWorldContext) window.VRWorldContext.updatePathTransforms = () => { bridge.updatePathTransforms(); bridge.updateTextVisibility(); };
+  if (window.VRWorldContext) window.VRWorldContext.updatePathTransforms = () => { bridge.updatePathTransforms(); bridge.updateConstructionTransforms(); bridge.updateTextVisibility(); bridge.sessionVoxels.flush(); };
   if (window.VRWorldContext) window.VRWorldContext.recordObjectTransform = mesh => bridge.recordObjectTransform(mesh);
   layerEntries.forEach(attachLayerBreakHandler);
   installModelWorldCommand({ bridge, scene, objects, layerEntries, changed: objectId => {
@@ -2276,6 +2294,7 @@ function resetLegacyWorldScene(ctx, state, worldData = null) {
   objects?.forEach((obj) => {
     obj?.userData?.modelRuntime?.dispose();
     obj?.userData?.textRuntime?.dispose();
+    obj?.userData?.constructionRuntime?.dispose();
     obj?.userData?.pathRuntime?.dispose();
     obj?.userData?.terrainRuntime?.dispose();
     obj?.userData?.proceduralVoxelRuntime?.dispose();
@@ -2407,6 +2426,7 @@ async function loadStlWorld(filePath, state, THREE) {
   objects?.forEach((obj) => {
     obj?.userData?.modelRuntime?.dispose();
     obj?.userData?.textRuntime?.dispose();
+    obj?.userData?.constructionRuntime?.dispose();
     obj?.userData?.pathRuntime?.dispose();
     obj?.userData?.terrainRuntime?.dispose();
     obj?.userData?.proceduralVoxelRuntime?.dispose();
@@ -2509,6 +2529,8 @@ export async function loadWorldFromFile(filePath, state, THREE, options = {}) {
 
   try {
     if (!filePath) return;
+    if(!confirmWorldSessionReplacement(filePath))return false;
+    window.VRWorldContext?.cancelConstructionCapture?.();window.VRWorldContext?.captureCommandAbort?.abort();
     const ext = String(filePath).split(".").pop()?.toLowerCase() || "";
     state.currentWorldPath = filePath;
     const ctx = window.VRWorldContext;
@@ -2687,6 +2709,7 @@ export async function loadWorldFromFile(filePath, state, THREE, options = {}) {
     objects.forEach((obj) => {
       obj?.userData?.modelRuntime?.dispose();
       obj?.userData?.textRuntime?.dispose();
+      obj?.userData?.constructionRuntime?.dispose();
       obj?.userData?.pathRuntime?.dispose();
       obj?.userData?.terrainRuntime?.dispose();
       obj?.userData?.proceduralVoxelRuntime?.dispose();
@@ -3331,6 +3354,8 @@ export async function loadWorldFromFile(filePath, state, THREE, options = {}) {
         }
       } else if (def.type === 'world-text') {
         mesh = createTextObject(THREE, def);
+      } else if (def.type === 'construction') {
+        mesh = createConstruction(THREE,def,filePath,colliders);
       } else if (def.type === 'physical-path') {
         mesh = createPathObject(THREE, def, colliders);
       } else if (def.type === "procedural-voxel-world") {

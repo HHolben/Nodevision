@@ -53,6 +53,7 @@ export async function renderFile(filename, viewPanel, serverBase, options = {}) 
       moduleAlreadyLoaded
     });
 
+    if(options.isCurrent&&!options.isCurrent())return false;
     // Let viewer specify if it wants an iframe
     const wantsIframe = viewer.wantsIframe === true;
     if (wantsIframe) {
@@ -107,6 +108,7 @@ export async function renderFile(filename, viewPanel, serverBase, options = {}) 
     });
     return true;
   } catch (err) {
+    if(options.isCurrent&&!options.isCurrent())return false;
     console.error(`❌ renderFile failed for ${filename}:`, err);
     viewPanel.innerHTML = "<em>Error loading viewer for " + filename + ": " + err.message + "</em>";
     perf.end({

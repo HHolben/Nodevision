@@ -1,5 +1,6 @@
 // Nodevision/ApplicationSystem/public/Voxels/VoxelBuildOverlay.mjs
 // Disposable batched voxel previews and construction guides independent of committed chunk geometry.
+import { themeGrid } from './GoxTheme.mjs';
 import * as THREE from '/lib/three/three.module.js';
 export class VoxelBuildOverlay{
  constructor(viewport){this.viewport=viewport;this.root=new THREE.Group();viewport.scene.add(this.root);this.geometry=new THREE.BoxGeometry(1,1,1);this.material=new THREE.MeshBasicMaterial({color:0xffffff,transparent:true,opacity:0.35,depthWrite:false});this.guides=new THREE.Group();this.root.add(this.guides);}
@@ -8,6 +9,7 @@ export class VoxelBuildOverlay{
  settings(s,symmetry=[]){this.guides.traverse(o=>{o.geometry?.dispose();o.material?.dispose();});this.guides.clear();const axis={xy:2,xz:1,yz:0}[s.plane],grid=this.viewport.grid;grid.rotation.set(0,0,0);if(axis===2)grid.rotation.x=Math.PI/2;if(axis===0)grid.rotation.z=Math.PI/2;grid.position.set(0,0,0);grid.position.setComponent(axis,s.height*this.viewport.voxels.root.scale.x);grid.scale.copy(this.viewport.voxels.root.scale);grid.visible=s.gridVisible;
  const major=new THREE.GridHelper(Math.ceil(64/s.gridInterval)*s.gridInterval,Math.ceil(64/s.gridInterval),0xcccccc,0x777777);major.rotation.copy(grid.rotation);major.position.setComponent(axis,s.height);major.visible=s.gridVisible;this.guides.add(major);
  for(const name of symmetry){const i='xyz'.indexOf(name),plane=new THREE.Mesh(new THREE.PlaneGeometry(64,64),new THREE.MeshBasicMaterial({color:[0xff6666,0x66ff66,0x6666ff][i],transparent:true,opacity:0.08,side:THREE.DoubleSide,depthWrite:false}));if(i===0)plane.rotation.y=Math.PI/2;if(i===1)plane.rotation.x=Math.PI/2;plane.position.fromArray(s.symmetryOrigin);this.guides.add(plane);}
- if(s.bounds){const box=new THREE.Box3().setFromObject(this.viewport.voxels.root);if(!box.isEmpty()){box.min.divide(this.viewport.voxels.root.scale);box.max.divide(this.viewport.voxels.root.scale);this.guides.add(new THREE.Box3Helper(box,0xaaaaaa));}}this.sync();}
+ if(s.bounds){const box=new THREE.Box3().setFromObject(this.viewport.voxels.root);if(!box.isEmpty()){box.min.divide(this.viewport.voxels.root.scale);box.max.divide(this.viewport.voxels.root.scale);this.guides.add(new THREE.Box3Helper(box,0xaaaaaa));}}this.applyTheme();this.sync();}
+ applyTheme(){const t=this.viewport.theme;if(!t)return;this.guides.traverse(o=>{if(o.type==='GridHelper')themeGrid(o,new THREE.Color(t.gridCenter),new THREE.Color(t.major));else if(o.type==='Box3Helper')o.material.color.set(t.bounds);});this.sync();}
  dispose(){this.preview([]);this.guides.traverse(o=>{o.geometry?.dispose();o.material?.dispose();});this.geometry.dispose();this.material.dispose();this.root.removeFromParent();}
 }

@@ -402,6 +402,7 @@ function moveMetaWorldLayer(objectId, direction) {
 
 function renameMetaWorldLayer(objectId, nextName) {
   const bridge = getActiveMetaWorldLayerBridge();
+  if (bridge?.getConstructionDefinition?.(objectId)) return bridge.updateConstruction(objectId,{name:String(nextName || '').trim() || 'Construction'});
   if (bridge?.getPathDefinition?.(objectId)) return bridge.updatePath(objectId,{name:String(nextName || '').trim() || 'Path'});
   if (typeof bridge?.updateExpressionLayer === "function") {
     const entry = listMetaWorldLayerObjects().find((candidate) => candidate.id === objectId);

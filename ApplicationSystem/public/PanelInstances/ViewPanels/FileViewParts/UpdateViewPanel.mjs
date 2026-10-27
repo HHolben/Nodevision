@@ -1,6 +1,7 @@
 // Nodevision/ApplicationSystem/public/PanelInstances/ViewPanels/FileViewParts/UpdateViewPanel.mjs
 // This module implements update View Panel behavior for the FileView feature. Its dependencies and instance state are supplied explicitly so other editor instances remain independent.
 
+import { refreshSavedFileView } from "./RefreshSavedFileViews.mjs";
 import { cancelScheduledSelectedFileViewRender, FileViewModuleState, syncFileViewTabReference, navigationState } from "./CancelScheduledSelectedFileViewRender.mjs";
 import { getViewPanelElement, setFileViewStatus, resolveExtension } from "./GetViewPanelElement.mjs";
 import { createNotebookReference, referenceToApiPath, createDirectoryReference, resolveDirectoryIndexReference, createFileReference } from "/NodevisionReference.mjs";
@@ -18,16 +19,14 @@ import { tryScrollToPendingFileViewAnchor } from "./RevealLinkedPathInOriginNavi
 // Update View Panel operations.
 export async function updateViewPanel(element, {
   force = false,
+  refreshOnly = false,
   selectionReference = null,
   viewPanel: requestedViewPanel = null
 } = {}) {
-  cancelScheduledSelectedFileViewRender();
   const viewPanel = requestedViewPanel || getViewPanelElement();
-  if (!viewPanel) {
-    console.error("View panel element not found.");
-    setFileViewStatus("File Viewer", "Render failed: panel not found");
-    return false;
-  }
+  if (!viewPanel?.isConnected || viewPanel.dataset.nvFileViewDestroyed === 'true') return false;
+  if (refreshOnly) return refreshSavedFileView(viewPanel, element);
+  cancelScheduledSelectedFileViewRender();
   const requestedReference = selectionReference ? createNotebookReference(selectionReference) : null;
   let renderReference = requestedReference?.kind === "file" ? requestedReference : null;
   let filename = referenceToApiPath(requestedReference) || getActiveFilePath(element);

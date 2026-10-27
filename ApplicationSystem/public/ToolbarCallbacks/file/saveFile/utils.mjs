@@ -109,14 +109,14 @@ export function getFileExtension(pathValue = "") {
 }
 
 export function notifyFileSaved(path) {
-  recordEditedFile(path);
+  try { recordEditedFile(path); } catch (error) { console.warn("[saveFile] File saved, but recent-files update failed:", error); }
   if (!path || typeof window === "undefined" || typeof window.dispatchEvent !== "function") return false;
 
-  window.dispatchEvent(
+  try { window.dispatchEvent(
     new CustomEvent("nodevision-file-saved", {
       detail: { filePath: path },
     }),
-  );
+  ); } catch (error) { console.warn("[saveFile] File saved, but completion notification failed:", error); }
   return true;
 }
 

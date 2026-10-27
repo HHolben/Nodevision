@@ -47,7 +47,7 @@ export function createPathObject(THREE, source, colliders, terrainHeight) {
     geometry.setAttribute('uv',new THREE.Float32BufferAttribute(surface.vertices.flatMap(p=>[p[0],p[2]]),2));
     geometry.setIndex(surface.triangles.flatMap(([a,b,c])=>[a,c,b]));geometry.computeVertexNormals();geometry.computeBoundingSphere();geometry.computeBoundingBox();
   }
-  mesh.raycast=(ray,hits)=>{if(disposed||!mesh.visible)return;mesh.updateWorldMatrix(true,false);proxy.matrixWorld.copy(mesh.matrixWorld);proxy.material=mesh.material;const picked=[];proxy.raycast(ray,picked);for(const hit of picked)hits.push({...hit,object:mesh});};
+  mesh.raycast=(ray,hits)=>{if(disposed||!mesh.visible)return;mesh.updateWorldMatrix(true,false);proxy.matrixWorld.copy(mesh.matrixWorld);proxy.material=mesh.material;const picked=[];proxy.raycast(ray,picked);for(const hit of picked)if(!support?.(hit.point.x,hit.point.z)?.suppressed)hits.push({...hit,object:mesh});};
   const materialId=def.terrainInteraction==='excavate'?pathMaterialId(def.surfaceMaterial):({dirt:'soil',paved:'stone'})[def.surfaceMaterial]||def.surfaceMaterial;
   const collider={type:'expression-heightfield',target:mesh,layerId:def.id,materialId,physicsMaterialId:materialId,
     sampleGroundY(x,z){return !disposed&&mesh.visible&&def.collision ? surface?.heightAt(x,z)+(def.terrainInteraction==='excavate'?0:.025) : NaN;}};

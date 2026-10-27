@@ -39,6 +39,7 @@ async function ensureMetaWorldLayersPanelVisible(panel) {
 function cleanupLegacyGameView(panel, state = {}) {
   try { if (window.VRWorldContext?.panel === panel) state.beforeWorldDispose?.(window.VRWorldContext); }
   catch (error) { console.warn("World draft capture failed during cleanup:", error); }
+  if(window.VRWorldContext?.panel===panel){window.VRWorldContext.cancelConstructionCapture?.();window.VRWorldContext.captureCommandAbort?.abort();window.VRWorldContext.stopSessionVoxelTools?.();window.VRWorldContext.sessionVoxels?.detach();}
   panel._vrPause?.dispose();
   panel._vrPause = null;
   if (typeof panel._vrDisposeInputHandlers === "function") {
@@ -115,6 +116,7 @@ function cleanupLegacyGameView(panel, state = {}) {
     window.VRWorldContext.cancelPathDrawing?.();
     window.VRWorldContext.objects.forEach((object) => {
       try {
+        object?.userData?.constructionRuntime?.dispose();
         object?.userData?.pathRuntime?.dispose();
         object?.userData?.proceduralVoxelRuntime?.dispose();
         object?.userData?.soundRuntime?.audio?.pause?.();

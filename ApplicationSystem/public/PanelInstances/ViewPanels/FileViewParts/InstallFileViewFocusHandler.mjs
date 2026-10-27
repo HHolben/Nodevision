@@ -1,6 +1,7 @@
 // Nodevision/ApplicationSystem/public/PanelInstances/ViewPanels/FileViewParts/InstallFileViewFocusHandler.mjs
 // This module implements install File View Focus Handler behavior for the FileView feature. Its dependencies and instance state are supplied explicitly so other editor instances remain independent.
 
+import { refreshViewsForSavedPath, resumeSavedFileViewRefreshes } from "./RefreshSavedFileViews.mjs";
 import { fileViewRootFromTarget, activateFileViewHost } from "./ActivateFileViewPanel.mjs";
 import { normalizeResolvedNotebookPath } from "./RetainFileViewSelectionFollower.mjs";
 import { FileViewModuleState } from "./CancelScheduledSelectedFileViewRender.mjs";
@@ -47,25 +48,13 @@ export function handleLiveFileContentChanged(event) {
 }
 
 export function handleFileSavedForView(event) {
-  try {
-    const savedPath = event?.detail?.filePath;
-    if (!savedPath) return;
-    if (savedPath === FileViewModuleState.lastRenderedPath) {
-      console.log("📡 FileViewer live-refresh for:", savedPath);
-      updateViewPanel(savedPath, {
-        force: true
-      }).catch(err => {
-        console.error("❌ Live-refresh updateViewPanel failed:", err);
-      });
-    }
-  } catch (err) {
-    console.error("❌ Live-refresh handler error:", err);
-  }
+  return refreshViewsForSavedPath(event?.detail?.filePath).catch(error=>console.error('[FileView] Post-save refresh scheduling failed:',error));
 }
 
 export function installFileViewLiveRefresh() {
   if (window.__nvFileViewLiveRefreshInstalled) return;
   window.addEventListener("nodevision-file-saved", handleFileSavedForView);
+  window.addEventListener("activePanelChanged", resumeSavedFileViewRefreshes);
   window.addEventListener("nodevision-live-file-content-changed", handleLiveFileContentChanged);
   window.__nvFileViewLiveRefreshInstalled = true;
 }

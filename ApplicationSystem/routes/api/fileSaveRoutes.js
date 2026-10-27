@@ -13,7 +13,7 @@ import {
   loadNotebookBackupSettings,
   saveNotebookBackupSettings,
 } from "./fileSaveRoutes/notebookBackups.js";
-import { writePayloadToFile } from "./fileSaveRoutes/writePayload.js";
+import { guardedWrite } from "./fileSaveRoutes/conditionalWrite.mjs";
 import { validateSvgSavePayload } from "./fileSaveRoutes/svgSaveGuard.js";
 import { validateSaveSourcePath } from "./fileSaveRoutes/saveSourceGuard.js";
 import { validateHtmlWysiwygSavePayload } from "./fileSaveRoutes/htmlWysiwygSaveGuard.js";
@@ -99,7 +99,7 @@ export default function createFileSaveRouter(ctx = BASE_CONTEXT) {
         filePath,
         relativePath,
       });
-      await writePayloadToFile({ filePath, content, encoding, mimeType, bom, logPath: relativePath });
+      await guardedWrite({ filePath, content, encoding, mimeType, bom, logPath: relativePath }, req.body.expectedSha256);
 
       res.json({
         success: true,
@@ -109,6 +109,7 @@ export default function createFileSaveRouter(ctx = BASE_CONTEXT) {
         backupPath: backup.backupRelativePath || null,
       });
     } catch (err) {
+      if (err?.code === "REVISION_CONFLICT") return res.status(409).json({error:err.message,code:err.code});
       if (err?.code === "UNSUPPORTED_ENCODING") {
         return res.status(400).json({ error: err.message });
       }

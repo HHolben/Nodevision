@@ -6,6 +6,7 @@ import { ViewportOrientationWidget } from '/Widgets/ViewportOrientationWidget.mj
 import { VoxelScene } from './VoxelScene.mjs';
 import { brushPoints } from './VoxelBrush.mjs';
 import { VoxelBuildOverlay } from './VoxelBuildOverlay.mjs';
+import { installViewportTheme } from './GoxTheme.mjs';
 import { point } from './VoxelModel.mjs';
 export class VoxelViewport {
   constructor(host){
@@ -19,6 +20,7 @@ export class VoxelViewport {
     this.selection=new THREE.Points(new THREE.BufferGeometry(),new THREE.PointsMaterial({color:0x00ffff,size:5,sizeAttenuation:false,depthTest:false}));this.selection.renderOrder=10;this.scene.add(this.selection);
     this.widget=new ViewportOrientationWidget({container:host,THREE,camera:this.camera,controls:this.controls,viewAdapter:{getCamera:()=>this.camera,getControls:()=>this.controls,requestRender:()=>{this.render();return true;}}});this.widget.mount();
     this.buildOverlay=new VoxelBuildOverlay(this);this.workplane={plane:'xz',height:0};
+    this.releaseTheme=installViewportTheme(this,THREE);
     this.resize=new ResizeObserver(()=>this.measure());this.resize.observe(host);this.measure();
   }
   measure(){const w=Math.max(1,this.host.clientWidth),h=Math.max(1,this.host.clientHeight);this.renderer.setSize(w,h);if(this.camera.isPerspectiveCamera)this.camera.aspect=w/h;else{this.camera.left=-this.span*w/h;this.camera.right=this.span*w/h;this.camera.top=this.span;this.camera.bottom=-this.span;}this.camera.updateProjectionMatrix();this.render();}
@@ -30,5 +32,5 @@ export class VoxelViewport {
   hit(event,add=false){const r=this.renderer.domElement.getBoundingClientRect(),ray=new THREE.Raycaster();ray.setFromCamera(new THREE.Vector2((event.clientX-r.left)/r.width*2-1,-(event.clientY-r.top)/r.height*2+1),this.camera);const hits=ray.intersectObject(this.voxels.root,true).filter(h=>h.object.parent?.parent?.visible);if(hits.length){const hit=hits[0],p=hit.object.worldToLocal(hit.point.clone()).addScaledVector(hit.face.normal,add?0.001:-0.001);return{at:p.toArray().map(Math.floor),layer:hit.object.userData.layerIndex};}const axis={xy:2,xz:1,yz:0}[this.workplane.plane],normal=new THREE.Vector3().setComponent(axis,1),p=ray.ray.intersectPlane(new THREE.Plane(normal,-this.workplane.height*this.voxels.root.scale.x),new THREE.Vector3());if(p)this.voxels.root.worldToLocal(p);if(!p)return null;const at=p.toArray().map(Math.floor);at[axis]=this.workplane.height;return{at};}
 
   cursor(at,brush){this.preview.scale.copy(this.voxels.root.scale);this.preview.visible=!!at;if(at){const points=brushPoints(at,brush);this.preview.box.makeEmpty();for(const p of points){this.preview.box.expandByPoint(new THREE.Vector3(...p));this.preview.box.expandByPoint(new THREE.Vector3(...p.map(v=>v+1)));}}this.render();}
-  dispose(){this.closed=true;this.buildOverlay.dispose();cancelAnimationFrame(this.frame);this.resize.disconnect();this.widget.destroy();this.controls.dispose();this.voxels.dispose();this.scene.traverse(o=>{o.geometry?.dispose();if(o.material&&!this.voxels.materials.includes(o.material))o.material.dispose?.();});this.renderer.dispose();this.renderer.domElement.remove();}
+  dispose(){this.closed=true;this.releaseTheme();this.buildOverlay.dispose();cancelAnimationFrame(this.frame);this.resize.disconnect();this.widget.destroy();this.controls.dispose();this.voxels.dispose();this.scene.traverse(o=>{o.geometry?.dispose();if(o.material&&!this.voxels.materials.includes(o.material))o.material.dispose?.();});this.renderer.dispose();this.renderer.domElement.remove();}
 }

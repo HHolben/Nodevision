@@ -47,6 +47,8 @@ export async function setupPanel(panel, instanceVars = {}) {
     cleanupViewIframeActivation(viewDiv);
   };
   const cleanupFileViewPanel = () => {
+    viewDiv.dataset.nvFileViewDestroyed = "true";
+    delete viewDiv.dataset.nvFileViewPendingSavedPath;
     quietFileViewPanel();
     viewDiv._dispose?.();
     viewDiv._dispose = null;

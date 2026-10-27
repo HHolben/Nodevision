@@ -1,4 +1,8 @@
 [
+  {"ToolbarCategory":"Edit","parentHeading":"Edit","heading":"Edit Construction","callbackKey":"editConstruction","modes":["VirtualWorldEditing","VRWorldEditing"]},
+  {"ToolbarCategory":"Edit","parentHeading":"Edit","heading":"Save as Construction","callbackKey":"saveAsConstruction","modes":["VirtualWorldEditing","VRWorldEditing"]},
+  {"ToolbarCategory":"Edit","parentHeading":"Edit","heading":"Extrude","preventDropdown":true,"modes":["GOXediting"]},
+  {"ToolbarCategory":"Edit","parentHeading":"Extrude","heading":"GOX Extrusion","script":"goxExtrudeToolbar.mjs","modes":["GOXediting"]},
 
 {
   "ToolbarCategory": "View",

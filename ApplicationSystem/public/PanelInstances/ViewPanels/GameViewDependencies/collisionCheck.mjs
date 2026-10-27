@@ -22,7 +22,7 @@ function signedPlaneDistance(collider, point) {
 }
 
 function expressionHeightfieldCutsPlayer(collider, nextPosition, movementState, playerRadius, playerMinY, playerMaxY) {
-  if (collider.target?.visible === false || typeof collider.sampleGroundY !== "function") return false;
+  if ((collider.target?.visible === false && !collider.activeWhenHidden) || typeof collider.sampleGroundY !== "function") return false;
 
   const colliderId = collider.layerId || collider.target?.uuid || "expression-heightfield";
   const activeSurface = movementState?.isGrounded === true
@@ -71,7 +71,7 @@ export function createCollisionChecker({ colliders, movementState, playerRadius 
       } else if (collider.type === "compound") {
         if (compoundCutsPlayer(collider, nextPosition, playerRadius, playerMinY, playerMaxY)) return hit(collider);
       } else if (collider.type === "equation-plane") {
-        if (collider.target?.visible === false) continue;
+        if ((collider.target?.visible === false && !collider.activeWhenHidden)) continue;
         // Horizontal infinite ground is handled by the ordinary ground sampler; a player's
         // feet touching its surface must not block every horizontal movement step.
         if (collider.target?.userData?.equationCollider?.infinite) {
@@ -97,8 +97,8 @@ export function createCollisionChecker({ colliders, movementState, playerRadius 
         else if (collider.center.y > playerMaxY) dy = collider.center.y - playerMaxY;
         if (dx * dx + dy * dy + dz * dz <= totalRadius * totalRadius) return hit(collider);
       } else if (collider.type === "expression-heightfield") {
-        if (collider.target?.visible !== false && collider.containsPlayer && !collider.containsPlayer(nextPosition, playerRadius)) return hit(collider);
-        if (collider.target?.visible !== false && collider.intersectsPlayer?.(nextPosition, playerRadius, playerMinY, playerMaxY, movementState?.isGrounded ? Math.max(0, movementState.groundSnapDistance ?? .55) : 0)) return hit(collider);
+        if ((collider.target?.visible !== false || collider.activeWhenHidden) && collider.containsPlayer && !collider.containsPlayer(nextPosition, playerRadius)) return hit(collider);
+        if ((collider.target?.visible !== false || collider.activeWhenHidden) && collider.intersectsPlayer?.(nextPosition, playerRadius, playerMinY, playerMaxY, movementState?.isGrounded ? Math.max(0, movementState.groundSnapDistance ?? .55) : 0)) return hit(collider);
         if (expressionHeightfieldCutsPlayer(collider, nextPosition, movementState, playerRadius, playerMinY, playerMaxY)) return hit(collider);
       }
     }

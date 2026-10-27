@@ -32,6 +32,7 @@ function withLiveBaseElement(html = "", path = "", serverBase = "/Notebook") {
 }
 
 export async function renderFile(path, viewPanel, iframe, serverBase, options = {}) {
+  const ownsContext=()=>!options.background||window.activeCell?.contains(viewPanel)&&!viewPanel.closest('[hidden],[aria-hidden="true"]');
   iframe.__nvHtmlViewerZoomCleanup?.();
   viewPanel._dispose = () => { iframe.__nvHtmlViewerZoomCleanup?.(); iframe.onload = null; iframe.onerror = null; };
 
@@ -47,10 +48,11 @@ export async function renderFile(path, viewPanel, iframe, serverBase, options = 
   iframe.style.display = "block";
 
   // Reset previous layer context when switching files
-  window.HTMLViewLayersContext = null;
+  if(ownsContext())window.HTMLViewLayersContext = null;
   window.NodevisionState = window.NodevisionState || {};
   const selectedPath = options.selectionPath || path;
   const selectedIsDirectory = Boolean(options.selectionIsDirectory);
+  if(ownsContext()){
   window.NodevisionState.currentMode = "HTMLviewing";
   window.NodevisionState.selectedFile = selectedPath;
   window.NodevisionState.selectedFileIsDirectory = selectedIsDirectory;
@@ -58,6 +60,7 @@ export async function renderFile(path, viewPanel, iframe, serverBase, options = 
   window.currentActiveFilePath = path;
   window.filePath = path;
   updateToolbarState({ currentMode: "HTMLviewing", selectedFile: selectedPath, activeFileViewPath: path });
+  }
 
   // Set up error and load handlers
   iframe.onerror = () => {
@@ -85,7 +88,7 @@ export async function renderFile(path, viewPanel, iframe, serverBase, options = 
       const body = iframeDoc.body;
       if (body) {
         const context = createHtmlLayersContext(body, { title: "HTML Layers (View)", readOnly: true });
-        window.HTMLViewLayersContext = context;
+        if(ownsContext())window.HTMLViewLayersContext = context;
         const unregister = installHtmlViewerZoom(viewPanel, iframe);
         const cleanup = () => {
           unregister();

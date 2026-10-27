@@ -1,12 +1,13 @@
 // Nodevision/ApplicationSystem/public/MetaWorld/ProceduralVoxelWorld/VoxelChunkManager.mjs
 // This module bounds chunk residency and synchronous work while exposing cumulative and resident generation measurements.
 
+import {ChunkRegionIndex} from './ChunkRegionIndex.mjs';
 import { advanceProgressive,cancelProgressive } from './ProgressiveChunks.mjs';
 import { CHUNK_SIZE, chunkKey, voxelToChunk } from "./VoxelCoordinates.mjs";
 export class VoxelChunkManager {
   constructor(generator, radius, build, release, options=null) {
     Object.assign(this, { generator, radius, build, release, options });
-    this.loaded = new Map(); this.invalidated = new Set(); this.queue = []; this.center = "";
+    this.loaded = new ChunkRegionIndex(); this.invalidated = new Set(); this.queue = []; this.center = "";
     this.stats = { residentBytes:0,peakLoaded:0,maxUpdateMs:0,cancelled:0, loaded: 0, queued: 0, generated: 0, voxels: 0, faces: 0, generationMs: 0, meshingMs: 0, maxBuildMs: 0 };
   }
   update(voxel) {
@@ -61,6 +62,11 @@ export class VoxelChunkManager {
     const key=chunkKey(cell);this.releaseEntry(key);this.loaded.set(key,{...entry,cell});this.invalidated.delete(key);
     this.stats.generated++;this.stats.voxels+=entry.solidVoxels;this.stats.faces+=entry.faceCount;this.stats.residentBytes+=entry.residentBytes??0;
     this.stats.generationMs+=entry.generationMs;this.stats.meshingMs+=entry.meshingMs;this.stats.maxBuildMs=Math.max(this.stats.maxBuildMs,entry.buildMs??0);
+  }
+  invalidateRegion(bounds){
+    cancelProgressive(this);
+    for(const key of [...this.loaded.region(bounds)])this.releaseEntry(key);
+    this.queue.length=0;this.center='';this.stats.loaded=this.loaded.size;
   }
   invalidateBounds(bounds) {
     cancelProgressive(this);

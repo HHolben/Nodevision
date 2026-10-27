@@ -1,6 +1,7 @@
 // Nodevision/ApplicationSystem/public/PanelInstances/ViewPanels/GameViewDependencies/objectInspector.mjs
 // This file defines browser-side object Inspector logic for the Nodevision UI. It renders interface components and handles user interactions.
 
+import {createConstructionProperties} from '../../../MetaWorld/Constructions/Properties.mjs';
 import { openTextEditor } from '../../../MetaWorld/Text/TextEditor.mjs';
 import { createVoxelWorldProperties } from "../../../MetaWorld/ProceduralVoxelWorld/VoxelWorldProperties.mjs";
 import { createPathProperties } from "../../../MetaWorld/Paths/PathProperties.mjs";
@@ -172,7 +173,7 @@ export function createObjectInspector({ THREE, panel, scene, sceneObjects, colli
     onRequestClose: () => {
       stopPreviewLoop();
       terrainProperties.hide();
-      pathProperties.hide();
+      pathProperties.hide();constructionProperties.hide();
       floatingPanel.setVisible(false);
     }
   });
@@ -186,6 +187,7 @@ export function createObjectInspector({ THREE, panel, scene, sceneObjects, colli
   floatingPanel.content.appendChild(root);
   const terrainProperties = createVoxelWorldProperties(floatingPanel.content, root);
   const pathProperties = createPathProperties(floatingPanel.content, root);
+  const constructionProperties=createConstructionProperties(floatingPanel.content,root);
   let pathInspectorLayout = false;
 
   const previewHost = document.createElement("div");
@@ -1248,10 +1250,12 @@ export function createObjectInspector({ THREE, panel, scene, sceneObjects, colli
   resizeObserver.observe(previewHost);
 
   return {
+    showConstructionEditing(section){root.style.display="none";constructionProperties.hide();terrainProperties.hide();pathProperties.hide();root.style.display="none";floatingPanel.content.append(section);floatingPanel.setVisible(true);floatingPanel.undock();},
     inspectTarget(target, distance = null) {
       const textTarget = target?.userData?.textRoot || target;
       if (textTarget?.userData?.textRuntime) return openTextEditor(textTarget);
-      pathProperties.hide();
+      pathProperties.hide();constructionProperties.hide();
+      if(target?.userData?.constructionRuntime){terrainProperties.hide();activeTarget=target;stopPreviewLoop();constructionProperties.show(target);floatingPanel.setVisible(true);floatingPanel.undock();return true;}
       if (target?.userData?.pathPointIndex !== undefined) target = target.parent?.parent;
       if (target?.userData?.pathRuntime) {
         terrainProperties.hide();activeTarget=target;stopPreviewLoop();pathProperties.show(target);
@@ -1277,7 +1281,7 @@ export function createObjectInspector({ THREE, panel, scene, sceneObjects, colli
       return true;
     },
     hide() {
-      pathProperties.hide();
+      pathProperties.hide();constructionProperties.hide();
       terrainProperties.hide();
       activeTarget = null;
       stopPreviewLoop();
@@ -1292,6 +1296,7 @@ export function createObjectInspector({ THREE, panel, scene, sceneObjects, colli
     },
     refreshActiveTarget() {
       if (!activeTarget) return false;
+      if(activeTarget.userData?.constructionRuntime)return constructionProperties.show(activeTarget);
       if (activeTarget.userData?.pathRuntime) return pathProperties.show(activeTarget);
       if (activeTarget.userData?.proceduralVoxelRuntime) return terrainProperties.show(activeTarget);
       syncTargetCollider(THREE, colliders, activeTarget);
@@ -1301,7 +1306,7 @@ export function createObjectInspector({ THREE, panel, scene, sceneObjects, colli
       return true;
     },
     dispose() {
-      pathProperties.dispose();
+      pathProperties.dispose();constructionProperties.dispose();
       terrainProperties.dispose();
       activeTarget = null;
       stopPreviewLoop();
