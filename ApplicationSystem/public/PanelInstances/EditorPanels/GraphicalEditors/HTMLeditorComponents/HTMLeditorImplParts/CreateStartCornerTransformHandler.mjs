@@ -13,10 +13,12 @@ import { buildImageContextFromElement, findClickedAudio, buildAudioContextFromEl
 export function createStartCornerTransformHandler(owner) {
   return startEvt => {
     const imageEl = owner.imageToolsState.selectedImageForHandles;
-    if (!(imageEl instanceof HTMLImageElement) || !imageEl.isConnected) return;
+    if (!(imageEl instanceof HTMLImageElement || imageEl?.localName === 'iframe') || !imageEl.isConnected) return;
     if (imageEl.closest(".nv-canvas-item")) return;
     startEvt.preventDefault();
     startEvt.stopPropagation();
+    const root = imageEl.closest('.nv-iframe-edit-surface');
+    const transaction = imageEl.localName === 'iframe' ? root?.__nvHtmlTransactions?.begin('Resize iframe') : null;
     const rect = imageEl.getBoundingClientRect();
     const centerX = rect.left + rect.width / 2;
     const centerY = rect.top + rect.height / 2;
@@ -26,7 +28,7 @@ export function createStartCornerTransformHandler(owner) {
     const startDistance = Math.max(8, Math.hypot(startEvt.clientX - centerX, startEvt.clientY - centerY));
     const startAngle = Math.atan2(startEvt.clientY - centerY, startEvt.clientX - centerX);
     const startRotation = owner.imageToolsState.readImageRotation(imageEl);
-    const rotateMode = Boolean(startEvt.shiftKey);
+    const rotateMode = imageEl.localName !== 'iframe' && Boolean(startEvt.shiftKey);
     const onMove = createImageCornerMoveHandler({
       get rotateMode() {
         return rotateMode;
@@ -63,6 +65,8 @@ export function createStartCornerTransformHandler(owner) {
       window.removeEventListener("pointermove", onMove, true);
       window.removeEventListener("pointerup", onUp, true);
       window.removeEventListener("pointercancel", onUp, true);
+      transaction?.commit();
+      if (imageEl.localName === 'iframe') root?.__nvIframeCommit?.(imageEl);
       owner.imageToolsState.scheduleImageHandleSync();
     };
     window.addEventListener("pointermove", onMove, true);

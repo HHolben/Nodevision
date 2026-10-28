@@ -33,6 +33,7 @@ export function createInventoryHotbar({state, findItem, createIcon, styleSlot, s
       });
       slot.addEventListener('dragleave',()=>{slot.style.outline='';});
       slot.addEventListener('drop',event=>{
+        if (!event.dataTransfer?.types.includes(MIME)) return;
         event.preventDefault();event.stopPropagation();slot.style.outline='';
         const id=readDrop(event);if(id!==null)assignSlot(index,id);
       });

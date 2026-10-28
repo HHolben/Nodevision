@@ -55,7 +55,7 @@ export function initializeHtmlImageHandles(scope) {
     }
     scope.imageToolsState.selectedImageForHandles = null;
     scope.imageToolsState.selectedImageLoadListener = null;
-    if (!(imageEl instanceof HTMLImageElement)) {
+    if (!(imageEl instanceof HTMLImageElement || imageEl?.localName === 'iframe')) {
       scope.imageToolsState.hideImageHandles();
       return;
     }

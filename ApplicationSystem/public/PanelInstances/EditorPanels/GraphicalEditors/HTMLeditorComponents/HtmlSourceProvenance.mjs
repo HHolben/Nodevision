@@ -95,6 +95,11 @@ export function createHtmlSourceProvenance(root) {
       entry.classes.set(name, { authored: previous && current === previous.resolved ? previous.authored : current, resolved: enabled });
       element.classList.toggle(name, enabled);
     },
+    setSourceAttribute(element, name, value) {
+      const entry = fork(element);
+      entry.resources.delete(name);
+      if (value === null) element.removeAttribute(name); else element.setAttribute(name, value);
+    },
     sourceAttribute(element, name) {
       const resource = record(element)?.resources.get(name);
       return resource && element.getAttribute(name) === resource.resolved ? resource.authored : element.getAttribute(name);

@@ -1,3 +1,4 @@
+import { writeResourceTransfer } from '../ResourceDrop/ResourceTransfer.mjs';
 // Nodevision/ApplicationSystem/public/FileInterop/NotebookExternalFileInterop.mjs
 // This file provides browser-side file interoperation helpers so Nodevision panels can import files from desktop file managers while keeping writes inside the active Notebook.
 
@@ -44,11 +45,12 @@ function notebookAssetUrl(relativePath = "") {
   return `${window.location.origin}/Notebook/${parts.join("/")}`;
 }
 
-export function setNotebookDragTransfer(event, { path = "", isDirectory = false, nativeDrag = false } = {}) {
+export function setNotebookDragTransfer(event, { path = "", isDirectory = false, nativeDrag = false, entries = null, sourcePanel = "file-manager" } = {}) {
   const cleanPath = normalizeNotebookPath(path);
   if (!event?.dataTransfer || !cleanPath) return;
   const url = notebookAssetUrl(cleanPath);
-  event.dataTransfer.effectAllowed = "copyMove";
+  writeResourceTransfer(event, { path: cleanPath, isDirectory, entries, sourcePanel });
+  event.dataTransfer.effectAllowed = "all";
   event.dataTransfer.setData("text/plain", cleanPath);
   event.dataTransfer.setData("text/uri-list", url);
   if (!isDirectory) {

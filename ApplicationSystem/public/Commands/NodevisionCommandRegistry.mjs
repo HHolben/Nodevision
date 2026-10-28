@@ -8,6 +8,7 @@ const handlers = new Map();
 
 const load = (path, exportName) => async () => (await import(path))[exportName];
 const BUILTIN_HANDLER_LOADERS = Object.freeze({
+  "editor.insert.iframe": load("../ToolbarJSONfiles/insertMediaIframe.mjs", "openIframeInsertion"),
   "construction.edit": load("../MetaWorld/ConstructionEditing/Command.mjs", "constructionEdit"),
   "construction.edit-source": load("../MetaWorld/ConstructionEditing/Command.mjs", "constructionEditSource"),
   "construction.make-unique": load("../MetaWorld/ConstructionEditing/Command.mjs", "constructionMakeUnique"),

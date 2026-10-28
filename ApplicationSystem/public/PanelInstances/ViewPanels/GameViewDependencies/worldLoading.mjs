@@ -1,3 +1,4 @@
+import { installWorldResourceDrops } from '/ResourceDrop/WorldResourceDrops.mjs';
 import {installConstructionEditing} from '../../../MetaWorld/ConstructionEditing/Session.mjs';
 // Nodevision/ApplicationSystem/public/PanelInstances/ViewPanels/GameViewDependencies/worldLoading.mjs
 // This file loads a world definition from the server and builds its scene objects. The loader registers live MetaWorld layer data for side panels.
@@ -929,12 +930,13 @@ function iframeDefinitionFromMesh(mesh) {
     : (data.iframeSrc || iframe.iframeSrc || iframe.src || "about:blank");
   const normalizedSourceKind = isHostPageIframeSource(src, sourceKind) ? IFRAME_HOST_PAGE_KIND : sourceKind;
   return {
+    ...iframe,
     src,
     iframeSrc: src,
     iframeSourceKind: normalizedSourceKind,
     title: data.iframeTitle || iframe.title || "Embedded Page",
     iframeTitle: data.iframeTitle || iframe.iframeTitle || iframe.title || "Embedded Page",
-    sandbox: data.iframeSandbox || iframe.sandbox || "",
+    sandbox: data.iframeSandbox ?? iframe.sandbox ?? "",
     allow: data.iframeAllow || iframe.allow || "",
     color: data.iframeColor || "#f8fbff"
   };
@@ -945,7 +947,7 @@ function attachIframeObjectDefinitionToMesh(THREE, mesh, def = {}) {
   const src = readIframeObjectSource(def) || "about:blank";
   const sourceKind = isHostPageIframeSource(src, readIframeObjectSourceKind(def)) ? IFRAME_HOST_PAGE_KIND : readIframeObjectSourceKind(def);
   const title = readIframeObjectTitle(def) || "Embedded Page";
-  const sandbox = String(def.sandbox || def.iframeSandbox || "").trim();
+  const sandbox = String(def.sandbox ?? def.iframeSandbox ?? "").trim();
   const allow = String(def.allow || def.iframeAllow || "").trim();
   mesh.userData.nvType = "iframe";
   mesh.userData.iframeSrc = src;
@@ -954,7 +956,7 @@ function attachIframeObjectDefinitionToMesh(THREE, mesh, def = {}) {
   mesh.userData.iframeSandbox = sandbox;
   mesh.userData.iframeAllow = allow;
   mesh.userData.iframeColor = def.color || "#f8fbff";
-  mesh.userData.iframeObject = { src, iframeSrc: src, iframeSourceKind: sourceKind, title, iframeTitle: title, sandbox, allow };
+  mesh.userData.iframeObject = { loading: def.loading, allowfullscreen: def.allowfullscreen, iframeWidth: def.iframeWidth, iframeHeight: def.iframeHeight, iframeBorder: def.iframeBorder, iframeDocumentPath: def.iframeDocumentPath, iframeViewport: def.iframeViewport, src, iframeSrc: src, iframeSourceKind: sourceKind, title, iframeTitle: title, sandbox, allow };
   mesh.userData.refreshIframeObjectMaterial = () => {
     disposeIframeGeneratedMaterial(mesh);
     mesh.material = createIframeObjectMaterial(THREE, iframeDefinitionFromMesh(mesh));
@@ -974,9 +976,14 @@ function createIframeObjectMesh(THREE, def = {}) {
   return mesh;
 }
 
-function resolveIframeObjectDomSource(src, sourceKind = "") {
+function resolveIframeObjectDomSource(src, sourceKind = "", documentPath = "") {
   const text = String(src || "").trim() || "about:blank";
   if (isHostPageIframeSource(text, sourceKind)) return readEmbeddingHostPageUrl();
+  if (documentPath && !/^(?:[a-z][a-z0-9+.-]*:|\/)/i.test(text)) {
+    const base = '/Notebook/' + documentPath.replace(/^\/?Notebook\//, '').split('/').map(encodeURIComponent).join('/');
+    return new URL(text, new URL(base, location.href)).href;
+  }
+  if (/^[a-z][a-z0-9+.-]*:/i.test(text) && !/^https?:/i.test(text)) return 'about:blank';
   if (text.startsWith("/") || text.startsWith("#") || text.startsWith("//") || /^[a-z][a-z0-9+.-]*:/i.test(text)) return text;
   let normalized = text;
   if (normalized.startsWith("./")) normalized = normalized.slice(2);
@@ -1040,7 +1047,7 @@ function syncIframeObjectOverlay(target, { panel, THREE, camera }) {
     frame.loading = "lazy";
     element.appendChild(frame);
     layer.appendChild(element);
-    overlay = { element, frame, sourceKey: "", title: "", sandbox: "", allow: "" };
+    overlay = { element, frame, sourceKey: "", title: "", sandbox: null, allow: "" };
     target.userData.iframeOverlay = overlay;
   }
 
@@ -1051,26 +1058,30 @@ function syncIframeObjectOverlay(target, { panel, THREE, camera }) {
     ? IFRAME_HOST_PAGE_SOURCE
     : (data.iframeSrc || iframe.iframeSrc || iframe.src || "about:blank");
   const title = data.iframeTitle || iframe.iframeTitle || iframe.title || "Embedded Page";
-  const sandbox = String(data.iframeSandbox || iframe.sandbox || "").trim();
+  const sandbox = String(data.iframeSandbox ?? iframe.sandbox ?? "").trim();
+  const runtimeSandbox = sandbox.includes('allow-scripts') ? sandbox.split(/\s+/).filter(token => token !== 'allow-same-origin').join(' ') : sandbox;
   const allow = String(data.iframeAllow || iframe.allow || "").trim();
   if (overlay.rawSource !== src || overlay.sourceKind !== sourceKind) {
-    overlay.resolvedSource = resolveIframeObjectDomSource(src, sourceKind);
+    overlay.resolvedSource = resolveIframeObjectDomSource(src, sourceKind, iframe.iframeDocumentPath);
     overlay.rawSource = src; overlay.sourceKind = sourceKind;
   }
   const sourceKey = overlay.resolvedSource;
-  if (overlay.sourceKey !== sourceKey) {
-    overlay.frame.setAttribute("src", sourceKey);
-    overlay.sourceKey = sourceKey;
-  }
   if (overlay.title !== title) {
     overlay.frame.title = title;
     overlay.title = title;
   }
-  if (overlay.sandbox !== sandbox) {
-    if (sandbox) overlay.frame.setAttribute("sandbox", sandbox);
-    else overlay.frame.removeAttribute("sandbox");
-    overlay.sandbox = sandbox;
+  if (overlay.sandbox !== runtimeSandbox) {
+    overlay.frame.setAttribute("sandbox", runtimeSandbox);
+    overlay.sandbox = runtimeSandbox;
   }
+  overlay.frame.loading = iframe.loading || 'lazy';
+  overlay.frame.toggleAttribute('allowfullscreen', iframe.allowfullscreen === true);
+  overlay.frame.style.border = iframe.iframeBorder || '0';
+  if (overlay.sourceKey !== sourceKey) {
+    overlay.frame.setAttribute("src", sourceKey);
+    overlay.sourceKey = sourceKey;
+  }
+
   if (overlay.allow !== allow) {
     if (allow) overlay.frame.setAttribute("allow", allow);
     else overlay.frame.removeAttribute("allow");
@@ -1610,8 +1621,8 @@ export function registerMetaWorldLayerBridge({ state, filePath, worldData, layer
         if (iframeSourceKind) def.iframeSourceKind = iframeSourceKind;
         else delete def.iframeSourceKind;
         def.iframeTitle = readIframeObjectTitle(def) || "Embedded Page";
-        def.sandbox = String(def.sandbox || def.iframeSandbox || "allow-scripts allow-same-origin allow-forms").trim();
-        def.allow = String(def.allow || def.iframeAllow || "fullscreen").trim();
+        def.sandbox = String(def.sandbox ?? def.iframeSandbox ?? "").trim();
+        def.allow = String(def.allow ?? def.iframeAllow ?? "").trim();
         def.collider = def.collider === true || def.collidable === true || def.isSolid === true;
         def.collidable = def.collider;
         def.isSolid = def.collider;
@@ -1944,6 +1955,11 @@ export function registerMetaWorldLayerBridge({ state, filePath, worldData, layer
     notifyMetaWorldLayersChanged({ reason: "downloadedImageAdded", objectId });
   } });
   setActiveMetaWorldLayerBridge(guardWorldLayerBridge(bridge, window.VRWorldContext?.movementState));
+  const dropContext = window.VRWorldContext;
+  if (dropContext?.panel) {
+    dropContext.panel.__nvWorldResourceDrops?.();
+    dropContext.panel.__nvWorldResourceDrops = installWorldResourceDrops(dropContext);
+  }
 }
 
 function convertMetaWorldToLegacyWorld(world) {
@@ -3277,8 +3293,8 @@ export async function loadWorldFromFile(filePath, state, THREE, options = {}) {
         if (iframeSourceKind) def.iframeSourceKind = iframeSourceKind;
         else delete def.iframeSourceKind;
         def.iframeTitle = readIframeObjectTitle(def) || "Embedded Page";
-        def.sandbox = String(def.sandbox || def.iframeSandbox || "allow-scripts allow-same-origin allow-forms").trim();
-        def.allow = String(def.allow || def.iframeAllow || "fullscreen").trim();
+        def.sandbox = String(def.sandbox ?? def.iframeSandbox ?? "").trim();
+        def.allow = String(def.allow ?? def.iframeAllow ?? "").trim();
         def.collider = def.collider === true || def.collidable === true || def.isSolid === true;
         def.collidable = def.collider;
         def.isSolid = def.collider;

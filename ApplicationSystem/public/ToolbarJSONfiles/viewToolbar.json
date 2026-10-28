@@ -1,4 +1,13 @@
 [
+  {
+    "ToolbarCategory": "View",
+    "heading": "Geometry Inspector",
+    "panelTemplate": "GeometryInspectorPanel",
+    "panelType": "InfoPanel",
+    "panelPath": "/PanelInstances/InfoPanels/GeometryInspectorPanel.mjs",
+    "replaceActive": false,
+    "conditions": { "activeFileIsSvg": true }
+  },
   {"ToolbarCategory":"View","heading":"Terrain Representation","script":"terrainRepresentationWidget.mjs","modes":["HTMLediting","Virtual World Editing"]},
   {
     "ToolbarCategory": "View",

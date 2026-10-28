@@ -1,6 +1,7 @@
 // Nodevision/ApplicationSystem/public/PanelInstances/EditorPanels/GraphicalEditors/ElementLayers/panel.mjs
 // This file defines UI helpers for the ElementLayers module in Nodevision. It builds the layers panel DOM and renders layer rows with controls for visibility, ordering, and renaming.
 
+import { layerPanelChildren } from "../../../../SvgGeometry/LayerOrder.mjs";
 import { bindLayerDrag, markLayerDragRow } from "./drag.mjs";
 import { createLayerPanelElement, createLayerPanelHeader, createLayerListElement, createLayerRow, createLayerWrapper } from "/PanelInstances/Common/Layers/LayerPanelSurface.mjs";
 
@@ -164,9 +165,7 @@ function renderLayerContents({
 } = {}) {
   const withSvgSnapshot = (label, operation) => state.readOnly ? false : recordWithContext(state.context, label, operation);
   // Render topmost element first so panel order matches SVG z-order.
-  const children = Array.from(layer?.children || [])
-    .filter((child) => !isLayerPanelHiddenElement(child) && !(layer === state.root && isLayerGroupElement(child)))
-    .reverse();
+  const children = layerPanelChildren(layer, state.root);
   if (children.length === 0) {
     const empty = document.createElement("div");
     empty.textContent = "No elements in this layer.";

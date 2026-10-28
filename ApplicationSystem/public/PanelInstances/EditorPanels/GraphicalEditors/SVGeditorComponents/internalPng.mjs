@@ -266,13 +266,14 @@ export function createInternalPngController({
         const src = String(insertion.src || "").trim();
         if (!src) throw new Error("No image source was provided.");
         const img = await decodeImage(insertion.previewSrc || src);
+        if (insertion.validate) { insertion.validate(); if (!img) throw new Error('The linked image could not be loaded.'); }
         const viewport = getViewBox?.() || { x: 0, y: 0, width: 800, height: 600 };
         const size = img
           ? fitNaturalSize(img, viewport)
           : { width: Math.max(1, Math.round(viewport.width * 0.35)), height: Math.max(1, Math.round(viewport.height * 0.35)) };
         const el = document.createElementNS(SVG_NS, "image");
-        el.setAttribute("x", String(Math.round(viewport.x + (viewport.width - size.width) / 2 + (Number(insertion.offset)||0))));
-        el.setAttribute("y", String(Math.round(viewport.y + (viewport.height - size.height) / 2 + (Number(insertion.offset)||0))));
+        el.setAttribute("x", String(insertion.position?.x ?? Math.round(viewport.x + (viewport.width - size.width) / 2 + (Number(insertion.offset)||0))));
+        el.setAttribute("y", String(insertion.position?.y ?? Math.round(viewport.y + (viewport.height - size.height) / 2 + (Number(insertion.offset)||0))));
         el.setAttribute("width", String(size.width));
         el.setAttribute("height", String(size.height));
         setImageHref(el, src);

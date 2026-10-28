@@ -1,3 +1,4 @@
+import { linkedResourceMarkup } from '/Media/LinkedResourceMarkup.mjs';
 // Nodevision/ApplicationSystem/public/ToolbarJSONfiles/insertMediaResource.mjs
 // Inserts normalized local or acquired media through existing editor commands and native history.
 import { validateAssetEditorContext } from '/AssetDownloads/AssetEditorContext.mjs';
@@ -19,7 +20,7 @@ export function planAssetInsertion(context, asset, format, { strategy = 'markup'
   const reference = download && context ? assetReference(context, download) : 'assets/selected-asset.' + (format?.extension || 'png');
   const linked = resource?.notebookPath ? ` data-nv-linked-path="${escape(resource.notebookPath)}"` : '';
   const fallbacks = serializeFallbackAttributes(resource?.fallbacks || [], { primary: reference });
-  const htmlSnippet = mediaTag === 'img' ? `<img src="${escape(reference)}" alt="${escape(asset.name)}"${linked}${fallbacks}>` : mediaTag ? `<${mediaTag} controls src="${escape(reference)}"></${mediaTag}>` : '';
+  const htmlSnippet = mediaTag ? linkedResourceMarkup({ src: reference, name: asset.name, tag: mediaTag, attributes: mediaTag === 'img' ? linked + fallbacks : '' }) : '';
   let type = ''; let snippet = '';
   if (!reason && context.kind === 'code') {
     const offset = context.model.getOffsetAt(context.selection.getStartPosition?.() || { lineNumber: context.selection.startLineNumber, column: context.selection.startColumn });

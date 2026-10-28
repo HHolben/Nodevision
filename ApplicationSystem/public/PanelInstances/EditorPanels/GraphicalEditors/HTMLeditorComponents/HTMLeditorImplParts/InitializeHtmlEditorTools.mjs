@@ -1,6 +1,9 @@
+import { installHtmlResourceDrops } from '/ResourceDrop/EditorResourceDrops.mjs';
+import { installLinkedResourcePresentation } from '/ResourceDrop/LinkedResourcePresentation.mjs';
 // Nodevision/ApplicationSystem/public/PanelInstances/EditorPanels/GraphicalEditors/HTMLeditorComponents/HTMLeditorImplParts/InitializeHtmlEditorTools.mjs
 // This module implements initialize Html Editor Tools behavior for the HTMLeditorImpl feature. Its dependencies and instance state are supplied explicitly so other editor instances remain independent.
 
+import { installIframeEditing } from '/Media/IframeEditing.mjs';
 import { handleTableArrowKeyNavigation } from "/ToolbarCallbacks/insert/tableTools.mjs";
 import { createCleanupHTMLTableToolbarHandler, createHtmlNativeInputHandler, createHtmlSaveSerialization } from "./CreateCleanupHTMLTableToolbarHandler.mjs";
 import { installCartoonEditingBehavior } from "/ToolbarCallbacks/insert/cartoonTools.mjs";
@@ -122,7 +125,10 @@ export async function initializeHtmlEditorTools(scope) {
   // --------------------------------------------------
   scope.container.__cleanupHTMLHotkeys = registerHTMLFallbackHotkeys(scope.htmlSession.wysiwyg, scope.filePath, scope.htmlSession.wrapper);
   scope.container.__cleanupHTMLCanvasDeletion = registerCanvasDeletionHotkeys(scope.htmlSession.wysiwyg);
-  scope.container.__cleanupHTMLImageTools = scope.htmlSession.imageTools.destroy;
+  const releaseResourceDrops = installHtmlResourceDrops(scope.htmlSession.wysiwyg, scope.filePath, scope.htmlSession.ownedTools);
+  const releaseLinkedResources = installLinkedResourcePresentation(scope.htmlSession.wysiwyg, scope.filePath);
+  const iframeTools = installIframeEditing(scope.htmlSession.wysiwyg, scope.htmlSession.imageTools, { filePath: scope.filePath });
+  scope.container.__cleanupHTMLImageTools = () => { releaseResourceDrops(); releaseLinkedResources(); iframeTools.dispose(); scope.htmlSession.imageTools.destroy(); };
   scope.container.__cleanupHTMLImageTextTools = registerImageTextInteractionTools(scope.htmlSession.wysiwyg, scope.filePath);
   scope.container.__cleanupHTMLPoetry = await installLineNumberedPoetryTools(scope.htmlSession.wysiwyg);
   scope.htmlSession.updateTextTargetFromSelection = () => {

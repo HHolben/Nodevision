@@ -1,3 +1,5 @@
+import { installSvgLinkedResourcePresentation } from '/ResourceDrop/SvgLinkedResourcePresentation.mjs';
+import { installSvgResourceDrops } from '/ResourceDrop/EditorResourceDrops.mjs';
 // Nodevision/ApplicationSystem/public/PanelInstances/EditorPanels/GraphicalEditors/SVGeditorComponents/SVGeditorRuntimeParts/PublishSvgEditorContext.mjs
 // This module implements publish Svg Editor Context behavior for the SVGeditorRuntime feature. Its dependencies and instance state are supplied explicitly so other editor instances remain independent.
 
@@ -80,6 +82,8 @@ export function publishSvgEditorContext(scope) {
     wrapper: scope.svgSession.wrapper,
     filePath: scope.filePath
   });
+  scope.svgSession.linkedResourcePresentation = installSvgLinkedResourcePresentation(scope.svgSession.svgRoot, scope.filePath);
+  scope.svgSession.releaseResourceDrops = installSvgResourceDrops(scope.svgSession.svgRoot, scope.filePath, scope.svgSession.svgEditorContext);
   scope.svgSession.svgModeLayoutRaf = 0;
   scope.svgSession.svgModeLayoutTimer = 0;
   scope.svgSession.svgModeLayoutCanceled = false;

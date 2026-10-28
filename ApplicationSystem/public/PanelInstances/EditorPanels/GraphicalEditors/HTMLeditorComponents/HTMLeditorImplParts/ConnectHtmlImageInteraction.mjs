@@ -66,6 +66,8 @@ export function connectHtmlImageInteraction(scope) {
   };
   return {
     value: {
+      selectMediaElement: scope.imageToolsState.setSelectedImageForHandles,
+      syncMediaHandles: scope.imageToolsState.scheduleImageHandleSync,
       cropSelectedImage: scope.imageToolsState.cropSelectedImage,
       toggleSelectedImageInlineEditor: scope.imageToolsState.toggleSelectedImageInlineEditor,
       openSelectedImageEditorUndocked: scope.imageToolsState.openSelectedImageEditorUndocked,

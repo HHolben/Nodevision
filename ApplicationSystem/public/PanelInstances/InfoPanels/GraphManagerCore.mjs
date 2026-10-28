@@ -1,3 +1,4 @@
+import { installGraphResourceDrag } from '/ResourceDrop/GraphResourceDrag.mjs';
 // Nodevision/ApplicationSystem/public/PanelInstances/InfoPanels/GraphManagerCore.mjs
 // This file defines browser-side Graph Manager Core logic for the Nodevision UI. It renders interface components and handles user interactions.
 import { requestNodevisionFileSelection } from '/EditorSwitchGuard.mjs';
@@ -3091,6 +3092,11 @@ export async function initGraphView({ containerId, rootPath, statusElemId, mqttC
             console.warn("[GraphManager] ResizeObserver setup failed:", err);
         }
     }
+
+    container.__nvResourceDragCleanup?.();
+    const releaseResourceDrag = installGraphResourceDrag(cy, getGraphViewportSurface(container) || container);
+    container.__nvResourceDragCleanup = releaseResourceDrag;
+    cy.on('destroy', releaseResourceDrag);
 
     cy.on('tap', 'node', (evt) => {
         const node = evt.target;

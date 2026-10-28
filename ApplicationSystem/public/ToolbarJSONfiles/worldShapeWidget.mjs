@@ -289,19 +289,17 @@ function makeGameObjectButton(item) {
   button.addEventListener("click", async (event) => {
     event.preventDefault();
     event.stopPropagation();
+    if (item.type === 'iframe' && item.variant !== 'host-page') {
+      const { openIframeInsertion } = await import('./insertMediaIframe.mjs');
+      try { await openIframeInsertion(); } catch (error) { setStatus(error.message); }
+      return;
+    }
     const bridge = await ensureEditableMetaWorldBridge();
     if (!bridge?.addGameObjectLayer) {
       setStatus("Open a MetaWorld editor before inserting game objects.");
       return;
     }
     const def = makeGameObjectDefinition(item);
-    if (item.type === "iframe" && item.variant !== "host-page") {
-      const entered = window.prompt?.("iFrame source URL or Notebook path", def.src || "about:blank");
-      if (entered === null) return;
-      const src = String(entered || "").trim() || "about:blank";
-      def.src = src;
-      def.iframeSrc = src;
-    }
     const added = bridge.addGameObjectLayer(def);
     setStatus(added ? item.label + " added to MetaWorld." : "Could not add " + item.label + ".");
   });

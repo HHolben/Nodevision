@@ -557,10 +557,8 @@ insertFootnote: () => {
 
 
 InsertCollapsible() {
-    
-    var SensitiveElement = ` <button type="button" style="background-color:#777;color:white;cursor:pointer;width:100%;border:none;text-align:left;outline:none;font-size:15px" onclick="this.classList.toggle('active');var content=this.nextElementSibling;content.style.display=content.style.display==='block'?'none':'block';this.style.backgroundColor=this.classList.contains('active')?'#555':'#777';">Open/Close Collapsible</button><section style="padding:0 18px;display:none;overflow:hidden;background-color:#f1f1f1;">COLLAPSABLE TEXT HERE.</section>`;
-
-    document.execCommand('insertHTML', false, SensitiveElement);
+    return import("/ToolbarCallbacks/insert/insertCollapsible.mjs")
+      .then(mod => mod.default());
 },
 
 
@@ -776,12 +774,9 @@ InsertCodeElement() {
       document.execCommand('insertHTML', false, linkElement);
   },
 
-insertIFRAME()
-{
-    const url = prompt("Enter the URL:");
-    const text = document.getSelection().toString() || prompt("Enter the title:");
-    const iFrameElement = `<iframe src="${url}" title=${text}</a>`;
-    document.execCommand('insertHTML', false, iFrameElement);
+async insertIFRAME() {
+  const { openIframeInsertion } = await import('/ToolbarJSONfiles/insertMediaIframe.mjs');
+  return openIframeInsertion();
 },
 
 

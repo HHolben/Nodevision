@@ -12,7 +12,7 @@ export function installSvgClipboardCommands(scope) {
   scope.svgSession.duplicateSelection = function (offsetX = 20, offsetY = 20) {
     if (!scope.svgSession.selectedElements.length) return [];
     const clones = scope.svgSession.selectedElements.map(el => {
-      const clone = cleanupSvgCloneForSave(el.cloneNode(true));
+      const clone = cleanupSvgCloneForSave(scope.svgSession.linkedResourcePresentation?.clean(el.cloneNode(true), el) || el.cloneNode(true));
       el.parentNode?.appendChild(clone);
       scope.svgSession.translateElement(clone, offsetX, offsetY);
       return clone;
@@ -25,7 +25,7 @@ export function installSvgClipboardCommands(scope) {
   };
   scope.svgSession.copySelection = function () {
     if (!scope.svgSession.selectedElements.length) return false;
-    scope.svgSession.svgClipboard = scope.svgSession.selectedElements.map(el => cleanupSvgCloneForSave(el.cloneNode(true)));
+    scope.svgSession.svgClipboard = scope.svgSession.selectedElements.map(el => cleanupSvgCloneForSave(scope.svgSession.linkedResourcePresentation?.clean(el.cloneNode(true), el) || el.cloneNode(true)));
     scope.svgSession.setStatus("Selection copied");
     return true;
   };

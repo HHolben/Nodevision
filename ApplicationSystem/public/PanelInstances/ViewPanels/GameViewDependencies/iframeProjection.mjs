@@ -4,7 +4,9 @@ export function projectIframe(THREE, overlay, target, camera, viewportWidth, vie
   const params = target.geometry.parameters || {};
   const width = Number(params.width) || 1.6, height = Number(params.height) || .9;
   const depth = (Number(params.depth) || .04) / 2 + .002;
-  const pixelsWidth = 1024, pixelsHeight = Math.max(1, Math.round(pixelsWidth * height / width));
+  const viewport = target.userData?.iframeObject?.iframeViewport;
+  const pixelsWidth = Math.max(16, Number(viewport?.[0]) || 1024);
+  const pixelsHeight = Math.max(16, Number(viewport?.[1]) || Math.round(pixelsWidth * height / width));
   overlay.projection ||= new THREE.Matrix4();
   overlay.pixelPlane ||= new THREE.Matrix4();
   overlay.eye ||= new THREE.Vector3();

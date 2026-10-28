@@ -43,8 +43,10 @@ export function installSvgHistoryAndLifecycle(scope) {
       return scope.svgSession;
     }
   });
+
   scope.svgSession.serializeSvgForSave = function () {
     const clone = scope.svgSession.svgRoot.cloneNode(true);
+    scope.svgSession.linkedResourcePresentation?.clean(clone);
     cleanupSvgCloneForSave(clone, {
       generatedRootId: Boolean(scope.svgSession.rootRuntimeState?.generatedRootId),
       uiAttr: SVG_UI_ATTR

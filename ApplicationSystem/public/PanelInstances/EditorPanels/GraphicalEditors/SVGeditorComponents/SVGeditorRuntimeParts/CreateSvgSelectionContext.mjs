@@ -67,6 +67,8 @@ export function createSvgEditorCleanup(owner) {
     owner.svgSession.cancelDeferredSvgModeLayout();
     owner.container.removeEventListener("scroll", owner.svgSession.persistCurrentSvgAttention);
     owner.svgSession.persistCurrentSvgAttention();
+    owner.svgSession.releaseResourceDrops?.();
+    owner.svgSession.linkedResourcePresentation?.dispose();
     owner.svgSession.svgInsertMediaRegistration?.dispose?.();
     if (window.SVGEditorContext?.__nvInsertMediaIdentity?.instanceId === owner.svgSession.svgInsertMediaRegistration?.instanceId) {
       window.SVGEditorContext = null;

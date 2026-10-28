@@ -1,5 +1,7 @@
+import { installPhpResourceDrops } from '/ResourceDrop/EditorResourceDrops.mjs';
 // Nodevision/ApplicationSystem/public/PanelInstances/EditorPanels/GraphicalEditors/PhpEditorUI.mjs
 // This module assembles PHP editor panes and coordinates their preview, zoom, command and runtime lifecycles.
+import { installPhpIframeObjects } from '/Media/PhpIframeObjects.mjs';
 import { createStyleTagOnce, highlightPHP } from './PhpEditorPresentation.mjs';
 import { installPhpEditorZoom } from './PhpEditorZoom.mjs';
 import { mountDashboardWidgets } from './PhpEditorDashboard.mjs';
@@ -92,10 +94,14 @@ export function setupEditorUI(state, container, options = {}) {
   const releaseCommands = installPhpEditorCommands(state, status, renderPreview, runtimePanelState);
   const releaseRuntime = startPhpEditorRuntime(state, widgetRefs, runtimePanelState, renderPreview, status);
 
+  const releaseResourceDrops = installPhpResourceDrops(input, state.filePath);
+  const releaseIframeObjects = installPhpIframeObjects(input, left, state.filePath);
   renderPreview(true);
 
   return {
     dispose() {
+      releaseResourceDrops();
+      releaseIframeObjects();
       releaseRuntime();
       releaseZoom();
       releaseCommands();

@@ -970,8 +970,9 @@ export function displayFiles(files, currentPath) {
       e.dataTransfer.setData("text/plain", payload.path);
       setNotebookDragTransfer(e, {
         path: payload.path,
+        entries,
         isDirectory: payload.isDirectory,
-        nativeDrag: entries.length === 1 && typeof window.nodevisionElectron?.startNotebookFileDrag === "function",
+        nativeDrag: e.altKey && entries.length === 1 && typeof window.nodevisionElectron?.startNotebookFileDrag === "function",
       });
       link.style.opacity = "0.6";
       startFileManagerAutoScroll(link);

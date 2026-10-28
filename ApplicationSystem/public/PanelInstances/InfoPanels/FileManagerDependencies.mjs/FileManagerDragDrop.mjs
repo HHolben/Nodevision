@@ -1,3 +1,4 @@
+import { setNotebookDragTransfer } from '/FileInterop/NotebookExternalFileInterop.mjs';
 // Nodevision/ApplicationSystem/public/PanelInstances/InfoPanels/FileManagerDependencies.mjs/FileManagerDragDrop.mjs
 // This file defines browser-side File Manager Drag Drop logic for the Nodevision UI. It renders interface components and handles user interactions.
 import { moveFileOrDirectory } from "./FileManagerAPI.mjs";
@@ -7,7 +8,7 @@ export function attachDragDrop(state, link, file) {
   if (!file.isDirectory) {
     link.draggable = true;
     link.ondragstart = e =>
-      e.dataTransfer.setData("text/plain", link.dataset.fullPath);
+      setNotebookDragTransfer(e, { path: link.dataset.fullPath });
   } else {
     link.ondragover = e => e.preventDefault();
     link.ondrop = async e => {

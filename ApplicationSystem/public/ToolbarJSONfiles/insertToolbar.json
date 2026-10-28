@@ -2329,6 +2329,7 @@
     "callbackKey": "insertMedia",
     "modes": [
       "HTMLediting",
+      "PHPediting",
       "HTML Editing",
       "CodeEditing",
       "PNGediting",
@@ -2348,6 +2349,7 @@
     "parentHeading": "Media",
     "modes": [
       "HTMLediting",
+      "PHPediting",
       "HTML Editing",
       "CodeEditing",
       "PNGediting",
@@ -2386,12 +2388,16 @@
     "insertGroup": "text",
     "callbackKey": "insertIFRAME",
     "modes": [
-      "HTMLediting"
+      "HTMLediting",
+      "PHPediting",
+      "Virtual World Editing",
+      "VR World Editing"
     ]
   },
   {
     "ToolbarCategory": "Insert",
-    "heading": "Insert Collapsible",
+    "heading": "Collapsible",
+    "parentHeading": "Structure",
     "hotkeyText": "",
     "insertGroup": "text",
     "callbackKey": "InsertCollapsible",

@@ -750,7 +750,8 @@ function serializeMeshGeometry(mesh) {
       || (String(src || "").trim().toLowerCase() === "nodevision://host-page" ? "host-page" : "");
     if (sourceKind) def.iframeSourceKind = sourceKind;
     if (mesh.userData?.iframeColor) def.color = mesh.userData.iframeColor;
-    if (mesh.userData?.iframeSandbox || iframe.sandbox) def.sandbox = mesh.userData?.iframeSandbox || iframe.sandbox;
+    def.sandbox = mesh.userData?.iframeSandbox ?? iframe.sandbox ?? "";
+    for (const key of ['loading','allowfullscreen','iframeWidth','iframeHeight','iframeBorder','iframeDocumentPath','iframeViewport']) if (iframe[key] !== undefined) def[key] = iframe[key];
     if (mesh.userData?.iframeAllow || iframe.allow) def.allow = mesh.userData?.iframeAllow || iframe.allow;
     def.collider = mesh.userData?.colliderRef ? true : false;
     def.collidable = def.collider;

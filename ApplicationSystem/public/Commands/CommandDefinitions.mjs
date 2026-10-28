@@ -8,6 +8,7 @@ import { WORKSPACE_COMMANDS } from './WorkspaceCommandDefinitions.mjs';
 
 export const NODEVISION_SHARED_COMMANDS = Object.freeze([
   ...WORKSPACE_COMMANDS,
+  { id: "editor.insert.iframe", category: "Insert", label: "Insert iframe", description: "Open the shared Notebook/Internet iframe media form in HTML, PHP or a virtual world.", sessionSafe: false, arguments: [] },
   { id: "terrain.representation", category: "World", label: "Terrain Representation", description: "List generated terrains or set voxel/polygonal representation for a terrain instance.", sessionSafe: false, arguments: [arg("mode", "string", {default:"list"}),arg("id", "string", {default:""})] },
   { id: "construction.edit", category: "World", label: "Edit Construction", description: "Edit Construction in the focused construction context; world Save remains separate.", sessionSafe: false, arguments: [arg("options", "any", {default:{}})] },
   { id: "construction.edit-source", category: "World", label: "Edit Construction Source", description: "Edit Construction Source in the focused construction context; world Save remains separate.", sessionSafe: false, arguments: [arg("options", "any", {default:{}})] },

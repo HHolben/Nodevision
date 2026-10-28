@@ -105,6 +105,8 @@ export function registerGraphicalEditorLiveProvider(filePath, editorDiv) {
 
 export function cleanupEditorHost(editorDiv) {
   if (!editorDiv) return;
+  editorDiv.__nvResourceDropCleanup?.();
+  editorDiv.__nvResourceDropCleanup = null;
   const liveCleanup = editorDiv.__nvGraphicalLiveCleanup;
   if (typeof liveCleanup === "function") {
     liveCleanup();

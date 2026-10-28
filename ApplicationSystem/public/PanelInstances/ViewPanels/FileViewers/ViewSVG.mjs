@@ -2,6 +2,7 @@
 // This file defines browser-side View SVG logic for the Nodevision UI. It renders interface components and handles user interactions.
 
 import { createElementLayers } from "../../EditorPanels/GraphicalEditors/ElementLayers.mjs";
+import { installViewerSelection } from "../../../SvgGeometry/ViewerSelection.mjs";
 import { svgContextPath } from "../../Common/Layers/svgLayersContext.mjs";
 
 import { installDocumentFrameZoom } from '/panels/documentFrameZoom.mjs';
@@ -49,6 +50,7 @@ export async function renderFile(filename, viewPanel, iframe, serverBase = "/Not
     if (root?.localName !== "svg") return;
     iframe.__nvSvgZoomCleanup = installDocumentFrameZoom(viewPanel, iframe, { reflow: false });
     context = { kind: "svg-view", filePath: filename, svgRoot: root, readOnly: true };
+    installViewerSelection(context);
     context.layers = createElementLayers(root, null, { readOnly: true, getContext: () => context });
     viewPanel.__nvSvgViewLayersContext = context;
     if (!window.SVGViewLayersContext || svgContextPath(window.NodevisionState?.activeFileViewPath) === svgContextPath(filename)) window.SVGViewLayersContext = context;

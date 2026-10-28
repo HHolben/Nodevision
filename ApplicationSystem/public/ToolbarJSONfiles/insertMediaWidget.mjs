@@ -1,5 +1,6 @@
 // Nodevision/ApplicationSystem/public/ToolbarJSONfiles/insertMediaWidget.mjs
 // Populates the Insert → Media subtoolbar using ModuleMap families and delegates to family-specific renderers.
+import { openIframeInsertion } from './insertMediaIframe.mjs';
 import { captureAssetEditorContext } from '/AssetDownloads/AssetEditorContext.mjs';
 import { appendOnlineMediaButton, supportsOnlineMedia } from './insertMediaOnline.mjs';
 import { loadModuleMapFamilies } from "./insertMediaCommon.mjs";
@@ -90,6 +91,11 @@ export async function initToolbarWidget(hostElement) {
     });
   };
 
+  if (['HTMLediting', 'PHPediting', 'Virtual World Editing', 'VR World Editing'].includes(currentMode)) {
+    const iframeButton = button('Insert iframe');
+    iframeButton.addEventListener('click', () => openIframeInsertion().catch(error => { detail.textContent = error.message; }));
+    familyRow.append(iframeButton);
+  }
   for (const fam of families) {
     const b = button(`Insert ${fam}`);
     b.addEventListener("click", () => show(fam));

@@ -376,7 +376,7 @@ function shouldStoreWorldModelAsText(ext, text = "") {
   return ext === "stl" && value.trimStart().toLowerCase().startsWith("solid");
 }
 
-async function insertWorldModelObject(model = {}) {
+export async function insertWorldModelObject(model = {}) {
   const ref = model.resource || null;
   const refPath = ref?.notebookPath || model.objectFile || "";
   const refDataUrl = ref?.inlineDataUrl || model.objectDataUrl || "";
@@ -389,7 +389,7 @@ async function insertWorldModelObject(model = {}) {
     tag: "",
     name: label,
     type: "object-file",
-    position: readCameraPlacement().map((n,i)=>i===0?n+(model.batchIndex||0)*2:n),
+    position: model.position || readCameraPlacement().map((n,i)=>i===0?n+(model.batchIndex||0)*2:n),
     size: [1, 1, 1],
     color: "#8aa0b8",
     objectFile: String(refPath || ""),

@@ -7,7 +7,7 @@ export function createSyncImageHandlesNowHandler(owner) {
     owner.imageToolsState.handleSyncRaf = 0;
     if (owner.imageToolsState.removed) return;
     const imageEl = owner.imageToolsState.selectedImageForHandles;
-    if (!(imageEl instanceof HTMLImageElement) || !imageEl.isConnected) {
+    if (!(imageEl instanceof HTMLImageElement || imageEl?.localName === 'iframe') || !imageEl.isConnected) {
       owner.imageToolsState.hideImageHandles();
       return;
     }

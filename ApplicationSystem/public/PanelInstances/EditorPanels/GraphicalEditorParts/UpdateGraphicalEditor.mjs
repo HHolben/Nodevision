@@ -1,3 +1,4 @@
+import { installUnsupportedResourceDrops } from '/ResourceDrop/EditorResourceDrops.mjs';
 // Nodevision/ApplicationSystem/public/PanelInstances/EditorPanels/GraphicalEditorParts/UpdateGraphicalEditor.mjs
 // This module implements update Graphical Editor behavior for the GraphicalEditor feature. Its dependencies and instance state are supplied explicitly so other editor instances remain independent.
 
@@ -120,6 +121,7 @@ export async function updateGraphicalEditor(filePath, {
         GraphicalEditorModuleState.currentGraphicalEditorCleanup = () => cleanup.destroy();
         editorDiv.__nvActiveEditorCleanup = GraphicalEditorModuleState.currentGraphicalEditorCleanup;
       }
+      if (!['html','htm','svg','php'].includes(ext)) editorDiv.__nvResourceDropCleanup = installUnsupportedResourceDrops(editorDiv);
       registerGraphicalEditorLiveProvider(filePath, editorDiv);
       editorDiv.__nvGraphicalEditorMode = window.NodevisionState?.currentMode || "GraphicalEditing";
       setBusyOperation(null);

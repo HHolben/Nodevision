@@ -740,8 +740,7 @@ export function createObjectInspector({ THREE, panel, scene, sceneObjects, colli
     if (sourceKind) def.iframeSourceKind = sourceKind;
     else delete def.iframeSourceKind;
     def.color = target.userData.iframeColor || def.color || "#f8fbff";
-    if (target.userData.iframeSandbox || iframe.sandbox) def.sandbox = target.userData.iframeSandbox || iframe.sandbox;
-    else delete def.sandbox;
+    def.sandbox = target.userData.iframeSandbox ?? iframe.sandbox ?? "";
     if (target.userData.iframeAllow || iframe.allow) def.allow = target.userData.iframeAllow || iframe.allow;
     else delete def.allow;
     def.collider = target.userData?.colliderRef ? true : false;
@@ -783,7 +782,7 @@ export function createObjectInspector({ THREE, panel, scene, sceneObjects, colli
     target.userData.iframeAllow = allow;
     target.userData.iframeSandbox = sandbox;
     target.userData.iframeColor = colorInput.value || target.userData.iframeColor || "#f8fbff";
-    target.userData.iframeObject = { src, iframeSrc: src, iframeSourceKind: sourceKind, title, iframeTitle: title, allow, sandbox };
+    target.userData.iframeObject = { ...target.userData.iframeObject, src, iframeSrc: src, iframeSourceKind: sourceKind, title, iframeTitle: title, allow, sandbox };
     target.userData.refreshIframeObjectMaterial?.();
   }
 

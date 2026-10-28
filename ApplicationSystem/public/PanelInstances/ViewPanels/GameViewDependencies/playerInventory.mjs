@@ -4,6 +4,7 @@ import { createFloatingInventoryPanel } from "/PanelInstances/InfoPanels/PlayerI
 
 import { VOXEL_WORLD_TOOL_ID, VOXEL_WORLD_ICON } from "/MetaWorld/ProceduralVoxelWorld/VoxelWorldToolState.mjs";
 
+import {installInventoryResourceDrops} from "/ResourceDrop/InventoryResourceDrops.mjs";
 import { createInventoryHotbar } from "./InventoryHotbar.mjs";
 
 const GRID_COLUMNS = 9;
@@ -931,7 +932,7 @@ export function createPlayerInventory({ panel }) {
       state.items.push(normalizeItem({ ...options, id: key, label: label || key, count: qty }));
     }
     const item = findItem(key);
-    if ((item?.tool || item?.placeable) && !state.dominantSlots.includes(key)) {
+    if (options.autoAssign !== false && (item?.tool || item?.placeable) && !state.dominantSlots.includes(key)) {
       const openSlot = state.dominantSlots.findIndex(slot => !slot);
       if (openSlot >= 0) state.dominantSlots[openSlot] = key;
     }
@@ -1022,7 +1023,8 @@ export function createPlayerInventory({ panel }) {
   window.addEventListener("keydown", onKeyDown);
   render();
 
-  return {
+  let inventory;const disposeResourceDrops=installInventoryResourceDrops({panel,roots:[hotbarHud,menu],getInventory:()=>inventory});
+  return inventory={
     setTemporaryVoxelStatus(count,settings,construction){const editing=!!construction;if(editing!==constructionToolMode){constructionToolMode=editing;for(const item of state.items){if(!item.id.startsWith('session-voxel-'))continue;if(!worldToolLabels.has(item.id))worldToolLabels.set(item.id,item.label);const label=worldToolLabels.get(item.id);item.label=editing?(item.id==='session-voxel-revert'?'Revert Construction':label.split(' (')[0])+' (construction; G: settings)':label;}render();}temporaryStatus=editing?` | Construction cells: ${construction.count} (Save Construction) | Ordinary temporary cells: ${count}`:'';temporaryStatus+=editing?` | ${settings.material.materialId} | ${settings.brush.shape} ${settings.brush.size}`:'';if(!editing)temporaryStatus=` | Temporary cells: ${count} (not saved) | ${settings.material.materialId} | ${settings.brush.shape} ${settings.brush.size}`;renderStatus();},
     addItem,
     assignItemToSlot,
@@ -1051,6 +1053,7 @@ export function createPlayerInventory({ panel }) {
     get dominantSlots() { return state.dominantSlots.slice(); },
     get selectedIndex() { return state.selectedMenuIndex; },
     dispose() {
+      disposeResourceDrops();
       window.VRWorldContext?.cancelSoundPlacement?.();
       selectionListeners.forEach(listener => listener(null)); selectionListeners.clear();
       window.clearInterval(instrumentTimer);
