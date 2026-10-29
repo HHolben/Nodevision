@@ -4,6 +4,7 @@ import { renderVectorPreview } from '../VectorDrawing/VectorSvgRenderer.mjs';
 import { createBezierToolController } from '../PanelInstances/EditorPanels/GraphicalEditors/SVGeditorComponents/BezierToolController.mjs';
 import { moveNode } from '../PanelInstances/EditorPanels/GraphicalEditors/SVGeditorComponents/BezierModel.mjs';
 import { regionPath, labelsFor } from './Measurement.mjs';
+import { installPerimeterTransform } from './PerimeterTransform.mjs';
 import { colors } from './Document.mjs';
 const ns = 'http://www.w3.org/2000/svg';
 export function svgNode(tag, attributes = {}) {
@@ -59,7 +60,9 @@ export function mountEditor(host, api) {
     },
     commit: g => commit({ nodes: g.points.map(p => ({ ...p, inHandle: null, outHandle: null, type: 'corner' })) }), status: api.status
   });
+  const transforms = installPerimeterTransform({ host: api.keyboardHost, svg, api, toPoint, paint, busy: () => binding.controller.active || bezier.isActive() || !!drag });
   function cancel() {
+    transforms.cancel();
     redrawId = null; binding.cancel(); if (bezier.isActive()) bezier.cancel();
     if (drag?.before) api.restore(drag.before); drag = null;
   }
@@ -127,13 +130,13 @@ export function mountEditor(host, api) {
     if (event.key === 'Escape') { cancel(); paint(); }
     if (tool === 'bezier' && bezier.isActive() && bezier.onKeyDown(event)) { event.preventDefault(); event.stopPropagation(); }
   }
-  const wheel = event => { if (!event.ctrlKey) return; if (binding.controller.active || drag) { event.preventDefault(); return; } event.preventDefault(); setZoom(zoom * (event.deltaY > 0 ? .9 : 1.1)); };
+  const wheel = event => { if (!event.ctrlKey) return; if (transforms.active || binding.controller.active || drag) { event.preventDefault(); return; } event.preventDefault(); setZoom(zoom * (event.deltaY > 0 ? .9 : 1.1)); };
   function setZoom(value) { zoom = Math.max(.02, Math.min(32, value)); paint(); }
   svg.addEventListener('pointerdown', down); svg.addEventListener('pointermove', move); svg.addEventListener('pointerup', up);
   svg.addEventListener('pointercancel', event => { if (drag?.pointerId === event.pointerId) cancel(); }); svg.addEventListener('lostpointercapture', () => { if (drag) { cancel(); paint(); } }); host.addEventListener('wheel', wheel, { passive: false }); api.keyboardHost.addEventListener('keydown', key);
   return { paint, cancel, setTouchEnabled(value) { cancel(); touchEnabled = value; },
-    redraw(id) { cancel(); redrawId = id; }, get hasDraft() { return binding.controller.active || bezier.isActive() || !!drag; }, setZoom, get zoom() { return zoom; }, setTool(value) { cancel(); tool = value; svg.style.cursor = value === 'pan' ? 'grab' : value === 'select' ? 'default' : 'crosshair'; paint(); },
+    redraw(id) { cancel(); redrawId = id; }, get hasDraft() { return transforms.active || binding.controller.active || bezier.isActive() || !!drag; }, setZoom, get zoom() { return zoom; }, setTool(value) { cancel(); tool = value; svg.style.cursor = value === 'pan' ? 'grab' : value === 'select' ? 'default' : 'crosshair'; paint(); },
     fit() { const s = api.state(); setZoom(Math.min((host.clientWidth - 20) / s.width, (host.clientHeight - 20) / s.height)); },
-    dispose() { cancel(); binding.dispose(); host.removeEventListener('wheel', wheel); api.keyboardHost.removeEventListener('keydown', key); svg.remove(); }
+    dispose() { cancel(); transforms.dispose(); binding.dispose(); host.removeEventListener('wheel', wheel); api.keyboardHost.removeEventListener('keydown', key); svg.remove(); }
   };
 }

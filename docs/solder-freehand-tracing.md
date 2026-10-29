@@ -68,7 +68,7 @@ configurable close-distance control is introduced.
 ## Verification
 
 - `node --test ApplicationSystem/public/VectorDrawing/*.test.mjs ApplicationSystem/public/SolderAnalysis/*.test.mjs`: all four test files pass.
-- `python3 scripts/test-solder-analysis-browser.py`: 40 browser checks pass.
+- `python3 scripts/test-solder-analysis-browser.py`: 49 browser checks pass.
 - `git diff --check`: passes.
 
 Coverage includes mouse/pen/touch controller strokes, coalesced fast movement,
@@ -77,3 +77,20 @@ touch disabling, exact area/mean RGBA, 10,000 curve samples without area change,
 undo/redo, redraw, point editing, serialization, and four-section report generation.
 Browser pointer events are synthetic; physical stylus capture and palm rejection
 should also be checked on the target touchscreen.
+
+## Perimeter transform shortcuts
+
+With a region selected, **G** starts moving and **S** starts scaling around the
+boundary's bounding-box center. Move the pointer to preview, then click the image
+or press Enter to commit; Escape restores the original. X/Y constrain either
+operation. For scaling, type a factor (for example, `S 2 Enter`). For movement,
+select X/Y then type a percentage of the image dimension (`G X 1 Enter` moves
+one percent of image width). Backspace edits numeric input. Baked perimeter
+coordinates have image-local axes, so RX/RY scaling uses the same axes as X/Y.
+
+`SolderAnalysis/PerimeterTransform.mjs` reuses the SVG scale factor calculation
+and numeric parser. Transform previews change anchors and Bezier handles together,
+suspend measurement, and commit through the session's existing undo/redo path.
+Shortcuts ignore text inputs, modified key combinations, active drawing gestures,
+and hidden/locked regions. Browser regressions cover pointer and typed transforms,
+zoom, measurement, cancellation, click confirmation, lock protection and history.

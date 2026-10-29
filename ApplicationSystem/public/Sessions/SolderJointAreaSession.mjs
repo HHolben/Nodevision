@@ -64,7 +64,7 @@ export async function startSolderJointAreaAnalysis(context = {}) {
       state.regions.push(region); selected = region.id; record(before); calculate();
     }
   });
-  const modes = { freehand: ['Freehand Trace', 'Drag to trace; release to close. Escape cancels.'], polygon: ['Polygon / Vertex', 'Click vertices; Enter or click the first vertex to close.'], select: ['Edit Perimeter', 'Select a boundary to move it; drag individual points to adjust the perimeter.'], bezier: ['Bezier', 'Click anchors; drag to curve. Enter closes.'], pan: ['Pan', 'Drag to pan the image.'] };
+  const modes = { freehand: ['Freehand Trace', 'Drag to trace; release to close. Escape cancels.'], polygon: ['Polygon / Vertex', 'Click vertices; Enter or click the first vertex to close.'], select: ['Edit Perimeter', 'Select a boundary; G moves, S scales, or drag points to edit. Click or Enter confirms; Escape cancels.'], bezier: ['Bezier', 'Click anchors; drag to curve. Enter closes.'], pan: ['Pan', 'Drag to pan the image.'] };
   const modeButtons = new Map();
   function setMode(tool) { editor.setTool(tool); for (const [key, b] of modeButtons) b.setAttribute('aria-pressed', String(key === tool)); setStatus(modes[tool][1]); }
   for (const [tool, [label]] of Object.entries(modes)) { const b = button(label, () => setMode(tool)); b.setAttribute('aria-pressed', String(tool === 'freehand')); modeButtons.set(tool, b); }
@@ -87,6 +87,7 @@ export async function startSolderJointAreaAnalysis(context = {}) {
   const undo = () => { editor.cancel(); history.undo(); }, redo = () => { editor.cancel(); history.redo(); };
   button('Undo', undo); button('Redo', redo);
   button('Delete region', () => {
+    editor.cancel();
     const r = state.regions.find(r => r.id === selected); if (!r || layers.layers.find(l => l.id === r.type)?.locked) return;
     const before = snapshot(); state.regions = state.regions.filter(r => r.id !== selected); selected = null; record(before); editor.paint(); calculate();
   }, controls);
@@ -128,7 +129,7 @@ export async function startSolderJointAreaAnalysis(context = {}) {
     warnings.textContent = result?.warnings.join('\n') || (busy ? 'Measuring…' : ''); report.disabled = !result || !!result.warnings.length;
   }
   regionSelect.onchange = () => { selected = regionSelect.value; setMode('select'); renderPanel(); };
-  parentSelect.onchange = () => { const before = snapshot(), r = state.regions.find(r => r.id === selected); if (r) { r.parentId = parentSelect.value || null; record(before); editor.paint(); calculate(); } };
+  parentSelect.onchange = () => { editor.cancel(); const before = snapshot(), r = state.regions.find(r => r.id === selected); if (r) { r.parentId = parentSelect.value || null; record(before); editor.paint(); calculate(); } };
   let requestId = 0, loadGeneration = 0; const requests = new Map(), workers = new Set();
   function request(message, target = worker) {
     return new Promise((resolve, reject) => {
