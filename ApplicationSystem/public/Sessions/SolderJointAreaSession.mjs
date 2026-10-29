@@ -51,13 +51,32 @@ export async function startSolderJointAreaAnalysis(context = {}) {
   }, controls);
   const editor = mountEditor(viewport, { state: () => state, activeLayer: () => activeLayer, selected: () => selected, keyboardHost: surface, status: setStatus,
     select(id) { selected = id; renderPanel(); }, restore(before) { editing = false; state.regions = before.regions; calculate(); }, pending() { editing = true; revision++; result = null; report.disabled = true; }, edited(before) { editing = false; record(before); calculate(); },
+    replace(id, replacement) {
+      const region = state.regions.find(r => r.id === id);
+      if (!region || layers.layers.find(l => l.id === region.type)?.locked) return;
+      const before = snapshot(); delete region.points; region.model = replacement.model;
+      if (region.type === 'void') region.parentId = assignParent(region, state.regions, state.width, state.height);
+      record(before); calculate();
+    },
     add(region) {
       const before = snapshot(); region.id = crypto.randomUUID(); region.type = activeLayer;
       if (activeLayer === 'void') { try { region.parentId = assignParent(region, state.regions, state.width, state.height); } catch { region.parentId = null; } }
       state.regions.push(region); selected = region.id; record(before); calculate();
     }
   });
-  for (const tool of ['polygon', 'freehand', 'bezier', 'select', 'pan']) button(tool[0].toUpperCase() + tool.slice(1), () => { editor.setTool(tool); setStatus(tool === 'bezier' ? 'Click anchors; drag to curve. Enter or click first anchor to close. Escape cancels.' : 'Click vertices; Enter or click first vertex to close. Select to move paths or edit vertices.'); });
+  const modes = { freehand: ['Freehand Trace', 'Drag to trace; release to close. Escape cancels.'], polygon: ['Polygon / Vertex', 'Click vertices; Enter or click the first vertex to close.'], select: ['Edit Perimeter', 'Select a boundary to move it; drag individual points to adjust the perimeter.'], bezier: ['Bezier', 'Click anchors; drag to curve. Enter closes.'], pan: ['Pan', 'Drag to pan the image.'] };
+  const modeButtons = new Map();
+  function setMode(tool) { editor.setTool(tool); for (const [key, b] of modeButtons) b.setAttribute('aria-pressed', String(key === tool)); setStatus(modes[tool][1]); }
+  for (const [tool, [label]] of Object.entries(modes)) { const b = button(label, () => setMode(tool)); b.setAttribute('aria-pressed', String(tool === 'freehand')); modeButtons.set(tool, b); }
+  const touchLabel = node('label', '', header), touch = node('input', '', touchLabel); touch.type = 'checkbox'; touch.checked = true; touchLabel.append('Touch drawing');
+  touch.onchange = () => editor.setTouchEnabled(touch.checked);
+  touch.title = 'Disable when using a stylus to prevent palm marks before or after pen contact.';
+  button('Redraw selected', () => {
+    const r = state.regions.find(r => r.id === selected);
+    if (!r || layers.layers.find(l => l.id === r.type)?.locked) return;
+    activeLayer = r.type; renderLayers(); setMode('freehand'); editor.redraw(r.id);
+    setStatus('Trace a replacement boundary. Release to replace; Escape keeps the original.');
+  }, controls);
   button('Fit', () => editor.fit()); button('100%', () => editor.setZoom(1)); button('−', () => editor.setZoom(editor.zoom / 1.25)); button('+', () => editor.setZoom(editor.zoom * 1.25));
   function snapshot() { return structuredClone({ ...state, layers: layers.layers }); }
   function restore(saved) { documentRevision++; dirty = true; state = structuredClone(saved); layers.restore(state.layers); state.layers = layers.layers; renderLayers(); editor.paint(); calculate(); }
@@ -108,7 +127,7 @@ export async function startSolderJointAreaAnalysis(context = {}) {
     if (result) { const table = node('table', '', summary); for (const p of result.regions.filter(r => r.type === 'total')) { const row = node('tr', '', table); node('th', p.label, row); node('td', `${p.area} px²`, row); node('td', `${p.voidPercentage?.toFixed(2) ?? '—'}% void`, row); } }
     warnings.textContent = result?.warnings.join('\n') || (busy ? 'Measuring…' : ''); report.disabled = !result || !!result.warnings.length;
   }
-  regionSelect.onchange = () => { selected = regionSelect.value; editor.setTool('select'); renderPanel(); };
+  regionSelect.onchange = () => { selected = regionSelect.value; setMode('select'); renderPanel(); };
   parentSelect.onchange = () => { const before = snapshot(), r = state.regions.find(r => r.id === selected); if (r) { r.parentId = parentSelect.value || null; record(before); editor.paint(); calculate(); } };
   let requestId = 0, loadGeneration = 0; const requests = new Map(), workers = new Set();
   function request(message, target = worker) {

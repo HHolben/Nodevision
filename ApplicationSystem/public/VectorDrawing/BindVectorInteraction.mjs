@@ -1,9 +1,10 @@
 // Nodevision/ApplicationSystem/public/VectorDrawing/BindVectorInteraction.mjs
 // This binding owns pointer capture and keyboard cleanup for a shared vector controller. Host adapters supply coordinate conversion and activation so document and image surfaces use identical event semantics.
+import { pointerSamples } from './FreehandCapture.mjs';
 import { createVectorInteraction } from './VectorInteraction.mjs';
 import { panelActivationKeepsHost } from '../panels/panelZoomPanParts/ownership.mjs';
-export function bindVectorInteraction({ surface, keyboardHost, getTool, toPoint, preview, commit, status, snapVertex, modifierChanged = () => {}, begin = () => {}, cancelOnDeactivate = () => true }) {
-  const controller = createVectorInteraction({ preview, commit, status, snapVertex });
+export function bindVectorInteraction({ surface, keyboardHost, getTool, toPoint, preview, commit, status, snapVertex, modifierChanged = () => {}, begin = () => {}, cancelOnDeactivate = () => true, preciseFreehand = false, allowTouch = () => true }) {
+  const controller = createVectorInteraction({ preview, commit, status, snapVertex, preciseFreehand });
   const doc = surface.ownerDocument, win = doc.defaultView;
   let captured = null, lastPointer = null;
   const listeners = [];
@@ -16,6 +17,8 @@ export function bindVectorInteraction({ surface, keyboardHost, getTool, toPoint,
   function consume(event) { event.preventDefault(); event.stopImmediatePropagation(); }
   function sync() { const tool = getTool(); controller.setTool(tool); return tool; }
   listen(surface, 'pointerdown', event => {
+    if (controller.pointerId !== null) { consume(event); return; }
+    if (event.pointerType === 'touch' && (event.isPrimary === false || !allowTouch())) { consume(event); return; }
     const tool = sync();
     if (!tool || event.button !== 0 || event.ctrlKey || event.metaKey || event.altKey || controller.pointerId !== null) return;
     if (!controller.active) begin(event);
@@ -32,18 +35,24 @@ export function bindVectorInteraction({ surface, keyboardHost, getTool, toPoint,
   listen(surface, 'pointermove', event => {
     if (!sync() || !controller.active) return;
     lastPointer = { clientX: event.clientX, clientY: event.clientY };
-    const point = toPoint(event); if (point) controller.move(point, event);
+    if (controller.pointerId !== null && controller.pointerId !== event.pointerId) { consume(event); return; }
+    for (const sample of preciseFreehand && getTool() === 'freehand' ? pointerSamples(event) : [event]) {
+      const point = toPoint(sample); if (point) controller.move(point, event);
+    }
     consume(event);
   });
   listen(surface, 'pointerup', event => {
     if (controller.pointerId !== event.pointerId) return;
+    if (preciseFreehand && getTool() === 'freehand') for (const sample of pointerSamples(event)) {
+      const p = toPoint(sample); if (p) controller.move(p, event);
+    }
     const point = toPoint(event);
     if (point) controller.up(point, event); else controller.cancel();
     release();
     consume(event);
   });
   listen(surface, 'dblclick', event => { if (['line', 'polygon'].includes(sync())) { controller.finish(); consume(event); } });
-  listen(surface, 'pointercancel', cancel);
+  listen(surface, 'pointercancel', event => { if (controller.pointerId === event.pointerId) cancel(); });
   listen(surface, 'lostpointercapture', () => { if (captured !== null) cancel(); });
   listen(keyboardHost, 'keydown', event => {
     if (event.target.closest?.('input,textarea,select,[contenteditable=true]')) return;
@@ -60,6 +69,7 @@ export function bindVectorInteraction({ surface, keyboardHost, getTool, toPoint,
   });
   // Toolbar focus is allowed; switching to another panel cancels only the unfinished gesture.
   listen(doc, 'pointerdown', event => {
+    if (controller.pointerId !== null && event.pointerId !== controller.pointerId) return;
     if (!controller.active || keyboardHost.contains(event.target)) return;
     const panel = event.target.closest?.('.panel, .panel-cell, .nv-panel-tab-content');
     if (panel && !panel.contains(keyboardHost)) cancel();

@@ -1,13 +1,16 @@
 // Nodevision/ApplicationSystem/public/VectorDrawing/VectorInteraction.mjs
 // This controller manages vector gestures independently of the DOM. Render and commit callbacks allow the SVG editor and image analysis to share cancellation, validation, and multi-click behavior.
+import { appendFreehandPoint } from './FreehandCapture.mjs';
 import { createGeometry } from './VectorGeometry.mjs';
-export function createVectorInteraction({ preview, commit, status = () => {}, snapVertex = () => null }) {
+export function createVectorInteraction({ preview, commit, status = () => {}, snapVertex = () => null, preciseFreehand = false }) {
   let kind = null, points = [], cursor = null, pointer = null, sweep = 1;
   const cancel = () => { points = []; cursor = null; pointer = null; preview(null); };
-  const geometry = () => createGeometry(kind, points, { sweep });
+  const geometry = () => kind === 'freehand' && preciseFreehand
+    ? (points.length >= 2 ? { kind, points: points.map(p => ({ ...p })) } : null)
+    : createGeometry(kind, points, { sweep });
   function render() {
     const next = cursor ? [...points, cursor] : points;
-    const shape = createGeometry(kind, next, { sweep });
+    const shape = kind === 'freehand' && preciseFreehand ? { kind, points: next } : createGeometry(kind, next, { sweep });
     preview(shape, next, kind);
   }
   function finish(closed = false) {
@@ -41,6 +44,7 @@ export function createVectorInteraction({ preview, commit, status = () => {}, sn
     move(point, event = {}) {
       if (!points.length || (pointer !== null && event.pointerId !== undefined && pointer !== event.pointerId)) return;
       if (kind === 'freehand') {
+        if (preciseFreehand) { appendFreehandPoint(points, point); cursor = null; render(); return; }
         const last = points.at(-1);
         if (Math.hypot(point.x - last.x, point.y - last.y) > 1e-6) points.push({ x: point.x, y: point.y });
         cursor = null; render(); return;
@@ -50,7 +54,9 @@ export function createVectorInteraction({ preview, commit, status = () => {}, sn
     },
     up(point, event = {}) {
       if (pointer === null || (event.pointerId !== undefined && pointer !== event.pointerId)) return;
-      points.push({ x: point.x, y: point.y }); if (!finish()) cancel();
+      if (kind === 'freehand' && preciseFreehand) appendFreehandPoint(points, point);
+      else points.push({ x: point.x, y: point.y });
+      if (!finish()) cancel();
     },
     key(key) {
       if (!points.length) return false;
