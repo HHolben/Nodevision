@@ -1,4 +1,5 @@
-import test from 'node:test';
+// Nodevision/ApplicationSystem/public/SolderAnalysis/Measurement.test.mjs
+// This module verifies native pixel measurements, geometry validation, analysis persistence, and portable reports for complete and incomplete analyses.
 import assert from 'node:assert/strict';
 import { alphabetic, labelsFor, assignParent, createMeasurementEngine, prepareRegion, measureContours } from './Measurement.mjs';
 import { parseAnalysis, serializeAnalysis, reportFilename } from './Document.mjs';
@@ -46,10 +47,10 @@ test('vector containment catches excursions smaller than a pixel and overlapping
   assert.match(e.analyze([base,rect('v','void',19,1,2,2,'a')]).warnings.join(),/outside the image/);
   assert.match(e.analyze([base,rect('v','void',1,1,1,1,'missing')]).warnings.join(),/parent/);
 });
-test('empty and incomplete paths, self intersection and zero area cannot report', () => {
+test('empty and incomplete paths, self intersection and zero area produce report warnings', () => {
   const e=createMeasurementEngine(image()); assert.ok(e.analyze([]).warnings.length);
   for(const points of [[],[[0,0],[1,1]],[[0,0],[4,4],[0,4],[4,0]],[[0,0],[1,0],[2,0]]]) {
-    const r=e.analyze([{id:'a',type:'total',points}]); assert.ok(r.warnings.length); assert.throws(()=>generateReport(state([]),r));
+    const r=e.analyze([{id:'a',type:'total',points}]); assert.ok(r.warnings.length); assert.ok(generateReport(state([]),r).includes('Report status: incomplete or needs review'));
   }
 });
 test('Bezier curves use existing path contour machinery', () => {
@@ -88,4 +89,16 @@ test('duplicate blue masks count once and reparenting does not recompute pixels'
   const a=e.analyze(regions); assert.equal(a.voidArea,4); assert.equal(a.overallPercentage,4);
   regions[1].parentId='missing'; const b=e.analyze(regions); assert.equal(b.computations,a.computations);assert.ok(b.warnings.length);
   regions[1].parentId='a';assert.deepEqual(e.analyze(regions).warnings,[]);
+});
+
+test('reports retain warnings, orphan voids and invalid regions without blocking export', () => {
+  const s=state([base,rect('v','void',1,1,2,2,'missing'),{id:'bad',type:'total',points:[]}]);
+  const html=generateReport(s,createMeasurementEngine(image()).analyze(s.regions));
+  assert.ok(html.includes('select exactly one parent'));
+  assert.ok(html.includes('Incomplete or invalid polygon'));
+  assert.ok(html.includes('Unassigned / unavailable'));
+  assert.ok(!html.includes('undefined'));
+  const pending=generateReport(s,null);
+  assert.ok(pending.includes('Measurements are pending or unavailable'));
+  assert.ok(!pending.includes('undefined'));
 });

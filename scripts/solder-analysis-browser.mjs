@@ -15,12 +15,18 @@ try {
   check(root.dataset.escapeDisabled==='true','Session framework Escape interception disabled');
   const transfer=new DataTransfer(); transfer.items.add(f); const fileInput=session.surface.querySelector('[aria-label="Open JPEG"]'); fileInput.files=transfer.files; fileInput.dispatchEvent(new Event('change')); await wait(() => session.result); check(session.snapshot().width === 100,'JPEG dimensions');
   const button = text => [...session.surface.querySelectorAll('button')].find(b => b.textContent === text);
+  check(!button('Generate HTML Report').disabled, 'Report available with no regions');
+  button('Generate HTML Report').click(); await wait(()=>saved.length===1);
+  check(saved[0].content.includes('No regions have been drawn yet.'), 'Empty report explains missing regions'); saved.length=0;
   check(button('Freehand Trace').getAttribute('aria-pressed')==='true','Freehand default mode');
   button('100%').click();
   const svg = session.surface.querySelector('main svg');
   function event(type,x,y,target=svg) { const p = new DOMPoint(x,y).matrixTransform(svg.getScreenCTM());target.dispatchEvent(new PointerEvent(type,{bubbles:true,clientX:p.x,clientY:p.y,pointerId:1,button:0,buttons:type==='pointerup'?0:1})); }
   function polygon(points) { button('Polygon / Vertex').click(); for(const [x,y] of points) {event('pointerdown',x,y);event('pointerup',x,y);} session.surface.dispatchEvent(new KeyboardEvent('keydown',{key:'Enter',bubbles:true})); }
   polygon([[0,0],[40,0],[40,40],[0,40]]);
+  check(!button('Generate HTML Report').disabled, 'Report available while measuring');
+  button('Generate HTML Report').click(); await wait(()=>saved.length===1);
+  check(saved[0].content.includes('Measurements are pending or unavailable'), 'Pending report labels unavailable measurements'); saved.length=0;
   polygon([[50,0],[90,0],[90,20],[50,20]]);
   button('Void Area').click(); polygon([[0,0],[20,0],[20,20],[0,20]]); polygon([[10,0],[30,0],[30,20],[10,20]]);
   polygon([[50,0],[60,0],[60,20],[50,20]]);
@@ -187,6 +193,10 @@ try {
   document.querySelector('[data-instance-name="SolderAnalysisPanel"] .panel-close-btn').click();
   await wait(()=>session.surface.querySelector('.nv-solder-controls'));
   check(true,'Closing floating panel returns controls to the session');
+  button('Polygon / Vertex').click(); event('pointerdown',5,5); event('pointerup',5,5);
+  check(session.editor.hasDraft && !button('Generate HTML Report').disabled, 'Report available during unfinished drawing');
+  const savedCount=saved.length; button('Generate HTML Report').click(); await wait(()=>saved.length>savedCount);
+  check(saved.at(-1).content.includes('unfinished drawing or transform') && session.editor.hasDraft, 'Draft report explains unfinished work and preserves drawing');
   session.dispose();check(!root.querySelector('.nv-solder-session'),'Session cleanup');
   document.getElementById('result').textContent=`PASS: ${checks} solder analysis browser checks`;
 } catch(error) {document.getElementById('result').textContent='FAIL: '+error.stack;}

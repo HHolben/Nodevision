@@ -3,14 +3,14 @@ import http.server, pathlib, subprocess, threading, sys, json, mimetypes
 root = pathlib.Path(__file__).resolve().parents[1]
 public = root / 'ApplicationSystem/public'
 source_revision = next((arg.split('=', 1)[1] for arg in sys.argv if arg.startswith('--source-revision=')), None)
-suite = 'graph-viewer-layout-control' if '--layout-control' in sys.argv else 'graph-viewer-phase1-browser' if '--lifecycle' in sys.argv else 'graph-viewer-open-probe' if '--open-only' in sys.argv else 'graph-viewer-performance'
+suite = 'graph-divider-browser' if '--divider' in sys.argv else 'graph-viewer-layout-control' if '--layout-control' in sys.argv else 'graph-viewer-phase1-browser' if '--lifecycle' in sys.argv else 'graph-viewer-open-probe' if '--open-only' in sys.argv else 'graph-viewer-performance'
 class Handler(http.server.BaseHTTPRequestHandler):
     def log_message(self, *args): pass
     def do_GET(self):
         resource = self.path.split('?', 1)[0]
         if resource == '/':
-            content = '<body><div id="workspace"></div><pre id="result">RUNNING</pre>' + ''.join('<script src="/vendor/'+p+'"></script>' for p in ['cytoscape/cytoscape.min.js','layout-base/layout-base.js','cose-base/cose-base.js','cytoscape-fcose/cytoscape-fcose.js']) + '<script type="module" src="/scripts/' + suite + '.mjs"></script>'
-        elif resource == '/panels/createToolbar.mjs':
+            content = '<body><link rel="stylesheet" href="/Stylesheets/style.css"><div id="workspace"></div><pre id="result">RUNNING</pre>' + ''.join('<script src="/vendor/'+p+'"></script>' for p in ['cytoscape/cytoscape.min.js','layout-base/layout-base.js','cose-base/cose-base.js','cytoscape-fcose/cytoscape-fcose.js']) + '<script type="module" src="/scripts/' + suite + '.mjs"></script>'
+        elif resource == '/panels/createToolbar.mjs' and '--divider' not in sys.argv:
             content = 'export function updateToolbarState() { window.__perf.toolbar++; }'
         elif resource == '/MessageBroker/MQTTModelClient.mjs' and '--lifecycle' in sys.argv:
             content = """const listeners = new Set(); let value = {topics:[],devices:[]};
@@ -56,7 +56,7 @@ export const performanceProbe = new Proxy({}, {get:(_,key)=>(...args)=>currentPr
                 else:
                     content += probe
         self.send_response(200)
-        self.send_header('Content-Type', 'text/html' if resource == '/' else 'text/javascript')
+        self.send_header('Content-Type', 'text/html' if resource == '/' else 'text/css' if resource.endswith('.css') else 'text/javascript')
         self.end_headers(); self.wfile.write(content.encode())
 server = http.server.ThreadingHTTPServer(('127.0.0.1', 0), Handler)
 threading.Thread(target=server.serve_forever, daemon=True).start()

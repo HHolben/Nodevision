@@ -1,4 +1,5 @@
-// Solder analysis orchestrates shared drawing, layers, history, worker measurements and saves.
+// Nodevision/ApplicationSystem/public/Sessions/SolderJointAreaSession.mjs
+// This module coordinates solder analysis drawing, layers, undo history, worker measurements, and snapshot report exports throughout the session.
 import { setupPanel as setupLayersPanel } from '../PanelInstances/InfoPanels/SVGLayersPanel.mjs';
 import { createAnalysisLayers } from '../RasterAnalysis/AnalysisLayers.mjs';
 import { createSvgUndoStack } from '../PanelInstances/EditorPanels/GraphicalEditors/SVGeditorComponents/SvgUndoStack.mjs';
@@ -50,7 +51,7 @@ export async function startSolderJointAreaAnalysis(context = {}) {
     else await loadJpeg(new File([await response.blob()], path.split('/').at(-1), { type: 'image/jpeg' }), path);
   }, controls);
   const editor = mountEditor(viewport, { state: () => state, activeLayer: () => activeLayer, selected: () => selected, keyboardHost: surface, status: setStatus,
-    select(id) { selected = id; renderPanel(); }, restore(before) { editing = false; state.regions = before.regions; calculate(); }, pending() { editing = true; revision++; result = null; report.disabled = true; }, edited(before) { editing = false; record(before); calculate(); },
+    select(id) { selected = id; renderPanel(); }, restore(before) { editing = false; state.regions = before.regions; calculate(); }, pending() { editing = true; revision++; result = null; report.disabled = !state.source; }, edited(before) { editing = false; record(before); calculate(); },
     replace(id, replacement) {
       const region = state.regions.find(r => r.id === id);
       if (!region || layers.layers.find(l => l.id === region.type)?.locked) return;
@@ -99,10 +100,11 @@ export async function startSolderJointAreaAnalysis(context = {}) {
   button('Delete region', deleteSelected, controls);
   button('Save analysis', async () => { if (!state.source) throw Error('Open a JPEG first'); if (editor.hasDraft) throw Error('Complete or cancel the unfinished path before saving'); const savedRevision = documentRevision; const saved = await (context.save || saveAnalysisFile)(snapshot(), serializeAnalysis(snapshot()), false); if (saved) { if (savedRevision === documentRevision) dirty = false; setStatus(`Saved ${saved}`); } }, controls);
   const report = button('Generate HTML Report', async () => {
-    if (editor.hasDraft) throw Error('Complete or cancel the unfinished path before generating a report');
-    if (!result || result.warnings.length) throw Error('Wait for measurements and correct validation warnings');
-    const saved = await (context.save || saveAnalysisFile)(snapshot(), generateReport(state, result), true); if (saved) setStatus(`Saved ${saved}`);
-  }, controls); report.disabled = true;
+    if (!state.source) throw Error('Open a JPEG first');
+    const reportState = snapshot();
+    const notes = editor.hasDraft ? ['An unfinished drawing or transform is in progress. This report captures the current stored outlines; unfinished drawing previews are excluded.'] : [];
+    const saved = await (context.save || saveAnalysisFile)(reportState, generateReport(reportState, result, new Date(), notes), true); if (saved) setStatus(`Saved ${saved}`);
+  }, controls); report.disabled = !state.source;
   button('Dock / undock analysis panel', async () => {
     if (panel?.isConnected) { panel.__nvSetLayout?.('overlay'); return; }
     const { createPanelDOM } = await import('../panels/panelFactory.mjs');
@@ -132,7 +134,7 @@ export async function startSolderJointAreaAnalysis(context = {}) {
     summary.replaceChildren(); node('p', `${state.regions.filter(r => r.type === 'total').length} total regions · ${state.regions.filter(r => r.type === 'void').length} voids`, summary);
     node('p', `Overall void: ${result?.overallPercentage?.toFixed(2) ?? '—'}%`, summary);
     if (result) { const table = node('table', '', summary); for (const p of result.regions.filter(r => r.type === 'total')) { const row = node('tr', '', table); node('th', p.label, row); node('td', `${p.area} px²`, row); node('td', `${p.voidPercentage?.toFixed(2) ?? '—'}% void`, row); } }
-    warnings.textContent = result?.warnings.join('\n') || (busy ? 'Measuring…' : ''); report.disabled = !result || !!result.warnings.length;
+    warnings.textContent = result?.warnings.join('\n') || (busy ? 'Measuring…' : ''); report.disabled = !state.source;
   }
   regionSelect.onchange = () => { selected = regionSelect.value; setMode('select'); renderPanel(); };
   parentSelect.onchange = () => { editor.cancel(); const before = snapshot(), r = state.regions.find(r => r.id === selected); if (r) { r.parentId = parentSelect.value || null; record(before); editor.paint(); calculate(); } };
@@ -162,7 +164,7 @@ export async function startSolderJointAreaAnalysis(context = {}) {
       const size = await request({ image: blob }, candidate);
       if (disposed || generation !== loadGeneration) { stopWorker(candidate); return; }
       if (next.width && (next.width !== size.width || next.height !== size.height)) throw Error('Saved dimensions do not match the JPEG');
-      editor.cancel(); revision++; busy = false; result = null; report.disabled = true;
+      editor.cancel(); revision++; busy = false; result = null; report.disabled = !state.source;
       const previousWorker = worker; worker = candidate; stopWorker(previousWorker);
       state = { ...next, width: size.width, height: size.height }; layers.restore(next.layers); state.layers = layers.layers;
       history = createSvgUndoStack(); documentRevision++; selected = null; dirty = false; renderLayers(); editor.paint(); editor.fit(); calculate();
@@ -170,7 +172,7 @@ export async function startSolderJointAreaAnalysis(context = {}) {
     } catch (error) { stopWorker(candidate); throw error; }
   }
   async function loadJpeg(f, notebookPath = '') { await loadState({ ...snapshot(), source: { ...await readJpeg(f), notebookPath }, width: 0, height: 0, regions: [] }); }
-  function calculate() { revision++; result = null; report.disabled = true; renderPanel(); if (!busy && !editing && worker && state.width) void pump(); }
+  function calculate() { revision++; result = null; report.disabled = !state.source; renderPanel(); if (!busy && !editing && worker && state.width) void pump(); }
   async function pump() {
     busy = true; const version = revision, activeWorker = worker;
     try { const response = await request({ regions: state.regions }); if (!disposed && version === revision && worker === activeWorker) result = response.result; }

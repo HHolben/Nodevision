@@ -99,3 +99,7 @@ Verified results:
 - Local file output uses Save As/download conventions rather than unrestricted access to the upload’s original directory. Native Save As and server permission errors are surfaced to the user.
 - Reports embed the JPEG in all four sections, increasing file size. Tables preserve parent/child grouping and are not sortable in this version.
 - Saved geometry is editable, but the prior session’s undo history and current zoom/pan position are not persisted.
+
+### Reports during work in progress
+
+Generate HTML Report is available as soon as a JPEG is loaded, including while measurements are pending or a drawing is unfinished. Export captures the current stored outlines without ending the session or cancelling drawing. Pending or unavailable measurements appear as em dashes. Reports with validation warnings include a prominent status section and provisional measurement notice; unassigned voids remain in the table, and invalid outlines may be omitted from images. A completed, valid analysis retains the ordinary four-section report.
