@@ -1,0 +1,8304 @@
+{
+  "environment": {
+    "userAgent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/148.0.0.0 Safari/537.36",
+    "dpr": 2
+  },
+  "results": [
+    {
+      "repeat": 1,
+      "n": 10,
+      "e": 10,
+      "operation": "parse",
+      "elapsed": 84.70000000006985,
+      "handler": {
+        "count": 3,
+        "mean": 0.16666666666666666,
+        "p95": 0.2000000000698492,
+        "max": 0.2000000000698492
+      },
+      "paintOpportunity": {
+        "count": 3,
+        "mean": 28,
+        "p95": 33.90000000002328,
+        "max": 33.90000000002328
+      },
+      "frame": {
+        "count": 6,
+        "mean": 13.866666666655021,
+        "p95": 16.700000000000045,
+        "max": 16.700000000000045
+      },
+      "events": {},
+      "domMutations": 0,
+      "toolbar": 0,
+      "selectionRequests": 0,
+      "functions": {},
+      "heap": 4856489
+    },
+    {
+      "repeat": 1,
+      "n": 10,
+      "e": 10,
+      "operation": "construct",
+      "elapsed": 74.30000000004657,
+      "handler": {
+        "count": 1,
+        "mean": 21.800000000046566,
+        "p95": 21.800000000046566,
+        "max": 21.800000000046566
+      },
+      "paintOpportunity": {
+        "count": 1,
+        "mean": 74,
+        "p95": 74,
+        "max": 74
+      },
+      "frame": {
+        "count": 2,
+        "mean": 31.75,
+        "p95": 49.89999999999998,
+        "max": 49.89999999999998
+      },
+      "events": {
+        "remove": 1,
+        "style": 31,
+        "add": 20,
+        "render": 1
+      },
+      "domMutations": 0,
+      "toolbar": 0,
+      "selectionRequests": 0,
+      "functions": {},
+      "heap": 5970340
+    },
+    {
+      "repeat": 1,
+      "n": 10,
+      "e": 10,
+      "operation": "initial-layout",
+      "elapsed": 49.79999999993015,
+      "handler": {
+        "count": 1,
+        "mean": 32.199999999953434,
+        "p95": 32.199999999953434,
+        "max": 32.199999999953434
+      },
+      "paintOpportunity": {
+        "count": 1,
+        "mean": 49.699999999953434,
+        "p95": 49.699999999953434,
+        "max": 49.699999999953434
+      },
+      "frame": {
+        "count": 2,
+        "mean": 19.20000000001164,
+        "p95": 21.700000000023238,
+        "max": 21.700000000023238
+      },
+      "events": {
+        "layoutstart": 1,
+        "position": 10,
+        "pan": 2,
+        "zoom": 2,
+        "layoutstop": 1,
+        "render": 1
+      },
+      "domMutations": 0,
+      "toolbar": 0,
+      "selectionRequests": 0,
+      "functions": {},
+      "heap": 7754716
+    },
+    {
+      "repeat": 1,
+      "n": 10,
+      "e": 10,
+      "operation": "pan",
+      "elapsed": 388,
+      "handler": {
+        "count": 12,
+        "mean": 0.19166666664144336,
+        "p95": 1.3999999999068677,
+        "max": 1.3999999999068677
+      },
+      "paintOpportunity": {
+        "count": 12,
+        "mean": 32.291666666666664,
+        "p95": 36.29999999993015,
+        "max": 36.29999999993015
+      },
+      "frame": {
+        "count": 24,
+        "mean": 16.133333333331393,
+        "p95": 16.700000000000045,
+        "max": 16.800000000000182
+      },
+      "events": {
+        "pan": 12,
+        "render": 13
+      },
+      "domMutations": 0,
+      "toolbar": 0,
+      "selectionRequests": 0,
+      "functions": {},
+      "heap": 7440880
+    },
+    {
+      "repeat": 1,
+      "n": 10,
+      "e": 10,
+      "operation": "zoom",
+      "elapsed": 399.5,
+      "handler": {
+        "count": 12,
+        "mean": 0.15000000002328306,
+        "p95": 0.5,
+        "max": 0.5
+      },
+      "paintOpportunity": {
+        "count": 12,
+        "mean": 33.27500000000388,
+        "p95": 33.79999999993015,
+        "max": 33.79999999993015
+      },
+      "frame": {
+        "count": 24,
+        "mean": 16.61249999999806,
+        "p95": 16.700000000000045,
+        "max": 16.700000000000045
+      },
+      "events": {
+        "zoom": 12,
+        "render": 12
+      },
+      "domMutations": 0,
+      "toolbar": 0,
+      "selectionRequests": 0,
+      "functions": {},
+      "heap": 6190396
+    },
+    {
+      "repeat": 1,
+      "n": 10,
+      "e": 10,
+      "operation": "select-node",
+      "elapsed": 400.5,
+      "handler": {
+        "count": 12,
+        "mean": 3.583333333323632,
+        "p95": 7.800000000046566,
+        "max": 7.800000000046566
+      },
+      "paintOpportunity": {
+        "count": 12,
+        "mean": 33.35000000000582,
+        "p95": 33.90000000002328,
+        "max": 33.90000000002328
+      },
+      "frame": {
+        "count": 24,
+        "mean": 16.616666666663757,
+        "p95": 16.700000000000273,
+        "max": 16.800000000000182
+      },
+      "events": {
+        "style": 23,
+        "select": 12,
+        "tap": 12,
+        "render": 12,
+        "unselect": 11
+      },
+      "domMutations": 0,
+      "toolbar": 12,
+      "selectionRequests": 12,
+      "functions": {
+        "publishGraphSelectedFileEntries": {
+          "count": 12,
+          "mean": 0.4083333333352736,
+          "p95": 1.2000000000698492,
+          "max": 1.2000000000698492
+        },
+        "applyGraphSelectedFileEntries": {
+          "count": 12,
+          "mean": 2.508333333341094,
+          "p95": 4,
+          "max": 4
+        }
+      },
+      "heap": 8137434
+    },
+    {
+      "repeat": 1,
+      "n": 10,
+      "e": 10,
+      "operation": "hover",
+      "elapsed": 1998.5999999999767,
+      "handler": {
+        "count": 60,
+        "mean": 0.5650000000081491,
+        "p95": 1.3000000000465661,
+        "max": 2.699999999953434
+      },
+      "paintOpportunity": {
+        "count": 60,
+        "mean": 33.305000000000774,
+        "p95": 33.90000000002328,
+        "max": 34.5
+      },
+      "frame": {
+        "count": 120,
+        "mean": 16.64583333333295,
+        "p95": 16.700000000000273,
+        "max": 16.800000000000182
+      },
+      "events": {
+        "mousemove": 44,
+        "mouseover": 5,
+        "mouseout": 5
+      },
+      "domMutations": 0,
+      "toolbar": 0,
+      "selectionRequests": 0,
+      "functions": {},
+      "heap": 7831306
+    },
+    {
+      "repeat": 1,
+      "n": 10,
+      "e": 10,
+      "operation": "modify-label",
+      "elapsed": 399.20000000006985,
+      "handler": {
+        "count": 12,
+        "mean": 0.1750000000174623,
+        "p95": 0.6000000000931323,
+        "max": 0.6000000000931323
+      },
+      "paintOpportunity": {
+        "count": 12,
+        "mean": 33.25833333334109,
+        "p95": 34.39999999990687,
+        "max": 34.39999999990687
+      },
+      "frame": {
+        "count": 24,
+        "mean": 16.59166666666374,
+        "p95": 16.700000000000728,
+        "max": 16.700000000000728
+      },
+      "events": {
+        "style": 12,
+        "data": 12,
+        "render": 12
+      },
+      "domMutations": 0,
+      "toolbar": 0,
+      "selectionRequests": 0,
+      "functions": {},
+      "heap": 7107834
+    },
+    {
+      "repeat": 1,
+      "n": 10,
+      "e": 10,
+      "operation": "rebuild-edges",
+      "elapsed": 100,
+      "handler": {
+        "count": 3,
+        "mean": 7.3333333332945285,
+        "p95": 8.5,
+        "max": 8.5
+      },
+      "paintOpportunity": {
+        "count": 3,
+        "mean": 33.26666666664338,
+        "p95": 34.5,
+        "max": 34.5
+      },
+      "frame": {
+        "count": 6,
+        "mean": 16.416666666662724,
+        "p95": 16.700000000000728,
+        "max": 16.700000000000728
+      },
+      "events": {
+        "style": 90,
+        "remove": 30,
+        "add": 30,
+        "render": 3
+      },
+      "domMutations": 0,
+      "toolbar": 0,
+      "selectionRequests": 0,
+      "functions": {},
+      "heap": 5882729
+    },
+    {
+      "repeat": 1,
+      "n": 10,
+      "e": 10,
+      "operation": "proof-layout",
+      "elapsed": 33.300000000046566,
+      "handler": {
+        "count": 1,
+        "mean": 9.800000000046566,
+        "p95": 9.800000000046566,
+        "max": 9.800000000046566
+      },
+      "paintOpportunity": {
+        "count": 1,
+        "mean": 33.20000000006985,
+        "p95": 33.20000000006985,
+        "max": 33.20000000006985
+      },
+      "frame": {
+        "count": 2,
+        "mean": 15.649999999988268,
+        "p95": 16.699999999999818,
+        "max": 16.699999999999818
+      },
+      "events": {
+        "layoutstart": 1,
+        "position": 10,
+        "layoutstop": 1,
+        "render": 1
+      },
+      "domMutations": 0,
+      "toolbar": 0,
+      "selectionRequests": 0,
+      "functions": {},
+      "heap": 5882729
+    },
+    {
+      "repeat": 1,
+      "n": 10,
+      "e": 10,
+      "operation": "resize",
+      "elapsed": 403.4000000000233,
+      "handler": {
+        "count": 12,
+        "mean": 0.09166666667442769,
+        "p95": 0.30000000004656613,
+        "max": 0.30000000004656613
+      },
+      "paintOpportunity": {
+        "count": 12,
+        "mean": 33.61666666666861,
+        "p95": 40.70000000006985,
+        "max": 40.70000000006985
+      },
+      "frame": {
+        "count": 24,
+        "mean": 16.574999999999022,
+        "p95": 16.699999999999818,
+        "max": 16.700000000000728
+      },
+      "events": {
+        "pan": 12,
+        "zoom": 12,
+        "render": 12
+      },
+      "domMutations": 136,
+      "toolbar": 0,
+      "selectionRequests": 0,
+      "functions": {
+        "scheduleGraphViewportResize": {
+          "count": 12,
+          "mean": 0.024999999994179234,
+          "p95": 0.09999999997671694,
+          "max": 0.09999999997671694
+        },
+        "applyGraphViewportSize": {
+          "count": 12,
+          "mean": 1.3916666666821886,
+          "p95": 2.800000000046566,
+          "max": 2.800000000046566
+        }
+      },
+      "heap": 6586838
+    },
+    {
+      "repeat": 1,
+      "n": 10,
+      "e": 10,
+      "operation": "tab-hide-restore",
+      "elapsed": 401.80000000004657,
+      "handler": {
+        "count": 12,
+        "mean": 0.10833333334691513,
+        "p95": 0.2000000000698492,
+        "max": 0.2000000000698492
+      },
+      "paintOpportunity": {
+        "count": 12,
+        "mean": 33.47500000000582,
+        "p95": 42.59999999997672,
+        "max": 42.59999999997672
+      },
+      "frame": {
+        "count": 24,
+        "mean": 16.41249999999805,
+        "p95": 16.699999999999818,
+        "max": 16.799999999999272
+      },
+      "events": {
+        "render": 12,
+        "pan": 6,
+        "zoom": 6
+      },
+      "domMutations": 192,
+      "toolbar": 0,
+      "selectionRequests": 0,
+      "functions": {
+        "scheduleGraphViewportResize": {
+          "count": 12,
+          "mean": 0.008333333331393078,
+          "p95": 0.09999999997671694,
+          "max": 0.09999999997671694
+        },
+        "applyGraphViewportSize": {
+          "count": 12,
+          "mean": 1.191666666670547,
+          "p95": 2.5,
+          "max": 2.5
+        }
+      },
+      "heap": 6991190
+    },
+    {
+      "repeat": 1,
+      "n": 10,
+      "e": 10,
+      "operation": "idle",
+      "elapsed": 1025.9000000000233,
+      "handler": {
+        "count": 1,
+        "mean": 1000.2999999999302,
+        "p95": 1000.2999999999302,
+        "max": 1000.2999999999302
+      },
+      "paintOpportunity": {
+        "count": 1,
+        "mean": 1025.6999999999534,
+        "p95": 1025.6999999999534,
+        "max": 1025.6999999999534
+      },
+      "frame": {
+        "count": 62,
+        "mean": 16.530645161290316,
+        "p95": 16.800000000000182,
+        "max": 16.800000000000182
+      },
+      "events": {
+        "render": 1
+      },
+      "domMutations": 0,
+      "toolbar": 0,
+      "selectionRequests": 0,
+      "functions": {},
+      "heap": 7382362
+    },
+    {
+      "repeat": 1,
+      "n": 10,
+      "e": 10,
+      "operation": "hidden-update",
+      "elapsed": 34.10000000009313,
+      "handler": {
+        "count": 1,
+        "mean": 0.2999999999301508,
+        "p95": 0.2999999999301508,
+        "max": 0.2999999999301508
+      },
+      "paintOpportunity": {
+        "count": 1,
+        "mean": 33.89999999990687,
+        "p95": 33.89999999990687,
+        "max": 33.89999999990687
+      },
+      "frame": {
+        "count": 2,
+        "mean": 15.999999999976808,
+        "p95": 16.699999999999818,
+        "max": 16.699999999999818
+      },
+      "events": {
+        "style": 1,
+        "data": 1,
+        "render": 2
+      },
+      "domMutations": 16,
+      "toolbar": 0,
+      "selectionRequests": 0,
+      "functions": {
+        "scheduleGraphViewportResize": {
+          "count": 1,
+          "mean": 0.09999999997671694,
+          "p95": 0.09999999997671694,
+          "max": 0.09999999997671694
+        },
+        "applyGraphViewportSize": {
+          "count": 1,
+          "mean": 1.8000000000465661,
+          "p95": 1.8000000000465661,
+          "max": 1.8000000000465661
+        }
+      },
+      "heap": 7382362
+    },
+    {
+      "repeat": 1,
+      "n": 10,
+      "e": 10,
+      "operation": "hidden-idle",
+      "elapsed": 1031.1999999999534,
+      "handler": {
+        "count": 1,
+        "mean": 1000.2999999999302,
+        "p95": 1000.2999999999302,
+        "max": 1000.2999999999302
+      },
+      "paintOpportunity": {
+        "count": 1,
+        "mean": 1031,
+        "p95": 1031,
+        "max": 1031
+      },
+      "frame": {
+        "count": 62,
+        "mean": 16.622580645161296,
+        "p95": 16.800000000000182,
+        "max": 16.800000000000182
+      },
+      "events": {
+        "render": 1
+      },
+      "domMutations": 0,
+      "toolbar": 0,
+      "selectionRequests": 0,
+      "functions": {},
+      "heap": 6526795
+    },
+    {
+      "repeat": 1,
+      "n": 10,
+      "e": 10,
+      "operation": "pan-instrumentation-disabled",
+      "elapsed": 400.0999999999767,
+      "handler": {
+        "count": 12,
+        "mean": 0.07499999999223898,
+        "p95": 0.2999999999301508,
+        "max": 0.2999999999301508
+      },
+      "paintOpportunity": {
+        "count": 12,
+        "mean": 33.333333333333336,
+        "p95": 42.199999999953434,
+        "max": 42.199999999953434
+      },
+      "frame": {
+        "count": 24,
+        "mean": 16.62916666666668,
+        "p95": 16.700000000000728,
+        "max": 16.800000000000182
+      },
+      "events": {
+        "pan": 13,
+        "render": 13,
+        "zoom": 1
+      },
+      "domMutations": 16,
+      "toolbar": 0,
+      "selectionRequests": 0,
+      "functions": {},
+      "heap": 6918227
+    },
+    {
+      "repeat": 1,
+      "n": 10,
+      "e": 10,
+      "operation": "after-destroy-resize",
+      "elapsed": 27.899999999906868,
+      "handler": {
+        "count": 1,
+        "mean": 0.2999999999301508,
+        "p95": 0.2999999999301508,
+        "max": 0.2999999999301508
+      },
+      "paintOpportunity": {
+        "count": 1,
+        "mean": 27.899999999906868,
+        "p95": 27.899999999906868,
+        "max": 27.899999999906868
+      },
+      "frame": {
+        "count": 2,
+        "mean": 10.749999999988177,
+        "p95": 16.599999999999454,
+        "max": 16.599999999999454
+      },
+      "events": {
+        "render": 2,
+        "pan": 1,
+        "zoom": 1
+      },
+      "domMutations": 12,
+      "toolbar": 0,
+      "selectionRequests": 0,
+      "functions": {
+        "scheduleGraphViewportResize": {
+          "count": 1,
+          "mean": 0,
+          "p95": 0,
+          "max": 0
+        },
+        "applyGraphViewportSize": {
+          "count": 1,
+          "mean": 1.099999999976717,
+          "p95": 1.099999999976717,
+          "max": 1.099999999976717
+        }
+      },
+      "heap": 6918227
+    },
+    {
+      "repeat": 1,
+      "n": 10,
+      "e": 10,
+      "operation": "cleanup",
+      "cyDestroyed": false,
+      "observerRetained": true,
+      "mountIncluding200ms": 279.5999999999767
+    },
+    {
+      "repeat": 1,
+      "n": 100,
+      "e": 200,
+      "operation": "parse",
+      "elapsed": 89.19999999995343,
+      "handler": {
+        "count": 3,
+        "mean": 0.6333333333410943,
+        "p95": 1,
+        "max": 1
+      },
+      "paintOpportunity": {
+        "count": 3,
+        "mean": 29.69999999999224,
+        "p95": 33.5,
+        "max": 33.5
+      },
+      "frame": {
+        "count": 6,
+        "mean": 14.700000000000122,
+        "p95": 16.700000000000728,
+        "max": 16.700000000000728
+      },
+      "events": {},
+      "domMutations": 0,
+      "toolbar": 0,
+      "selectionRequests": 0,
+      "functions": {},
+      "heap": 5940163
+    },
+    {
+      "repeat": 1,
+      "n": 100,
+      "e": 200,
+      "operation": "construct",
+      "elapsed": 363,
+      "handler": {
+        "count": 1,
+        "mean": 261.5,
+        "p95": 261.5,
+        "max": 261.5
+      },
+      "paintOpportunity": {
+        "count": 1,
+        "mean": 363,
+        "p95": 363,
+        "max": 363
+      },
+      "frame": {
+        "count": 2,
+        "mean": 174.24999999996544,
+        "p95": 248.49999999993088,
+        "max": 248.49999999993088
+      },
+      "events": {
+        "remove": 1,
+        "style": 401,
+        "add": 300,
+        "render": 1
+      },
+      "domMutations": 0,
+      "toolbar": 0,
+      "selectionRequests": 0,
+      "functions": {},
+      "heap": 12002380
+    },
+    {
+      "repeat": 1,
+      "n": 100,
+      "e": 200,
+      "operation": "initial-layout",
+      "elapsed": 156.19999999995343,
+      "handler": {
+        "count": 1,
+        "mean": 97,
+        "p95": 97,
+        "max": 97
+      },
+      "paintOpportunity": {
+        "count": 1,
+        "mean": 156.19999999995343,
+        "p95": 156.19999999995343,
+        "max": 156.19999999995343
+      },
+      "frame": {
+        "count": 2,
+        "mean": 75.90000000001146,
+        "p95": 85.10000000002401,
+        "max": 85.10000000002401
+      },
+      "events": {
+        "layoutstart": 1,
+        "position": 100,
+        "pan": 2,
+        "zoom": 2,
+        "layoutstop": 1,
+        "render": 1
+      },
+      "domMutations": 0,
+      "toolbar": 0,
+      "selectionRequests": 0,
+      "functions": {},
+      "heap": 16897388
+    },
+    {
+      "repeat": 1,
+      "n": 100,
+      "e": 200,
+      "operation": "pan",
+      "elapsed": 396.0999999999767,
+      "handler": {
+        "count": 12,
+        "mean": 0.09166666667442769,
+        "p95": 0.2000000000698492,
+        "max": 0.2000000000698492
+      },
+      "paintOpportunity": {
+        "count": 12,
+        "mean": 33.00833333333139,
+        "p95": 40.59999999997672,
+        "max": 40.59999999997672
+      },
+      "frame": {
+        "count": 24,
+        "mean": 16.466666666667606,
+        "p95": 16.799999999999272,
+        "max": 16.80000000000109
+      },
+      "events": {
+        "pan": 12,
+        "render": 13
+      },
+      "domMutations": 0,
+      "toolbar": 0,
+      "selectionRequests": 0,
+      "functions": {},
+      "heap": 14149376
+    },
+    {
+      "repeat": 1,
+      "n": 100,
+      "e": 200,
+      "operation": "zoom",
+      "elapsed": 399.30000000004657,
+      "handler": {
+        "count": 12,
+        "mean": 0.09999999999611948,
+        "p95": 0.2000000000698492,
+        "max": 0.2000000000698492
+      },
+      "paintOpportunity": {
+        "count": 12,
+        "mean": 33.25833333334109,
+        "p95": 33.59999999997672,
+        "max": 33.59999999997672
+      },
+      "frame": {
+        "count": 24,
+        "mean": 16.608333333330393,
+        "p95": 16.700000000000728,
+        "max": 16.80000000000109
+      },
+      "events": {
+        "zoom": 12,
+        "render": 12
+      },
+      "domMutations": 0,
+      "toolbar": 0,
+      "selectionRequests": 0,
+      "functions": {},
+      "heap": 14363928
+    },
+    {
+      "repeat": 1,
+      "n": 100,
+      "e": 200,
+      "operation": "select-node",
+      "elapsed": 420.5,
+      "handler": {
+        "count": 12,
+        "mean": 14.966666666674428,
+        "p95": 22.900000000023283,
+        "max": 22.900000000023283
+      },
+      "paintOpportunity": {
+        "count": 12,
+        "mean": 35.03333333333527,
+        "p95": 49.09999999997672,
+        "max": 49.09999999997672
+      },
+      "frame": {
+        "count": 24,
+        "mean": 17.308333333334303,
+        "p95": 16.80000000000109,
+        "max": 33.399999999999636
+      },
+      "events": {
+        "style": 23,
+        "select": 12,
+        "tap": 12,
+        "render": 12,
+        "unselect": 11
+      },
+      "domMutations": 0,
+      "toolbar": 12,
+      "selectionRequests": 12,
+      "functions": {
+        "publishGraphSelectedFileEntries": {
+          "count": 12,
+          "mean": 0.20000000000194026,
+          "p95": 0.30000000004656613,
+          "max": 0.30000000004656613
+        },
+        "applyGraphSelectedFileEntries": {
+          "count": 12,
+          "mean": 14.283333333325572,
+          "p95": 21.800000000046566,
+          "max": 21.800000000046566
+        }
+      },
+      "heap": 12848360
+    },
+    {
+      "repeat": 1,
+      "n": 100,
+      "e": 200,
+      "operation": "hover",
+      "elapsed": 1995.5,
+      "handler": {
+        "count": 60,
+        "mean": 2.638333333330229,
+        "p95": 4.5,
+        "max": 5.200000000069849
+      },
+      "paintOpportunity": {
+        "count": 60,
+        "mean": 33.246666666665504,
+        "p95": 34.09999999997672,
+        "max": 34.29999999993015
+      },
+      "frame": {
+        "count": 120,
+        "mean": 16.619166666666857,
+        "p95": 16.799999999999272,
+        "max": 16.80000000000109
+      },
+      "events": {
+        "mousemove": 44,
+        "mouseover": 10,
+        "mouseout": 10
+      },
+      "domMutations": 0,
+      "toolbar": 0,
+      "selectionRequests": 0,
+      "functions": {},
+      "heap": 10099320
+    },
+    {
+      "repeat": 1,
+      "n": 100,
+      "e": 200,
+      "operation": "modify-label",
+      "elapsed": 402.69999999995343,
+      "handler": {
+        "count": 12,
+        "mean": 0.17499999999805974,
+        "p95": 0.2999999999301508,
+        "max": 0.2999999999301508
+      },
+      "paintOpportunity": {
+        "count": 12,
+        "mean": 33.53333333333527,
+        "p95": 37,
+        "max": 37
+      },
+      "frame": {
+        "count": 24,
+        "mean": 16.59166666666374,
+        "p95": 16.700000000000728,
+        "max": 16.700000000000728
+      },
+      "events": {
+        "style": 12,
+        "data": 12,
+        "render": 12
+      },
+      "domMutations": 0,
+      "toolbar": 0,
+      "selectionRequests": 0,
+      "functions": {},
+      "heap": 10658516
+    },
+    {
+      "repeat": 1,
+      "n": 100,
+      "e": 200,
+      "operation": "rebuild-edges",
+      "elapsed": 476.89999999990687,
+      "handler": {
+        "count": 3,
+        "mean": 77.13333333330229,
+        "p95": 105,
+        "max": 105
+      },
+      "paintOpportunity": {
+        "count": 3,
+        "mean": 158.8999999999845,
+        "p95": 174.90000000002328,
+        "max": 174.90000000002328
+      },
+      "frame": {
+        "count": 6,
+        "mean": 76.94999999999618,
+        "p95": 94.89999999997599,
+        "max": 94.89999999997599
+      },
+      "events": {
+        "style": 1500,
+        "remove": 600,
+        "add": 600,
+        "render": 3
+      },
+      "domMutations": 0,
+      "toolbar": 0,
+      "selectionRequests": 0,
+      "functions": {},
+      "heap": 30696016
+    },
+    {
+      "repeat": 1,
+      "n": 100,
+      "e": 200,
+      "operation": "proof-layout",
+      "elapsed": 85.40000000002328,
+      "handler": {
+        "count": 1,
+        "mean": 46.59999999997672,
+        "p95": 46.59999999997672,
+        "max": 46.59999999997672
+      },
+      "paintOpportunity": {
+        "count": 1,
+        "mean": 85.30000000004657,
+        "p95": 85.30000000004657,
+        "max": 85.30000000004657
+      },
+      "frame": {
+        "count": 2,
+        "mean": 33.79999999996471,
+        "p95": 34.399999999930515,
+        "max": 34.399999999930515
+      },
+      "events": {
+        "layoutstart": 1,
+        "position": 100,
+        "layoutstop": 1,
+        "render": 1
+      },
+      "domMutations": 0,
+      "toolbar": 0,
+      "selectionRequests": 0,
+      "functions": {},
+      "heap": 29677169
+    },
+    {
+      "repeat": 1,
+      "n": 100,
+      "e": 200,
+      "operation": "resize",
+      "elapsed": 595.1999999999534,
+      "handler": {
+        "count": 12,
+        "mean": 0.09166666665502514,
+        "p95": 0.2000000000698492,
+        "max": 0.2000000000698492
+      },
+      "paintOpportunity": {
+        "count": 12,
+        "mean": 49.583333333333336,
+        "p95": 98.59999999997672,
+        "max": 98.59999999997672
+      },
+      "frame": {
+        "count": 24,
+        "mean": 24.241666666667623,
+        "p95": 50,
+        "max": 83.29999999999927
+      },
+      "events": {
+        "pan": 12,
+        "zoom": 12,
+        "render": 12
+      },
+      "domMutations": 136,
+      "toolbar": 0,
+      "selectionRequests": 0,
+      "functions": {
+        "scheduleGraphViewportResize": {
+          "count": 12,
+          "mean": 0.041666666666666664,
+          "p95": 0.10000000009313226,
+          "max": 0.10000000009313226
+        },
+        "applyGraphViewportSize": {
+          "count": 12,
+          "mean": 2.3250000000019404,
+          "p95": 4.799999999930151,
+          "max": 4.799999999930151
+        }
+      },
+      "heap": 14900497
+    },
+    {
+      "repeat": 1,
+      "n": 100,
+      "e": 200,
+      "operation": "tab-hide-restore",
+      "elapsed": 394.30000000004657,
+      "handler": {
+        "count": 12,
+        "mean": 0.0583333333391541,
+        "p95": 0.19999999995343387,
+        "max": 0.19999999995343387
+      },
+      "paintOpportunity": {
+        "count": 12,
+        "mean": 32.84166666667443,
+        "p95": 44.20000000006985,
+        "max": 44.20000000006985
+      },
+      "frame": {
+        "count": 24,
+        "mean": 16.08749999999706,
+        "p95": 16.799999999999272,
+        "max": 16.80000000000109
+      },
+      "events": {
+        "render": 12,
+        "pan": 6,
+        "zoom": 6
+      },
+      "domMutations": 192,
+      "toolbar": 0,
+      "selectionRequests": 0,
+      "functions": {
+        "scheduleGraphViewportResize": {
+          "count": 12,
+          "mean": 0.008333333331393078,
+          "p95": 0.09999999997671694,
+          "max": 0.09999999997671694
+        },
+        "applyGraphViewportSize": {
+          "count": 12,
+          "mean": 1.308333333339154,
+          "p95": 2.5,
+          "max": 2.5
+        }
+      },
+      "heap": 16035021
+    },
+    {
+      "repeat": 1,
+      "n": 100,
+      "e": 200,
+      "operation": "idle",
+      "elapsed": 1025.9000000000233,
+      "handler": {
+        "count": 1,
+        "mean": 1000.2999999999302,
+        "p95": 1000.2999999999302,
+        "max": 1000.2999999999302
+      },
+      "paintOpportunity": {
+        "count": 1,
+        "mean": 1025.6999999999534,
+        "p95": 1025.6999999999534,
+        "max": 1025.6999999999534
+      },
+      "frame": {
+        "count": 62,
+        "mean": 16.525806451612908,
+        "p95": 16.700000000000728,
+        "max": 16.80000000000109
+      },
+      "events": {
+        "render": 1
+      },
+      "domMutations": 0,
+      "toolbar": 0,
+      "selectionRequests": 0,
+      "functions": {},
+      "heap": 16413453
+    },
+    {
+      "repeat": 1,
+      "n": 100,
+      "e": 200,
+      "operation": "hidden-update",
+      "elapsed": 38.199999999953434,
+      "handler": {
+        "count": 1,
+        "mean": 0.40000000002328306,
+        "p95": 0.40000000002328306,
+        "max": 0.40000000002328306
+      },
+      "paintOpportunity": {
+        "count": 1,
+        "mean": 38.09999999997672,
+        "p95": 38.09999999997672,
+        "max": 38.09999999997672
+      },
+      "frame": {
+        "count": 2,
+        "mean": 15.75,
+        "p95": 16.700000000000728,
+        "max": 16.700000000000728
+      },
+      "events": {
+        "style": 1,
+        "data": 1,
+        "render": 2
+      },
+      "domMutations": 16,
+      "toolbar": 0,
+      "selectionRequests": 0,
+      "functions": {
+        "scheduleGraphViewportResize": {
+          "count": 1,
+          "mean": 0,
+          "p95": 0,
+          "max": 0
+        },
+        "applyGraphViewportSize": {
+          "count": 1,
+          "mean": 3.099999999976717,
+          "p95": 3.099999999976717,
+          "max": 3.099999999976717
+        }
+      },
+      "heap": 16413453
+    },
+    {
+      "repeat": 1,
+      "n": 100,
+      "e": 200,
+      "operation": "hidden-idle",
+      "elapsed": 1026.6999999999534,
+      "handler": {
+        "count": 1,
+        "mean": 1000.3000000000466,
+        "p95": 1000.3000000000466,
+        "max": 1000.3000000000466
+      },
+      "paintOpportunity": {
+        "count": 1,
+        "mean": 1026.5,
+        "p95": 1026.5,
+        "max": 1026.5
+      },
+      "frame": {
+        "count": 62,
+        "mean": 16.543548387096784,
+        "p95": 16.700000000000728,
+        "max": 16.799999999999272
+      },
+      "events": {
+        "render": 1
+      },
+      "domMutations": 0,
+      "toolbar": 0,
+      "selectionRequests": 0,
+      "functions": {},
+      "heap": 18418441
+    },
+    {
+      "repeat": 1,
+      "n": 100,
+      "e": 200,
+      "operation": "pan-instrumentation-disabled",
+      "elapsed": 500.20000000006985,
+      "handler": {
+        "count": 12,
+        "mean": 0.09166666667442769,
+        "p95": 0.2000000000698492,
+        "max": 0.2000000000698492
+      },
+      "paintOpportunity": {
+        "count": 12,
+        "mean": 41.65000000000388,
+        "p95": 90.59999999997672,
+        "max": 90.59999999997672
+      },
+      "frame": {
+        "count": 24,
+        "mean": 20.770833333331364,
+        "p95": 50,
+        "max": 66.60000000000036
+      },
+      "events": {
+        "pan": 13,
+        "render": 14,
+        "zoom": 1
+      },
+      "domMutations": 16,
+      "toolbar": 0,
+      "selectionRequests": 0,
+      "functions": {},
+      "heap": 9551509
+    },
+    {
+      "repeat": 1,
+      "n": 100,
+      "e": 200,
+      "operation": "after-destroy-resize",
+      "elapsed": 219.59999999997672,
+      "handler": {
+        "count": 1,
+        "mean": 0.30000000004656613,
+        "p95": 0.30000000004656613,
+        "max": 0.30000000004656613
+      },
+      "paintOpportunity": {
+        "count": 1,
+        "mean": 219.40000000002328,
+        "p95": 219.40000000002328,
+        "max": 219.40000000002328
+      },
+      "frame": {
+        "count": 2,
+        "mean": 76.79999999999927,
+        "p95": 150,
+        "max": 150
+      },
+      "events": {
+        "render": 2,
+        "pan": 1,
+        "zoom": 1
+      },
+      "domMutations": 12,
+      "toolbar": 0,
+      "selectionRequests": 0,
+      "functions": {
+        "scheduleGraphViewportResize": {
+          "count": 1,
+          "mean": 0.10000000009313226,
+          "p95": 0.10000000009313226,
+          "max": 0.10000000009313226
+        },
+        "applyGraphViewportSize": {
+          "count": 1,
+          "mean": 2.699999999953434,
+          "p95": 2.699999999953434,
+          "max": 2.699999999953434
+        }
+      },
+      "heap": 21836905
+    },
+    {
+      "repeat": 1,
+      "n": 100,
+      "e": 200,
+      "operation": "cleanup",
+      "cyDestroyed": false,
+      "observerRetained": true,
+      "mountIncluding200ms": 235.89999999990687
+    },
+    {
+      "repeat": 1,
+      "n": 1000,
+      "e": 2000,
+      "operation": "parse",
+      "elapsed": 85.5,
+      "handler": {
+        "count": 3,
+        "mean": 5,
+        "p95": 8.199999999953434,
+        "max": 8.199999999953434
+      },
+      "paintOpportunity": {
+        "count": 3,
+        "mean": 28.466666666674428,
+        "p95": 33.5,
+        "max": 33.5
+      },
+      "frame": {
+        "count": 6,
+        "mean": 14.216666666666546,
+        "p95": 16.700000000000728,
+        "max": 16.700000000000728
+      },
+      "events": {},
+      "domMutations": 0,
+      "toolbar": 0,
+      "selectionRequests": 0,
+      "functions": {},
+      "heap": 13264848
+    },
+    {
+      "repeat": 1,
+      "n": 1000,
+      "e": 2000,
+      "operation": "construct",
+      "elapsed": 2660.79999999993,
+      "handler": {
+        "count": 1,
+        "mean": 1967.5,
+        "p95": 1967.5,
+        "max": 1967.5
+      },
+      "paintOpportunity": {
+        "count": 1,
+        "mean": 2660.6999999999534,
+        "p95": 2660.6999999999534,
+        "max": 2660.6999999999534
+      },
+      "frame": {
+        "count": 2,
+        "mean": 1291.0499999999993,
+        "p95": 1965.5,
+        "max": 1965.5
+      },
+      "events": {
+        "remove": 1,
+        "style": 4001,
+        "add": 3000,
+        "render": 1
+      },
+      "domMutations": 0,
+      "toolbar": 0,
+      "selectionRequests": 0,
+      "functions": {},
+      "heap": 40983683
+    },
+    {
+      "repeat": 1,
+      "n": 1000,
+      "e": 2000,
+      "operation": "initial-layout",
+      "elapsed": 1366.7999999999302,
+      "handler": {
+        "count": 1,
+        "mean": 744.9000000000233,
+        "p95": 744.9000000000233,
+        "max": 744.9000000000233
+      },
+      "paintOpportunity": {
+        "count": 1,
+        "mean": 1366.6999999999534,
+        "p95": 1366.6999999999534,
+        "max": 1366.6999999999534
+      },
+      "frame": {
+        "count": 2,
+        "mean": 677.0499999999647,
+        "p95": 737.5999999999294,
+        "max": 737.5999999999294
+      },
+      "events": {
+        "layoutstart": 1,
+        "position": 1000,
+        "pan": 2,
+        "zoom": 2,
+        "layoutstop": 1,
+        "render": 1
+      },
+      "domMutations": 0,
+      "toolbar": 0,
+      "selectionRequests": 0,
+      "functions": {},
+      "heap": 42182186
+    },
+    {
+      "repeat": 1,
+      "n": 1000,
+      "e": 2000,
+      "operation": "pan",
+      "elapsed": 1221.6999999999534,
+      "handler": {
+        "count": 12,
+        "mean": 0.05833333332945282,
+        "p95": 0.10000000009313226,
+        "max": 0.10000000009313226
+      },
+      "paintOpportunity": {
+        "count": 12,
+        "mean": 101.77500000000389,
+        "p95": 262.19999999995343,
+        "max": 262.19999999995343
+      },
+      "frame": {
+        "count": 24,
+        "mean": 50.858333333334336,
+        "p95": 166.70000000000073,
+        "max": 233.40000000000146
+      },
+      "events": {
+        "pan": 12,
+        "render": 14
+      },
+      "domMutations": 0,
+      "toolbar": 0,
+      "selectionRequests": 0,
+      "functions": {},
+      "heap": 52656157
+    },
+    {
+      "repeat": 1,
+      "n": 1000,
+      "e": 2000,
+      "operation": "zoom",
+      "elapsed": 399.5,
+      "handler": {
+        "count": 12,
+        "mean": 0.0749999999825377,
+        "p95": 0.09999999997671694,
+        "max": 0.09999999997671694
+      },
+      "paintOpportunity": {
+        "count": 12,
+        "mean": 33.25833333334109,
+        "p95": 33.800000000046566,
+        "max": 33.800000000046566
+      },
+      "frame": {
+        "count": 24,
+        "mean": 16.604166666663787,
+        "p95": 16.700000000000728,
+        "max": 16.700000000000728
+      },
+      "events": {
+        "zoom": 12,
+        "render": 12
+      },
+      "domMutations": 0,
+      "toolbar": 0,
+      "selectionRequests": 0,
+      "functions": {},
+      "heap": 52855145
+    },
+    {
+      "repeat": 1,
+      "n": 1000,
+      "e": 2000,
+      "operation": "select-node",
+      "elapsed": 2515.70000000007,
+      "handler": {
+        "count": 12,
+        "mean": 123.31666666665114,
+        "p95": 163.5,
+        "max": 163.5
+      },
+      "paintOpportunity": {
+        "count": 12,
+        "mean": 209.6166666666783,
+        "p95": 251.70000000006985,
+        "max": 251.70000000006985
+      },
+      "frame": {
+        "count": 24,
+        "mean": 104.10000000000097,
+        "p95": 166.5,
+        "max": 166.59999999999854
+      },
+      "events": {
+        "style": 23,
+        "select": 12,
+        "tap": 12,
+        "render": 12,
+        "unselect": 11
+      },
+      "domMutations": 0,
+      "toolbar": 12,
+      "selectionRequests": 12,
+      "functions": {
+        "publishGraphSelectedFileEntries": {
+          "count": 12,
+          "mean": 0.27500000002328306,
+          "p95": 0.40000000002328306,
+          "max": 0.40000000002328306
+        },
+        "applyGraphSelectedFileEntries": {
+          "count": 12,
+          "mean": 122.1166666666298,
+          "p95": 162.29999999993015,
+          "max": 162.29999999993015
+        }
+      },
+      "heap": 67134125
+    },
+    {
+      "repeat": 1,
+      "n": 1000,
+      "e": 2000,
+      "operation": "hover",
+      "elapsed": 2000.1000000000931,
+      "handler": {
+        "count": 60,
+        "mean": 13.941666666660845,
+        "p95": 24.70000000006985,
+        "max": 28
+      },
+      "paintOpportunity": {
+        "count": 60,
+        "mean": 33.33000000000077,
+        "p95": 34.5,
+        "max": 38.90000000002328
+      },
+      "frame": {
+        "count": 120,
+        "mean": 16.655833333333128,
+        "p95": 16.700000000000728,
+        "max": 16.80000000000291
+      },
+      "events": {
+        "mousemove": 44,
+        "mouseover": 6,
+        "mouseout": 6
+      },
+      "domMutations": 0,
+      "toolbar": 0,
+      "selectionRequests": 0,
+      "functions": {},
+      "heap": 54018811
+    },
+    {
+      "repeat": 1,
+      "n": 1000,
+      "e": 2000,
+      "operation": "modify-label",
+      "elapsed": 1278.7999999999302,
+      "handler": {
+        "count": 12,
+        "mean": 0.6500000000038805,
+        "p95": 1,
+        "max": 1
+      },
+      "paintOpportunity": {
+        "count": 12,
+        "mean": 106.54166666665697,
+        "p95": 120,
+        "max": 120
+      },
+      "frame": {
+        "count": 24,
+        "mean": 52.69999999999906,
+        "p95": 100,
+        "max": 100
+      },
+      "events": {
+        "style": 12,
+        "data": 12,
+        "render": 12
+      },
+      "domMutations": 0,
+      "toolbar": 0,
+      "selectionRequests": 0,
+      "functions": {},
+      "heap": 67351446
+    },
+    {
+      "repeat": 1,
+      "n": 1000,
+      "e": 2000,
+      "operation": "rebuild-edges",
+      "elapsed": 4167.29999999993,
+      "handler": {
+        "count": 3,
+        "mean": 688.5333333332868,
+        "p95": 931.6999999999534,
+        "max": 931.6999999999534
+      },
+      "paintOpportunity": {
+        "count": 3,
+        "mean": 1389.0333333333256,
+        "p95": 1647.5,
+        "max": 1647.5
+      },
+      "frame": {
+        "count": 6,
+        "mean": 678.1333333333374,
+        "p95": 983.2000000000007,
+        "max": 983.2000000000007
+      },
+      "events": {
+        "style": 15000,
+        "remove": 6000,
+        "add": 6000,
+        "render": 3
+      },
+      "domMutations": 0,
+      "toolbar": 0,
+      "selectionRequests": 0,
+      "functions": {},
+      "heap": 50867600
+    },
+    {
+      "repeat": 1,
+      "n": 1000,
+      "e": 2000,
+      "operation": "proof-layout",
+      "elapsed": 960.7999999999302,
+      "handler": {
+        "count": 1,
+        "mean": 673.7999999999302,
+        "p95": 673.7999999999302,
+        "max": 673.7999999999302
+      },
+      "paintOpportunity": {
+        "count": 1,
+        "mean": 960.6999999999534,
+        "p95": 960.6999999999534,
+        "max": 960.6999999999534
+      },
+      "frame": {
+        "count": 2,
+        "mean": 450.65000000001237,
+        "p95": 667.9000000000233,
+        "max": 667.9000000000233
+      },
+      "events": {
+        "layoutstart": 1,
+        "position": 1000,
+        "layoutstop": 1,
+        "render": 1
+      },
+      "domMutations": 0,
+      "toolbar": 0,
+      "selectionRequests": 0,
+      "functions": {},
+      "heap": 79736399
+    },
+    {
+      "repeat": 1,
+      "n": 1000,
+      "e": 2000,
+      "operation": "resize",
+      "elapsed": 1963.5999999999767,
+      "handler": {
+        "count": 12,
+        "mean": 0.08333333334303461,
+        "p95": 0.19999999995343387,
+        "max": 0.19999999995343387
+      },
+      "paintOpportunity": {
+        "count": 12,
+        "mean": 163.625,
+        "p95": 336.4000000000233,
+        "max": 336.4000000000233
+      },
+      "frame": {
+        "count": 24,
+        "mean": 81.53333333333042,
+        "p95": 250.09999999999854,
+        "max": 333.40000000000146
+      },
+      "events": {
+        "pan": 12,
+        "zoom": 12,
+        "render": 12
+      },
+      "domMutations": 136,
+      "toolbar": 0,
+      "selectionRequests": 0,
+      "functions": {
+        "scheduleGraphViewportResize": {
+          "count": 12,
+          "mean": 0.008333333331393078,
+          "p95": 0.09999999997671694,
+          "max": 0.09999999997671694
+        },
+        "applyGraphViewportSize": {
+          "count": 12,
+          "mean": 1.7333333333469152,
+          "p95": 3,
+          "max": 3
+        }
+      },
+      "heap": 96320683
+    },
+    {
+      "repeat": 1,
+      "n": 1000,
+      "e": 2000,
+      "operation": "tab-hide-restore",
+      "elapsed": 400.5999999999767,
+      "handler": {
+        "count": 12,
+        "mean": 0.06666666665114462,
+        "p95": 0.19999999995343387,
+        "max": 0.19999999995343387
+      },
+      "paintOpportunity": {
+        "count": 12,
+        "mean": 33.36666666666861,
+        "p95": 40.5,
+        "max": 40.5
+      },
+      "frame": {
+        "count": 24,
+        "mean": 16.366666666663757,
+        "p95": 16.80000000000291,
+        "max": 16.80000000000291
+      },
+      "events": {
+        "render": 13,
+        "pan": 6,
+        "zoom": 6
+      },
+      "domMutations": 192,
+      "toolbar": 0,
+      "selectionRequests": 0,
+      "functions": {
+        "scheduleGraphViewportResize": {
+          "count": 12,
+          "mean": 0.008333333341094354,
+          "p95": 0.10000000009313226,
+          "max": 0.10000000009313226
+        },
+        "applyGraphViewportSize": {
+          "count": 12,
+          "mean": 1.2083333333430346,
+          "p95": 3,
+          "max": 3
+        }
+      },
+      "heap": 80876471
+    },
+    {
+      "repeat": 1,
+      "n": 1000,
+      "e": 2000,
+      "operation": "idle",
+      "elapsed": 1025.5999999999767,
+      "handler": {
+        "count": 1,
+        "mean": 1000.2999999999302,
+        "p95": 1000.2999999999302,
+        "max": 1000.2999999999302
+      },
+      "paintOpportunity": {
+        "count": 1,
+        "mean": 1025.5,
+        "p95": 1025.5,
+        "max": 1025.5
+      },
+      "frame": {
+        "count": 62,
+        "mean": 16.530645161289524,
+        "p95": 16.700000000004366,
+        "max": 16.80000000000291
+      },
+      "events": {
+        "render": 1
+      },
+      "domMutations": 0,
+      "toolbar": 0,
+      "selectionRequests": 0,
+      "functions": {},
+      "heap": 81244787
+    },
+    {
+      "repeat": 1,
+      "n": 1000,
+      "e": 2000,
+      "operation": "hidden-update",
+      "elapsed": 252,
+      "handler": {
+        "count": 1,
+        "mean": 1.1999999999534339,
+        "p95": 1.1999999999534339,
+        "max": 1.1999999999534339
+      },
+      "paintOpportunity": {
+        "count": 1,
+        "mean": 251.80000000004657,
+        "p95": 251.80000000004657,
+        "max": 251.80000000004657
+      },
+      "frame": {
+        "count": 2,
+        "mean": 116.00000000001091,
+        "p95": 216.6999999999971,
+        "max": 216.6999999999971
+      },
+      "events": {
+        "style": 1,
+        "data": 1,
+        "render": 2
+      },
+      "domMutations": 16,
+      "toolbar": 0,
+      "selectionRequests": 0,
+      "functions": {
+        "scheduleGraphViewportResize": {
+          "count": 1,
+          "mean": 0,
+          "p95": 0,
+          "max": 0
+        },
+        "applyGraphViewportSize": {
+          "count": 1,
+          "mean": 4.699999999953434,
+          "p95": 4.699999999953434,
+          "max": 4.699999999953434
+        }
+      },
+      "heap": 96316299
+    },
+    {
+      "repeat": 1,
+      "n": 1000,
+      "e": 2000,
+      "operation": "hidden-idle",
+      "elapsed": 1030.3000000000466,
+      "handler": {
+        "count": 1,
+        "mean": 1000.4000000000233,
+        "p95": 1000.4000000000233,
+        "max": 1000.4000000000233
+      },
+      "paintOpportunity": {
+        "count": 1,
+        "mean": 1030.0999999999767,
+        "p95": 1030.0999999999767,
+        "max": 1030.0999999999767
+      },
+      "frame": {
+        "count": 63,
+        "mean": 16.33968253968141,
+        "p95": 16.799999999995634,
+        "max": 16.80000000000291
+      },
+      "events": {},
+      "domMutations": 0,
+      "toolbar": 0,
+      "selectionRequests": 0,
+      "functions": {},
+      "heap": 96687839
+    },
+    {
+      "repeat": 1,
+      "n": 1000,
+      "e": 2000,
+      "operation": "pan-instrumentation-disabled",
+      "elapsed": 1949.2999999999302,
+      "handler": {
+        "count": 12,
+        "mean": 0.0583333333391541,
+        "p95": 0.19999999995343387,
+        "max": 0.19999999995343387
+      },
+      "paintOpportunity": {
+        "count": 12,
+        "mean": 162.41666666666666,
+        "p95": 408.5999999999767,
+        "max": 408.5999999999767
+      },
+      "frame": {
+        "count": 24,
+        "mean": 81.1833333333334,
+        "p95": 216.70000000000437,
+        "max": 250.09999999999854
+      },
+      "events": {
+        "pan": 13,
+        "render": 15,
+        "zoom": 1
+      },
+      "domMutations": 16,
+      "toolbar": 0,
+      "selectionRequests": 0,
+      "functions": {},
+      "heap": 35931442
+    },
+    {
+      "repeat": 1,
+      "n": 1000,
+      "e": 2000,
+      "operation": "after-destroy-resize",
+      "elapsed": 782.4000000000233,
+      "handler": {
+        "count": 1,
+        "mean": 0.2000000000698492,
+        "p95": 0.2000000000698492,
+        "max": 0.2000000000698492
+      },
+      "paintOpportunity": {
+        "count": 1,
+        "mean": 782.2000000000698,
+        "p95": 782.2000000000698,
+        "max": 782.2000000000698
+      },
+      "frame": {
+        "count": 2,
+        "mean": 320.90000000001237,
+        "p95": 649.9000000000015,
+        "max": 649.9000000000015
+      },
+      "events": {
+        "render": 2,
+        "pan": 1,
+        "zoom": 1
+      },
+      "domMutations": 12,
+      "toolbar": 0,
+      "selectionRequests": 0,
+      "functions": {
+        "scheduleGraphViewportResize": {
+          "count": 1,
+          "mean": 0,
+          "p95": 0,
+          "max": 0
+        },
+        "applyGraphViewportSize": {
+          "count": 1,
+          "mean": 2.099999999976717,
+          "p95": 2.099999999976717,
+          "max": 2.099999999976717
+        }
+      },
+      "heap": 64816391
+    },
+    {
+      "repeat": 1,
+      "n": 1000,
+      "e": 2000,
+      "operation": "cleanup",
+      "cyDestroyed": false,
+      "observerRetained": true,
+      "mountIncluding200ms": 275.5
+    },
+    {
+      "repeat": 1,
+      "n": 5000,
+      "e": 10000,
+      "operation": "parse",
+      "elapsed": 83.5,
+      "handler": {
+        "count": 3,
+        "mean": 14.233333333356617,
+        "p95": 16.099999999976717,
+        "max": 16.099999999976717
+      },
+      "paintOpportunity": {
+        "count": 3,
+        "mean": 27.766666666682188,
+        "p95": 34.20000000006985,
+        "max": 34.20000000006985
+      },
+      "frame": {
+        "count": 6,
+        "mean": 13.749999999987873,
+        "p95": 16.700000000004366,
+        "max": 16.700000000004366
+      },
+      "events": {},
+      "domMutations": 0,
+      "toolbar": 0,
+      "selectionRequests": 0,
+      "functions": {},
+      "heap": 26981404
+    },
+    {
+      "repeat": 1,
+      "n": 5000,
+      "e": 10000,
+      "operation": "construct",
+      "elapsed": 7067.400000000023,
+      "handler": {
+        "count": 1,
+        "mean": 4809.199999999953,
+        "p95": 4809.199999999953,
+        "max": 4809.199999999953
+      },
+      "paintOpportunity": {
+        "count": 1,
+        "mean": 7067.099999999977,
+        "p95": 7067.099999999977,
+        "max": 7067.099999999977
+      },
+      "frame": {
+        "count": 2,
+        "mean": 3390.7999999999665,
+        "p95": 4798.399999999929,
+        "max": 4798.399999999929
+      },
+      "events": {
+        "remove": 1,
+        "style": 20001,
+        "add": 15000,
+        "render": 1
+      },
+      "domMutations": 0,
+      "toolbar": 0,
+      "selectionRequests": 0,
+      "functions": {},
+      "heap": 150575713
+    },
+    {
+      "repeat": 1,
+      "n": 5000,
+      "e": 10000,
+      "operation": "initial-layout",
+      "elapsed": 4651.400000000023,
+      "handler": {
+        "count": 1,
+        "mean": 2247.5,
+        "p95": 2247.5,
+        "max": 2247.5
+      },
+      "paintOpportunity": {
+        "count": 1,
+        "mean": 4651.199999999953,
+        "p95": 4651.199999999953,
+        "max": 4651.199999999953
+      },
+      "frame": {
+        "count": 2,
+        "mean": 2323.399999999965,
+        "p95": 2400,
+        "max": 2400
+      },
+      "events": {
+        "layoutstart": 1,
+        "position": 5000,
+        "pan": 2,
+        "zoom": 2,
+        "layoutstop": 1,
+        "render": 1
+      },
+      "domMutations": 0,
+      "toolbar": 0,
+      "selectionRequests": 0,
+      "functions": {},
+      "heap": 260916272
+    },
+    {
+      "repeat": 1,
+      "n": 5000,
+      "e": 10000,
+      "operation": "pan",
+      "elapsed": 5128.70000000007,
+      "handler": {
+        "count": 12,
+        "mean": 0.08333333332363206,
+        "p95": 0.19999999995343387,
+        "max": 0.19999999995343387
+      },
+      "paintOpportunity": {
+        "count": 12,
+        "mean": 427.3833333333314,
+        "p95": 1473.7000000000698,
+        "max": 1473.7000000000698
+      },
+      "frame": {
+        "count": 24,
+        "mean": 213.67916666666466,
+        "p95": 699.9000000000015,
+        "max": 950
+      },
+      "events": {
+        "pan": 12,
+        "render": 16
+      },
+      "domMutations": 0,
+      "toolbar": 0,
+      "selectionRequests": 0,
+      "functions": {},
+      "heap": 169823041
+    },
+    {
+      "repeat": 1,
+      "n": 5000,
+      "e": 10000,
+      "operation": "zoom",
+      "elapsed": 400.20000000006985,
+      "handler": {
+        "count": 12,
+        "mean": 0.09166666665502514,
+        "p95": 0.19999999995343387,
+        "max": 0.19999999995343387
+      },
+      "paintOpportunity": {
+        "count": 12,
+        "mean": 33.333333333333336,
+        "p95": 33.699999999953434,
+        "max": 33.699999999953434
+      },
+      "frame": {
+        "count": 24,
+        "mean": 16.641666666663696,
+        "p95": 16.799999999995634,
+        "max": 16.80000000000291
+      },
+      "events": {
+        "zoom": 12,
+        "render": 12
+      },
+      "domMutations": 0,
+      "toolbar": 0,
+      "selectionRequests": 0,
+      "functions": {},
+      "heap": 170002561
+    },
+    {
+      "repeat": 1,
+      "n": 5000,
+      "e": 10000,
+      "operation": "select-node",
+      "elapsed": 12368.5,
+      "handler": {
+        "count": 12,
+        "mean": 676.9333333333392,
+        "p95": 844.0999999999767,
+        "max": 844.0999999999767
+      },
+      "paintOpportunity": {
+        "count": 12,
+        "mean": 1030.6999999999923,
+        "p95": 1268.5999999999767,
+        "max": 1268.5999999999767
+      },
+      "frame": {
+        "count": 24,
+        "mean": 515.2041666666646,
+        "p95": 799.8999999999942,
+        "max": 833.3000000000029
+      },
+      "events": {
+        "style": 23,
+        "select": 12,
+        "tap": 12,
+        "render": 12,
+        "unselect": 11
+      },
+      "domMutations": 0,
+      "toolbar": 12,
+      "selectionRequests": 12,
+      "functions": {
+        "publishGraphSelectedFileEntries": {
+          "count": 12,
+          "mean": 0.16666666667636795,
+          "p95": 0.40000000002328306,
+          "max": 0.40000000002328306
+        },
+        "applyGraphSelectedFileEntries": {
+          "count": 12,
+          "mean": 674.0666666666608,
+          "p95": 840.7999999999302,
+          "max": 840.7999999999302
+        }
+      },
+      "heap": 273874657
+    },
+    {
+      "repeat": 1,
+      "n": 5000,
+      "e": 10000,
+      "operation": "hover",
+      "elapsed": 5913.099999999977,
+      "handler": {
+        "count": 60,
+        "mean": 79.84000000000427,
+        "p95": 134,
+        "max": 233.30000000004657
+      },
+      "paintOpportunity": {
+        "count": 60,
+        "mean": 98.54833333333372,
+        "p95": 156.40000000002328,
+        "max": 283.5999999999767
+      },
+      "frame": {
+        "count": 120,
+        "mean": 49.26750000000005,
+        "p95": 133.20000000001164,
+        "max": 250
+      },
+      "events": {
+        "mousemove": 44,
+        "mouseover": 4,
+        "mouseout": 4
+      },
+      "domMutations": 0,
+      "toolbar": 0,
+      "selectionRequests": 0,
+      "functions": {},
+      "heap": 216937252
+    },
+    {
+      "repeat": 1,
+      "n": 5000,
+      "e": 10000,
+      "operation": "modify-label",
+      "elapsed": 4497,
+      "handler": {
+        "count": 12,
+        "mean": 2.641666666662786,
+        "p95": 4.5,
+        "max": 4.5
+      },
+      "paintOpportunity": {
+        "count": 12,
+        "mean": 374.7416666666686,
+        "p95": 543.5999999999767,
+        "max": 543.5999999999767
+      },
+      "frame": {
+        "count": 24,
+        "mean": 186.7416666666668,
+        "p95": 433.3000000000029,
+        "max": 533.3000000000029
+      },
+      "events": {
+        "style": 12,
+        "data": 12,
+        "render": 12
+      },
+      "domMutations": 0,
+      "toolbar": 0,
+      "selectionRequests": 0,
+      "functions": {},
+      "heap": 171006173
+    },
+    {
+      "repeat": 1,
+      "n": 5000,
+      "e": 10000,
+      "operation": "rebuild-edges",
+      "elapsed": 15074.599999999977,
+      "handler": {
+        "count": 3,
+        "mean": 2201.56666666669,
+        "p95": 2461.3000000000466,
+        "max": 2461.3000000000466
+      },
+      "paintOpportunity": {
+        "count": 3,
+        "mean": 5024.766666666682,
+        "p95": 5332.099999999977,
+        "max": 5332.099999999977
+      },
+      "frame": {
+        "count": 6,
+        "mean": 2466.7166666666694,
+        "p95": 2666.5,
+        "max": 2666.5
+      },
+      "events": {
+        "style": 75000,
+        "remove": 30000,
+        "add": 30000,
+        "render": 3
+      },
+      "domMutations": 0,
+      "toolbar": 0,
+      "selectionRequests": 0,
+      "functions": {},
+      "heap": 373326813
+    },
+    {
+      "repeat": 1,
+      "n": 5000,
+      "e": 10000,
+      "operation": "proof-layout",
+      "elapsed": 3305.4000000000233,
+      "handler": {
+        "count": 1,
+        "mean": 1526.5,
+        "p95": 1526.5,
+        "max": 1526.5
+      },
+      "paintOpportunity": {
+        "count": 1,
+        "mean": 3305.29999999993,
+        "p95": 3305.29999999993,
+        "max": 3305.29999999993
+      },
+      "frame": {
+        "count": 2,
+        "mean": 1470.9000000000087,
+        "p95": 1525.2000000000262,
+        "max": 1525.2000000000262
+      },
+      "events": {
+        "layoutstart": 1,
+        "position": 5000,
+        "layoutstop": 1,
+        "render": 1
+      },
+      "domMutations": 0,
+      "toolbar": 0,
+      "selectionRequests": 0,
+      "functions": {},
+      "heap": 299851701
+    },
+    {
+      "repeat": 1,
+      "n": 5000,
+      "e": 10000,
+      "operation": "resize",
+      "elapsed": 5128.800000000047,
+      "handler": {
+        "count": 12,
+        "mean": 0.09166666665502514,
+        "p95": 0.19999999995343387,
+        "max": 0.19999999995343387
+      },
+      "paintOpportunity": {
+        "count": 12,
+        "mean": 427.3833333333411,
+        "p95": 885.3000000000466,
+        "max": 885.3000000000466
+      },
+      "frame": {
+        "count": 24,
+        "mean": 212.60416666666484,
+        "p95": 683.3000000000029,
+        "max": 850
+      },
+      "events": {
+        "pan": 12,
+        "zoom": 12,
+        "render": 12
+      },
+      "domMutations": 136,
+      "toolbar": 0,
+      "selectionRequests": 0,
+      "functions": {
+        "scheduleGraphViewportResize": {
+          "count": 12,
+          "mean": 0.016666666662786156,
+          "p95": 0.09999999997671694,
+          "max": 0.09999999997671694
+        },
+        "applyGraphViewportSize": {
+          "count": 12,
+          "mean": 4.9916666666783085,
+          "p95": 42.5,
+          "max": 42.5
+        }
+      },
+      "heap": 118702315
+    },
+    {
+      "repeat": 1,
+      "n": 5000,
+      "e": 10000,
+      "operation": "tab-hide-restore",
+      "elapsed": 402.89999999990687,
+      "handler": {
+        "count": 12,
+        "mean": 0.04999999999805974,
+        "p95": 0.10000000009313226,
+        "max": 0.10000000009313226
+      },
+      "paintOpportunity": {
+        "count": 12,
+        "mean": 33.55833333332945,
+        "p95": 39.300000000046566,
+        "max": 39.300000000046566
+      },
+      "frame": {
+        "count": 24,
+        "mean": 16.25,
+        "p95": 16.79999999998836,
+        "max": 16.79999999998836
+      },
+      "events": {
+        "render": 12,
+        "pan": 6,
+        "zoom": 6
+      },
+      "domMutations": 192,
+      "toolbar": 0,
+      "selectionRequests": 0,
+      "functions": {
+        "scheduleGraphViewportResize": {
+          "count": 12,
+          "mean": 0.008333333331393078,
+          "p95": 0.09999999997671694,
+          "max": 0.09999999997671694
+        },
+        "applyGraphViewportSize": {
+          "count": 12,
+          "mean": 0.6750000000077611,
+          "p95": 1.400000000023283,
+          "max": 1.400000000023283
+        }
+      },
+      "heap": 130645311
+    },
+    {
+      "repeat": 1,
+      "n": 5000,
+      "e": 10000,
+      "operation": "idle",
+      "elapsed": 1020.9000000000233,
+      "handler": {
+        "count": 1,
+        "mean": 1000.5,
+        "p95": 1000.5,
+        "max": 1000.5
+      },
+      "paintOpportunity": {
+        "count": 1,
+        "mean": 1020.7000000000698,
+        "p95": 1020.7000000000698,
+        "max": 1020.7000000000698
+      },
+      "frame": {
+        "count": 62,
+        "mean": 16.453225806450533,
+        "p95": 16.70000000001164,
+        "max": 16.80000000000291
+      },
+      "events": {
+        "render": 1
+      },
+      "domMutations": 0,
+      "toolbar": 0,
+      "selectionRequests": 0,
+      "functions": {},
+      "heap": 130974191
+    },
+    {
+      "repeat": 1,
+      "n": 5000,
+      "e": 10000,
+      "operation": "hidden-update",
+      "elapsed": 541.6999999999534,
+      "handler": {
+        "count": 1,
+        "mean": 3.300000000046566,
+        "p95": 3.300000000046566,
+        "max": 3.300000000046566
+      },
+      "paintOpportunity": {
+        "count": 1,
+        "mean": 541.6999999999534,
+        "p95": 541.6999999999534,
+        "max": 541.6999999999534
+      },
+      "frame": {
+        "count": 2,
+        "mean": 249.3000000000102,
+        "p95": 483.1999999999971,
+        "max": 483.1999999999971
+      },
+      "events": {
+        "style": 1,
+        "data": 1,
+        "render": 2
+      },
+      "domMutations": 16,
+      "toolbar": 0,
+      "selectionRequests": 0,
+      "functions": {
+        "scheduleGraphViewportResize": {
+          "count": 1,
+          "mean": 0,
+          "p95": 0,
+          "max": 0
+        },
+        "applyGraphViewportSize": {
+          "count": 1,
+          "mean": 1.7000000000698492,
+          "p95": 1.7000000000698492,
+          "max": 1.7000000000698492
+        }
+      },
+      "heap": 134256831
+    },
+    {
+      "repeat": 1,
+      "n": 5000,
+      "e": 10000,
+      "operation": "hidden-idle",
+      "elapsed": 1024,
+      "handler": {
+        "count": 1,
+        "mean": 1000.5,
+        "p95": 1000.5,
+        "max": 1000.5
+      },
+      "paintOpportunity": {
+        "count": 1,
+        "mean": 1023.9000000000233,
+        "p95": 1023.9000000000233,
+        "max": 1023.9000000000233
+      },
+      "frame": {
+        "count": 63,
+        "mean": 16.23968253968171,
+        "p95": 16.70000000001164,
+        "max": 16.80000000000291
+      },
+      "events": {},
+      "domMutations": 0,
+      "toolbar": 0,
+      "selectionRequests": 0,
+      "functions": {},
+      "heap": 134588443
+    },
+    {
+      "repeat": 1,
+      "n": 5000,
+      "e": 10000,
+      "operation": "pan-instrumentation-disabled",
+      "elapsed": 6056.399999999907,
+      "handler": {
+        "count": 12,
+        "mean": 0.10000000000582077,
+        "p95": 0.2999999999301508,
+        "max": 0.2999999999301508
+      },
+      "paintOpportunity": {
+        "count": 12,
+        "mean": 504.6749999999981,
+        "p95": 1375.7999999999302,
+        "max": 1375.7999999999302
+      },
+      "frame": {
+        "count": 24,
+        "mean": 252.0166666666646,
+        "p95": 733.3000000000029,
+        "max": 766.7000000000116
+      },
+      "events": {
+        "pan": 13,
+        "render": 16,
+        "zoom": 1
+      },
+      "domMutations": 16,
+      "toolbar": 0,
+      "selectionRequests": 0,
+      "functions": {},
+      "heap": 109707789
+    },
+    {
+      "repeat": 1,
+      "n": 5000,
+      "e": 10000,
+      "operation": "after-destroy-resize",
+      "elapsed": 4317.5,
+      "handler": {
+        "count": 1,
+        "mean": 0.30000000004656613,
+        "p95": 0.30000000004656613,
+        "max": 0.30000000004656613
+      },
+      "paintOpportunity": {
+        "count": 1,
+        "mean": 4317.400000000023,
+        "p95": 4317.400000000023,
+        "max": 4317.400000000023
+      },
+      "frame": {
+        "count": 2,
+        "mean": 1738.649999999987,
+        "p95": 3483.199999999997,
+        "max": 3483.199999999997
+      },
+      "events": {
+        "render": 2,
+        "pan": 1,
+        "zoom": 1
+      },
+      "domMutations": 12,
+      "toolbar": 0,
+      "selectionRequests": 0,
+      "functions": {
+        "scheduleGraphViewportResize": {
+          "count": 1,
+          "mean": 0,
+          "p95": 0,
+          "max": 0
+        },
+        "applyGraphViewportSize": {
+          "count": 1,
+          "mean": 4.599999999976717,
+          "p95": 4.599999999976717,
+          "max": 4.599999999976717
+        }
+      },
+      "heap": 255147921
+    },
+    {
+      "repeat": 1,
+      "n": 5000,
+      "e": 10000,
+      "operation": "cleanup",
+      "cyDestroyed": false,
+      "observerRetained": true,
+      "mountIncluding200ms": 245.40000000002328
+    },
+    {
+      "repeat": 2,
+      "n": 10,
+      "e": 10,
+      "operation": "parse",
+      "elapsed": 83.59999999997672,
+      "handler": {
+        "count": 3,
+        "mean": 0.06666666665114462,
+        "p95": 0.09999999997671694,
+        "max": 0.09999999997671694
+      },
+      "paintOpportunity": {
+        "count": 3,
+        "mean": 27.80000000000776,
+        "p95": 33.59999999997672,
+        "max": 33.59999999997672
+      },
+      "frame": {
+        "count": 6,
+        "mean": 13.816666666663272,
+        "p95": 16.70000000001164,
+        "max": 16.70000000001164
+      },
+      "events": {
+        "render": 1
+      },
+      "domMutations": 0,
+      "toolbar": 0,
+      "selectionRequests": 0,
+      "functions": {},
+      "heap": 68439919
+    },
+    {
+      "repeat": 2,
+      "n": 10,
+      "e": 10,
+      "operation": "construct",
+      "elapsed": 35.300000000046566,
+      "handler": {
+        "count": 1,
+        "mean": 13.599999999976717,
+        "p95": 13.599999999976717,
+        "max": 13.599999999976717
+      },
+      "paintOpportunity": {
+        "count": 1,
+        "mean": 35.199999999953434,
+        "p95": 35.199999999953434,
+        "max": 35.199999999953434
+      },
+      "frame": {
+        "count": 2,
+        "mean": 16.05000000000291,
+        "p95": 16.70000000001164,
+        "max": 16.70000000001164
+      },
+      "events": {
+        "remove": 1,
+        "style": 31,
+        "add": 20,
+        "render": 1
+      },
+      "domMutations": 0,
+      "toolbar": 0,
+      "selectionRequests": 0,
+      "functions": {},
+      "heap": 68439919
+    },
+    {
+      "repeat": 2,
+      "n": 10,
+      "e": 10,
+      "operation": "initial-layout",
+      "elapsed": 30.900000000023283,
+      "handler": {
+        "count": 1,
+        "mean": 7.400000000023283,
+        "p95": 7.400000000023283,
+        "max": 7.400000000023283
+      },
+      "paintOpportunity": {
+        "count": 1,
+        "mean": 30.79999999993015,
+        "p95": 30.79999999993015,
+        "max": 30.79999999993015
+      },
+      "frame": {
+        "count": 2,
+        "mean": 14.69999999999709,
+        "p95": 16.69999999999709,
+        "max": 16.69999999999709
+      },
+      "events": {
+        "layoutstart": 1,
+        "position": 10,
+        "pan": 2,
+        "zoom": 2,
+        "layoutstop": 1,
+        "render": 1
+      },
+      "domMutations": 0,
+      "toolbar": 0,
+      "selectionRequests": 0,
+      "functions": {},
+      "heap": 71534588
+    },
+    {
+      "repeat": 2,
+      "n": 10,
+      "e": 10,
+      "operation": "pan",
+      "elapsed": 399.20000000006985,
+      "handler": {
+        "count": 12,
+        "mean": 0.041666666676367946,
+        "p95": 0.10000000009313226,
+        "max": 0.10000000009313226
+      },
+      "paintOpportunity": {
+        "count": 12,
+        "mean": 33.25833333333139,
+        "p95": 35.5,
+        "max": 35.5
+      },
+      "frame": {
+        "count": 24,
+        "mean": 16.587499999997817,
+        "p95": 16.70000000001164,
+        "max": 16.80000000000291
+      },
+      "events": {
+        "pan": 12,
+        "render": 13
+      },
+      "domMutations": 0,
+      "toolbar": 0,
+      "selectionRequests": 0,
+      "functions": {},
+      "heap": 72388280
+    },
+    {
+      "repeat": 2,
+      "n": 10,
+      "e": 10,
+      "operation": "zoom",
+      "elapsed": 399,
+      "handler": {
+        "count": 12,
+        "mean": 0.05833333332945282,
+        "p95": 0.10000000009313226,
+        "max": 0.10000000009313226
+      },
+      "paintOpportunity": {
+        "count": 12,
+        "mean": 33.233333333337214,
+        "p95": 33.699999999953434,
+        "max": 33.699999999953434
+      },
+      "frame": {
+        "count": 24,
+        "mean": 16.604166666665453,
+        "p95": 16.70000000001164,
+        "max": 16.70000000001164
+      },
+      "events": {
+        "zoom": 12,
+        "render": 12
+      },
+      "domMutations": 0,
+      "toolbar": 0,
+      "selectionRequests": 0,
+      "functions": {},
+      "heap": 72597060
+    },
+    {
+      "repeat": 2,
+      "n": 10,
+      "e": 10,
+      "operation": "select-node",
+      "elapsed": 399.4000000000233,
+      "handler": {
+        "count": 12,
+        "mean": 2.783333333344975,
+        "p95": 3.800000000046566,
+        "max": 3.800000000046566
+      },
+      "paintOpportunity": {
+        "count": 12,
+        "mean": 33.27499999999418,
+        "p95": 33.70000000006985,
+        "max": 33.70000000006985
+      },
+      "frame": {
+        "count": 24,
+        "mean": 16.604166666665453,
+        "p95": 16.70000000001164,
+        "max": 16.80000000000291
+      },
+      "events": {
+        "style": 23,
+        "select": 12,
+        "tap": 12,
+        "render": 12,
+        "unselect": 11
+      },
+      "domMutations": 0,
+      "toolbar": 12,
+      "selectionRequests": 12,
+      "functions": {
+        "publishGraphSelectedFileEntries": {
+          "count": 12,
+          "mean": 0.2916666666666667,
+          "p95": 0.5,
+          "max": 0.5
+        },
+        "applyGraphSelectedFileEntries": {
+          "count": 12,
+          "mean": 1.9916666666880094,
+          "p95": 2.700000000069849,
+          "max": 2.700000000069849
+        }
+      },
+      "heap": 75485628
+    },
+    {
+      "repeat": 2,
+      "n": 10,
+      "e": 10,
+      "operation": "hover",
+      "elapsed": 1999.7000000000698,
+      "handler": {
+        "count": 60,
+        "mean": 0.3983333333414824,
+        "p95": 0.6000000000931323,
+        "max": 0.8000000000465661
+      },
+      "paintOpportunity": {
+        "count": 60,
+        "mean": 33.3216666666655,
+        "p95": 33.59999999997672,
+        "max": 33.699999999953434
+      },
+      "frame": {
+        "count": 120,
+        "mean": 16.654166666666303,
+        "p95": 16.70000000001164,
+        "max": 16.80000000000291
+      },
+      "events": {
+        "mousemove": 44,
+        "mouseover": 5,
+        "mouseout": 5
+      },
+      "domMutations": 0,
+      "toolbar": 0,
+      "selectionRequests": 0,
+      "functions": {},
+      "heap": 77752320
+    },
+    {
+      "repeat": 2,
+      "n": 10,
+      "e": 10,
+      "operation": "modify-label",
+      "elapsed": 399.0999999999767,
+      "handler": {
+        "count": 12,
+        "mean": 0.13333333335079564,
+        "p95": 0.30000000004656613,
+        "max": 0.30000000004656613
+      },
+      "paintOpportunity": {
+        "count": 12,
+        "mean": 33.25,
+        "p95": 33.800000000046566,
+        "max": 33.800000000046566
+      },
+      "frame": {
+        "count": 24,
+        "mean": 16.58749999999721,
+        "p95": 16.69999999999709,
+        "max": 16.79999999998836
+      },
+      "events": {
+        "style": 12,
+        "data": 12,
+        "render": 12
+      },
+      "domMutations": 0,
+      "toolbar": 0,
+      "selectionRequests": 0,
+      "functions": {},
+      "heap": 79343104
+    },
+    {
+      "repeat": 2,
+      "n": 10,
+      "e": 10,
+      "operation": "rebuild-edges",
+      "elapsed": 99.5,
+      "handler": {
+        "count": 3,
+        "mean": 4.966666666674428,
+        "p95": 5.900000000023283,
+        "max": 5.900000000023283
+      },
+      "paintOpportunity": {
+        "count": 3,
+        "mean": 33.10000000001552,
+        "p95": 33.59999999997672,
+        "max": 33.59999999997672
+      },
+      "frame": {
+        "count": 6,
+        "mean": 16.4333333333246,
+        "p95": 16.79999999998836,
+        "max": 16.79999999998836
+      },
+      "events": {
+        "style": 90,
+        "remove": 30,
+        "add": 30,
+        "render": 3
+      },
+      "domMutations": 0,
+      "toolbar": 0,
+      "selectionRequests": 0,
+      "functions": {},
+      "heap": 82999768
+    },
+    {
+      "repeat": 2,
+      "n": 10,
+      "e": 10,
+      "operation": "proof-layout",
+      "elapsed": 34.90000000002328,
+      "handler": {
+        "count": 1,
+        "mean": 1.900000000023283,
+        "p95": 1.900000000023283,
+        "max": 1.900000000023283
+      },
+      "paintOpportunity": {
+        "count": 1,
+        "mean": 34.800000000046566,
+        "p95": 34.800000000046566,
+        "max": 34.800000000046566
+      },
+      "frame": {
+        "count": 2,
+        "mean": 15.99999999996362,
+        "p95": 16.69999999999709,
+        "max": 16.69999999999709
+      },
+      "events": {
+        "layoutstart": 1,
+        "position": 10,
+        "layoutstop": 1,
+        "render": 1
+      },
+      "domMutations": 0,
+      "toolbar": 0,
+      "selectionRequests": 0,
+      "functions": {},
+      "heap": 82999768
+    },
+    {
+      "repeat": 2,
+      "n": 10,
+      "e": 10,
+      "operation": "resize",
+      "elapsed": 402.29999999993015,
+      "handler": {
+        "count": 12,
+        "mean": 0.08333333331393078,
+        "p95": 0.09999999997671694,
+        "max": 0.09999999997671694
+      },
+      "paintOpportunity": {
+        "count": 12,
+        "mean": 33.516666666662786,
+        "p95": 36.20000000006985,
+        "max": 36.20000000006985
+      },
+      "frame": {
+        "count": 24,
+        "mean": 16.529166666666544,
+        "p95": 16.80000000000291,
+        "max": 16.80000000000291
+      },
+      "events": {
+        "pan": 12,
+        "zoom": 12,
+        "render": 13
+      },
+      "domMutations": 136,
+      "toolbar": 0,
+      "selectionRequests": 0,
+      "functions": {
+        "scheduleGraphViewportResize": {
+          "count": 12,
+          "mean": 0,
+          "p95": 0,
+          "max": 0
+        },
+        "applyGraphViewportSize": {
+          "count": 12,
+          "mean": 1.416666666647264,
+          "p95": 2.099999999976717,
+          "max": 2.099999999976717
+        }
+      },
+      "heap": 84758596
+    },
+    {
+      "repeat": 2,
+      "n": 10,
+      "e": 10,
+      "operation": "tab-hide-restore",
+      "elapsed": 400.5,
+      "handler": {
+        "count": 12,
+        "mean": 0.10833333333721384,
+        "p95": 0.2000000000698492,
+        "max": 0.2000000000698492
+      },
+      "paintOpportunity": {
+        "count": 12,
+        "mean": 33.358333333337214,
+        "p95": 39.09999999997672,
+        "max": 39.09999999997672
+      },
+      "frame": {
+        "count": 24,
+        "mean": 16.420833333334183,
+        "p95": 16.70000000001164,
+        "max": 16.70000000001164
+      },
+      "events": {
+        "render": 12,
+        "pan": 6,
+        "zoom": 6
+      },
+      "domMutations": 192,
+      "toolbar": 0,
+      "selectionRequests": 0,
+      "functions": {
+        "scheduleGraphViewportResize": {
+          "count": 12,
+          "mean": 0.025000000003880512,
+          "p95": 0.10000000009313226,
+          "max": 0.10000000009313226
+        },
+        "applyGraphViewportSize": {
+          "count": 12,
+          "mean": 0.975000000015522,
+          "p95": 2,
+          "max": 2
+        }
+      },
+      "heap": 85060572
+    },
+    {
+      "repeat": 2,
+      "n": 10,
+      "e": 10,
+      "operation": "idle",
+      "elapsed": 1027,
+      "handler": {
+        "count": 1,
+        "mean": 1000.3000000000466,
+        "p95": 1000.3000000000466,
+        "max": 1000.3000000000466
+      },
+      "paintOpportunity": {
+        "count": 1,
+        "mean": 1026.9000000000233,
+        "p95": 1026.9000000000233,
+        "max": 1026.9000000000233
+      },
+      "frame": {
+        "count": 62,
+        "mean": 16.553225806451895,
+        "p95": 16.80000000000291,
+        "max": 16.80000000000291
+      },
+      "events": {
+        "render": 1
+      },
+      "domMutations": 0,
+      "toolbar": 0,
+      "selectionRequests": 0,
+      "functions": {},
+      "heap": 85430040
+    },
+    {
+      "repeat": 2,
+      "n": 10,
+      "e": 10,
+      "operation": "hidden-update",
+      "elapsed": 33.40000000002328,
+      "handler": {
+        "count": 1,
+        "mean": 0.19999999995343387,
+        "p95": 0.19999999995343387,
+        "max": 0.19999999995343387
+      },
+      "paintOpportunity": {
+        "count": 1,
+        "mean": 33.199999999953434,
+        "p95": 33.199999999953434,
+        "max": 33.199999999953434
+      },
+      "frame": {
+        "count": 2,
+        "mean": 16.04999999996653,
+        "p95": 16.69999999999709,
+        "max": 16.69999999999709
+      },
+      "events": {
+        "style": 1,
+        "data": 1,
+        "render": 2
+      },
+      "domMutations": 16,
+      "toolbar": 0,
+      "selectionRequests": 0,
+      "functions": {
+        "scheduleGraphViewportResize": {
+          "count": 1,
+          "mean": 0,
+          "p95": 0,
+          "max": 0
+        },
+        "applyGraphViewportSize": {
+          "count": 1,
+          "mean": 2.400000000023283,
+          "p95": 2.400000000023283,
+          "max": 2.400000000023283
+        }
+      },
+      "heap": 85430040
+    },
+    {
+      "repeat": 2,
+      "n": 10,
+      "e": 10,
+      "operation": "hidden-idle",
+      "elapsed": 1032.0999999999767,
+      "handler": {
+        "count": 1,
+        "mean": 1000.3000000000466,
+        "p95": 1000.3000000000466,
+        "max": 1000.3000000000466
+      },
+      "paintOpportunity": {
+        "count": 1,
+        "mean": 1031.9000000000233,
+        "p95": 1031.9000000000233,
+        "max": 1031.9000000000233
+      },
+      "frame": {
+        "count": 62,
+        "mean": 16.63387096774081,
+        "p95": 16.70000000001164,
+        "max": 16.80000000000291
+      },
+      "events": {
+        "render": 1
+      },
+      "domMutations": 0,
+      "toolbar": 0,
+      "selectionRequests": 0,
+      "functions": {},
+      "heap": 85980244
+    },
+    {
+      "repeat": 2,
+      "n": 10,
+      "e": 10,
+      "operation": "pan-instrumentation-disabled",
+      "elapsed": 399.0999999999767,
+      "handler": {
+        "count": 12,
+        "mean": 0.058333333319751546,
+        "p95": 0.19999999995343387,
+        "max": 0.19999999995343387
+      },
+      "paintOpportunity": {
+        "count": 12,
+        "mean": 33.25833333333139,
+        "p95": 41.199999999953434,
+        "max": 41.199999999953434
+      },
+      "frame": {
+        "count": 24,
+        "mean": 16.608333333332364,
+        "p95": 16.79999999998836,
+        "max": 16.80000000000291
+      },
+      "events": {
+        "pan": 13,
+        "render": 13,
+        "zoom": 1
+      },
+      "domMutations": 16,
+      "toolbar": 0,
+      "selectionRequests": 0,
+      "functions": {},
+      "heap": 86293208
+    },
+    {
+      "repeat": 2,
+      "n": 10,
+      "e": 10,
+      "operation": "after-destroy-resize",
+      "elapsed": 32.90000000002328,
+      "handler": {
+        "count": 1,
+        "mean": 0.09999999997671694,
+        "p95": 0.09999999997671694,
+        "max": 0.09999999997671694
+      },
+      "paintOpportunity": {
+        "count": 1,
+        "mean": 32.800000000046566,
+        "p95": 32.800000000046566,
+        "max": 32.800000000046566
+      },
+      "frame": {
+        "count": 2,
+        "mean": 13.29999999996653,
+        "p95": 16.69999999999709,
+        "max": 16.69999999999709
+      },
+      "events": {
+        "render": 2,
+        "pan": 1,
+        "zoom": 1
+      },
+      "domMutations": 12,
+      "toolbar": 0,
+      "selectionRequests": 0,
+      "functions": {
+        "scheduleGraphViewportResize": {
+          "count": 1,
+          "mean": 0,
+          "p95": 0,
+          "max": 0
+        },
+        "applyGraphViewportSize": {
+          "count": 1,
+          "mean": 1.2999999999301508,
+          "p95": 1.2999999999301508,
+          "max": 1.2999999999301508
+        }
+      },
+      "heap": 86293208
+    },
+    {
+      "repeat": 2,
+      "n": 10,
+      "e": 10,
+      "operation": "cleanup",
+      "cyDestroyed": false,
+      "observerRetained": true,
+      "mountIncluding200ms": 288.30000000004657
+    },
+    {
+      "repeat": 2,
+      "n": 100,
+      "e": 200,
+      "operation": "parse",
+      "elapsed": 96.69999999995343,
+      "handler": {
+        "count": 3,
+        "mean": 0.4333333333488554,
+        "p95": 0.5,
+        "max": 0.5
+      },
+      "paintOpportunity": {
+        "count": 3,
+        "mean": 32.10000000001552,
+        "p95": 33.59999999997672,
+        "max": 33.59999999997672
+      },
+      "frame": {
+        "count": 6,
+        "mean": 15.933333333336728,
+        "p95": 16.69999999999709,
+        "max": 16.69999999999709
+      },
+      "events": {},
+      "domMutations": 0,
+      "toolbar": 0,
+      "selectionRequests": 0,
+      "functions": {},
+      "heap": 89872583
+    },
+    {
+      "repeat": 2,
+      "n": 100,
+      "e": 200,
+      "operation": "construct",
+      "elapsed": 275.80000000004657,
+      "handler": {
+        "count": 1,
+        "mean": 206.69999999995343,
+        "p95": 206.69999999995343,
+        "max": 206.69999999995343
+      },
+      "paintOpportunity": {
+        "count": 1,
+        "mean": 275.5,
+        "p95": 275.5,
+        "max": 275.5
+      },
+      "frame": {
+        "count": 2,
+        "mean": 132.54999999996653,
+        "p95": 198.39999999993597,
+        "max": 198.39999999993597
+      },
+      "events": {
+        "remove": 1,
+        "style": 401,
+        "add": 300,
+        "render": 1
+      },
+      "domMutations": 0,
+      "toolbar": 0,
+      "selectionRequests": 0,
+      "functions": {},
+      "heap": 81629071
+    },
+    {
+      "repeat": 2,
+      "n": 100,
+      "e": 200,
+      "operation": "initial-layout",
+      "elapsed": 154.69999999995343,
+      "handler": {
+        "count": 1,
+        "mean": 85.90000000002328,
+        "p95": 85.90000000002328,
+        "max": 85.90000000002328
+      },
+      "paintOpportunity": {
+        "count": 1,
+        "mean": 154.59999999997672,
+        "p95": 154.59999999997672,
+        "max": 154.59999999997672
+      },
+      "frame": {
+        "count": 2,
+        "mean": 69.40000000000146,
+        "p95": 72.19999999999709,
+        "max": 72.19999999999709
+      },
+      "events": {
+        "layoutstart": 1,
+        "position": 100,
+        "pan": 2,
+        "zoom": 2,
+        "layoutstop": 1,
+        "render": 1
+      },
+      "domMutations": 0,
+      "toolbar": 0,
+      "selectionRequests": 0,
+      "functions": {},
+      "heap": 91600667
+    },
+    {
+      "repeat": 2,
+      "n": 100,
+      "e": 200,
+      "operation": "pan",
+      "elapsed": 384.4000000000233,
+      "handler": {
+        "count": 12,
+        "mean": 0.058333333348855376,
+        "p95": 0.10000000009313226,
+        "max": 0.10000000009313226
+      },
+      "paintOpportunity": {
+        "count": 12,
+        "mean": 32.02500000000388,
+        "p95": 38.699999999953434,
+        "max": 38.699999999953434
+      },
+      "frame": {
+        "count": 24,
+        "mean": 15.991666666666788,
+        "p95": 16.79999999998836,
+        "max": 16.80000000000291
+      },
+      "events": {
+        "pan": 12,
+        "render": 13
+      },
+      "domMutations": 0,
+      "toolbar": 0,
+      "selectionRequests": 0,
+      "functions": {},
+      "heap": 76186683
+    },
+    {
+      "repeat": 2,
+      "n": 100,
+      "e": 200,
+      "operation": "zoom",
+      "elapsed": 400.0999999999767,
+      "handler": {
+        "count": 12,
+        "mean": 0.06666666667054717,
+        "p95": 0.2000000000698492,
+        "max": 0.2000000000698492
+      },
+      "paintOpportunity": {
+        "count": 12,
+        "mean": 33.333333333333336,
+        "p95": 33.90000000002328,
+        "max": 33.90000000002328
+      },
+      "frame": {
+        "count": 24,
+        "mean": 16.620833333332484,
+        "p95": 16.80000000000291,
+        "max": 16.80000000000291
+      },
+      "events": {
+        "zoom": 12,
+        "render": 12
+      },
+      "domMutations": 0,
+      "toolbar": 0,
+      "selectionRequests": 0,
+      "functions": {},
+      "heap": 76382115
+    },
+    {
+      "repeat": 2,
+      "n": 100,
+      "e": 200,
+      "operation": "select-node",
+      "elapsed": 418,
+      "handler": {
+        "count": 12,
+        "mean": 15.300000000027163,
+        "p95": 19.699999999953434,
+        "max": 19.699999999953434
+      },
+      "paintOpportunity": {
+        "count": 12,
+        "mean": 34.80833333333916,
+        "p95": 41.29999999993015,
+        "max": 41.29999999993015
+      },
+      "frame": {
+        "count": 24,
+        "mean": 17.28333333333406,
+        "p95": 16.80000000000291,
+        "max": 33.30000000000291
+      },
+      "events": {
+        "style": 23,
+        "select": 12,
+        "tap": 12,
+        "render": 12,
+        "unselect": 11
+      },
+      "domMutations": 0,
+      "toolbar": 12,
+      "selectionRequests": 12,
+      "functions": {
+        "publishGraphSelectedFileEntries": {
+          "count": 12,
+          "mean": 0.25,
+          "p95": 0.40000000002328306,
+          "max": 0.40000000002328306
+        },
+        "applyGraphSelectedFileEntries": {
+          "count": 12,
+          "mean": 14.558333333358556,
+          "p95": 19,
+          "max": 19
+        }
+      },
+      "heap": 93204671
+    },
+    {
+      "repeat": 2,
+      "n": 100,
+      "e": 200,
+      "operation": "hover",
+      "elapsed": 1997,
+      "handler": {
+        "count": 60,
+        "mean": 2.1333333333333333,
+        "p95": 3.400000000023283,
+        "max": 3.800000000046566
+      },
+      "paintOpportunity": {
+        "count": 60,
+        "mean": 33.28166666666512,
+        "p95": 33.699999999953434,
+        "max": 33.70000000006985
+      },
+      "frame": {
+        "count": 120,
+        "mean": 16.637499999999758,
+        "p95": 16.70000000001164,
+        "max": 16.80000000000291
+      },
+      "events": {
+        "mousemove": 44,
+        "mouseover": 11,
+        "mouseout": 11
+      },
+      "domMutations": 0,
+      "toolbar": 0,
+      "selectionRequests": 0,
+      "functions": {},
+      "heap": 90374275
+    },
+    {
+      "repeat": 2,
+      "n": 100,
+      "e": 200,
+      "operation": "modify-label",
+      "elapsed": 399.5999999999767,
+      "handler": {
+        "count": 12,
+        "mean": 0.1916666666705472,
+        "p95": 0.40000000002328306,
+        "max": 0.40000000002328306
+      },
+      "paintOpportunity": {
+        "count": 12,
+        "mean": 33.28333333333527,
+        "p95": 35.5,
+        "max": 35.5
+      },
+      "frame": {
+        "count": 24,
+        "mean": 16.62499999999879,
+        "p95": 16.79999999998836,
+        "max": 16.79999999998836
+      },
+      "events": {
+        "style": 12,
+        "data": 12,
+        "render": 12
+      },
+      "domMutations": 0,
+      "toolbar": 0,
+      "selectionRequests": 0,
+      "functions": {},
+      "heap": 76435079
+    },
+    {
+      "repeat": 2,
+      "n": 100,
+      "e": 200,
+      "operation": "rebuild-edges",
+      "elapsed": 284.19999999995343,
+      "handler": {
+        "count": 3,
+        "mean": 45.26666666668219,
+        "p95": 50.09999999997672,
+        "max": 50.09999999997672
+      },
+      "paintOpportunity": {
+        "count": 3,
+        "mean": 94.69999999999224,
+        "p95": 97.79999999993015,
+        "max": 97.79999999993015
+      },
+      "frame": {
+        "count": 6,
+        "mean": 44.25,
+        "p95": 50.09999999999127,
+        "max": 50.09999999999127
+      },
+      "events": {
+        "style": 1500,
+        "remove": 600,
+        "add": 600,
+        "render": 3
+      },
+      "domMutations": 0,
+      "toolbar": 0,
+      "selectionRequests": 0,
+      "functions": {},
+      "heap": 82609583
+    },
+    {
+      "repeat": 2,
+      "n": 100,
+      "e": 200,
+      "operation": "proof-layout",
+      "elapsed": 35.699999999953434,
+      "handler": {
+        "count": 1,
+        "mean": 11.199999999953434,
+        "p95": 11.199999999953434,
+        "max": 11.199999999953434
+      },
+      "paintOpportunity": {
+        "count": 1,
+        "mean": 35.5,
+        "p95": 35.5,
+        "max": 35.5
+      },
+      "frame": {
+        "count": 2,
+        "mean": 7.049999999966531,
+        "p95": 16.60000000000582,
+        "max": 16.60000000000582
+      },
+      "events": {
+        "layoutstart": 1,
+        "position": 100,
+        "layoutstop": 1,
+        "render": 1
+      },
+      "domMutations": 0,
+      "toolbar": 0,
+      "selectionRequests": 0,
+      "functions": {},
+      "heap": 82609583
+    },
+    {
+      "repeat": 2,
+      "n": 100,
+      "e": 200,
+      "operation": "resize",
+      "elapsed": 384.19999999995343,
+      "handler": {
+        "count": 12,
+        "mean": 0.07499999999223898,
+        "p95": 0.10000000009313226,
+        "max": 0.10000000009313226
+      },
+      "paintOpportunity": {
+        "count": 12,
+        "mean": 32,
+        "p95": 34.40000000002328,
+        "max": 34.40000000002328
+      },
+      "frame": {
+        "count": 24,
+        "mean": 15.762499999999514,
+        "p95": 16.79999999998836,
+        "max": 16.79999999998836
+      },
+      "events": {
+        "pan": 12,
+        "zoom": 12,
+        "render": 13
+      },
+      "domMutations": 136,
+      "toolbar": 0,
+      "selectionRequests": 0,
+      "functions": {
+        "scheduleGraphViewportResize": {
+          "count": 12,
+          "mean": 0.024999999994179234,
+          "p95": 0.09999999997671694,
+          "max": 0.09999999997671694
+        },
+        "applyGraphViewportSize": {
+          "count": 12,
+          "mean": 1.1333333333410944,
+          "p95": 1.6999999999534339,
+          "max": 1.6999999999534339
+        }
+      },
+      "heap": 83601437
+    },
+    {
+      "repeat": 2,
+      "n": 100,
+      "e": 200,
+      "operation": "tab-hide-restore",
+      "elapsed": 399.5999999999767,
+      "handler": {
+        "count": 12,
+        "mean": 0.0916666666647264,
+        "p95": 0.19999999995343387,
+        "max": 0.19999999995343387
+      },
+      "paintOpportunity": {
+        "count": 12,
+        "mean": 33.291666666666664,
+        "p95": 38.89999999990687,
+        "max": 38.89999999990687
+      },
+      "frame": {
+        "count": 24,
+        "mean": 16.40416666666715,
+        "p95": 16.70000000001164,
+        "max": 16.70000000001164
+      },
+      "events": {
+        "render": 13,
+        "pan": 6,
+        "zoom": 6
+      },
+      "domMutations": 192,
+      "toolbar": 0,
+      "selectionRequests": 0,
+      "functions": {
+        "scheduleGraphViewportResize": {
+          "count": 12,
+          "mean": 0.008333333331393078,
+          "p95": 0.09999999997671694,
+          "max": 0.09999999997671694
+        },
+        "applyGraphViewportSize": {
+          "count": 12,
+          "mean": 0.9083333333546761,
+          "p95": 2.199999999953434,
+          "max": 2.199999999953434
+        }
+      },
+      "heap": 84771769
+    },
+    {
+      "repeat": 2,
+      "n": 100,
+      "e": 200,
+      "operation": "idle",
+      "elapsed": 1027.8000000000466,
+      "handler": {
+        "count": 1,
+        "mean": 1000.3000000000466,
+        "p95": 1000.3000000000466,
+        "max": 1000.3000000000466
+      },
+      "paintOpportunity": {
+        "count": 1,
+        "mean": 1027.7000000000698,
+        "p95": 1027.7000000000698,
+        "max": 1027.7000000000698
+      },
+      "frame": {
+        "count": 62,
+        "mean": 16.56129032257999,
+        "p95": 16.70000000001164,
+        "max": 16.800000000017462
+      },
+      "events": {
+        "render": 1
+      },
+      "domMutations": 0,
+      "toolbar": 0,
+      "selectionRequests": 0,
+      "functions": {},
+      "heap": 85139941
+    },
+    {
+      "repeat": 2,
+      "n": 100,
+      "e": 200,
+      "operation": "hidden-update",
+      "elapsed": 33.5,
+      "handler": {
+        "count": 1,
+        "mean": 0.30000000004656613,
+        "p95": 0.30000000004656613,
+        "max": 0.30000000004656613
+      },
+      "paintOpportunity": {
+        "count": 1,
+        "mean": 33.300000000046566,
+        "p95": 33.300000000046566,
+        "max": 33.300000000046566
+      },
+      "frame": {
+        "count": 2,
+        "mean": 15.900000000008731,
+        "p95": 16.699999999982538,
+        "max": 16.699999999982538
+      },
+      "events": {
+        "style": 1,
+        "data": 1,
+        "render": 2
+      },
+      "domMutations": 16,
+      "toolbar": 0,
+      "selectionRequests": 0,
+      "functions": {
+        "scheduleGraphViewportResize": {
+          "count": 1,
+          "mean": 0.09999999997671694,
+          "p95": 0.09999999997671694,
+          "max": 0.09999999997671694
+        },
+        "applyGraphViewportSize": {
+          "count": 1,
+          "mean": 2.200000000069849,
+          "p95": 2.200000000069849,
+          "max": 2.200000000069849
+        }
+      },
+      "heap": 85139941
+    },
+    {
+      "repeat": 2,
+      "n": 100,
+      "e": 200,
+      "operation": "hidden-idle",
+      "elapsed": 1032,
+      "handler": {
+        "count": 1,
+        "mean": 1000.4000000000233,
+        "p95": 1000.4000000000233,
+        "max": 1000.4000000000233
+      },
+      "paintOpportunity": {
+        "count": 1,
+        "mean": 1031.8000000000466,
+        "p95": 1031.8000000000466,
+        "max": 1031.8000000000466
+      },
+      "frame": {
+        "count": 62,
+        "mean": 16.629032258063578,
+        "p95": 16.70000000001164,
+        "max": 16.70000000001164
+      },
+      "events": {
+        "render": 1
+      },
+      "domMutations": 0,
+      "toolbar": 0,
+      "selectionRequests": 0,
+      "functions": {},
+      "heap": 87040349
+    },
+    {
+      "repeat": 2,
+      "n": 100,
+      "e": 200,
+      "operation": "pan-instrumentation-disabled",
+      "elapsed": 398.80000000004657,
+      "handler": {
+        "count": 12,
+        "mean": 0.06666666668024845,
+        "p95": 0.10000000009313226,
+        "max": 0.10000000009313226
+      },
+      "paintOpportunity": {
+        "count": 12,
+        "mean": 33.22500000000582,
+        "p95": 50,
+        "max": 50
+      },
+      "frame": {
+        "count": 24,
+        "mean": 16.599999999998545,
+        "p95": 16.70000000001164,
+        "max": 16.70000000001164
+      },
+      "events": {
+        "pan": 13,
+        "render": 13,
+        "zoom": 1
+      },
+      "domMutations": 16,
+      "toolbar": 0,
+      "selectionRequests": 0,
+      "functions": {},
+      "heap": 88924461
+    },
+    {
+      "repeat": 2,
+      "n": 100,
+      "e": 200,
+      "operation": "after-destroy-resize",
+      "elapsed": 85.10000000009313,
+      "handler": {
+        "count": 1,
+        "mean": 0.10000000009313226,
+        "p95": 0.10000000009313226,
+        "max": 0.10000000009313226
+      },
+      "paintOpportunity": {
+        "count": 1,
+        "mean": 85.10000000009313,
+        "p95": 85.10000000009313,
+        "max": 85.10000000009313
+      },
+      "frame": {
+        "count": 2,
+        "mean": 29.849999999962165,
+        "p95": 50,
+        "max": 50
+      },
+      "events": {
+        "render": 2,
+        "pan": 1,
+        "zoom": 1
+      },
+      "domMutations": 12,
+      "toolbar": 0,
+      "selectionRequests": 0,
+      "functions": {
+        "scheduleGraphViewportResize": {
+          "count": 1,
+          "mean": 0.09999999997671694,
+          "p95": 0.09999999997671694,
+          "max": 0.09999999997671694
+        },
+        "applyGraphViewportSize": {
+          "count": 1,
+          "mean": 1.400000000023283,
+          "p95": 1.400000000023283,
+          "max": 1.400000000023283
+        }
+      },
+      "heap": 112792917
+    },
+    {
+      "repeat": 2,
+      "n": 100,
+      "e": 200,
+      "operation": "cleanup",
+      "cyDestroyed": false,
+      "observerRetained": true,
+      "mountIncluding200ms": 229.70000000006985
+    },
+    {
+      "repeat": 2,
+      "n": 1000,
+      "e": 2000,
+      "operation": "parse",
+      "elapsed": 89.5,
+      "handler": {
+        "count": 3,
+        "mean": 3.866666666658906,
+        "p95": 4.099999999976717,
+        "max": 4.099999999976717
+      },
+      "paintOpportunity": {
+        "count": 3,
+        "mean": 29.733333333356615,
+        "p95": 33.5,
+        "max": 33.5
+      },
+      "frame": {
+        "count": 6,
+        "mean": 14.783333333320721,
+        "p95": 16.79999999998836,
+        "max": 16.79999999998836
+      },
+      "events": {},
+      "domMutations": 0,
+      "toolbar": 0,
+      "selectionRequests": 0,
+      "functions": {},
+      "heap": 84359929
+    },
+    {
+      "repeat": 2,
+      "n": 1000,
+      "e": 2000,
+      "operation": "construct",
+      "elapsed": 1825,
+      "handler": {
+        "count": 1,
+        "mean": 1415.3000000000466,
+        "p95": 1415.3000000000466,
+        "max": 1415.3000000000466
+      },
+      "paintOpportunity": {
+        "count": 1,
+        "mean": 1825,
+        "p95": 1825,
+        "max": 1825
+      },
+      "frame": {
+        "count": 2,
+        "mean": 874.3500000000058,
+        "p95": 1415.4000000000233,
+        "max": 1415.4000000000233
+      },
+      "events": {
+        "remove": 1,
+        "style": 4001,
+        "add": 3000,
+        "render": 1
+      },
+      "domMutations": 0,
+      "toolbar": 0,
+      "selectionRequests": 0,
+      "functions": {},
+      "heap": 121599641
+    },
+    {
+      "repeat": 2,
+      "n": 1000,
+      "e": 2000,
+      "operation": "initial-layout",
+      "elapsed": 1372.3000000000466,
+      "handler": {
+        "count": 1,
+        "mean": 717.6999999999534,
+        "p95": 717.6999999999534,
+        "max": 717.6999999999534
+      },
+      "paintOpportunity": {
+        "count": 1,
+        "mean": 1372.1999999999534,
+        "p95": 1372.1999999999534,
+        "max": 1372.1999999999534
+      },
+      "frame": {
+        "count": 2,
+        "mean": 678.199999999968,
+        "p95": 706.399999999936,
+        "max": 706.399999999936
+      },
+      "events": {
+        "layoutstart": 1,
+        "position": 1000,
+        "pan": 2,
+        "zoom": 2,
+        "layoutstop": 1,
+        "render": 1
+      },
+      "domMutations": 0,
+      "toolbar": 0,
+      "selectionRequests": 0,
+      "functions": {},
+      "heap": 32691647
+    },
+    {
+      "repeat": 2,
+      "n": 1000,
+      "e": 2000,
+      "operation": "pan",
+      "elapsed": 1467.9000000000233,
+      "handler": {
+        "count": 12,
+        "mean": 0.04999999998835847,
+        "p95": 0.09999999997671694,
+        "max": 0.09999999997671694
+      },
+      "paintOpportunity": {
+        "count": 12,
+        "mean": 122.31666666667054,
+        "p95": 399.69999999995343,
+        "max": 399.69999999995343
+      },
+      "frame": {
+        "count": 24,
+        "mean": 61.12499999999758,
+        "p95": 250,
+        "max": 250
+      },
+      "events": {
+        "pan": 12,
+        "render": 15
+      },
+      "domMutations": 0,
+      "toolbar": 0,
+      "selectionRequests": 0,
+      "functions": {},
+      "heap": 64013666
+    },
+    {
+      "repeat": 2,
+      "n": 1000,
+      "e": 2000,
+      "operation": "zoom",
+      "elapsed": 399.4000000000233,
+      "handler": {
+        "count": 12,
+        "mean": 0.08333333332363206,
+        "p95": 0.2000000000698492,
+        "max": 0.2000000000698492
+      },
+      "paintOpportunity": {
+        "count": 12,
+        "mean": 33.25,
+        "p95": 34.5,
+        "max": 34.5
+      },
+      "frame": {
+        "count": 24,
+        "mean": 16.562499999997573,
+        "p95": 16.70000000001164,
+        "max": 16.70000000001164
+      },
+      "events": {
+        "zoom": 12,
+        "render": 12
+      },
+      "domMutations": 0,
+      "toolbar": 0,
+      "selectionRequests": 0,
+      "functions": {},
+      "heap": 64206930
+    },
+    {
+      "repeat": 2,
+      "n": 1000,
+      "e": 2000,
+      "operation": "select-node",
+      "elapsed": 3686.5999999999767,
+      "handler": {
+        "count": 12,
+        "mean": 187.83333333332362,
+        "p95": 268.4000000000233,
+        "max": 268.4000000000233
+      },
+      "paintOpportunity": {
+        "count": 12,
+        "mean": 307.2083333333333,
+        "p95": 437.9000000000233,
+        "max": 437.9000000000233
+      },
+      "frame": {
+        "count": 24,
+        "mean": 153.35000000000096,
+        "p95": 266.69999999998254,
+        "max": 266.70000000001164
+      },
+      "events": {
+        "style": 23,
+        "select": 12,
+        "tap": 12,
+        "render": 12,
+        "unselect": 11
+      },
+      "domMutations": 0,
+      "toolbar": 12,
+      "selectionRequests": 12,
+      "functions": {
+        "publishGraphSelectedFileEntries": {
+          "count": 12,
+          "mean": 0.30833333332945284,
+          "p95": 0.5,
+          "max": 0.5
+        },
+        "applyGraphSelectedFileEntries": {
+          "count": 12,
+          "mean": 186.20000000000195,
+          "p95": 266.5,
+          "max": 266.5
+        }
+      },
+      "heap": 76468562
+    },
+    {
+      "repeat": 2,
+      "n": 1000,
+      "e": 2000,
+      "operation": "hover",
+      "elapsed": 2060.1999999999534,
+      "handler": {
+        "count": 60,
+        "mean": 15.80000000000194,
+        "p95": 26.399999999906868,
+        "max": 31.599999999976717
+      },
+      "paintOpportunity": {
+        "count": 60,
+        "mean": 34.331666666667054,
+        "p95": 42.800000000046566,
+        "max": 59.90000000002328
+      },
+      "frame": {
+        "count": 120,
+        "mean": 17.16333333333338,
+        "p95": 16.800000000017462,
+        "max": 33.29999999998836
+      },
+      "events": {
+        "mousemove": 44,
+        "mouseover": 6,
+        "mouseout": 6
+      },
+      "domMutations": 0,
+      "toolbar": 0,
+      "selectionRequests": 0,
+      "functions": {},
+      "heap": 44909955
+    },
+    {
+      "repeat": 2,
+      "n": 1000,
+      "e": 2000,
+      "operation": "modify-label",
+      "elapsed": 1093.7000000000698,
+      "handler": {
+        "count": 12,
+        "mean": 0.6416666666821887,
+        "p95": 1,
+        "max": 1
+      },
+      "paintOpportunity": {
+        "count": 12,
+        "mean": 91.1333333333411,
+        "p95": 105.79999999993015,
+        "max": 105.79999999993015
+      },
+      "frame": {
+        "count": 24,
+        "mean": 45.0874999999966,
+        "p95": 83.30000000001746,
+        "max": 83.39999999999418
+      },
+      "events": {
+        "style": 12,
+        "data": 12,
+        "render": 12
+      },
+      "domMutations": 0,
+      "toolbar": 0,
+      "selectionRequests": 0,
+      "functions": {},
+      "heap": 84323886
+    },
+    {
+      "repeat": 2,
+      "n": 1000,
+      "e": 2000,
+      "operation": "rebuild-edges",
+      "elapsed": 2837.8000000000466,
+      "handler": {
+        "count": 3,
+        "mean": 448.2333333333566,
+        "p95": 497.4000000000233,
+        "max": 497.4000000000233
+      },
+      "paintOpportunity": {
+        "count": 3,
+        "mean": 945.9000000000233,
+        "p95": 970.2000000000698,
+        "max": 970.2000000000698
+      },
+      "frame": {
+        "count": 6,
+        "mean": 464.6499999999942,
+        "p95": 550,
+        "max": 550
+      },
+      "events": {
+        "style": 15000,
+        "remove": 6000,
+        "add": 6000,
+        "render": 3
+      },
+      "domMutations": 0,
+      "toolbar": 0,
+      "selectionRequests": 0,
+      "functions": {},
+      "heap": 104381142
+    },
+    {
+      "repeat": 2,
+      "n": 1000,
+      "e": 2000,
+      "operation": "proof-layout",
+      "elapsed": 643.9000000000233,
+      "handler": {
+        "count": 1,
+        "mean": 436.80000000004657,
+        "p95": 436.80000000004657,
+        "max": 436.80000000004657
+      },
+      "paintOpportunity": {
+        "count": 1,
+        "mean": 643.8000000000466,
+        "p95": 643.8000000000466,
+        "max": 643.8000000000466
+      },
+      "frame": {
+        "count": 2,
+        "mean": 291.59999999999127,
+        "p95": 433.19999999998254,
+        "max": 433.19999999998254
+      },
+      "events": {
+        "layoutstart": 1,
+        "position": 1000,
+        "layoutstop": 1,
+        "render": 1
+      },
+      "domMutations": 0,
+      "toolbar": 0,
+      "selectionRequests": 0,
+      "functions": {},
+      "heap": 107670287
+    },
+    {
+      "repeat": 2,
+      "n": 1000,
+      "e": 2000,
+      "operation": "resize",
+      "elapsed": 1594.3999999999069,
+      "handler": {
+        "count": 12,
+        "mean": 0.07499999999223898,
+        "p95": 0.10000000009313226,
+        "max": 0.10000000009313226
+      },
+      "paintOpportunity": {
+        "count": 12,
+        "mean": 132.85833333332752,
+        "p95": 236,
+        "max": 236
+      },
+      "frame": {
+        "count": 24,
+        "mean": 66.20416666666763,
+        "p95": 150,
+        "max": 150
+      },
+      "events": {
+        "pan": 12,
+        "zoom": 12,
+        "render": 14
+      },
+      "domMutations": 136,
+      "toolbar": 0,
+      "selectionRequests": 0,
+      "functions": {
+        "scheduleGraphViewportResize": {
+          "count": 12,
+          "mean": 0.008333333331393078,
+          "p95": 0.09999999997671694,
+          "max": 0.09999999997671694
+        },
+        "applyGraphViewportSize": {
+          "count": 12,
+          "mean": 1.7583333333216917,
+          "p95": 2.400000000023283,
+          "max": 2.400000000023283
+        }
+      },
+      "heap": 45846707
+    },
+    {
+      "repeat": 2,
+      "n": 1000,
+      "e": 2000,
+      "operation": "tab-hide-restore",
+      "elapsed": 400.70000000006985,
+      "handler": {
+        "count": 12,
+        "mean": 0.0916666666647264,
+        "p95": 0.2000000000698492,
+        "max": 0.2000000000698492
+      },
+      "paintOpportunity": {
+        "count": 12,
+        "mean": 33.375,
+        "p95": 42.09999999997672,
+        "max": 42.09999999997672
+      },
+      "frame": {
+        "count": 24,
+        "mean": 16.42499999999806,
+        "p95": 16.70000000001164,
+        "max": 16.70000000001164
+      },
+      "events": {
+        "render": 13,
+        "pan": 6,
+        "zoom": 6
+      },
+      "domMutations": 192,
+      "toolbar": 0,
+      "selectionRequests": 0,
+      "functions": {
+        "scheduleGraphViewportResize": {
+          "count": 12,
+          "mean": 0.016666666662786156,
+          "p95": 0.09999999997671694,
+          "max": 0.09999999997671694
+        },
+        "applyGraphViewportSize": {
+          "count": 12,
+          "mean": 1.1500000000038806,
+          "p95": 2.300000000046566,
+          "max": 2.300000000046566
+        }
+      },
+      "heap": 56317307
+    },
+    {
+      "repeat": 2,
+      "n": 1000,
+      "e": 2000,
+      "operation": "idle",
+      "elapsed": 1026.3000000000466,
+      "handler": {
+        "count": 1,
+        "mean": 1000.5999999999767,
+        "p95": 1000.5999999999767,
+        "max": 1000.5999999999767
+      },
+      "paintOpportunity": {
+        "count": 1,
+        "mean": 1026.2000000000698,
+        "p95": 1026.2000000000698,
+        "max": 1026.2000000000698
+      },
+      "frame": {
+        "count": 62,
+        "mean": 16.53225806451519,
+        "p95": 16.70000000001164,
+        "max": 16.800000000017462
+      },
+      "events": {
+        "render": 1
+      },
+      "domMutations": 0,
+      "toolbar": 0,
+      "selectionRequests": 0,
+      "functions": {},
+      "heap": 56686155
+    },
+    {
+      "repeat": 2,
+      "n": 1000,
+      "e": 2000,
+      "operation": "hidden-update",
+      "elapsed": 215.80000000004657,
+      "handler": {
+        "count": 1,
+        "mean": 1.400000000023283,
+        "p95": 1.400000000023283,
+        "max": 1.400000000023283
+      },
+      "paintOpportunity": {
+        "count": 1,
+        "mean": 215.60000000009313,
+        "p95": 215.60000000009313,
+        "max": 215.60000000009313
+      },
+      "frame": {
+        "count": 2,
+        "mean": 99.04999999995925,
+        "p95": 183.39999999999418,
+        "max": 183.39999999999418
+      },
+      "events": {
+        "style": 1,
+        "data": 1,
+        "render": 2
+      },
+      "domMutations": 16,
+      "toolbar": 0,
+      "selectionRequests": 0,
+      "functions": {
+        "scheduleGraphViewportResize": {
+          "count": 1,
+          "mean": 0,
+          "p95": 0,
+          "max": 0
+        },
+        "applyGraphViewportSize": {
+          "count": 1,
+          "mean": 4.199999999953434,
+          "p95": 4.199999999953434,
+          "max": 4.199999999953434
+        }
+      },
+      "heap": 71004927
+    },
+    {
+      "repeat": 2,
+      "n": 1000,
+      "e": 2000,
+      "operation": "hidden-idle",
+      "elapsed": 1032.6999999999534,
+      "handler": {
+        "count": 1,
+        "mean": 1000.1999999999534,
+        "p95": 1000.1999999999534,
+        "max": 1000.1999999999534
+      },
+      "paintOpportunity": {
+        "count": 1,
+        "mean": 1032.5,
+        "p95": 1032.5,
+        "max": 1032.5
+      },
+      "frame": {
+        "count": 63,
+        "mean": 16.37619047619066,
+        "p95": 16.70000000001164,
+        "max": 16.79999999998836
+      },
+      "events": {},
+      "domMutations": 0,
+      "toolbar": 0,
+      "selectionRequests": 0,
+      "functions": {},
+      "heap": 71376999
+    },
+    {
+      "repeat": 2,
+      "n": 1000,
+      "e": 2000,
+      "operation": "pan-instrumentation-disabled",
+      "elapsed": 1299.5,
+      "handler": {
+        "count": 12,
+        "mean": 0.08333333332363206,
+        "p95": 0.2000000000698492,
+        "max": 0.2000000000698492
+      },
+      "paintOpportunity": {
+        "count": 12,
+        "mean": 108.27500000000389,
+        "p95": 357,
+        "max": 357
+      },
+      "frame": {
+        "count": 24,
+        "mean": 54.10416666666424,
+        "p95": 166.69999999998254,
+        "max": 283.3999999999942
+      },
+      "events": {
+        "pan": 13,
+        "render": 16,
+        "zoom": 1
+      },
+      "domMutations": 16,
+      "toolbar": 0,
+      "selectionRequests": 0,
+      "functions": {},
+      "heap": 68388915
+    },
+    {
+      "repeat": 2,
+      "n": 1000,
+      "e": 2000,
+      "operation": "after-destroy-resize",
+      "elapsed": 1121.0999999999767,
+      "handler": {
+        "count": 1,
+        "mean": 0.09999999997671694,
+        "p95": 0.09999999997671694,
+        "max": 0.09999999997671694
+      },
+      "paintOpportunity": {
+        "count": 1,
+        "mean": 1120.8000000000466,
+        "p95": 1120.8000000000466,
+        "max": 1120.8000000000466
+      },
+      "frame": {
+        "count": 2,
+        "mean": 469.75000000001455,
+        "p95": 949.8999999999942,
+        "max": 949.8999999999942
+      },
+      "events": {
+        "render": 2,
+        "pan": 1,
+        "zoom": 1
+      },
+      "domMutations": 12,
+      "toolbar": 0,
+      "selectionRequests": 0,
+      "functions": {
+        "scheduleGraphViewportResize": {
+          "count": 1,
+          "mean": 0.09999999997671694,
+          "p95": 0.09999999997671694,
+          "max": 0.09999999997671694
+        },
+        "applyGraphViewportSize": {
+          "count": 1,
+          "mean": 3.799999999930151,
+          "p95": 3.799999999930151,
+          "max": 3.799999999930151
+        }
+      },
+      "heap": 90539123
+    },
+    {
+      "repeat": 2,
+      "n": 1000,
+      "e": 2000,
+      "operation": "cleanup",
+      "cyDestroyed": false,
+      "observerRetained": true,
+      "mountIncluding200ms": 231.5
+    },
+    {
+      "repeat": 2,
+      "n": 5000,
+      "e": 10000,
+      "operation": "parse",
+      "elapsed": 103,
+      "handler": {
+        "count": 3,
+        "mean": 26.599999999976717,
+        "p95": 32.09999999997672,
+        "max": 32.09999999997672
+      },
+      "paintOpportunity": {
+        "count": 3,
+        "mean": 34.26666666664338,
+        "p95": 39.09999999997672,
+        "max": 39.09999999997672
+      },
+      "frame": {
+        "count": 6,
+        "mean": 16.98333333332751,
+        "p95": 33.39999999999418,
+        "max": 33.39999999999418
+      },
+      "events": {},
+      "domMutations": 0,
+      "toolbar": 0,
+      "selectionRequests": 0,
+      "functions": {},
+      "heap": 27601260
+    },
+    {
+      "repeat": 2,
+      "n": 5000,
+      "e": 10000,
+      "operation": "construct",
+      "elapsed": 8343.099999999977,
+      "handler": {
+        "count": 1,
+        "mean": 6051.099999999977,
+        "p95": 6051.099999999977,
+        "max": 6051.099999999977
+      },
+      "paintOpportunity": {
+        "count": 1,
+        "mean": 8342.899999999907,
+        "p95": 8342.899999999907,
+        "max": 8342.899999999907
+      },
+      "frame": {
+        "count": 2,
+        "mean": 4007.300000000003,
+        "p95": 6048,
+        "max": 6048
+      },
+      "events": {
+        "remove": 1,
+        "style": 20001,
+        "add": 15000,
+        "render": 1
+      },
+      "domMutations": 0,
+      "toolbar": 0,
+      "selectionRequests": 0,
+      "functions": {},
+      "heap": 149673465
+    },
+    {
+      "repeat": 2,
+      "n": 5000,
+      "e": 10000,
+      "operation": "initial-layout",
+      "elapsed": 4477.70000000007,
+      "handler": {
+        "count": 1,
+        "mean": 2433.1999999999534,
+        "p95": 2433.1999999999534,
+        "max": 2433.1999999999534
+      },
+      "paintOpportunity": {
+        "count": 1,
+        "mean": 4477.5,
+        "p95": 4477.5,
+        "max": 4477.5
+      },
+      "frame": {
+        "count": 2,
+        "mean": 2235.2499999999854,
+        "p95": 2420.5999999999767,
+        "max": 2420.5999999999767
+      },
+      "events": {
+        "layoutstart": 1,
+        "position": 5000,
+        "pan": 2,
+        "zoom": 2,
+        "layoutstop": 1,
+        "render": 1
+      },
+      "domMutations": 0,
+      "toolbar": 0,
+      "selectionRequests": 0,
+      "functions": {},
+      "heap": 240339732
+    },
+    {
+      "repeat": 2,
+      "n": 5000,
+      "e": 10000,
+      "operation": "pan",
+      "elapsed": 4776.199999999953,
+      "handler": {
+        "count": 12,
+        "mean": 0.03333333332557231,
+        "p95": 0.09999999997671694,
+        "max": 0.09999999997671694
+      },
+      "paintOpportunity": {
+        "count": 12,
+        "mean": 398,
+        "p95": 1009.8000000000466,
+        "max": 1009.8000000000466
+      },
+      "frame": {
+        "count": 24,
+        "mean": 198.97083333333043,
+        "p95": 533.2999999999884,
+        "max": 883.1999999999825
+      },
+      "events": {
+        "pan": 12,
+        "render": 16
+      },
+      "domMutations": 0,
+      "toolbar": 0,
+      "selectionRequests": 0,
+      "functions": {},
+      "heap": 160276350
+    },
+    {
+      "repeat": 2,
+      "n": 5000,
+      "e": 10000,
+      "operation": "zoom",
+      "elapsed": 399.29999999993015,
+      "handler": {
+        "count": 12,
+        "mean": 0.07499999999223898,
+        "p95": 0.2000000000698492,
+        "max": 0.2000000000698492
+      },
+      "paintOpportunity": {
+        "count": 12,
+        "mean": 33.266666666662786,
+        "p95": 33.699999999953434,
+        "max": 33.699999999953434
+      },
+      "frame": {
+        "count": 24,
+        "mean": 16.61249999999806,
+        "p95": 16.70000000001164,
+        "max": 16.79999999998836
+      },
+      "events": {
+        "zoom": 12,
+        "render": 12
+      },
+      "domMutations": 0,
+      "toolbar": 0,
+      "selectionRequests": 0,
+      "functions": {},
+      "heap": 160453374
+    },
+    {
+      "repeat": 2,
+      "n": 5000,
+      "e": 10000,
+      "operation": "select-node",
+      "elapsed": 12733.900000000023,
+      "handler": {
+        "count": 12,
+        "mean": 709.9916666666686,
+        "p95": 884.7000000000698,
+        "max": 884.7000000000698
+      },
+      "paintOpportunity": {
+        "count": 12,
+        "mean": 1061.1416666666628,
+        "p95": 1230.7000000000698,
+        "max": 1230.7000000000698
+      },
+      "frame": {
+        "count": 24,
+        "mean": 530.4833333333312,
+        "p95": 883.2999999999884,
+        "max": 883.3999999999942
+      },
+      "events": {
+        "style": 23,
+        "select": 12,
+        "tap": 12,
+        "render": 12,
+        "unselect": 11
+      },
+      "domMutations": 0,
+      "toolbar": 12,
+      "selectionRequests": 12,
+      "functions": {
+        "publishGraphSelectedFileEntries": {
+          "count": 12,
+          "mean": 0.24999999998059744,
+          "p95": 0.5,
+          "max": 0.5
+        },
+        "applyGraphSelectedFileEntries": {
+          "count": 12,
+          "mean": 706.758333333312,
+          "p95": 880.3000000000466,
+          "max": 880.3000000000466
+        }
+      },
+      "heap": 251121790
+    },
+    {
+      "repeat": 2,
+      "n": 5000,
+      "e": 10000,
+      "operation": "hover",
+      "elapsed": 5847.599999999977,
+      "handler": {
+        "count": 60,
+        "mean": 78.60666666666705,
+        "p95": 128.5,
+        "max": 160.89999999990687
+      },
+      "paintOpportunity": {
+        "count": 60,
+        "mean": 97.45666666666706,
+        "p95": 147.60000000009313,
+        "max": 185.69999999995343
+      },
+      "frame": {
+        "count": 120,
+        "mean": 48.724166666666136,
+        "p95": 116.70000000001164,
+        "max": 150
+      },
+      "events": {
+        "mousemove": 44,
+        "mouseover": 4,
+        "mouseout": 4
+      },
+      "domMutations": 0,
+      "toolbar": 0,
+      "selectionRequests": 0,
+      "functions": {},
+      "heap": 213014440
+    },
+    {
+      "repeat": 2,
+      "n": 5000,
+      "e": 10000,
+      "operation": "modify-label",
+      "elapsed": 4206,
+      "handler": {
+        "count": 12,
+        "mean": 2.6166666666880096,
+        "p95": 4.300000000046566,
+        "max": 4.300000000046566
+      },
+      "paintOpportunity": {
+        "count": 12,
+        "mean": 350.4916666666686,
+        "p95": 391.0999999999767,
+        "max": 391.0999999999767
+      },
+      "frame": {
+        "count": 24,
+        "mean": 174.9458333333314,
+        "p95": 366.69999999998254,
+        "max": 383.19999999998254
+      },
+      "events": {
+        "style": 12,
+        "data": 12,
+        "render": 12
+      },
+      "domMutations": 0,
+      "toolbar": 0,
+      "selectionRequests": 0,
+      "functions": {},
+      "heap": 158477165
+    },
+    {
+      "repeat": 2,
+      "n": 5000,
+      "e": 10000,
+      "operation": "rebuild-edges",
+      "elapsed": 18677.20000000007,
+      "handler": {
+        "count": 3,
+        "mean": 3043.4999999999613,
+        "p95": 3771.6999999999534,
+        "max": 3771.6999999999534
+      },
+      "paintOpportunity": {
+        "count": 3,
+        "mean": 6225.733333333356,
+        "p95": 6920.300000000047,
+        "max": 6920.300000000047
+      },
+      "frame": {
+        "count": 6,
+        "mean": 3070.7999999999884,
+        "p95": 4266.399999999994,
+        "max": 4266.399999999994
+      },
+      "events": {
+        "style": 75000,
+        "remove": 30000,
+        "add": 30000,
+        "render": 3
+      },
+      "domMutations": 0,
+      "toolbar": 0,
+      "selectionRequests": 0,
+      "functions": {},
+      "heap": 374779541
+    },
+    {
+      "repeat": 2,
+      "n": 5000,
+      "e": 10000,
+      "operation": "proof-layout",
+      "elapsed": 2798.6999999999534,
+      "handler": {
+        "count": 1,
+        "mean": 1248.2999999999302,
+        "p95": 1248.2999999999302,
+        "max": 1248.2999999999302
+      },
+      "paintOpportunity": {
+        "count": 1,
+        "mean": 2798.5999999999767,
+        "p95": 2798.5999999999767,
+        "max": 2798.5999999999767
+      },
+      "frame": {
+        "count": 2,
+        "mean": 1240.1499999999942,
+        "p95": 1247,
+        "max": 1247
+      },
+      "events": {
+        "layoutstart": 1,
+        "position": 5000,
+        "layoutstop": 1,
+        "render": 1
+      },
+      "domMutations": 0,
+      "toolbar": 0,
+      "selectionRequests": 0,
+      "functions": {},
+      "heap": 281879761
+    },
+    {
+      "repeat": 2,
+      "n": 5000,
+      "e": 10000,
+      "operation": "resize",
+      "elapsed": 7297.29999999993,
+      "handler": {
+        "count": 12,
+        "mean": 0.0916666666647264,
+        "p95": 0.2000000000698492,
+        "max": 0.2000000000698492
+      },
+      "paintOpportunity": {
+        "count": 12,
+        "mean": 608.0833333333334,
+        "p95": 1349.1000000000931,
+        "max": 1349.1000000000931
+      },
+      "frame": {
+        "count": 24,
+        "mean": 303.3708333333343,
+        "p95": 716.6000000000058,
+        "max": 766.6000000000058
+      },
+      "events": {
+        "pan": 12,
+        "zoom": 12,
+        "render": 15
+      },
+      "domMutations": 136,
+      "toolbar": 0,
+      "selectionRequests": 0,
+      "functions": {
+        "scheduleGraphViewportResize": {
+          "count": 12,
+          "mean": 0.008333333331393078,
+          "p95": 0.09999999997671694,
+          "max": 0.09999999997671694
+        },
+        "applyGraphViewportSize": {
+          "count": 12,
+          "mean": 1.5166666666530848,
+          "p95": 3.400000000023283,
+          "max": 3.400000000023283
+        }
+      },
+      "heap": 147731794
+    },
+    {
+      "repeat": 2,
+      "n": 5000,
+      "e": 10000,
+      "operation": "tab-hide-restore",
+      "elapsed": 478.9000000000233,
+      "handler": {
+        "count": 12,
+        "mean": 0.0916666666647264,
+        "p95": 0.19999999995343387,
+        "max": 0.19999999995343387
+      },
+      "paintOpportunity": {
+        "count": 12,
+        "mean": 39.88333333333139,
+        "p95": 53.5,
+        "max": 53.5
+      },
+      "frame": {
+        "count": 24,
+        "mean": 19.44166666666327,
+        "p95": 33.39999999999418,
+        "max": 33.40000000002328
+      },
+      "events": {
+        "render": 12,
+        "pan": 6,
+        "zoom": 6
+      },
+      "domMutations": 192,
+      "toolbar": 0,
+      "selectionRequests": 0,
+      "functions": {
+        "scheduleGraphViewportResize": {
+          "count": 12,
+          "mean": 0,
+          "p95": 0,
+          "max": 0
+        },
+        "applyGraphViewportSize": {
+          "count": 12,
+          "mean": 0.8416666666453239,
+          "p95": 1.6999999999534339,
+          "max": 1.6999999999534339
+        }
+      },
+      "heap": 121833262
+    },
+    {
+      "repeat": 2,
+      "n": 5000,
+      "e": 10000,
+      "operation": "idle",
+      "elapsed": 1022.0999999999767,
+      "handler": {
+        "count": 1,
+        "mean": 1000.2999999999302,
+        "p95": 1000.2999999999302,
+        "max": 1000.2999999999302
+      },
+      "paintOpportunity": {
+        "count": 1,
+        "mean": 1021.8999999999069,
+        "p95": 1021.8999999999069,
+        "max": 1021.8999999999069
+      },
+      "frame": {
+        "count": 62,
+        "mean": 16.46290322580617,
+        "p95": 16.70000000001164,
+        "max": 16.79999999998836
+      },
+      "events": {
+        "render": 1
+      },
+      "domMutations": 0,
+      "toolbar": 0,
+      "selectionRequests": 0,
+      "functions": {},
+      "heap": 122163170
+    },
+    {
+      "repeat": 2,
+      "n": 5000,
+      "e": 10000,
+      "operation": "hidden-update",
+      "elapsed": 653.8000000000466,
+      "handler": {
+        "count": 1,
+        "mean": 4.599999999976717,
+        "p95": 4.599999999976717,
+        "max": 4.599999999976717
+      },
+      "paintOpportunity": {
+        "count": 1,
+        "mean": 653.6999999999534,
+        "p95": 653.6999999999534,
+        "max": 653.6999999999534
+      },
+      "frame": {
+        "count": 2,
+        "mean": 299,
+        "p95": 583.2999999999884,
+        "max": 583.2999999999884
+      },
+      "events": {
+        "style": 1,
+        "data": 1,
+        "render": 2
+      },
+      "domMutations": 16,
+      "toolbar": 0,
+      "selectionRequests": 0,
+      "functions": {
+        "scheduleGraphViewportResize": {
+          "count": 1,
+          "mean": 0,
+          "p95": 0,
+          "max": 0
+        },
+        "applyGraphViewportSize": {
+          "count": 1,
+          "mean": 2.5,
+          "p95": 2.5,
+          "max": 2.5
+        }
+      },
+      "heap": 126021787
+    },
+    {
+      "repeat": 2,
+      "n": 5000,
+      "e": 10000,
+      "operation": "hidden-idle",
+      "elapsed": 1027.6000000000931,
+      "handler": {
+        "count": 1,
+        "mean": 1000.4000000000233,
+        "p95": 1000.4000000000233,
+        "max": 1000.4000000000233
+      },
+      "paintOpportunity": {
+        "count": 1,
+        "mean": 1027.5,
+        "p95": 1027.5,
+        "max": 1027.5
+      },
+      "frame": {
+        "count": 63,
+        "mean": 16.303174603173773,
+        "p95": 16.70000000001164,
+        "max": 16.79999999998836
+      },
+      "events": {},
+      "domMutations": 0,
+      "toolbar": 0,
+      "selectionRequests": 0,
+      "functions": {},
+      "heap": 126353567
+    },
+    {
+      "repeat": 2,
+      "n": 5000,
+      "e": 10000,
+      "operation": "pan-instrumentation-disabled",
+      "elapsed": 7149.79999999993,
+      "handler": {
+        "count": 12,
+        "mean": 0.08333333331393078,
+        "p95": 0.19999999995343387,
+        "max": 0.19999999995343387
+      },
+      "paintOpportunity": {
+        "count": 12,
+        "mean": 595.7916666666666,
+        "p95": 1492,
+        "max": 1492
+      },
+      "frame": {
+        "count": 24,
+        "mean": 297.8624999999993,
+        "p95": 683.2999999999884,
+        "max": 850
+      },
+      "events": {
+        "pan": 13,
+        "render": 17,
+        "zoom": 1
+      },
+      "domMutations": 16,
+      "toolbar": 0,
+      "selectionRequests": 0,
+      "functions": {},
+      "heap": 147437216
+    },
+    {
+      "repeat": 2,
+      "n": 5000,
+      "e": 10000,
+      "operation": "after-destroy-resize",
+      "elapsed": 3819.1999999999534,
+      "handler": {
+        "count": 1,
+        "mean": 0.19999999995343387,
+        "p95": 0.19999999995343387,
+        "max": 0.19999999995343387
+      },
+      "paintOpportunity": {
+        "count": 1,
+        "mean": 3819.0999999999767,
+        "p95": 3819.0999999999767,
+        "max": 3819.0999999999767
+      },
+      "frame": {
+        "count": 2,
+        "mean": 1519.050000000003,
+        "p95": 3049.899999999994,
+        "max": 3049.899999999994
+      },
+      "events": {
+        "render": 2,
+        "pan": 1,
+        "zoom": 1
+      },
+      "domMutations": 12,
+      "toolbar": 0,
+      "selectionRequests": 0,
+      "functions": {
+        "scheduleGraphViewportResize": {
+          "count": 1,
+          "mean": 0.09999999997671694,
+          "p95": 0.09999999997671694,
+          "max": 0.09999999997671694
+        },
+        "applyGraphViewportSize": {
+          "count": 1,
+          "mean": 2.5,
+          "p95": 2.5,
+          "max": 2.5
+        }
+      },
+      "heap": 181537635
+    },
+    {
+      "repeat": 2,
+      "n": 5000,
+      "e": 10000,
+      "operation": "cleanup",
+      "cyDestroyed": false,
+      "observerRetained": true,
+      "mountIncluding200ms": 257.9000000000233
+    },
+    {
+      "operation": "renderer-hover",
+      "n": 10,
+      "inputEvents": 60,
+      "elapsed": 1024.5999999999767,
+      "frames": {
+        "count": 60,
+        "total": 990.7999999999302,
+        "mean": 16.51333333333217,
+        "max": 17.5,
+        "p95": 17.20000000006985
+      },
+      "renders": 0,
+      "functions": {
+        "findNearestElements": {
+          "count": 55,
+          "total": 32.900000000256114,
+          "mean": 0.5981818181864748,
+          "max": 1.1000000000931323,
+          "p95": 0.8000000000465661
+        }
+      },
+      "toolbar": 0
+    },
+    {
+      "operation": "renderer-drag-pan",
+      "n": 10,
+      "inputEvents": 60,
+      "elapsed": 1032.3999999999069,
+      "frames": {
+        "count": 60,
+        "total": 999.1999999999534,
+        "mean": 16.653333333332558,
+        "max": 17.199999999953434,
+        "p95": 17.099999999976717
+      },
+      "renders": 0,
+      "functions": {},
+      "toolbar": 0
+    },
+    {
+      "operation": "renderer-wheel",
+      "n": 10,
+      "inputEvents": 60,
+      "elapsed": 1032.7999999999302,
+      "frames": {
+        "count": 60,
+        "total": 999.6999999999534,
+        "mean": 16.66166666666589,
+        "max": 22.699999999953434,
+        "p95": 17.600000000093132
+      },
+      "renders": 60,
+      "functions": {
+        "drawCachedElements": {
+          "count": 61,
+          "total": 1.7000000000698492,
+          "mean": 0.02786885246016146,
+          "max": 1.3000000000465661,
+          "p95": 0.09999999997671694
+        },
+        "render": {
+          "count": 60,
+          "total": 20.89999999932479,
+          "mean": 0.34833333332207983,
+          "max": 6.199999999953434,
+          "p95": 0.40000000002328306
+        }
+      },
+      "toolbar": 0
+    },
+    {
+      "operation": "renderer-hover-no-probes",
+      "n": 10,
+      "inputEvents": 60,
+      "elapsed": 1033.4000000000233,
+      "frames": {
+        "count": 60,
+        "total": 999.8000000000466,
+        "mean": 16.66333333333411,
+        "max": 17.900000000023283,
+        "p95": 17.29999999993015
+      },
+      "renders": 1,
+      "functions": {},
+      "toolbar": 0
+    },
+    {
+      "operation": "renderer-labels-hidden-pan",
+      "n": 10,
+      "inputEvents": 60,
+      "elapsed": 1033.0999999999767,
+      "frames": {
+        "count": 60,
+        "total": 1000.0999999999767,
+        "mean": 16.668333333332946,
+        "max": 18.399999999906868,
+        "p95": 17.20000000006985
+      },
+      "renders": 61,
+      "functions": {
+        "drawCachedElements": {
+          "count": 78,
+          "total": 12.899999999906868,
+          "mean": 0.1653846153834214,
+          "max": 1.5,
+          "p95": 0.9000000000232831
+        },
+        "render": {
+          "count": 61,
+          "total": 28.799999999580905,
+          "mean": 0.47213114753411317,
+          "max": 2.900000000023283,
+          "p95": 1.099999999976717
+        }
+      },
+      "toolbar": 0
+    },
+    {
+      "operation": "renderer-hover",
+      "n": 100,
+      "inputEvents": 60,
+      "elapsed": 1031.5999999999767,
+      "frames": {
+        "count": 60,
+        "total": 998.3000000000466,
+        "mean": 16.63833333333411,
+        "max": 17.5,
+        "p95": 17.29999999993015
+      },
+      "renders": 0,
+      "functions": {
+        "findNearestElements": {
+          "count": 55,
+          "total": 215.5999999998603,
+          "mean": 3.91999999999746,
+          "max": 5.599999999976717,
+          "p95": 5.400000000023283
+        }
+      },
+      "toolbar": 0
+    },
+    {
+      "operation": "renderer-drag-pan",
+      "n": 100,
+      "inputEvents": 60,
+      "elapsed": 1032.6999999999534,
+      "frames": {
+        "count": 60,
+        "total": 999.2999999999302,
+        "mean": 16.654999999998836,
+        "max": 18,
+        "p95": 17.199999999953434
+      },
+      "renders": 0,
+      "functions": {},
+      "toolbar": 0
+    },
+    {
+      "operation": "renderer-wheel",
+      "n": 100,
+      "inputEvents": 60,
+      "elapsed": 1132.9000000000233,
+      "frames": {
+        "count": 60,
+        "total": 1099.7000000000698,
+        "mean": 18.3283333333345,
+        "max": 37,
+        "p95": 29.199999999953434
+      },
+      "renders": 60,
+      "functions": {
+        "drawCachedElements": {
+          "count": 77,
+          "total": 177.50000000011642,
+          "mean": 2.305194805196317,
+          "max": 17.600000000093132,
+          "p95": 14.79999999993015
+        },
+        "render": {
+          "count": 60,
+          "total": 202.69999999948777,
+          "mean": 3.3783333333247962,
+          "max": 18.400000000023283,
+          "p95": 16.20000000006985
+        }
+      },
+      "toolbar": 0
+    },
+    {
+      "operation": "renderer-hover-no-probes",
+      "n": 100,
+      "inputEvents": 60,
+      "elapsed": 1033.1999999999534,
+      "frames": {
+        "count": 60,
+        "total": 999.7999999999302,
+        "mean": 16.66333333333217,
+        "max": 18,
+        "p95": 17.399999999906868
+      },
+      "renders": 1,
+      "functions": {},
+      "toolbar": 0
+    },
+    {
+      "operation": "renderer-labels-hidden-pan",
+      "n": 100,
+      "inputEvents": 60,
+      "elapsed": 1123.6999999999534,
+      "frames": {
+        "count": 60,
+        "total": 1090.2999999999302,
+        "mean": 18.1716666666655,
+        "max": 48.10000000009313,
+        "p95": 25.099999999976717
+      },
+      "renders": 61,
+      "functions": {
+        "drawCachedElements": {
+          "count": 77,
+          "total": 158.89999999990687,
+          "mean": 2.0636363636351542,
+          "max": 28.699999999953434,
+          "p95": 11.099999999976717
+        },
+        "render": {
+          "count": 61,
+          "total": 183.5999999998603,
+          "mean": 3.00983606557148,
+          "max": 28.899999999906868,
+          "p95": 11.5
+        }
+      },
+      "toolbar": 0
+    },
+    {
+      "operation": "renderer-hover",
+      "n": 1000,
+      "inputEvents": 60,
+      "elapsed": 1206.2999999999302,
+      "frames": {
+        "count": 60,
+        "total": 1172.2999999999302,
+        "mean": 19.53833333333217,
+        "max": 31,
+        "p95": 27.5
+      },
+      "renders": 0,
+      "functions": {
+        "findNearestElements": {
+          "count": 55,
+          "total": 1019.9999999998836,
+          "mean": 18.54545454545243,
+          "max": 23.5,
+          "p95": 23.400000000023283
+        }
+      },
+      "toolbar": 0
+    },
+    {
+      "operation": "renderer-drag-pan",
+      "n": 1000,
+      "inputEvents": 60,
+      "elapsed": 1032.5999999999767,
+      "frames": {
+        "count": 60,
+        "total": 999,
+        "mean": 16.65,
+        "max": 17.5,
+        "p95": 17.199999999953434
+      },
+      "renders": 0,
+      "functions": {},
+      "toolbar": 0
+    },
+    {
+      "operation": "renderer-wheel",
+      "n": 1000,
+      "inputEvents": 60,
+      "elapsed": 1683,
+      "frames": {
+        "count": 60,
+        "total": 1651.3000000000466,
+        "mean": 27.521666666667443,
+        "max": 139.40000000002328,
+        "p95": 104.59999999997672
+      },
+      "renders": 60,
+      "functions": {
+        "drawCachedElements": {
+          "count": 67,
+          "total": 588.3000000000466,
+          "mean": 8.780597014926068,
+          "max": 96,
+          "p95": 83.90000000002328
+        },
+        "render": {
+          "count": 60,
+          "total": 642.3000000000466,
+          "mean": 10.705000000000776,
+          "max": 117.80000000004657,
+          "p95": 84.90000000002328
+        }
+      },
+      "toolbar": 0
+    },
+    {
+      "operation": "renderer-hover-no-probes",
+      "n": 1000,
+      "inputEvents": 60,
+      "elapsed": 1284.5999999999767,
+      "frames": {
+        "count": 60,
+        "total": 1249.8999999999069,
+        "mean": 20.831666666665114,
+        "max": 33.20000000006985,
+        "p95": 28.300000000046566
+      },
+      "renders": 1,
+      "functions": {},
+      "toolbar": 0
+    },
+    {
+      "operation": "renderer-labels-hidden-pan",
+      "n": 1000,
+      "inputEvents": 60,
+      "elapsed": 1987,
+      "frames": {
+        "count": 60,
+        "total": 1954.5,
+        "mean": 32.575,
+        "max": 119.90000000002328,
+        "p95": 89.5
+      },
+      "renders": 61,
+      "functions": {
+        "drawCachedElements": {
+          "count": 78,
+          "total": 794.3999999997905,
+          "mean": 10.184615384612698,
+          "max": 106.5,
+          "p95": 58.89999999990687
+        },
+        "render": {
+          "count": 61,
+          "total": 876.100000000326,
+          "mean": 14.362295081972556,
+          "max": 114.30000000004657,
+          "p95": 59.20000000006985
+        }
+      },
+      "toolbar": 0
+    },
+    {
+      "operation": "renderer-hover",
+      "n": 5000,
+      "inputEvents": 60,
+      "elapsed": 5725.399999999907,
+      "frames": {
+        "count": 60,
+        "total": 5691.699999999953,
+        "mean": 94.8616666666659,
+        "max": 123.09999999997672,
+        "p95": 119.20000000006985
+      },
+      "renders": 0,
+      "functions": {
+        "findNearestElements": {
+          "count": 55,
+          "total": 5576.60000000021,
+          "mean": 101.39272727273108,
+          "max": 122.29999999993015,
+          "p95": 119.4000000001397
+        }
+      },
+      "toolbar": 0
+    },
+    {
+      "operation": "renderer-drag-pan",
+      "n": 5000,
+      "inputEvents": 60,
+      "elapsed": 1032.7000000001863,
+      "frames": {
+        "count": 60,
+        "total": 999.7000000001863,
+        "mean": 16.66166666666977,
+        "max": 17.200000000186265,
+        "p95": 17
+      },
+      "renders": 0,
+      "functions": {},
+      "toolbar": 0
+    },
+    {
+      "operation": "renderer-wheel",
+      "n": 5000,
+      "inputEvents": 60,
+      "elapsed": 5833.5,
+      "frames": {
+        "count": 60,
+        "total": 5800.5,
+        "mean": 96.675,
+        "max": 600.1000000000931,
+        "p95": 523.2000000001863
+      },
+      "renders": 60,
+      "functions": {
+        "drawCachedElements": {
+          "count": 70,
+          "total": 4206.40000000014,
+          "mean": 60.09142857143057,
+          "max": 511.80000000004657,
+          "p95": 445.19999999995343
+        },
+        "render": {
+          "count": 60,
+          "total": 4419.299999999581,
+          "mean": 73.65499999999301,
+          "max": 583.5,
+          "p95": 451.80000000004657
+        }
+      },
+      "toolbar": 0
+    },
+    {
+      "operation": "renderer-hover-no-probes",
+      "n": 5000,
+      "inputEvents": 60,
+      "elapsed": 5382.600000000093,
+      "frames": {
+        "count": 60,
+        "total": 5349.40000000014,
+        "mean": 89.156666666669,
+        "max": 128.10000000009313,
+        "p95": 105.89999999990687
+      },
+      "renders": 1,
+      "functions": {},
+      "toolbar": 0
+    },
+    {
+      "operation": "renderer-labels-hidden-pan",
+      "n": 5000,
+      "inputEvents": 60,
+      "elapsed": 3768.9000000001397,
+      "frames": {
+        "count": 60,
+        "total": 3736.3000000000466,
+        "mean": 62.27166666666744,
+        "max": 313.9000000001397,
+        "p95": 279.89999999990687
+      },
+      "renders": 61,
+      "functions": {
+        "drawCachedElements": {
+          "count": 73,
+          "total": 2879.5999999998603,
+          "mean": 39.44657534246384,
+          "max": 435.10000000009313,
+          "p95": 239.69999999995343
+        },
+        "render": {
+          "count": 61,
+          "total": 3062.1999999999534,
+          "mean": 50.199999999999235,
+          "max": 473.70000000018626,
+          "p95": 248.89999999990687
+        }
+      },
+      "toolbar": 0
+    },
+    {
+      "operation": "two-viewers",
+      "distinctInstances": true,
+      "firstDestroyed": true,
+      "secondHostOwnsInstance": false,
+      "actualHostIsFirst": true,
+      "firstContainerId": "cy"
+    },
+    {
+      "operation": "production-open",
+      "n": 10,
+      "actualNodes": 11,
+      "actualEdges": 10,
+      "setupMs": 39.300000000046566,
+      "throughLayoutPaintOpportunity": 101.30000000004657,
+      "requests": 7,
+      "renders": 2
+    },
+    {
+      "operation": "production-open",
+      "n": 100,
+      "actualNodes": 101,
+      "actualEdges": 200,
+      "setupMs": 241.4000000001397,
+      "throughLayoutPaintOpportunity": 629.4000000001397,
+      "requests": 7,
+      "renders": 2
+    },
+    {
+      "operation": "production-open",
+      "n": 1000,
+      "actualNodes": 1001,
+      "actualEdges": 2000,
+      "setupMs": 1534.6999999999534,
+      "throughLayoutPaintOpportunity": 16143.800000000047,
+      "requests": 7,
+      "renders": 3
+    },
+    {
+      "operation": "production-open",
+      "n": 5000,
+      "actualNodes": 5001,
+      "actualEdges": 10000,
+      "setupMs": 14113.59999999986,
+      "throughLayoutPaintOpportunity": 192592.80000000005,
+      "requests": 7,
+      "renders": 3
+    }
+  ],
+  "longTasks": [
+    {
+      "start": 600.5,
+      "duration": 57
+    },
+    {
+      "start": 8400.5,
+      "duration": 262
+    },
+    {
+      "start": 8663.800000000047,
+      "duration": 92
+    },
+    {
+      "start": 8756.300000000047,
+      "duration": 105
+    },
+    {
+      "start": 8862.300000000047,
+      "duration": 57
+    },
+    {
+      "start": 12536.800000000047,
+      "duration": 106
+    },
+    {
+      "start": 12643.800000000047,
+      "duration": 62
+    },
+    {
+      "start": 12706.70000000007,
+      "duration": 69
+    },
+    {
+      "start": 12776.5,
+      "duration": 84
+    },
+    {
+      "start": 12862.099999999977,
+      "duration": 69
+    },
+    {
+      "start": 12932.099999999977,
+      "duration": 73
+    },
+    {
+      "start": 13005.70000000007,
+      "duration": 56
+    },
+    {
+      "start": 13119.900000000023,
+      "duration": 96
+    },
+    {
+      "start": 13283.300000000047,
+      "duration": 51
+    },
+    {
+      "start": 13350,
+      "duration": 51
+    },
+    {
+      "start": 16216.800000000047,
+      "duration": 68
+    },
+    {
+      "start": 16286,
+      "duration": 57
+    },
+    {
+      "start": 16721.900000000023,
+      "duration": 159
+    },
+    {
+      "start": 16881.300000000047,
+      "duration": 56
+    },
+    {
+      "start": 17300,
+      "duration": 1968
+    },
+    {
+      "start": 19270.900000000023,
+      "duration": 618
+    },
+    {
+      "start": 19889.800000000047,
+      "duration": 817
+    },
+    {
+      "start": 20710,
+      "duration": 616
+    },
+    {
+      "start": 21333,
+      "duration": 136
+    },
+    {
+      "start": 21469.5,
+      "duration": 136
+    },
+    {
+      "start": 21606.599999999977,
+      "duration": 126
+    },
+    {
+      "start": 21752.400000000023,
+      "duration": 237
+    },
+    {
+      "start": 21999.70000000007,
+      "duration": 167
+    },
+    {
+      "start": 22184.20000000007,
+      "duration": 134
+    },
+    {
+      "start": 22949.800000000047,
+      "duration": 129
+    },
+    {
+      "start": 23079.900000000023,
+      "duration": 93
+    },
+    {
+      "start": 23173.099999999977,
+      "duration": 105
+    },
+    {
+      "start": 23278.599999999977,
+      "duration": 91
+    },
+    {
+      "start": 23370.099999999977,
+      "duration": 141
+    },
+    {
+      "start": 23511.599999999977,
+      "duration": 76
+    },
+    {
+      "start": 23588.400000000023,
+      "duration": 97
+    },
+    {
+      "start": 23686,
+      "duration": 74
+    },
+    {
+      "start": 23761.099999999977,
+      "duration": 98
+    },
+    {
+      "start": 23860.099999999977,
+      "duration": 79
+    },
+    {
+      "start": 23939.599999999977,
+      "duration": 127
+    },
+    {
+      "start": 24067.5,
+      "duration": 88
+    },
+    {
+      "start": 24156.099999999977,
+      "duration": 112
+    },
+    {
+      "start": 24268.70000000007,
+      "duration": 91
+    },
+    {
+      "start": 24360.20000000007,
+      "duration": 108
+    },
+    {
+      "start": 24469.20000000007,
+      "duration": 93
+    },
+    {
+      "start": 24562.599999999977,
+      "duration": 143
+    },
+    {
+      "start": 24706.20000000007,
+      "duration": 76
+    },
+    {
+      "start": 24783.20000000007,
+      "duration": 101
+    },
+    {
+      "start": 24885,
+      "duration": 88
+    },
+    {
+      "start": 24973.300000000047,
+      "duration": 162
+    },
+    {
+      "start": 25136.099999999977,
+      "duration": 88
+    },
+    {
+      "start": 25225,
+      "duration": 164
+    },
+    {
+      "start": 25389.70000000007,
+      "duration": 76
+    },
+    {
+      "start": 27482.900000000023,
+      "duration": 84
+    },
+    {
+      "start": 27582.900000000023,
+      "duration": 90
+    },
+    {
+      "start": 27682.599999999977,
+      "duration": 97
+    },
+    {
+      "start": 27784.300000000047,
+      "duration": 103
+    },
+    {
+      "start": 27900.300000000047,
+      "duration": 98
+    },
+    {
+      "start": 28016.099999999977,
+      "duration": 86
+    },
+    {
+      "start": 28116.20000000007,
+      "duration": 88
+    },
+    {
+      "start": 28216,
+      "duration": 82
+    },
+    {
+      "start": 28301.400000000023,
+      "duration": 101
+    },
+    {
+      "start": 28416.099999999977,
+      "duration": 99
+    },
+    {
+      "start": 28532.70000000007,
+      "duration": 103
+    },
+    {
+      "start": 28649.599999999977,
+      "duration": 95
+    },
+    {
+      "start": 28745.800000000047,
+      "duration": 730
+    },
+    {
+      "start": 29476,
+      "duration": 868
+    },
+    {
+      "start": 30344.300000000047,
+      "duration": 987
+    },
+    {
+      "start": 31332.70000000007,
+      "duration": 548
+    },
+    {
+      "start": 31881.300000000047,
+      "duration": 438
+    },
+    {
+      "start": 32322.800000000047,
+      "duration": 507
+    },
+    {
+      "start": 32831.59999999998,
+      "duration": 757
+    },
+    {
+      "start": 33601.09999999998,
+      "duration": 219
+    },
+    {
+      "start": 33821,
+      "duration": 57
+    },
+    {
+      "start": 33891.80000000005,
+      "duration": 209
+    },
+    {
+      "start": 34116,
+      "duration": 167
+    },
+    {
+      "start": 34313.80000000005,
+      "duration": 184
+    },
+    {
+      "start": 34515.90000000002,
+      "duration": 155
+    },
+    {
+      "start": 34707.59999999998,
+      "duration": 313
+    },
+    {
+      "start": 35039.59999999998,
+      "duration": 239
+    },
+    {
+      "start": 35293,
+      "duration": 245
+    },
+    {
+      "start": 35555,
+      "duration": 156
+    },
+    {
+      "start": 37282.59999999998,
+      "duration": 226
+    },
+    {
+      "start": 38565.90000000002,
+      "duration": 69
+    },
+    {
+      "start": 38635.59999999998,
+      "duration": 176
+    },
+    {
+      "start": 38811.80000000005,
+      "duration": 184
+    },
+    {
+      "start": 38996.70000000007,
+      "duration": 246
+    },
+    {
+      "start": 39243.09999999998,
+      "duration": 188
+    },
+    {
+      "start": 39449.20000000007,
+      "duration": 197
+    },
+    {
+      "start": 39652.40000000002,
+      "duration": 153
+    },
+    {
+      "start": 39815.70000000007,
+      "duration": 233
+    },
+    {
+      "start": 40065.59999999998,
+      "duration": 139
+    },
+    {
+      "start": 40232.30000000005,
+      "duration": 139
+    },
+    {
+      "start": 40499,
+      "duration": 60
+    },
+    {
+      "start": 40560.09999999998,
+      "duration": 642
+    },
+    {
+      "start": 41202.90000000002,
+      "duration": 139
+    },
+    {
+      "start": 41682.5,
+      "duration": 4810
+    },
+    {
+      "start": 46519.40000000002,
+      "duration": 1950
+    },
+    {
+      "start": 48470.5,
+      "duration": 2528
+    },
+    {
+      "start": 51003,
+      "duration": 2396
+    },
+    {
+      "start": 53415.09999999998,
+      "duration": 710
+    },
+    {
+      "start": 54126.20000000007,
+      "duration": 543
+    },
+    {
+      "start": 54670.20000000007,
+      "duration": 489
+    },
+    {
+      "start": 55167.30000000005,
+      "duration": 958
+    },
+    {
+      "start": 56125.70000000007,
+      "duration": 517
+    },
+    {
+      "start": 56649,
+      "duration": 421
+    },
+    {
+      "start": 57081.5,
+      "duration": 473
+    },
+    {
+      "start": 57555.40000000002,
+      "duration": 404
+    },
+    {
+      "start": 57959.70000000007,
+      "duration": 382
+    },
+    {
+      "start": 58931.59999999998,
+      "duration": 499
+    },
+    {
+      "start": 59430.90000000002,
+      "duration": 301
+    },
+    {
+      "start": 59732,
+      "duration": 703
+    },
+    {
+      "start": 60436.5,
+      "duration": 448
+    },
+    {
+      "start": 60885.30000000005,
+      "duration": 845
+    },
+    {
+      "start": 61730.90000000002,
+      "duration": 422
+    },
+    {
+      "start": 62153.59999999998,
+      "duration": 645
+    },
+    {
+      "start": 62799.09999999998,
+      "duration": 364
+    },
+    {
+      "start": 63164.30000000005,
+      "duration": 757
+    },
+    {
+      "start": 63923.5,
+      "duration": 348
+    },
+    {
+      "start": 64272.40000000002,
+      "duration": 635
+    },
+    {
+      "start": 64908.20000000007,
+      "duration": 322
+    },
+    {
+      "start": 65230.90000000002,
+      "duration": 604
+    },
+    {
+      "start": 65835.80000000005,
+      "duration": 353
+    },
+    {
+      "start": 66189.90000000002,
+      "duration": 553
+    },
+    {
+      "start": 66743.5,
+      "duration": 312
+    },
+    {
+      "start": 67056.40000000002,
+      "duration": 642
+    },
+    {
+      "start": 67698.80000000005,
+      "duration": 325
+    },
+    {
+      "start": 68024.09999999998,
+      "duration": 766
+    },
+    {
+      "start": 68791.09999999998,
+      "duration": 362
+    },
+    {
+      "start": 69153.09999999998,
+      "duration": 698
+    },
+    {
+      "start": 69852.30000000005,
+      "duration": 342
+    },
+    {
+      "start": 70195.5,
+      "duration": 785
+    },
+    {
+      "start": 70981.20000000007,
+      "duration": 319
+    },
+    {
+      "start": 71300.5,
+      "duration": 135
+    },
+    {
+      "start": 71454.90000000002,
+      "duration": 244
+    },
+    {
+      "start": 71739.30000000005,
+      "duration": 107
+    },
+    {
+      "start": 71895.59999999998,
+      "duration": 128
+    },
+    {
+      "start": 72035.40000000002,
+      "duration": 105
+    },
+    {
+      "start": 72148.5,
+      "duration": 186
+    },
+    {
+      "start": 72361.20000000007,
+      "duration": 132
+    },
+    {
+      "start": 72500.30000000005,
+      "duration": 160
+    },
+    {
+      "start": 72681.90000000002,
+      "duration": 120
+    },
+    {
+      "start": 72817.90000000002,
+      "duration": 105
+    },
+    {
+      "start": 72943.80000000005,
+      "duration": 88
+    },
+    {
+      "start": 73051.59999999998,
+      "duration": 83
+    },
+    {
+      "start": 73149,
+      "duration": 91
+    },
+    {
+      "start": 73255.20000000007,
+      "duration": 95
+    },
+    {
+      "start": 73364.70000000007,
+      "duration": 95
+    },
+    {
+      "start": 73468.20000000007,
+      "duration": 101
+    },
+    {
+      "start": 73598,
+      "duration": 118
+    },
+    {
+      "start": 73739.20000000007,
+      "duration": 104
+    },
+    {
+      "start": 73849.70000000007,
+      "duration": 94
+    },
+    {
+      "start": 73947.59999999998,
+      "duration": 108
+    },
+    {
+      "start": 74064.09999999998,
+      "duration": 96
+    },
+    {
+      "start": 74164,
+      "duration": 85
+    },
+    {
+      "start": 74264.30000000005,
+      "duration": 96
+    },
+    {
+      "start": 74366,
+      "duration": 107
+    },
+    {
+      "start": 74480.80000000005,
+      "duration": 116
+    },
+    {
+      "start": 74600.90000000002,
+      "duration": 98
+    },
+    {
+      "start": 74714.30000000005,
+      "duration": 95
+    },
+    {
+      "start": 74814.59999999998,
+      "duration": 98
+    },
+    {
+      "start": 74917.5,
+      "duration": 97
+    },
+    {
+      "start": 75030.80000000005,
+      "duration": 106
+    },
+    {
+      "start": 75147.90000000002,
+      "duration": 100
+    },
+    {
+      "start": 75264.59999999998,
+      "duration": 106
+    },
+    {
+      "start": 75380.90000000002,
+      "duration": 99
+    },
+    {
+      "start": 75484.40000000002,
+      "duration": 93
+    },
+    {
+      "start": 75582.5,
+      "duration": 91
+    },
+    {
+      "start": 75680.90000000002,
+      "duration": 113
+    },
+    {
+      "start": 75797.90000000002,
+      "duration": 101
+    },
+    {
+      "start": 75914.30000000005,
+      "duration": 106
+    },
+    {
+      "start": 76030.90000000002,
+      "duration": 108
+    },
+    {
+      "start": 76147.40000000002,
+      "duration": 95
+    },
+    {
+      "start": 76247.5,
+      "duration": 105
+    },
+    {
+      "start": 76364.70000000007,
+      "duration": 98
+    },
+    {
+      "start": 76468,
+      "duration": 100
+    },
+    {
+      "start": 76580.80000000005,
+      "duration": 97
+    },
+    {
+      "start": 77231,
+      "duration": 342
+    },
+    {
+      "start": 77580.70000000007,
+      "duration": 355
+    },
+    {
+      "start": 77947.30000000005,
+      "duration": 315
+    },
+    {
+      "start": 78280.90000000002,
+      "duration": 308
+    },
+    {
+      "start": 78597.5,
+      "duration": 290
+    },
+    {
+      "start": 78898.59999999998,
+      "duration": 533
+    },
+    {
+      "start": 79447.40000000002,
+      "duration": 436
+    },
+    {
+      "start": 79897.30000000005,
+      "duration": 343
+    },
+    {
+      "start": 80247.09999999998,
+      "duration": 327
+    },
+    {
+      "start": 80581.20000000007,
+      "duration": 386
+    },
+    {
+      "start": 80980.59999999998,
+      "duration": 373
+    },
+    {
+      "start": 81364,
+      "duration": 347
+    },
+    {
+      "start": 81711.80000000005,
+      "duration": 2462
+    },
+    {
+      "start": 84176.20000000007,
+      "duration": 2663
+    },
+    {
+      "start": 86840.30000000005,
+      "duration": 2278
+    },
+    {
+      "start": 89120,
+      "duration": 2443
+    },
+    {
+      "start": 91564.90000000002,
+      "duration": 2309
+    },
+    {
+      "start": 93880,
+      "duration": 2642
+    },
+    {
+      "start": 96522.80000000005,
+      "duration": 1791
+    },
+    {
+      "start": 98321.70000000007,
+      "duration": 1418
+    },
+    {
+      "start": 99740.70000000007,
+      "duration": 356
+    },
+    {
+      "start": 100167.30000000005,
+      "duration": 831
+    },
+    {
+      "start": 101051.59999999998,
+      "duration": 665
+    },
+    {
+      "start": 101718.5,
+      "duration": 95
+    },
+    {
+      "start": 101815.20000000007,
+      "duration": 675
+    },
+    {
+      "start": 102522.59999999998,
+      "duration": 623
+    },
+    {
+      "start": 103185.30000000005,
+      "duration": 580
+    },
+    {
+      "start": 103802.09999999998,
+      "duration": 527
+    },
+    {
+      "start": 104356.70000000007,
+      "duration": 538
+    },
+    {
+      "start": 104922.09999999998,
+      "duration": 63
+    },
+    {
+      "start": 105046.90000000002,
+      "duration": 69
+    },
+    {
+      "start": 106662.90000000002,
+      "duration": 493
+    },
+    {
+      "start": 108229.59999999998,
+      "duration": 225
+    },
+    {
+      "start": 108456.30000000005,
+      "duration": 552
+    },
+    {
+      "start": 109008.59999999998,
+      "duration": 518
+    },
+    {
+      "start": 109531.5,
+      "duration": 564
+    },
+    {
+      "start": 110112.80000000005,
+      "duration": 743
+    },
+    {
+      "start": 110862.59999999998,
+      "duration": 630
+    },
+    {
+      "start": 111493.5,
+      "duration": 755
+    },
+    {
+      "start": 112249.59999999998,
+      "duration": 645
+    },
+    {
+      "start": 112896.5,
+      "duration": 656
+    },
+    {
+      "start": 113567.20000000007,
+      "duration": 529
+    },
+    {
+      "start": 114097.09999999998,
+      "duration": 59
+    },
+    {
+      "start": 114269.5,
+      "duration": 185
+    },
+    {
+      "start": 114459,
+      "duration": 3475
+    },
+    {
+      "start": 117934.70000000007,
+      "duration": 840
+    },
+    {
+      "start": 126612.40000000002,
+      "duration": 208
+    },
+    {
+      "start": 126821.30000000005,
+      "duration": 59
+    },
+    {
+      "start": 126880.80000000005,
+      "duration": 95
+    },
+    {
+      "start": 126976.30000000005,
+      "duration": 67
+    },
+    {
+      "start": 130645.09999999998,
+      "duration": 51
+    },
+    {
+      "start": 134261.80000000005,
+      "duration": 60
+    },
+    {
+      "start": 134661.90000000002,
+      "duration": 1416
+    },
+    {
+      "start": 136079,
+      "duration": 346
+    },
+    {
+      "start": 136425.30000000005,
+      "duration": 781
+    },
+    {
+      "start": 137206.90000000002,
+      "duration": 652
+    },
+    {
+      "start": 137874,
+      "duration": 149
+    },
+    {
+      "start": 138029.59999999998,
+      "duration": 157
+    },
+    {
+      "start": 138199.80000000005,
+      "duration": 245
+    },
+    {
+      "start": 138461.70000000007,
+      "duration": 252
+    },
+    {
+      "start": 138714.20000000007,
+      "duration": 166
+    },
+    {
+      "start": 138881.09999999998,
+      "duration": 215
+    },
+    {
+      "start": 139729.30000000005,
+      "duration": 246
+    },
+    {
+      "start": 139975.40000000002,
+      "duration": 115
+    },
+    {
+      "start": 140091.59999999998,
+      "duration": 217
+    },
+    {
+      "start": 140309.70000000007,
+      "duration": 101
+    },
+    {
+      "start": 140411.5,
+      "duration": 210
+    },
+    {
+      "start": 140623.59999999998,
+      "duration": 174
+    },
+    {
+      "start": 140798.30000000005,
+      "duration": 151
+    },
+    {
+      "start": 140950.20000000007,
+      "duration": 90
+    },
+    {
+      "start": 141040.59999999998,
+      "duration": 172
+    },
+    {
+      "start": 141213.20000000007,
+      "duration": 105
+    },
+    {
+      "start": 141318.5,
+      "duration": 167
+    },
+    {
+      "start": 141485.80000000005,
+      "duration": 119
+    },
+    {
+      "start": 141606.59999999998,
+      "duration": 270
+    },
+    {
+      "start": 141877.20000000007,
+      "duration": 167
+    },
+    {
+      "start": 142045,
+      "duration": 201
+    },
+    {
+      "start": 142246.90000000002,
+      "duration": 144
+    },
+    {
+      "start": 142391.5,
+      "duration": 259
+    },
+    {
+      "start": 142650.90000000002,
+      "duration": 105
+    },
+    {
+      "start": 142756.5,
+      "duration": 104
+    },
+    {
+      "start": 142861.59999999998,
+      "duration": 92
+    },
+    {
+      "start": 142954.5,
+      "duration": 154
+    },
+    {
+      "start": 143109,
+      "duration": 88
+    },
+    {
+      "start": 143197.90000000002,
+      "duration": 115
+    },
+    {
+      "start": 143313.80000000005,
+      "duration": 103
+    },
+    {
+      "start": 145494.80000000005,
+      "duration": 85
+    },
+    {
+      "start": 145594.80000000005,
+      "duration": 85
+    },
+    {
+      "start": 145694.90000000002,
+      "duration": 90
+    },
+    {
+      "start": 145794.70000000007,
+      "duration": 78
+    },
+    {
+      "start": 145877.90000000002,
+      "duration": 76
+    },
+    {
+      "start": 145961.40000000002,
+      "duration": 96
+    },
+    {
+      "start": 146064.70000000007,
+      "duration": 76
+    },
+    {
+      "start": 146144.40000000002,
+      "duration": 72
+    },
+    {
+      "start": 146228.09999999998,
+      "duration": 76
+    },
+    {
+      "start": 146311.30000000005,
+      "duration": 76
+    },
+    {
+      "start": 146394.59999999998,
+      "duration": 87
+    },
+    {
+      "start": 146494.59999999998,
+      "duration": 77
+    },
+    {
+      "start": 146572.20000000007,
+      "duration": 411
+    },
+    {
+      "start": 146983.70000000007,
+      "duration": 519
+    },
+    {
+      "start": 147503.80000000005,
+      "duration": 476
+    },
+    {
+      "start": 147988.09999999998,
+      "duration": 415
+    },
+    {
+      "start": 148405,
+      "duration": 545
+    },
+    {
+      "start": 148950.70000000007,
+      "duration": 425
+    },
+    {
+      "start": 149376.90000000002,
+      "duration": 471
+    },
+    {
+      "start": 149848.40000000002,
+      "duration": 155
+    },
+    {
+      "start": 150003.59999999998,
+      "duration": 54
+    },
+    {
+      "start": 150079,
+      "duration": 136
+    },
+    {
+      "start": 150232.20000000007,
+      "duration": 115
+    },
+    {
+      "start": 150361.09999999998,
+      "duration": 163
+    },
+    {
+      "start": 150538.59999999998,
+      "duration": 146
+    },
+    {
+      "start": 150699.59999999998,
+      "duration": 147
+    },
+    {
+      "start": 150866.30000000005,
+      "duration": 138
+    },
+    {
+      "start": 151005.40000000002,
+      "duration": 98
+    },
+    {
+      "start": 151104,
+      "duration": 138
+    },
+    {
+      "start": 151254.40000000002,
+      "duration": 139
+    },
+    {
+      "start": 151404.59999999998,
+      "duration": 134
+    },
+    {
+      "start": 153094.5,
+      "duration": 189
+    },
+    {
+      "start": 154344.40000000002,
+      "duration": 77
+    },
+    {
+      "start": 154427.5,
+      "duration": 276
+    },
+    {
+      "start": 154705,
+      "duration": 115
+    },
+    {
+      "start": 154828.59999999998,
+      "duration": 146
+    },
+    {
+      "start": 154979,
+      "duration": 136
+    },
+    {
+      "start": 155116,
+      "duration": 124
+    },
+    {
+      "start": 155241,
+      "duration": 156
+    },
+    {
+      "start": 155627.90000000002,
+      "duration": 65
+    },
+    {
+      "start": 155693.59999999998,
+      "duration": 935
+    },
+    {
+      "start": 156629.40000000002,
+      "duration": 184
+    },
+    {
+      "start": 157069.80000000005,
+      "duration": 51
+    },
+    {
+      "start": 157194.40000000002,
+      "duration": 6052
+    },
+    {
+      "start": 163250,
+      "duration": 1965
+    },
+    {
+      "start": 165216.20000000007,
+      "duration": 2757
+    },
+    {
+      "start": 167977.40000000002,
+      "duration": 2036
+    },
+    {
+      "start": 170027.20000000007,
+      "duration": 536
+    },
+    {
+      "start": 170584.90000000002,
+      "duration": 510
+    },
+    {
+      "start": 171096,
+      "duration": 495
+    },
+    {
+      "start": 171592.5,
+      "duration": 873
+    },
+    {
+      "start": 172477.40000000002,
+      "duration": 503
+    },
+    {
+      "start": 172980.90000000002,
+      "duration": 420
+    },
+    {
+      "start": 173406.59999999998,
+      "duration": 429
+    },
+    {
+      "start": 173843.40000000002,
+      "duration": 373
+    },
+    {
+      "start": 174216.90000000002,
+      "duration": 398
+    },
+    {
+      "start": 175193.59999999998,
+      "duration": 742
+    },
+    {
+      "start": 175935.90000000002,
+      "duration": 317
+    },
+    {
+      "start": 176254,
+      "duration": 886
+    },
+    {
+      "start": 177140.5,
+      "duration": 322
+    },
+    {
+      "start": 177462.80000000005,
+      "duration": 881
+    },
+    {
+      "start": 178344.5,
+      "duration": 348
+    },
+    {
+      "start": 178693.30000000005,
+      "duration": 866
+    },
+    {
+      "start": 179560,
+      "duration": 313
+    },
+    {
+      "start": 179873.59999999998,
+      "duration": 746
+    },
+    {
+      "start": 180620.30000000005,
+      "duration": 317
+    },
+    {
+      "start": 180938.20000000007,
+      "duration": 792
+    },
+    {
+      "start": 181730.5,
+      "duration": 325
+    },
+    {
+      "start": 182056.70000000007,
+      "duration": 485
+    },
+    {
+      "start": 182542.5,
+      "duration": 336
+    },
+    {
+      "start": 182878.90000000002,
+      "duration": 599
+    },
+    {
+      "start": 183478.80000000005,
+      "duration": 338
+    },
+    {
+      "start": 183818,
+      "duration": 507
+    },
+    {
+      "start": 184325.20000000007,
+      "duration": 361
+    },
+    {
+      "start": 184687,
+      "duration": 592
+    },
+    {
+      "start": 185279.90000000002,
+      "duration": 358
+    },
+    {
+      "start": 185638.80000000005,
+      "duration": 651
+    },
+    {
+      "start": 186290.90000000002,
+      "duration": 476
+    },
+    {
+      "start": 186767.80000000005,
+      "duration": 783
+    },
+    {
+      "start": 187551.70000000007,
+      "duration": 374
+    },
+    {
+      "start": 187926.70000000007,
+      "duration": 139
+    },
+    {
+      "start": 188076.40000000002,
+      "duration": 133
+    },
+    {
+      "start": 188226.40000000002,
+      "duration": 100
+    },
+    {
+      "start": 188343.30000000005,
+      "duration": 163
+    },
+    {
+      "start": 188529.09999999998,
+      "duration": 104
+    },
+    {
+      "start": 188658.59999999998,
+      "duration": 107
+    },
+    {
+      "start": 188788.40000000002,
+      "duration": 107
+    },
+    {
+      "start": 188917.09999999998,
+      "duration": 100
+    },
+    {
+      "start": 189029.5,
+      "duration": 98
+    },
+    {
+      "start": 189150.30000000005,
+      "duration": 125
+    },
+    {
+      "start": 189300.30000000005,
+      "duration": 121
+    },
+    {
+      "start": 189443,
+      "duration": 106
+    },
+    {
+      "start": 189573.70000000007,
+      "duration": 105
+    },
+    {
+      "start": 189701.5,
+      "duration": 102
+    },
+    {
+      "start": 189828.5,
+      "duration": 112
+    },
+    {
+      "start": 189965.20000000007,
+      "duration": 105
+    },
+    {
+      "start": 190092.70000000007,
+      "duration": 111
+    },
+    {
+      "start": 190209.59999999998,
+      "duration": 111
+    },
+    {
+      "start": 190326.20000000007,
+      "duration": 121
+    },
+    {
+      "start": 190459.70000000007,
+      "duration": 129
+    },
+    {
+      "start": 190593.80000000005,
+      "duration": 105
+    },
+    {
+      "start": 190709.70000000007,
+      "duration": 94
+    },
+    {
+      "start": 190809.5,
+      "duration": 95
+    },
+    {
+      "start": 190909.40000000002,
+      "duration": 121
+    },
+    {
+      "start": 191043.20000000007,
+      "duration": 107
+    },
+    {
+      "start": 191159.40000000002,
+      "duration": 107
+    },
+    {
+      "start": 191276.20000000007,
+      "duration": 92
+    },
+    {
+      "start": 191376.20000000007,
+      "duration": 87
+    },
+    {
+      "start": 191476.20000000007,
+      "duration": 91
+    },
+    {
+      "start": 191576.40000000002,
+      "duration": 121
+    },
+    {
+      "start": 191709.5,
+      "duration": 99
+    },
+    {
+      "start": 191813.40000000002,
+      "duration": 107
+    },
+    {
+      "start": 191926,
+      "duration": 97
+    },
+    {
+      "start": 192027.40000000002,
+      "duration": 98
+    },
+    {
+      "start": 192129.70000000007,
+      "duration": 121
+    },
+    {
+      "start": 192259.30000000005,
+      "duration": 101
+    },
+    {
+      "start": 192376.20000000007,
+      "duration": 104
+    },
+    {
+      "start": 192493.5,
+      "duration": 102
+    },
+    {
+      "start": 192609.80000000005,
+      "duration": 93
+    },
+    {
+      "start": 192709.40000000002,
+      "duration": 95
+    },
+    {
+      "start": 192810.09999999998,
+      "duration": 88
+    },
+    {
+      "start": 192909.40000000002,
+      "duration": 89
+    },
+    {
+      "start": 193009.40000000002,
+      "duration": 113
+    },
+    {
+      "start": 193126.90000000002,
+      "duration": 104
+    },
+    {
+      "start": 193793.20000000007,
+      "duration": 365
+    },
+    {
+      "start": 194162.90000000002,
+      "duration": 354
+    },
+    {
+      "start": 194526.20000000007,
+      "duration": 315
+    },
+    {
+      "start": 194845.70000000007,
+      "duration": 364
+    },
+    {
+      "start": 195226.09999999998,
+      "duration": 290
+    },
+    {
+      "start": 195526,
+      "duration": 363
+    },
+    {
+      "start": 195895.90000000002,
+      "duration": 366
+    },
+    {
+      "start": 196276,
+      "duration": 300
+    },
+    {
+      "start": 196592.80000000005,
+      "duration": 360
+    },
+    {
+      "start": 196959.30000000005,
+      "duration": 329
+    },
+    {
+      "start": 197292.59999999998,
+      "duration": 387
+    },
+    {
+      "start": 197692.70000000007,
+      "duration": 289
+    },
+    {
+      "start": 197982.30000000005,
+      "duration": 2919
+    },
+    {
+      "start": 200908.5,
+      "duration": 3505
+    },
+    {
+      "start": 204414.90000000002,
+      "duration": 4261
+    },
+    {
+      "start": 208677.70000000007,
+      "duration": 2481
+    },
+    {
+      "start": 211159.80000000005,
+      "duration": 2651
+    },
+    {
+      "start": 213828.30000000005,
+      "duration": 2583
+    },
+    {
+      "start": 216415.90000000002,
+      "duration": 1494
+    },
+    {
+      "start": 217913.90000000002,
+      "duration": 1242
+    },
+    {
+      "start": 219164.59999999998,
+      "duration": 298
+    },
+    {
+      "start": 219506.40000000002,
+      "duration": 754
+    },
+    {
+      "start": 220298,
+      "duration": 721
+    },
+    {
+      "start": 221066.40000000002,
+      "duration": 714
+    },
+    {
+      "start": 221781.59999999998,
+      "duration": 653
+    },
+    {
+      "start": 222435.09999999998,
+      "duration": 613
+    },
+    {
+      "start": 223086.80000000005,
+      "duration": 619
+    },
+    {
+      "start": 223706.5,
+      "duration": 656
+    },
+    {
+      "start": 224364,
+      "duration": 690
+    },
+    {
+      "start": 225086.70000000007,
+      "duration": 713
+    },
+    {
+      "start": 225849.90000000002,
+      "duration": 703
+    },
+    {
+      "start": 228274.70000000007,
+      "duration": 588
+    },
+    {
+      "start": 228863.40000000002,
+      "duration": 51
+    },
+    {
+      "start": 229958.20000000007,
+      "duration": 151
+    },
+    {
+      "start": 230110.30000000005,
+      "duration": 582
+    },
+    {
+      "start": 230692.90000000002,
+      "duration": 566
+    },
+    {
+      "start": 231275.30000000005,
+      "duration": 851
+    },
+    {
+      "start": 232126.90000000002,
+      "duration": 656
+    },
+    {
+      "start": 232783.80000000005,
+      "duration": 690
+    },
+    {
+      "start": 233491.5,
+      "duration": 530
+    },
+    {
+      "start": 234025.09999999998,
+      "duration": 588
+    },
+    {
+      "start": 234614.20000000007,
+      "duration": 500
+    },
+    {
+      "start": 235114.70000000007,
+      "duration": 469
+    },
+    {
+      "start": 235592.09999999998,
+      "duration": 486
+    },
+    {
+      "start": 236078.70000000007,
+      "duration": 454
+    },
+    {
+      "start": 236536.40000000002,
+      "duration": 460
+    },
+    {
+      "start": 237091.30000000005,
+      "duration": 180
+    },
+    {
+      "start": 237272.09999999998,
+      "duration": 3038
+    },
+    {
+      "start": 240310.90000000002,
+      "duration": 783
+    },
+    {
+      "start": 246835.80000000005,
+      "duration": 85
+    },
+    {
+      "start": 246921.30000000005,
+      "duration": 71
+    },
+    {
+      "start": 251427.5,
+      "duration": 51
+    },
+    {
+      "start": 252645,
+      "duration": 736
+    },
+    {
+      "start": 253381.80000000005,
+      "duration": 582
+    },
+    {
+      "start": 256223.80000000005,
+      "duration": 122
+    },
+    {
+      "start": 256346.40000000002,
+      "duration": 110
+    },
+    {
+      "start": 256457.5,
+      "duration": 101
+    },
+    {
+      "start": 256559.40000000002,
+      "duration": 96
+    },
+    {
+      "start": 256656.40000000002,
+      "duration": 103
+    },
+    {
+      "start": 256760.09999999998,
+      "duration": 86
+    },
+    {
+      "start": 256846.90000000002,
+      "duration": 146
+    },
+    {
+      "start": 259190.20000000007,
+      "duration": 314
+    },
+    {
+      "start": 259505.20000000007,
+      "duration": 65
+    },
+    {
+      "start": 259570.90000000002,
+      "duration": 65
+    },
+    {
+      "start": 259636.30000000005,
+      "duration": 65
+    },
+    {
+      "start": 259701.80000000005,
+      "duration": 69
+    },
+    {
+      "start": 259771.80000000005,
+      "duration": 80
+    },
+    {
+      "start": 259852.90000000002,
+      "duration": 63
+    },
+    {
+      "start": 259916.20000000007,
+      "duration": 141
+    },
+    {
+      "start": 260057.70000000007,
+      "duration": 60
+    },
+    {
+      "start": 260119.40000000002,
+      "duration": 59
+    },
+    {
+      "start": 260178.70000000007,
+      "duration": 66
+    },
+    {
+      "start": 260245.20000000007,
+      "duration": 84
+    },
+    {
+      "start": 260330,
+      "duration": 109
+    },
+    {
+      "start": 260439.5,
+      "duration": 58
+    },
+    {
+      "start": 260498.5,
+      "duration": 59
+    },
+    {
+      "start": 260558.70000000007,
+      "duration": 89
+    },
+    {
+      "start": 260648.90000000002,
+      "duration": 77
+    },
+    {
+      "start": 260726.70000000007,
+      "duration": 78
+    },
+    {
+      "start": 261850.09999999998,
+      "duration": 2897
+    },
+    {
+      "start": 264747.20000000007,
+      "duration": 2128
+    },
+    {
+      "start": 266881.20000000007,
+      "duration": 123
+    },
+    {
+      "start": 267004.6,
+      "duration": 93
+    },
+    {
+      "start": 267098.20000000007,
+      "duration": 83
+    },
+    {
+      "start": 267182.30000000005,
+      "duration": 94
+    },
+    {
+      "start": 267276.6,
+      "duration": 104
+    },
+    {
+      "start": 267381.1,
+      "duration": 91
+    },
+    {
+      "start": 267472.30000000005,
+      "duration": 90
+    },
+    {
+      "start": 267562.9,
+      "duration": 93
+    },
+    {
+      "start": 267656.1,
+      "duration": 91
+    },
+    {
+      "start": 267747.4,
+      "duration": 91
+    },
+    {
+      "start": 267838.6,
+      "duration": 86
+    },
+    {
+      "start": 267925.5,
+      "duration": 105
+    },
+    {
+      "start": 268030.80000000005,
+      "duration": 98
+    },
+    {
+      "start": 268129.20000000007,
+      "duration": 104
+    },
+    {
+      "start": 268233.4,
+      "duration": 88
+    },
+    {
+      "start": 268321.5,
+      "duration": 92
+    },
+    {
+      "start": 268414.6,
+      "duration": 90
+    },
+    {
+      "start": 268505.20000000007,
+      "duration": 99
+    },
+    {
+      "start": 268604.80000000005,
+      "duration": 119
+    },
+    {
+      "start": 268724,
+      "duration": 96
+    },
+    {
+      "start": 268820.20000000007,
+      "duration": 103
+    },
+    {
+      "start": 268923.6,
+      "duration": 116
+    },
+    {
+      "start": 269040.1,
+      "duration": 99
+    },
+    {
+      "start": 269140.1,
+      "duration": 113
+    },
+    {
+      "start": 269253.70000000007,
+      "duration": 115
+    },
+    {
+      "start": 269369.30000000005,
+      "duration": 104
+    },
+    {
+      "start": 269473.80000000005,
+      "duration": 103
+    },
+    {
+      "start": 269577.6,
+      "duration": 115
+    },
+    {
+      "start": 269693.1,
+      "duration": 101
+    },
+    {
+      "start": 269794.30000000005,
+      "duration": 121
+    },
+    {
+      "start": 269915.5,
+      "duration": 98
+    },
+    {
+      "start": 270013.70000000007,
+      "duration": 90
+    },
+    {
+      "start": 270104.80000000005,
+      "duration": 87
+    },
+    {
+      "start": 270192.70000000007,
+      "duration": 93
+    },
+    {
+      "start": 270286,
+      "duration": 114
+    },
+    {
+      "start": 270400.70000000007,
+      "duration": 101
+    },
+    {
+      "start": 270502.6,
+      "duration": 96
+    },
+    {
+      "start": 270598.9,
+      "duration": 100
+    },
+    {
+      "start": 270699.70000000007,
+      "duration": 105
+    },
+    {
+      "start": 270805.30000000005,
+      "duration": 103
+    },
+    {
+      "start": 270909.30000000005,
+      "duration": 104
+    },
+    {
+      "start": 271014.1,
+      "duration": 109
+    },
+    {
+      "start": 271124,
+      "duration": 95
+    },
+    {
+      "start": 271219.5,
+      "duration": 115
+    },
+    {
+      "start": 271335.6,
+      "duration": 111
+    },
+    {
+      "start": 271447.30000000005,
+      "duration": 97
+    },
+    {
+      "start": 271544.9,
+      "duration": 112
+    },
+    {
+      "start": 271657.4,
+      "duration": 96
+    },
+    {
+      "start": 271753.70000000007,
+      "duration": 105
+    },
+    {
+      "start": 271859.6,
+      "duration": 101
+    },
+    {
+      "start": 271961.70000000007,
+      "duration": 104
+    },
+    {
+      "start": 272066.6,
+      "duration": 104
+    },
+    {
+      "start": 272171.0000000001,
+      "duration": 100
+    },
+    {
+      "start": 272271.79999999993,
+      "duration": 120
+    },
+    {
+      "start": 272392.0000000001,
+      "duration": 109
+    },
+    {
+      "start": 273656.20000000007,
+      "duration": 585
+    },
+    {
+      "start": 274243.20000000007,
+      "duration": 576
+    },
+    {
+      "start": 274820.6,
+      "duration": 507
+    },
+    {
+      "start": 275327.9,
+      "duration": 507
+    },
+    {
+      "start": 275835.6,
+      "duration": 503
+    },
+    {
+      "start": 276339.29999999993,
+      "duration": 573
+    },
+    {
+      "start": 276913.1,
+      "duration": 506
+    },
+    {
+      "start": 277419.9,
+      "duration": 390
+    },
+    {
+      "start": 277810.79999999993,
+      "duration": 433
+    },
+    {
+      "start": 278244.9,
+      "duration": 379
+    },
+    {
+      "start": 279473.1,
+      "duration": 128
+    },
+    {
+      "start": 279601.4,
+      "duration": 103
+    },
+    {
+      "start": 279705.70000000007,
+      "duration": 105
+    },
+    {
+      "start": 279811.9,
+      "duration": 99
+    },
+    {
+      "start": 279911.9,
+      "duration": 97
+    },
+    {
+      "start": 280009.79999999993,
+      "duration": 93
+    },
+    {
+      "start": 280103.29999999993,
+      "duration": 90
+    },
+    {
+      "start": 280193.6,
+      "duration": 92
+    },
+    {
+      "start": 280286.20000000007,
+      "duration": 88
+    },
+    {
+      "start": 280374.29999999993,
+      "duration": 98
+    },
+    {
+      "start": 280472.6,
+      "duration": 96
+    },
+    {
+      "start": 280569.29999999993,
+      "duration": 105
+    },
+    {
+      "start": 280675.20000000007,
+      "duration": 97
+    },
+    {
+      "start": 280772.6,
+      "duration": 92
+    },
+    {
+      "start": 280865.1,
+      "duration": 95
+    },
+    {
+      "start": 280960.79999999993,
+      "duration": 99
+    },
+    {
+      "start": 281060.79999999993,
+      "duration": 93
+    },
+    {
+      "start": 281154.79999999993,
+      "duration": 109
+    },
+    {
+      "start": 281265.0000000001,
+      "duration": 95
+    },
+    {
+      "start": 281360.6,
+      "duration": 93
+    },
+    {
+      "start": 281453.9,
+      "duration": 90
+    },
+    {
+      "start": 281544.6,
+      "duration": 97
+    },
+    {
+      "start": 281642.29999999993,
+      "duration": 93
+    },
+    {
+      "start": 281736.1,
+      "duration": 91
+    },
+    {
+      "start": 281827.70000000007,
+      "duration": 90
+    },
+    {
+      "start": 281918.5000000001,
+      "duration": 91
+    },
+    {
+      "start": 282010.20000000007,
+      "duration": 93
+    },
+    {
+      "start": 282103.4,
+      "duration": 91
+    },
+    {
+      "start": 282195.6,
+      "duration": 91
+    },
+    {
+      "start": 282287.1,
+      "duration": 90
+    },
+    {
+      "start": 282377.79999999993,
+      "duration": 92
+    },
+    {
+      "start": 282470.0000000001,
+      "duration": 89
+    },
+    {
+      "start": 282559.6,
+      "duration": 94
+    },
+    {
+      "start": 282654.0000000001,
+      "duration": 91
+    },
+    {
+      "start": 282745.6,
+      "duration": 95
+    },
+    {
+      "start": 282841.5000000001,
+      "duration": 93
+    },
+    {
+      "start": 282934.79999999993,
+      "duration": 98
+    },
+    {
+      "start": 283033.9,
+      "duration": 97
+    },
+    {
+      "start": 283131.79999999993,
+      "duration": 91
+    },
+    {
+      "start": 283223.1,
+      "duration": 97
+    },
+    {
+      "start": 283324.6,
+      "duration": 96
+    },
+    {
+      "start": 283421.29999999993,
+      "duration": 105
+    },
+    {
+      "start": 283526.6,
+      "duration": 92
+    },
+    {
+      "start": 283619.1,
+      "duration": 92
+    },
+    {
+      "start": 283711.9,
+      "duration": 90
+    },
+    {
+      "start": 283803.0000000001,
+      "duration": 92
+    },
+    {
+      "start": 283895.79999999993,
+      "duration": 93
+    },
+    {
+      "start": 283989.9,
+      "duration": 100
+    },
+    {
+      "start": 284090.6,
+      "duration": 93
+    },
+    {
+      "start": 284187.9,
+      "duration": 91
+    },
+    {
+      "start": 284280.0000000001,
+      "duration": 91
+    },
+    {
+      "start": 284371.79999999993,
+      "duration": 93
+    },
+    {
+      "start": 284465.4,
+      "duration": 91
+    },
+    {
+      "start": 284557.0000000001,
+      "duration": 92
+    },
+    {
+      "start": 284649.79999999993,
+      "duration": 104
+    },
+    {
+      "start": 284892.6,
+      "duration": 1301
+    },
+    {
+      "start": 286194.0000000001,
+      "duration": 293
+    },
+    {
+      "start": 286488.9,
+      "duration": 299
+    },
+    {
+      "start": 286788.70000000007,
+      "duration": 313
+    },
+    {
+      "start": 287102.70000000007,
+      "duration": 249
+    },
+    {
+      "start": 287352.5000000001,
+      "duration": 244
+    },
+    {
+      "start": 287597.29999999993,
+      "duration": 285
+    },
+    {
+      "start": 287882.9,
+      "duration": 245
+    },
+    {
+      "start": 288128.4,
+      "duration": 253
+    },
+    {
+      "start": 288382.4,
+      "duration": 239
+    },
+    {
+      "start": 288621.6,
+      "duration": 258
+    },
+    {
+      "start": 288880.0000000001,
+      "duration": 259
+    },
+    {
+      "start": 289140.0000000001,
+      "duration": 282
+    },
+    {
+      "start": 290255.79999999993,
+      "duration": 128
+    },
+    {
+      "start": 291203.0000000001,
+      "duration": 270
+    },
+    {
+      "start": 291473.79999999993,
+      "duration": 95
+    },
+    {
+      "start": 293131.5000000001,
+      "duration": 1301
+    },
+    {
+      "start": 294432.9,
+      "duration": 11933
+    },
+    {
+      "start": 306366.79999999993,
+      "duration": 913
+    },
+    {
+      "start": 307288.1,
+      "duration": 599
+    },
+    {
+      "start": 321995.0000000001,
+      "duration": 8838
+    },
+    {
+      "start": 330833.1,
+      "duration": 167233
+    },
+    {
+      "start": 498066.70000000007,
+      "duration": 1655
+    }
+  ]
+}

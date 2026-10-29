@@ -301,10 +301,14 @@ export async function openPanelTabInCell(cell, descriptor, mountContent) {
   window.activeCell = tab.contentElement;
   try {
     const cleanup = await mountContent(tab.contentElement, tab.panelVars, tab);
+    if (tab.lifecycleState === "destroyed" || !state.tabs.includes(tab)) {
+      cleanupFunctionFromMountResult(cleanup)?.();
+      return null;
+    }
     tab.lifecycle = lifecycleHooksFromMountResult(cleanup, tab.contentElement);
     registerPanelContentLifecycle(tab.contentElement, tab.lifecycle, { tabId: tab.tabId, panelType: tab.panelType, reference: tab.reference || null });
     tab.cleanup = composeCleanup(tab.contentElement, cleanup);
-    if (!tab.contentElement.__nvPanelContentMountedActiveHookDelivered && typeof tab.lifecycle.activate === "function") {
+    if (state.activeTabId === tab.tabId && !tab.contentElement.__nvPanelContentMountedActiveHookDelivered && typeof tab.lifecycle.activate === "function") {
       try {
         tab.lifecycle.activate({ host: tab.contentElement, tab, cell, reason: "mounted-active" });
         tab.contentElement.__nvPanelContentMountedActiveHookDelivered = true;
@@ -317,7 +321,8 @@ export async function openPanelTabInCell(cell, descriptor, mountContent) {
     window.activeCell = cell || previousActiveCell;
   }
   refreshPanelTabMetadata(tab, cell);
-  activatePanelTab(cell, tab.tabId, { announce: false });
+  if (state.activeTabId === tab.tabId) activatePanelTab(cell, tab.tabId, { announce: false });
+  else tab.lifecycle?.deactivate?.({ reason: "mounted-inactive" });
   return tab;
 }
 

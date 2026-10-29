@@ -126,6 +126,8 @@ if (typeof globalThis.CustomEvent !== "function") {
   };
 }
 
+// This suite mocks DOM lifecycle; observer delivery is covered by the browser regressions.
+globalThis.MutationObserver = class { observe() {} disconnect() {} };
 globalThis.document = new FakeDocument();
 const windowEvents = [];
 globalThis.window = {
@@ -227,4 +229,18 @@ assert.equal(moved.reference.path, "move/KeepState.md");
 assert.equal(movedCalls.destroy, 0, "moving a tab does not destroy preserved content");
 assert.equal(getActivePanelTab(destination).tabId, movedTab.tabId);
 
-console.log("ok - panel tabs preserve lifecycle, state, and canonical references");
+const pendingCell = cell("Pending", "InfoPanel");
+let finishMount;
+const lateCalls = counters();
+const pendingMount = openPanelTabInCell(pendingCell, { panelType: "GraphManager" }, () => new Promise(resolve => {
+  finishMount = () => resolve({ activate: () => lateCalls.activate++, destroy: () => lateCalls.destroy++ });
+}));
+const pendingTab = getActivePanelTab(pendingCell);
+closePanelTab(pendingCell, pendingTab.tabId, { force: true });
+finishMount();
+assert.equal(await pendingMount, null, "closed async mount is not registered again");
+assert.equal(lateCalls.activate, 0, "late completion cannot activate a closed tab");
+assert.equal(lateCalls.destroy, 1, "late resources are disposed");
+assert.equal(getActivePanelTab(pendingCell), null);
+
+console.log("ok - panel tabs preserve lifecycle, state, canonical references, and close pending mounts");

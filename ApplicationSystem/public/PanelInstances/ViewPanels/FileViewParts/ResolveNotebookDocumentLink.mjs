@@ -103,7 +103,7 @@ export function isNavigatorPanelOpen(panelType) {
     return Boolean(document.getElementById("file-list") && typeof window.revealPathInFileManager === "function");
   }
   if (panelType === "GraphManager") {
-    return Boolean(document.getElementById("cy") && typeof window.revealPathInGraphManager === "function");
+    return Boolean(window.getGraphManagerNavigationInstanceId?.() && typeof window.revealPathInGraphManager === "function");
   }
   return false;
 }

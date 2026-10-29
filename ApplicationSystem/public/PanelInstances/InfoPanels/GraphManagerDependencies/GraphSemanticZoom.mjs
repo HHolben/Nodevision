@@ -61,14 +61,15 @@ export function installGraphSemanticZoom(container, graph) {
     }
   });
   setPanelZoomMode(container, 'geometric');
-  const dispose = () => {
+  const dispose = (event) => {
     if (disposed) return;
     disposed = true;
     unregister();
     gestureHost.removeEventListener('wheel', reserveModifiedWheel, true);
     graph.off('add select unselect class', 'edge', onEdge);
     graph.off('destroy', dispose);
-    if (!graph.destroyed()) {
+    // Cytoscape emits destroy before setting destroyed(); its renderer is already gone.
+    if (event?.type !== 'destroy' && !graph.destroyed()) {
       graph.edges().removeClass(marker);
       // Remove only our rule, retaining later user stylesheet changes and bypasses.
       graph.style().fromJson(graph.style().json().filter(rule => rule.selector !== selector)).update();

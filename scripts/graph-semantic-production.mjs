@@ -53,5 +53,5 @@ export async function testProductionGraph() {
   ok(getPanelZoomState(panel,'semantic').level==='structure','retained view keeps semantic state');
   window.removeEventListener('nodevision-selection-changed',selectionListener);
   lifecycle.destroy(); ok(!getPanelZoomCapabilities(panel).semantic,'production panel destruction unregisters');
-  panel.querySelector('#cy').__nvGraphResizeObserver?.disconnect(); cy.destroy(); panel.remove(); window.fetch = originalFetch;
+  panel.querySelector('[data-graph-container], #cy').__nvGraphResizeObserver?.disconnect(); cy.destroy(); panel.remove(); window.fetch = originalFetch;
 }

@@ -608,9 +608,9 @@ export function parseLinkRecordsFromText(content, sourcePath) {
   return [];
 }
 
-export async function fetchNotebookText(path) {
+export async function fetchNotebookText(path, options = {}) {
   const sourcePath = normalizeNotebookRelativePath(path);
-  const res = await fetch(`/api/fileCodeContent?path=${encodeURIComponent(sourcePath)}`, { cache: "no-store" });
+  const res = await fetch(`/api/fileCodeContent?path=${encodeURIComponent(sourcePath)}`, { cache: "no-store", ...options });
   const data = await res.json().catch(() => null);
   if (!res.ok || !data) {
     throw new Error(data?.error || `Failed to read ${sourcePath}`);
@@ -623,9 +623,9 @@ export async function fetchNotebookText(path) {
   };
 }
 
-export async function scanFileForLinkRecords(sourcePath) {
+export async function scanFileForLinkRecords(sourcePath, options = {}) {
   try {
-    const { content, isBinary } = await fetchNotebookText(sourcePath);
+    const { content, isBinary } = await fetchNotebookText(sourcePath, options);
     if (isBinary) return [];
     return parseLinkRecordsFromText(content, sourcePath);
   } catch (err) {

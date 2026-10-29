@@ -136,13 +136,17 @@ function elementsForSnapshot(snapshot, state) {
   return { elements, ids };
 }
 
-export function attachMqttGraphLayer({ cy, controlsEl, inspectorEl, relayout } = {}) {
+export function attachMqttGraphLayer({ cy, controlsEl, inspectorEl, relayout, isVisible = () => true } = {}) {
   if (!cy) return { setControlsElement: () => {}, cleanup: () => {} };
+  let disposed = false, pending = false;
   const client = getMqttModelClient();
   const state = { showDevices: true, showTopics: true, snapshot: client.snapshot() };
   let currentControlsEl = controlsEl || null;
 
   const render = () => {
+    if (disposed) return;
+    if (!isVisible()) { pending = true; return; }
+    pending = false;
     const { elements, ids } = elementsForSnapshot(state.snapshot, state);
     cy.batch(() => {
       cy.elements('.mqtt-live').filter((element) => !ids.has(element.id())).remove();
@@ -157,26 +161,37 @@ export function attachMqttGraphLayer({ cy, controlsEl, inspectorEl, relayout } =
 
   renderControls(currentControlsEl, state, render);
   const unsubscribe = client.subscribe((snapshot) => {
+    if (disposed) return;
     state.snapshot = snapshot;
     render();
   });
   client.connect().catch(() => {});
 
-  cy.on('tap', 'node[source="mqtt"]', (event) => {
+  const onTap = (event) => {
+    if (disposed || !isVisible()) return;
     renderInspector(inspectorEl, event.target.data(), state.snapshot);
-  });
+  };
+  cy.on('tap', 'node[source="mqtt"]', onTap);
 
   render();
   return {
+    resume() { if (pending) render(); },
     setControlsElement(container) {
+      if (disposed) return;
+      if (currentControlsEl && currentControlsEl !== container) currentControlsEl.querySelector("[data-mqtt-layer-controls]")?.remove();
       currentControlsEl = container || null;
       renderControls(currentControlsEl, state, render);
     },
     cleanup() {
+      if (disposed) return;
+      disposed = true; pending = false;
       unsubscribe();
-      cy.off("tap", "node[source=\"mqtt\"]");
-      cy.elements(".mqtt-live").remove();
-      if (inspectorEl) inspectorEl.style.display = "none";
+      currentControlsEl?.querySelector("[data-mqtt-layer-controls]")?.remove();
+      currentControlsEl = null;
+      cy.off("tap", 'node[source="mqtt"]', onTap);
+
+      if (inspectorEl) { inspectorEl.style.display = "none"; inspectorEl.replaceChildren(); }
+      inspectorEl = null;
     },
   };
 }

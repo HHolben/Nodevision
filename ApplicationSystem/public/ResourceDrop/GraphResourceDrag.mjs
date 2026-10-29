@@ -16,7 +16,7 @@ export function installGraphResourceDrag(cy, container) {
     if(outside(event)){current.node.position(current.position);void dropResourceAtPoint(current.payload,event);}
     clearResourcePreview();current.end();
   }
-  function cancel(event) { if(event && event.key!=='Escape')return;if(drag){if(drag.outside)drag.node.position(drag.position);drag.end();drag=null;}clearResourcePreview(); }
+  function cancel(event) { if(event && event.key!=='Escape')return;if(!drag)return;if(drag){if(drag.outside)drag.node.position(drag.position);drag.end();drag=null;}clearResourcePreview(); }
   cy.on('grab','node',grab);window.addEventListener('mousemove',move,true);window.addEventListener('mouseup',finish,true);window.addEventListener('keydown',cancel,true);
   return ()=>{cancel();cy.off('grab','node',grab);window.removeEventListener('mousemove',move,true);window.removeEventListener('mouseup',finish,true);window.removeEventListener('keydown',cancel,true);};
 }

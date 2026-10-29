@@ -84,6 +84,11 @@ export const NODEVISION_SHARED_COMMANDS = Object.freeze([
     arguments: [], returns: "status", events: ["sketchFocus.finished"],
   },
   {
+    id: "solderAnalysis.open", category: "Session", label: "Solder Joint Area Analysis",
+    description: "Measure solder joints and voids in original JPEG pixels.", sessionSafe: true,
+    arguments: [], returns: "status", events: ["session.solderAnalysis.finished"],
+  },
+  {
     id: "imageStitcher.open", category: "Session", label: "Open Image Stitcher",
     description: "Open the landmark-based image stitching Session surface.", sessionSafe: true,
     arguments: [], returns: "status", events: ["session.imageStitcher.finished"],

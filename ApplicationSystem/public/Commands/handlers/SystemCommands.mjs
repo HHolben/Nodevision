@@ -59,3 +59,7 @@ export async function openTemplatePopulatorCommand(args, context = {}) {
 export async function openBridgingCommand(args, context = {}) {
   return (await import("../../Sessions/BridgingSession.mjs")).startBridging(context);
 }
+
+export async function openSolderAnalysisCommand(args, context = {}) {
+  return (await import("/Sessions/SolderJointAreaSession.mjs")).startSolderJointAreaAnalysis(context);
+}

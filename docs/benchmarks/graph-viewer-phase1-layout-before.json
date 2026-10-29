@@ -1,0 +1,110 @@
+[
+  {
+    "n": 1000,
+    "trial": 0,
+    "operation": "initial",
+    "ms": 423.10000000009313,
+    "quality": "default",
+    "randomize": true,
+    "checksum": 458959398.8760354
+  },
+  {
+    "n": 1000,
+    "trial": 0,
+    "operation": "proof",
+    "ms": 196.19999999995343,
+    "quality": "proof",
+    "randomize": false,
+    "checksum": 473574903.17688704
+  },
+  {
+    "n": 1000,
+    "trial": 1,
+    "operation": "initial",
+    "ms": 334.79999999981374,
+    "quality": "default",
+    "randomize": true,
+    "checksum": 945185664.5647324
+  },
+  {
+    "n": 1000,
+    "trial": 1,
+    "operation": "proof",
+    "ms": 189.4000000001397,
+    "quality": "proof",
+    "randomize": false,
+    "checksum": 940422406.2529382
+  },
+  {
+    "n": 1000,
+    "trial": 2,
+    "operation": "initial",
+    "ms": 331.10000000009313,
+    "quality": "default",
+    "randomize": true,
+    "checksum": 1694809704.1359587
+  },
+  {
+    "n": 1000,
+    "trial": 2,
+    "operation": "proof",
+    "ms": 179.30000000004657,
+    "quality": "proof",
+    "randomize": false,
+    "checksum": 1718107680.11643
+  },
+  {
+    "n": 5000,
+    "trial": 0,
+    "operation": "initial",
+    "ms": 1233,
+    "quality": "default",
+    "randomize": true,
+    "checksum": 118586922310.38278
+  },
+  {
+    "n": 5000,
+    "trial": 0,
+    "operation": "proof",
+    "ms": 518.8000000000466,
+    "quality": "proof",
+    "randomize": false,
+    "checksum": 118390673712.0525
+  },
+  {
+    "n": 5000,
+    "trial": 1,
+    "operation": "initial",
+    "ms": 1303.4000000001397,
+    "quality": "default",
+    "randomize": true,
+    "checksum": -83153214172.1157
+  },
+  {
+    "n": 5000,
+    "trial": 1,
+    "operation": "proof",
+    "ms": 579.4000000001397,
+    "quality": "proof",
+    "randomize": false,
+    "checksum": -83876533698.47252
+  },
+  {
+    "n": 5000,
+    "trial": 2,
+    "operation": "initial",
+    "ms": 1234.5999999998603,
+    "quality": "default",
+    "randomize": true,
+    "checksum": 157164032363.0855
+  },
+  {
+    "n": 5000,
+    "trial": 2,
+    "operation": "proof",
+    "ms": 578.1000000000931,
+    "quality": "proof",
+    "randomize": false,
+    "checksum": 157890335069.4563
+  }
+]

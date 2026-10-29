@@ -59,6 +59,7 @@ const BUILTIN_HANDLER_LOADERS = Object.freeze({
   "uppercaseHandwriting.open": load("./handlers/SystemCommands.mjs", "openUppercaseHandwritingCommand"),
   "sketchFocus.open": load("./handlers/SystemCommands.mjs", "openSketchFocusCommand"),
   "templatePopulator.open": load("./handlers/SystemCommands.mjs", "openTemplatePopulatorCommand"),
+  "solderAnalysis.open": load("./handlers/SystemCommands.mjs", "openSolderAnalysisCommand"),
   "imageStitcher.open": load("./handlers/SystemCommands.mjs", "openImageStitcherCommand"),
   "sectionals.update": load("./handlers/SystemCommands.mjs", "updateSectionalsCommand"),
 });

@@ -4,7 +4,7 @@ import { installGraphResourceDrag } from '/ResourceDrop/GraphResourceDrag.mjs';
 import { requestNodevisionFileSelection } from '/EditorSwitchGuard.mjs';
 import { updateToolbarState } from '/panels/createToolbar.mjs';
 import { scanFileForLinkRecords } from './GraphManagerDependencies/ScanForLinks.mjs';
-import { buildSelectedGraphLink, linkRecordTargetId, makeEdgeLabel, setSelectedGraphLink, summarizeLinkRecord } from './GraphManagerDependencies/LinkRecords.mjs';
+import { buildSelectedGraphLink, linkRecordTargetId, makeEdgeLabel, setSelectedGraphLink as publishSelectedGraphLink, summarizeLinkRecord } from './GraphManagerDependencies/LinkRecords.mjs';
 import {
     brokenPlaceholderId,
     makeBrokenPlaceholderRecord,
@@ -35,6 +35,60 @@ import {
 
 import { installGraphSemanticZoom } from './GraphManagerDependencies/GraphSemanticZoom.mjs';
 
+import { registerGraphManager, activeGraphManager, noteGraphManagerNavigation, callActiveGraphManager } from './GraphManagerDependencies/GraphManagerInstances.mjs';
+
+// One closure per panel: all graph caches, callbacks and pending work below are instance-owned.
+export function createGraphManagerInstance({ root, container, linkInspector = null, mqttInspector = null, statusElem = null }) {
+    let disposed = false;
+    let suspended = false;
+    let needsRefresh = false;
+    let appearanceDirty = false;
+    let resizeObserver = null;
+    let cancelDialog = null;
+    let dialogFocusTimer = null;
+    let localLinkSelection = null;
+    let heldBatch = false;
+    let pendingWork = Promise.resolve();
+    function enqueue(operation) {
+        const result = pendingWork.then(() => disposed ? undefined : operation());
+        pendingWork = result.catch(reportError);
+        return result.catch(error => { if (!disposed) throw error; });
+    }
+    const lifetime = new AbortController();
+    const cleanups = [];
+    const nativeNavigation = getNodevisionNavigationState();
+    // Loading an inactive graph must not steal the shared navigation/toolbar context.
+    const navigationState = new Proxy(nativeNavigation, { get(target, key) {
+        const value = target[key];
+        return typeof value === 'function' ? (...args) => {
+            if (String(key).startsWith('set') && activeGraphManager() !== instance) return;
+            return value.apply(target, args);
+        } : value;
+    } });
+    const fetch = (url, options = {}) => {
+        if (disposed) return Promise.reject(new DOMException('Graph disposed', 'AbortError'));
+        return globalThis.fetch(url, { ...options, signal: lifetime.signal });
+    };
+    async function alive(promise) {
+        const value = await promise;
+        if (disposed) throw new DOMException('Graph disposed', 'AbortError');
+        return value;
+    }
+    function isVisible() {
+        return !disposed && !suspended && root?.isConnected && !root.closest('[hidden], [aria-hidden="true"]') && root.getClientRects().length > 0;
+    }
+    function reportError(error) { if (!disposed && error?.name !== 'AbortError') console.error('[GraphManager]', error); }
+    function onGraph(...args) {
+        const handler = args.pop();
+        cy.on(...args, (...events) => {
+            if (disposed || suspended) return;
+            try { Promise.resolve(handler(...events)).catch(reportError); } catch (error) { reportError(error); }
+        });
+    }
+    function setSelectedGraphLink(selection) {
+        localLinkSelection = selection ? { ...selection, graphInstanceId: instance.id } : null;
+        if (!disposed && activeGraphManager() === instance) publishSelectedGraphLink(localLinkSelection);
+    }
 let cy;
 let mqttGraphLayer = null;
 let tdGraphLayer = null;
@@ -107,21 +161,23 @@ const CLIPBOARD_SHORTCUTS = {
     v: "pasteFile",
     x: "cutFile"
 };
-const navigationState = getNodevisionNavigationState();
+
 
 async function fetchDirectoryContents(path, callback, errorElem, loadingElem) {
+    if (disposed) return;
     try {
         if (loadingElem) loadingElem.style.display = "block";
         const cleanPath = normalizePath(path || "");
-        const data = await fetchDirectoryContentsAPI(cleanPath);
+        const data = await alive(fetchDirectoryContentsAPI(cleanPath, { signal: lifetime.signal }));
 
         if (typeof callback === "function") {
-            await callback(data, cleanPath);
+            await alive(callback(data, cleanPath));
         }
 
         navigationState.setLastOpenedDirectory(cleanPath, "GraphManager");
         return data;
     } catch (err) {
+        if (disposed) return;
         console.error("[GraphManager] Failed to fetch directory:", path, err);
         if (errorElem) {
             errorElem.textContent = err?.message || String(err);
@@ -133,6 +189,7 @@ async function fetchDirectoryContents(path, callback, errorElem, loadingElem) {
 }
 
 async function loadGraphStylesJson() {
+    if (disposed) return;
     const candidates = [
         '/GraphStyles.json',
         '/GraphManagement/GraphStyles.json',
@@ -141,11 +198,12 @@ async function loadGraphStylesJson() {
 
     for (const url of candidates) {
         try {
-            const res = await fetch(url, { cache: 'no-store' });
+            const res = await alive(fetch(url, { cache: 'no-store' }));
             if (!res.ok) continue;
-            const json = await res.json();
+            const json = await alive(res.json());
             if (json && typeof json === 'object') return json;
         } catch (_) {
+        if (disposed) return;
             // ignore and try next candidate
         }
     }
@@ -153,7 +211,8 @@ async function loadGraphStylesJson() {
 }
 
 async function loadEdgeStyleOverrides() {
-    const styles = await loadGraphStylesJson();
+    if (disposed) return;
+    const styles = await alive(loadGraphStylesJson());
     const edge = styles?.edge;
     return edge && typeof edge === 'object' ? edge : null;
 }
@@ -186,27 +245,31 @@ function makeExternalNodeFromUrl(rawUrl) {
 }
 
 async function persistExternalNodes(nodes = []) {
+    if (disposed) return;
     try {
-        const res = await fetch('/api/graph/external/nodes', {
+        const res = await alive(fetch('/api/graph/external/nodes', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(nodes)
-        });
+        }));
         if (!res.ok) {
             console.warn('[GraphManager] Failed to persist external nodes:', res.statusText);
         }
     } catch (err) {
+        if (disposed) return;
         console.warn('[GraphManager] Error persisting external nodes:', err);
     }
 }
 
 async function fetchExternalNodes() {
+    if (disposed) return;
     try {
-        const res = await fetch('/api/graph/external/nodes', { cache: 'no-store' });
+        const res = await alive(fetch('/api/graph/external/nodes', { cache: 'no-store' }));
         if (!res.ok) return [];
-        const json = await res.json();
+        const json = await alive(res.json());
         return Array.isArray(json) ? json : [];
     } catch (err) {
+        if (disposed) return;
         console.warn('[GraphManager] Failed to fetch external nodes:', err);
         return [];
     }
@@ -232,6 +295,7 @@ function externalLinkedFileEdges() {
 }
 
 function notifyExternalLinkedFilesVisibility() {
+    if (disposed || activeGraphManager() !== instance) return;
     if (typeof window === "undefined") return;
     window.dispatchEvent(new CustomEvent("graphManagerExternalLinkedFilesVisibilityChanged", {
         detail: { visible: externalLinkedFilesVisible }
@@ -296,11 +360,11 @@ function applyExternalLinkedFilesVisibility() {
     notifyExternalLinkedFilesVisibility();
 }
 
-export function getGraphManagerExternalLinkedFilesVisible() {
+function getGraphManagerExternalLinkedFilesVisible() {
     return externalLinkedFilesVisible;
 }
 
-export function setGraphManagerExternalLinkedFilesVisible(visible = true) {
+function setGraphManagerExternalLinkedFilesVisible(visible = true) {
     const nextVisible = visible !== false;
     const changed = nextVisible !== externalLinkedFilesVisible;
     externalLinkedFilesVisible = nextVisible;
@@ -311,10 +375,6 @@ export function setGraphManagerExternalLinkedFilesVisible(visible = true) {
     return externalLinkedFilesVisible;
 }
 
-if (typeof window !== "undefined") {
-    window.getGraphManagerExternalLinkedFilesVisible = getGraphManagerExternalLinkedFilesVisible;
-    window.setGraphManagerExternalLinkedFilesVisible = setGraphManagerExternalLinkedFilesVisible;
-}
 
 function addExternalNodesToGraph(nodes = []) {
     if (!cy) return;
@@ -359,8 +419,9 @@ function addExternalNodesToGraph(nodes = []) {
 }
 
 async function loadExternalNodes() {
+    if (disposed) return;
     if (externalNodesLoaded) return;
-    const nodes = await fetchExternalNodes();
+    const nodes = await alive(fetchExternalNodes());
     addExternalNodesToGraph(nodes);
     externalNodesLoaded = true;
 }
@@ -374,11 +435,12 @@ function toNotebookAssetUrl(relativePath) {
 }
 
 async function findFirstImageInHtml(path) {
+    if (disposed) return;
     if (htmlPreviewCache.has(path)) return htmlPreviewCache.get(path);
     try {
-        const res = await fetch(toNotebookAssetUrl(path), { cache: 'no-store' });
+        const res = await alive(fetch(toNotebookAssetUrl(path), { cache: 'no-store' }));
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        const text = await res.text();
+        const text = await alive(res.text());
         const match = text.match(/<img[^>]+src=["']([^"']+)["']/i);
         if (!match) {
             htmlPreviewCache.set(path, null);
@@ -390,6 +452,7 @@ async function findFirstImageInHtml(path) {
         htmlPreviewCache.set(path, url);
         return url;
     } catch (_) {
+        if (disposed) return;
         htmlPreviewCache.set(path, null);
         return null;
     }
@@ -482,15 +545,18 @@ function updateGraphDirectoryAppearance(targetPath) {
 }
 
 function bindDirectoryAppearanceEvents() {
-    if (typeof window === "undefined" || window.__nvGraphDirectoryAppearanceBound) return;
-    window.addEventListener(DIRECTORY_APPEARANCE_CHANGED_EVENT, (event) => {
+
+    const appearanceChanged = (event) => {
+        if (disposed) return;
+        if (!isVisible()) { appearanceDirty = true; return; }
         if (event?.detail && Object.prototype.hasOwnProperty.call(event.detail, "path")) {
             updateGraphDirectoryAppearance(event.detail.path);
             return;
         }
         updateGraphDirectoryAppearance();
-    });
-    window.__nvGraphDirectoryAppearanceBound = true;
+    };
+    window.addEventListener(DIRECTORY_APPEARANCE_CHANGED_EVENT, appearanceChanged);
+    cleanups.push(() => window.removeEventListener(DIRECTORY_APPEARANCE_CHANGED_EVENT, appearanceChanged));
 }
 
 function basename(pathValue = '') {
@@ -620,13 +686,17 @@ function graphLinkSelectionFromData(data = {}) {
 }
 
 async function retargetGraphLinkData(data, destinationPath, selection = null) {
+    if (disposed) return;
     const record = firstEditableTargetRecord(linkRecordsFromData(data));
     if (!record) throw new Error("This graph edge has no source-backed link record to edit.");
-    const result = await retargetGraphLinkRecord(record, destinationPath, {
+    const result = await alive(retargetGraphLinkRecord(record, destinationPath, {
         selection: selection || graphLinkSelectionFromData(data),
-    });
+        signal: lifetime.signal,
+        isCurrent: () => !disposed,
+        publishSelection: setSelectedGraphLink,
+    }));
     if (result.changed) {
-        await refreshGraphView({ fit: false, reason: "link-retarget" });
+        await alive(refreshGraphView({ fit: false, reason: "link-retarget" }));
     }
     return result;
 }
@@ -868,6 +938,7 @@ function resolveExpandedDirectoryCollisions(movingNode, { maxPasses = EXPANDED_D
 }
 
 function scheduleExpandedDirectoryCollisionResolution(node) {
+    if (!isVisible()) return;
     if (!isExpandedDirectoryNode(node)) return;
     expandedDirectoryCollisionNodeId = node.id();
     if (expandedDirectoryCollisionFrame) return;
@@ -887,7 +958,8 @@ function scheduleExpandedDirectoryCollisionResolution(node) {
 }
 
 async function refreshGraphView({ fit = true, reason = "refresh" } = {}) {
-    if (!cy) return;
+    if (disposed || !cy) return;
+    if (!isVisible()) { needsRefresh = true; return; }
     const perf = createPerformanceOperation("GraphManager refresh", { rootPath: currentRootPath, reason });
 
     resetGraphAbstractionFilterState({ restoreParents: false });
@@ -903,7 +975,8 @@ async function refreshGraphView({ fit = true, reason = "refresh" } = {}) {
     brokenLinksBySource.clear();
     brokenLinkRecordsBySourceTarget.clear();
     if (activeLayout && typeof activeLayout.stop === 'function') {
-        try { activeLayout.stop(); } catch (_) { /* ignore */ }
+        try { activeLayout.stop(); } catch (_) {
+        if (disposed) return; /* ignore */ }
         activeLayout = null;
     }
 
@@ -914,19 +987,19 @@ async function refreshGraphView({ fit = true, reason = "refresh" } = {}) {
     cy.elements().not('.mqtt-live, .td-live').remove();
     externalNodesLoaded = false;
 
-    await loadExternalNodes();
+    await alive(loadExternalNodes());
     perf.mark("external-nodes");
 
-    await fetchDirectoryContents(currentRootPath, (data) => renderGraphData(data, currentRootPath), null, null);
+    await alive(fetchDirectoryContents(currentRootPath, (data) => renderGraphData(data, currentRootPath), null, null));
     perf.mark("directory-fetch");
 
     queueRelayout({ fit: Boolean(fit), reason });
     perf.end({ success: true });
 }
 
-window.refreshGraphManager = refreshGraphView;
 
 async function ensureDirectoryChainExpanded(targetDirPath) {
+    if (disposed) return;
     const cleanTarget = normalizePath(targetDirPath);
     if (!cleanTarget) {
         navigationState.setLastOpenedDirectory("", "GraphManager");
@@ -938,13 +1011,14 @@ async function ensureDirectoryChainExpanded(targetDirPath) {
     for (const part of parts) {
         cumulative = cumulative ? `${cumulative}/${part}` : part;
         // Render this directory's children so moved nodes remain reachable in the graph.
-        await fetchDirectoryContents(cumulative, (data) => renderGraphData(data, cumulative), null, null);
+        await alive(fetchDirectoryContents(cumulative, (data) => renderGraphData(data, cumulative), null, null));
     }
 
     navigationState.setLastOpenedDirectory(cleanTarget, "GraphManager");
 }
 
 async function openDirectoryInGraphManager(targetDirectoryPath = "") {
+    if (disposed) return;
     if (!cy) return false;
 
     const targetDir = normalizePath(targetDirectoryPath || "");
@@ -952,12 +1026,12 @@ async function openDirectoryInGraphManager(targetDirectoryPath = "") {
 
     if (!targetDir && cleanRoot) {
         currentRootPath = "";
-        await refreshGraphView({ fit: true, reason: "open-directory-root-reset" });
+        await alive(refreshGraphView({ fit: true, reason: "open-directory-root-reset" }));
     } else if (targetDir && cleanRoot && targetDir !== cleanRoot && !targetDir.startsWith(`${cleanRoot}/`)) {
         currentRootPath = targetDir;
-        await refreshGraphView({ fit: true, reason: "open-directory-root-switch" });
+        await alive(refreshGraphView({ fit: true, reason: "open-directory-root-switch" }));
     } else if (targetDir) {
-        await ensureDirectoryChainExpanded(targetDir);
+        await alive(ensureDirectoryChainExpanded(targetDir));
         queueRelayout({ fit: true, reason: "open-directory-expand" });
     }
 
@@ -966,24 +1040,28 @@ async function openDirectoryInGraphManager(targetDirectoryPath = "") {
     const targetNodeId = targetDir || normalizePath(currentRootPath || "") || "Root";
     const targetNode = cy.getElementById(targetNodeId);
     if (targetNode && !targetNode.empty()) {
-        try { cy.center(targetNode); } catch (_) { /* ignore */ }
+        try { cy.center(targetNode); } catch (_) {
+        if (disposed) return; /* ignore */ }
     }
     return true;
 }
 
 async function revealPathInGraphManager(path, options = {}) {
+    if (disposed) return;
     const cleanPath = normalizePath(path || "");
     if (!cleanPath) return false;
 
     const isDirectory = Boolean(options?.isDirectory);
     const targetDir = isDirectory ? cleanPath : dirname(cleanPath);
-    await openDirectoryInGraphManager(targetDir);
+    await alive(openDirectoryInGraphManager(targetDir));
 
     const node = cy?.getElementById(cleanPath);
     if (node && !node.empty()) {
-        try { cy.nodes().unselect(); node.select(); } catch (_) { /* ignore */ }
+        try { cy.nodes().unselect(); node.select(); } catch (_) {
+        if (disposed) return; /* ignore */ }
         selectSingleGraphNodeFile(node);
-        try { cy.center(node); } catch (_) { /* ignore */ }
+        try { cy.center(node); } catch (_) {
+        if (disposed) return; /* ignore */ }
     }
 
     if (!isDirectory && options?.selectFile !== false) {
@@ -1011,11 +1089,13 @@ function graphDropDestinationDirectory(event, container) {
 }
 
 async function refreshAfterExternalGraphImport(destinationDir = "") {
+    if (disposed) return;
     const cleanDestination = normalizePath(destinationDir || "");
-    await refreshGraphView({ fit: true, reason: "external-file-import" });
-    if (cleanDestination) await ensureDirectoryChainExpanded(cleanDestination);
+    await alive(refreshGraphView({ fit: true, reason: "external-file-import" }));
+    if (cleanDestination) await alive(ensureDirectoryChainExpanded(cleanDestination));
     if (typeof window.refreshFileManager === "function") {
-        try { await window.refreshFileManager(window.currentDirectoryPath || ""); } catch (_) { /* ignore */ }
+        try { await alive(window.refreshFileManager(window.currentDirectoryPath || "")); } catch (_) {
+        if (disposed) return; /* ignore */ }
     }
 }
 
@@ -1026,17 +1106,17 @@ function bindExternalFileDropOnGraphContainer(container) {
     }
     container.__nvExternalFileDropCleanup = installExternalFileDropTarget(container, {
         getDestinationDirectory: (event) => graphDropDestinationDirectory(event, container),
-        onImported: async (_result, destinationDir) => refreshAfterExternalGraphImport(destinationDir),
+        onImported: async (_result, destinationDir) => { if (!disposed) await refreshAfterExternalGraphImport(destinationDir); },
         onError: (err) => {
+            if (disposed) return;
             console.error("Graph Manager external file import failed:", err);
             alert("Failed to import files: " + (err.message || err));
         },
     });
 }
 
-window.openDirectoryInGraphManager = openDirectoryInGraphManager;
-window.getGraphManagerPasteDestination = graphPasteDestinationDirectory;
-window.revealPathInGraphManager = revealPathInGraphManager;
+
+
 
 function selectedGraphNodeForScopeAction() {
     if (!cy) return null;
@@ -1115,6 +1195,8 @@ function graphSelectionEntriesFromCy() {
 }
 
 function publishGraphSelectedFileEntries(entries = [], primaryEntry = null) {
+    if (disposed || activeGraphManager() !== instance) return;
+    noteGraphManagerNavigation(instance);
     const cleanEntries = uniqueGraphSelectionEntries(entries);
     const primary = primaryEntry?.path ? primaryEntry : cleanEntries[cleanEntries.length - 1] || null;
     window.NodevisionState = window.NodevisionState || {};
@@ -1440,7 +1522,7 @@ function resetGraphAbstractionFilterState({ restoreParents = true } = {}) {
     try { cy?.nodes?.().removeClass?.("nv-abstraction-root"); } catch (_) { /* ignore */ }
 }
 
-export function clearGraphAbstractionFilter({ fit = true, relayout = true } = {}) {
+function clearGraphAbstractionFilter({ fit = true, relayout = true } = {}) {
     if (!cy) {
         resetGraphAbstractionFilterState({ restoreParents: false });
         return false;
@@ -1457,28 +1539,30 @@ export function clearGraphAbstractionFilter({ fit = true, relayout = true } = {}
 }
 
 async function ensureGraphDirectoryLevelsLoaded(rootPath = "", level = 0) {
+    if (disposed) return;
     const maxLevel = clampGraphAbstractionLevel(level, 0);
     const visited = new Set();
 
     async function loadDirectory(directoryPath, remainingLevels) {
+    if (disposed) return;
         const cleanDir = normalizePath(directoryPath || "");
         if (visited.has(cleanDir)) return;
         visited.add(cleanDir);
 
-        const data = await fetchDirectoryContents(cleanDir, null, null, null);
+        const data = await alive(fetchDirectoryContents(cleanDir, null, null, null));
         if (!Array.isArray(data)) return;
 
-        await renderGraphData(data, cleanDir);
+        await alive(renderGraphData(data, cleanDir));
         if (remainingLevels <= 0) return;
 
         for (const entry of data) {
             if (!entry?.isDirectory || !entry?.name) continue;
             const childPath = normalizePath(cleanDir ? cleanDir + "/" + entry.name : entry.name);
-            await loadDirectory(childPath, remainingLevels - 1);
+            await alive(loadDirectory(childPath, remainingLevels - 1));
         }
     }
 
-    await loadDirectory(rootPath, maxLevel);
+    await alive(loadDirectory(rootPath, maxLevel));
     navigationState.setLastOpenedDirectory(normalizePath(rootPath || ""), "GraphManager");
 }
 
@@ -1496,7 +1580,8 @@ function styleGraphScopeDialogButton(button, variant = "secondary") {
 
 function showGraphAbstractionDialog({ rootPath = "", rootType = "directory" } = {}) {
     return new Promise((resolve) => {
-        const existing = document.querySelector("[data-graph-abstraction-dialog]");
+        cancelDialog?.();
+        const existing = root.querySelector("[data-graph-abstraction-dialog]");
         if (existing) existing.remove();
 
         const overlay = document.createElement("div");
@@ -1559,12 +1644,16 @@ function showGraphAbstractionDialog({ rootPath = "", rootType = "directory" } = 
         form.appendChild(label);
         form.appendChild(footer);
         overlay.appendChild(form);
-        document.body.appendChild(overlay);
+        root.appendChild(overlay);
 
         let settled = false;
+        cancelDialog = () => finish(null);
         function finish(result) {
             if (settled) return;
             settled = true;
+            cancelDialog = null;
+            clearTimeout(dialogFocusTimer);
+            dialogFocusTimer = null;
             window.removeEventListener("keydown", handleKeyDown);
             overlay.remove();
             resolve(result);
@@ -1585,13 +1674,14 @@ function showGraphAbstractionDialog({ rootPath = "", rootType = "directory" } = 
             if (event.target === overlay) finish(null);
         });
         window.addEventListener("keydown", handleKeyDown);
-        window.setTimeout(() => {
+        dialogFocusTimer = window.setTimeout(() => {
             try { input.focus(); input.select(); } catch (_) { /* ignore */ }
         }, 0);
     });
 }
 
-export async function setGraphAbstractionRootFromSelection() {
+async function setGraphAbstractionRootFromSelection() {
+    if (disposed) return;
     if (!cy) {
         alert("Graph Manager is not ready yet.");
         return false;
@@ -1609,7 +1699,7 @@ export async function setGraphAbstractionRootFromSelection() {
     const rootPath = selectedNodeIsNotebookRoot ? "" : selectedPath;
     const rootType = selectedNodeIsNotebookRoot || selectedPathIsDirectory(rootPath) ? "directory" : "file";
     const rootNodeId = selectedNode?.id?.() || rootPath;
-    const result = await showGraphAbstractionDialog({ rootPath, rootType });
+    const result = await alive(showGraphAbstractionDialog({ rootPath, rootType }));
     if (!result) return false;
     if (result.clear) return clearGraphAbstractionFilter({ fit: true, relayout: true });
 
@@ -1617,12 +1707,12 @@ export async function setGraphAbstractionRootFromSelection() {
     if (graphAbstractionFilter) clearGraphAbstractionFilter({ fit: false, relayout: false });
 
     if (rootType === "directory") {
-        await ensureGraphDirectoryLevelsLoaded(rootPath, level);
+        await alive(ensureGraphDirectoryLevelsLoaded(rootPath, level));
     } else {
         if (cy.getElementById(rootPath).empty()) {
-            await ensureDirectoryChainExpanded(dirname(rootPath));
+            await alive(ensureDirectoryChainExpanded(dirname(rootPath)));
         }
-        await handleLinkDiscovery(rootPath);
+        await alive(handleLinkDiscovery(rootPath));
     }
 
     graphAbstractionFilter = {
@@ -1635,15 +1725,16 @@ export async function setGraphAbstractionRootFromSelection() {
     const applied = applyGraphAbstractionFilter({ fit: true, reason: "set-abstraction-filter" });
     const rootNode = cy.getElementById(rootNodeId);
     if (rootNode && !rootNode.empty()) {
-        try { cy.center(rootNode); } catch (_) { /* ignore */ }
+        try { cy.center(rootNode); } catch (_) {
+        if (disposed) return; /* ignore */ }
     }
     return applied;
 }
 
-window.clearGraphAbstractionFilter = clearGraphAbstractionFilter;
-window.setGraphAbstractionRootFromSelection = setGraphAbstractionRootFromSelection;
 
-export async function reopenGraphRootFromSelection() {
+
+async function reopenGraphRootFromSelection() {
+    if (disposed) return;
     if (!cy) {
         alert("Graph Manager is not ready yet.");
         return false;
@@ -1663,19 +1754,20 @@ export async function reopenGraphRootFromSelection() {
 
     currentRootPath = normalizePath(nextRoot);
     navigationState.setLastOpenedDirectory(currentRootPath, "GraphManager");
-    await refreshGraphView({ fit: true, reason: "selection-as-root" });
+    await alive(refreshGraphView({ fit: true, reason: "selection-as-root" }));
 
     const rootNodeId = currentRootPath || "Root";
     const rootNode = cy.getElementById(rootNodeId);
     if (rootNode && !rootNode.empty()) {
-        try { cy.nodes().unselect(); rootNode.select(); } catch (_) { /* ignore */ }
-        try { cy.center(rootNode); } catch (_) { /* ignore */ }
+        try { cy.nodes().unselect(); rootNode.select(); } catch (_) {
+        if (disposed) return; /* ignore */ }
+        try { cy.center(rootNode); } catch (_) {
+        if (disposed) return; /* ignore */ }
     }
 
     return true;
 }
 
-window.reopenGraphRootFromSelection = reopenGraphRootFromSelection;
 
 function setupCtrlDragMoveHandlers() {
     if (!cy) return;
@@ -1690,7 +1782,7 @@ function setupCtrlDragMoveHandlers() {
         dropTargetId: null,
     };
 
-    cy.on('grab', 'node', (evt) => {
+    onGraph('grab', 'node', (evt) => {
         const original = evt?.originalEvent;
         const moveKey = Boolean(original?.ctrlKey || original?.metaKey);
         if (!moveKey) return;
@@ -1736,7 +1828,7 @@ function setupCtrlDragMoveHandlers() {
         });
     });
 
-    cy.on('drag', 'node', (evt) => {
+    onGraph('drag', 'node', (evt) => {
         if (!dragMoveState?.active) return;
         const node = evt.target;
         if (!node || node.empty()) return;
@@ -1784,7 +1876,7 @@ function setupCtrlDragMoveHandlers() {
         setDropTargetHighlight(targetDir);
     });
 
-    cy.on('free', 'node', async (evt) => {
+    onGraph('free', 'node', async (evt) => {
         const node = evt.target;
         if (!dragMoveState?.active) return;
         if (!node || node.empty()) return;
@@ -1815,7 +1907,8 @@ function setupCtrlDragMoveHandlers() {
             try {
                 if (sourceParentId && typeof node.move === 'function') node.move({ parent: sourceParentId });
                 if (sourcePosition && typeof node.position === 'function') node.position(sourcePosition);
-            } catch (_) { /* ignore */ }
+            } catch (_) {
+        if (disposed) return; /* ignore */ }
             return;
         }
 
@@ -1824,7 +1917,8 @@ function setupCtrlDragMoveHandlers() {
             try {
                 if (sourceParentId && typeof node.move === 'function') node.move({ parent: sourceParentId });
                 if (sourcePosition && typeof node.position === 'function') node.position(sourcePosition);
-            } catch (_) { /* ignore */ }
+            } catch (_) {
+        if (disposed) return; /* ignore */ }
             return;
         }
 
@@ -1844,10 +1938,11 @@ function setupCtrlDragMoveHandlers() {
             }
 
             try {
-                await moveFileOrDirectory(entryPath, destinationDir);
+                await alive(moveFileOrDirectory(entryPath, destinationDir));
                 movedCount += 1;
-                await maybePromptLinkMoveImpact({ oldPath: entryPath, newPath: destinationPath });
+                await alive(maybePromptLinkMoveImpact({ oldPath: entryPath, newPath: destinationPath }));
             } catch (err) {
+        if (disposed) return;
                 console.error('[GraphManager] Move failed:', err);
                 moveErrors.push(entryPath + ': ' + (err?.message || err));
             }
@@ -1857,7 +1952,8 @@ function setupCtrlDragMoveHandlers() {
             try {
                 if (sourceParentId && typeof node.move === 'function') node.move({ parent: sourceParentId });
                 if (sourcePosition && typeof node.position === 'function') node.position(sourcePosition);
-            } catch (_) { /* ignore */ }
+            } catch (_) {
+        if (disposed) return; /* ignore */ }
             if (moveErrors.length) {
                 alert('Move failed:' + String.fromCharCode(10) + moveErrors.join(String.fromCharCode(10)));
             }
@@ -1870,17 +1966,19 @@ function setupCtrlDragMoveHandlers() {
 
         // Refresh the graph so the moved node appears in the right place.
         try {
-            await refreshGraphView({ fit: true, reason: 'move' });
+            await alive(refreshGraphView({ fit: true, reason: 'move' }));
             if (destinationDir) {
-                await ensureDirectoryChainExpanded(destinationDir);
+                await alive(ensureDirectoryChainExpanded(destinationDir));
             }
         } catch (err) {
+        if (disposed) return;
             console.warn('[GraphManager] Refresh after move failed:', err);
         }
 
         // Also refresh File Manager if present.
         if (typeof window.refreshFileManager === 'function') {
-            try { await window.refreshFileManager(window.currentDirectoryPath || ''); } catch (_) { /* ignore */ }
+            try { await alive(window.refreshFileManager(window.currentDirectoryPath || '')); } catch (_) {
+        if (disposed) return; /* ignore */ }
         } else {
             document.dispatchEvent(new CustomEvent('refreshFileManager'));
         }
@@ -1890,7 +1988,7 @@ function setupCtrlDragMoveHandlers() {
 function setupPlaceholderRetargetHandlers() {
     if (!cy) return;
 
-    cy.on('grab', 'node[type="placeholder"]', (evt) => {
+    onGraph('grab', 'node[type="placeholder"]', (evt) => {
         const node = evt.target;
         if (!node || node.empty()) return;
         const data = placeholderEdgeDataFromNode(node);
@@ -1907,7 +2005,7 @@ function setupPlaceholderRetargetHandlers() {
         selectGraphLinkFromData(data);
     });
 
-    cy.on('drag', 'node[type="placeholder"]', (evt) => {
+    onGraph('drag', 'node[type="placeholder"]', (evt) => {
         const state = placeholderRetargetState;
         if (!state?.active) return;
         const node = evt.target;
@@ -1917,7 +2015,7 @@ function setupPlaceholderRetargetHandlers() {
         setLinkDropTargetHighlight(state, fileNode);
     });
 
-    cy.on('free', 'node[type="placeholder"]', async (evt) => {
+    onGraph('free', 'node[type="placeholder"]', async (evt) => {
         const state = placeholderRetargetState;
         const node = evt.target;
         if (!state?.active || !node || node.empty() || node.id() !== state.nodeId) return;
@@ -1940,8 +2038,9 @@ function setupPlaceholderRetargetHandlers() {
         }
 
         try {
-            await retargetGraphLinkData(state.edgeData, destinationPath, state.selection);
+            await alive(retargetGraphLinkData(state.edgeData, destinationPath, state.selection));
         } catch (err) {
+        if (disposed) return;
             console.error('[GraphManager] Placeholder retarget failed:', err);
             alert(`Could not repair link: ${err?.message || err}`);
             restoreDraggedNodePosition(node, state.sourcePosition);
@@ -1952,7 +2051,7 @@ function setupPlaceholderRetargetHandlers() {
 function setupLinkEndpointRetargetHandlers() {
     if (!cy) return;
 
-    cy.on('grab', 'node.nv-link-endpoint-target', (evt) => {
+    onGraph('grab', 'node.nv-link-endpoint-target', (evt) => {
         const state = linkEndpointEditState;
         if (!state?.edgeId) return;
         const node = evt.target;
@@ -1965,7 +2064,7 @@ function setupLinkEndpointRetargetHandlers() {
         node.addClass('nv-link-endpoint-dragging');
     });
 
-    cy.on('drag', 'node.nv-link-endpoint-target', (evt) => {
+    onGraph('drag', 'node.nv-link-endpoint-target', (evt) => {
         const state = linkEndpointEditState;
         if (!state?.draggingNodeId) return;
         const node = evt.target;
@@ -1976,7 +2075,7 @@ function setupLinkEndpointRetargetHandlers() {
         setLinkDropTargetHighlight(state, fileNode);
     });
 
-    cy.on('free', 'node.nv-link-endpoint-target', async (evt) => {
+    onGraph('free', 'node.nv-link-endpoint-target', async (evt) => {
         const state = linkEndpointEditState;
         const node = evt.target;
         if (!state?.draggingNodeId || !node || node.empty() || node.id() !== state.draggingNodeId) return;
@@ -1998,8 +2097,9 @@ function setupLinkEndpointRetargetHandlers() {
         if (!destinationPath) return;
 
         try {
-            await retargetGraphLinkData(edgeData, destinationPath, selection);
+            await alive(retargetGraphLinkData(edgeData, destinationPath, selection));
         } catch (err) {
+        if (disposed) return;
             console.error('[GraphManager] Endpoint retarget failed:', err);
             alert(`Could not retarget link: ${err?.message || err}`);
         }
@@ -2109,6 +2209,7 @@ function ingestPersistedEdgeData(data) {
 }
 
 async function hydrateDiscoveredLinksFromBuckets(paths = null, options = {}) {
+    if (disposed) return;
     const plan = buildEdgeBucketHydrationPlan(paths, {
         all: options.all === true,
         force: options.force === true,
@@ -2127,21 +2228,22 @@ async function hydrateDiscoveredLinksFromBuckets(paths = null, options = {}) {
 
     const fetches = plan.requests.map(async (request) => {
         try {
-            const res = await fetch(request.url);
+            const res = await alive(fetch(request.url));
             hydratedEdgeBucketSymbols.add(request.cacheKey);
             if (!res.ok) return;
-            const text = await res.text();
+            const text = await alive(res.text());
             stats.loaded += 1;
             stats.bytes += text.length;
             if (!text.trim()) return;
             const json = JSON.parse(text);
             ingestPersistedEdgeData(json);
         } catch (err) {
+        if (disposed) return;
             console.warn(`[GraphManager] Failed to hydrate ${request.kind} bucket ${request.symbol}:`, err);
         }
     });
 
-    await Promise.all(fetches);
+    await alive(Promise.all(fetches));
     incrementPerformanceCounter("GraphManager.edgeBucketsRequested", stats.requested);
     incrementPerformanceCounter("GraphManager.edgeTargetBucketsRequested", stats.targetBucketRequests);
     incrementPerformanceCounter("GraphManager.edgeSourceBucketsRequested", stats.sourceBucketRequests);
@@ -2386,10 +2488,10 @@ function buildGraphLayoutOptions({ fit = true } = {}) {
 }
 
 function queueRelayout({ fit = true, reason = 'update' } = {}) {
-    if (!cy) return;
+    if (disposed || !cy) return;
     layoutPendingFit = layoutPendingFit || Boolean(fit);
     if (reason) layoutPendingReasons.add(String(reason));
-    if (layoutDebounceTimer) return;
+    if (!isVisible() || layoutDebounceTimer) return;
 
     layoutDebounceTimer = window.setTimeout(() => {
         layoutDebounceTimer = null;
@@ -2402,7 +2504,8 @@ function queueRelayout({ fit = true, reason = 'update' } = {}) {
 }
 
 function runRelayout({ fit = true, reasons = [] } = {}) {
-    if (!cy) return;
+    if (disposed || !cy) return;
+    if (!isVisible()) { queueRelayout({ fit, reason: reasons.join(",") }); return; }
     const perf = createPerformanceOperation("GraphManager layout", { fit, reasons });
     try {
         cy.resize();
@@ -2421,6 +2524,7 @@ function runRelayout({ fit = true, reasons = [] } = {}) {
 
     activeLayout = cy.layout(opts);
     activeLayout.one('layoutstop', () => {
+        if (disposed || suspended) return;
         layoutHasInitialized = true;
         if (fit) {
             try { cy.fit(undefined, opts.padding || 14); } catch (_) { /* ignore */ }
@@ -2432,17 +2536,19 @@ function runRelayout({ fit = true, reasons = [] } = {}) {
 }
 
 async function scanGraphFileForLinkRecords(sourcePath) {
+    if (disposed) return;
     const cleanSource = normalizePath(sourcePath);
-    if (!activeGraphLinkScanCache) return scanFileForLinkRecords(cleanSource);
+    if (!activeGraphLinkScanCache) return scanFileForLinkRecords(cleanSource, { signal: lifetime.signal });
     if (activeGraphLinkScanCache.has(cleanSource)) return activeGraphLinkScanCache.get(cleanSource);
-    const scanPromise = scanFileForLinkRecords(cleanSource);
+    const scanPromise = scanFileForLinkRecords(cleanSource, { signal: lifetime.signal });
     activeGraphLinkScanCache.set(cleanSource, scanPromise);
-    const records = await scanPromise;
+    const records = await alive(scanPromise);
     activeGraphLinkScanCache.set(cleanSource, records);
     return records;
 }
 
 async function persistGraphEdge(edgeData) {
+    if (disposed) return;
     if (!edgeData?.source || !edgeData?.target) return;
     if (activeGraphEdgePersistenceBatch) {
         activeGraphEdgePersistenceBatch.push(edgeData);
@@ -2452,10 +2558,11 @@ async function persistGraphEdge(edgeData) {
     }
     activeGraphRenderPerf?.count("edgeSaveRequests");
     incrementPerformanceCounter("GraphManager.edgeSaveRequests");
-    await saveFoundEdge(edgeData);
+    await alive(saveFoundEdge(edgeData));
 }
 
 async function flushGraphEdgePersistenceBatch() {
+    if (disposed) return;
     const batch = activeGraphEdgePersistenceBatch;
     if (!batch?.length) return;
     activeGraphEdgePersistenceBatch = [];
@@ -2465,16 +2572,17 @@ async function flushGraphEdgePersistenceBatch() {
     incrementPerformanceCounter("GraphManager.edgeSaveRequests");
     incrementPerformanceCounter("GraphManager.edgeSaveBatchRequests");
     incrementPerformanceCounter("GraphManager.edgeSaveEdges", batch.length);
-    await saveFoundEdgesBatch(batch);
+    await alive(saveFoundEdgesBatch(batch));
 }
 
 
 async function notebookAssetExists(relativePath) {
+    if (disposed) return;
     const cleanPath = normalizePath(relativePath || "");
     if (!cleanPath) return false;
 
     if (activeGraphRenderExistenceCache?.has(cleanPath)) {
-        return Boolean(await activeGraphRenderExistenceCache.get(cleanPath));
+        return Boolean(await alive(activeGraphRenderExistenceCache.get(cleanPath)));
     }
 
     const existencePromise = (async () => {
@@ -2482,21 +2590,22 @@ async function notebookAssetExists(relativePath) {
         incrementPerformanceCounter("GraphManager.existenceRequests");
         const url = toNotebookAssetUrl(cleanPath);
         try {
-            const headRes = await fetch(url, { method: "HEAD", cache: "no-store" });
+            const headRes = await alive(fetch(url, { method: "HEAD", cache: "no-store" }));
             if (headRes.ok) return true;
             // Some servers may not support HEAD; fall back to GET without reading body.
             if (headRes.status === 405 || headRes.status === 501) {
-                const getRes = await fetch(url, { method: "GET", cache: "no-store" });
+                const getRes = await alive(fetch(url, { method: "GET", cache: "no-store" }));
                 return getRes.ok;
             }
             return false;
         } catch (_) {
+        if (disposed) return;
             return false;
         }
     })();
 
     activeGraphRenderExistenceCache?.set(cleanPath, existencePromise);
-    const exists = await existencePromise;
+    const exists = await alive(existencePromise);
     activeGraphRenderExistenceCache?.set(cleanPath, exists);
     return exists;
 }
@@ -2642,7 +2751,9 @@ function getGraphSurfaceReservedHeight(surface) {
     }, 0);
 }
 
-function applyGraphViewportSize(container = document.getElementById("cy")) {
+function applyGraphViewportSize(targetContainer = container) {
+    const container = targetContainer;
+    if (!isVisible()) return;
     if (!container) return;
 
     const surface = getGraphViewportSurface(container);
@@ -2678,7 +2789,9 @@ function applyGraphViewportSize(container = document.getElementById("cy")) {
     try { cy?.resize?.(); } catch (_) { /* ignore */ }
 }
 
-function scheduleGraphViewportResize(container = document.getElementById("cy"), options = {}) {
+function scheduleGraphViewportResize(targetContainer = container, options = {}) {
+    const container = targetContainer;
+    if (!isVisible()) return;
     graphViewportResizeShouldFit = graphViewportResizeShouldFit || Boolean(options?.fit);
     if (graphViewportResizeFrame) return;
 
@@ -2733,11 +2846,8 @@ function bindGraphManagerLayerControls(container) {
     tdGraphLayer?.setControlsElement?.(controlsEl);
 }
 
-if (typeof window !== "undefined") {
-    window.bindGraphManagerLayerControls = bindGraphManagerLayerControls;
-}
-
-export async function initGraphView({ containerId, rootPath, statusElemId, mqttControlsId = null, mqttInspectorId = null, linkInspectorId = null }) {
+async function initGraphView({ rootPath = "" } = {}) {
+    if (disposed) return;
     const perf = createPerformanceOperation("GraphManager init", { rootPath });
     currentRootPath = normalizePath(rootPath);
     resetGraphAbstractionFilterState({ restoreParents: false });
@@ -2747,11 +2857,9 @@ export async function initGraphView({ containerId, rootPath, statusElemId, mqttC
     brokenLinksBySource.clear();
     brokenLinkRecordsBySourceTarget.clear();
     hydratedEdgeBucketSymbols.clear();
-    linkInspectorElem = linkInspectorId ? document.getElementById(linkInspectorId) : null;
+    linkInspectorElem = linkInspector;
     renderGraphLinkInspector(null);
-    const container = document.getElementById(containerId);
-    const statusElem = statusElemId ? document.getElementById(statusElemId) : null;
-    const edgeStyleOverrides = await loadEdgeStyleOverrides();
+    const edgeStyleOverrides = await alive(loadEdgeStyleOverrides());
     perf.mark("edge-styles");
     bindDirectoryAppearanceEvents();
 
@@ -3069,8 +3177,8 @@ export async function initGraphView({ containerId, rootPath, statusElemId, mqttC
         layout: { name: 'preset' }
     });
 
-    window.cy = cy;
     installGraphSemanticZoom(container, cy);
+    if (!isVisible()) { cy.startBatch(); heldBatch = true; }
     bindGraphViewportSizing(container);
     bindExternalFileDropOnGraphContainer(container);
 
@@ -3082,13 +3190,15 @@ export async function initGraphView({ containerId, rootPath, statusElemId, mqttC
             }
             const ro = new ResizeObserver(() => {
                 if (!cy) return;
-                scheduleGraphViewportResize(container, { fit: true });
+                scheduleGraphViewportResize(container);
             });
             [container, getGraphViewportSurface(container), getGraphPanelContent(container)]
                 .filter(Boolean)
                 .forEach((element) => ro.observe(element));
+            resizeObserver = ro;
             container.__nvGraphResizeObserver = ro;
         } catch (err) {
+        if (disposed) return;
             console.warn("[GraphManager] ResizeObserver setup failed:", err);
         }
     }
@@ -3096,9 +3206,9 @@ export async function initGraphView({ containerId, rootPath, statusElemId, mqttC
     container.__nvResourceDragCleanup?.();
     const releaseResourceDrag = installGraphResourceDrag(cy, getGraphViewportSurface(container) || container);
     container.__nvResourceDragCleanup = releaseResourceDrag;
-    cy.on('destroy', releaseResourceDrag);
 
-    cy.on('tap', 'node', (evt) => {
+
+    onGraph('tap', 'node', (evt) => {
         const node = evt.target;
         const nodeType = node.data('type');
         if (nodeType === 'placeholder') {
@@ -3121,7 +3231,7 @@ export async function initGraphView({ containerId, rootPath, statusElemId, mqttC
             }
 
             selectSingleGraphNodeFile(node);
-            requestNodevisionFileSelection(path, {
+            if (activeGraphManager() === instance) requestNodevisionFileSelection(path, {
                 isDirectory: selectedIsDirectory,
                 onSelected: (selectedPath) => {
                     if (selectedIsDirectory) {
@@ -3135,7 +3245,7 @@ export async function initGraphView({ containerId, rootPath, statusElemId, mqttC
         }
     });
 
-    cy.on("tap", "edge", (evt) => {
+    onGraph("tap", "edge", (evt) => {
         const edge = evt.target;
         cy.edges().removeClass("nv-selected-link");
         edge.addClass("nv-selected-link");
@@ -3149,7 +3259,7 @@ export async function initGraphView({ containerId, rootPath, statusElemId, mqttC
         renderGraphLinkInspector(selection);
     });
 
-    cy.on("tap", (evt) => {
+    onGraph("tap", (evt) => {
         if (evt.target !== cy) return;
         publishGraphSelectedFileEntries([]);
         applyGraphSelectedFileEntries([]);
@@ -3159,21 +3269,21 @@ export async function initGraphView({ containerId, rootPath, statusElemId, mqttC
         renderGraphLinkInspector(null);
     });
 
-    cy.on('dblclick', 'node', async (evt) => {
+    onGraph('dblclick', 'node', async (evt) => {
         const node = evt.target;
         if (node.data('type') === 'directory') {
-            await toggleCompoundDirectory(node);
+            await alive(enqueue(() => toggleCompoundDirectory(node)));
             navigationState.setLastOpenedDirectory(node.data('fullPath') || "", "GraphManager");
         }
     });
 
 
-    cy.on("drag", "node[type=\"directory\"]", (evt) => {
+    onGraph("drag", "node[type=\"directory\"]", (evt) => {
         if (dragMoveState?.active) return;
         scheduleExpandedDirectoryCollisionResolution(evt.target);
     });
 
-    cy.on("free", "node[type=\"directory\"]", (evt) => {
+    onGraph("free", "node[type=\"directory\"]", (evt) => {
         if (dragMoveState?.active) return;
         resolveExpandedDirectoryCollisions(evt.target);
     });
@@ -3185,38 +3295,41 @@ export async function initGraphView({ containerId, rootPath, statusElemId, mqttC
     mqttGraphLayer?.cleanup?.();
     tdGraphLayer?.cleanup?.();
 
-    const layerControlsEl = mqttControlsId ? document.getElementById(mqttControlsId) : null;
+    const layerControlsEl = null;
     mqttGraphLayer = attachMqttGraphLayer({
         cy,
         controlsEl: layerControlsEl,
-        inspectorEl: mqttInspectorId ? document.getElementById(mqttInspectorId) : null,
+        inspectorEl: mqttInspector,
         relayout: queueRelayout,
+        isVisible,
     });
 
     tdGraphLayer = attachThingDescriptionGraphLayer({
         cy,
         controlsEl: layerControlsEl,
         relayout: queueRelayout,
+        isVisible,
     });
-    bindGraphManagerLayerControls(document.querySelector("[data-graph-manager-layer-controls]"));
-    window.dispatchEvent(new CustomEvent("graphManagerLayersReady"));
-    window.dispatchEvent(new CustomEvent("graphManagerExternalLinkedFilesReady", {
+    if (activeGraphManager() === instance) window.bindGraphManagerLayerControls(document.querySelector("[data-graph-manager-layer-controls]"));
+    if (activeGraphManager() === instance) window.dispatchEvent(new CustomEvent("graphManagerLayersReady"));
+    if (activeGraphManager() === instance) window.dispatchEvent(new CustomEvent("graphManagerExternalLinkedFilesReady", {
         detail: { visible: externalLinkedFilesVisible }
     }));
 
-    await loadExternalNodes();
+    await alive(loadExternalNodes());
     perf.mark("external-nodes");
 
     if (statusElem) statusElem.textContent = "Fetching Files...";
-    await fetchDirectoryContents(currentRootPath, async (data) => {
-        await renderGraphData(data, currentRootPath);
+    await alive(fetchDirectoryContents(currentRootPath, async (data) => {
+        await alive(renderGraphData(data, currentRootPath));
         if (statusElem) statusElem.textContent = "Ready";
-    }, null, null);
+    }, null, null));
     perf.mark("directory-fetch");
     perf.end({ success: true });
 }
 
 async function renderGraphData(files, parentPath) {
+    if (disposed) return;
     if (!files) return;
     const perf = createPerformanceOperation("GraphManager render directory", { parentPath });
     const previousRenderPerf = activeGraphRenderPerf;
@@ -3239,14 +3352,15 @@ async function renderGraphData(files, parentPath) {
     }
 
     try {
-        await loadDirectoryAppearancesForPaths(visibleDirectoryPaths);
+        await alive(loadDirectoryAppearancesForPaths(visibleDirectoryPaths));
         perf.mark("directory-appearance", { paths: visibleDirectoryPaths.length });
     } catch (err) {
+        if (disposed) return;
         console.warn("[GraphManager] Failed to load visible directory appearance metadata:", err);
         perf.mark("directory-appearance", { paths: visibleDirectoryPaths.length, failed: true });
     }
 
-    const bucketStats = await hydrateDiscoveredLinksFromBuckets(visibleGraphPaths);
+    const bucketStats = await alive(hydrateDiscoveredLinksFromBuckets(visibleGraphPaths));
     perf.mark("edge-buckets", bucketStats);
 
     const parentId = normalizedParentPath || "Root";
@@ -3256,10 +3370,10 @@ async function renderGraphData(files, parentPath) {
     if (cy.getElementById(parentId).empty()) {
         cy.add({
             group: 'nodes',
-            data: { 
-                id: parentId, 
-                label: parentId === "Root" ? "🏠 Notebook" : parentId.split('/').pop(), 
-                type: 'directory', 
+            data: {
+                id: parentId,
+                label: parentId === "Root" ? "🏠 Notebook" : parentId.split('/').pop(),
+                type: 'directory',
                 fullPath: normalizedParentPath,
                 directoryImageUrl: currentDirectoryImage,
                 hasDirectoryImage: currentDirectoryImage ? 1 : 0,
@@ -3344,12 +3458,12 @@ async function renderGraphData(files, parentPath) {
 
     // Scan for links AFTER nodes are added to the graph instance
     for (const filePath of filesToScan) {
-        await handleLinkDiscovery(filePath);
+        await alive(handleLinkDiscovery(filePath));
     }
-    await flushGraphEdgePersistenceBatch();
+    await alive(flushGraphEdgePersistenceBatch());
 
     for (const task of previewFetches) {
-        const url = await findFirstImageInHtml(task.path);
+        const url = await alive(findFirstImageInHtml(task.path));
         if (url) {
             const node = cy.getElementById(task.id);
             if (!node.empty()) {
@@ -3387,6 +3501,7 @@ function referenceGroupKey(record = {}) {
 }
 
 async function collectAvailableFallbackGroups(records = []) {
+    if (disposed) return;
     const groups = new Set();
     const existsCache = new Map();
     for (const record of records) {
@@ -3398,7 +3513,7 @@ async function collectAvailableFallbackGroups(records = []) {
 
         let exists = existsCache.get(cleanTarget);
         if (exists === undefined) {
-            exists = await notebookAssetExists(cleanTarget);
+            exists = await alive(notebookAssetExists(cleanTarget));
             existsCache.set(cleanTarget, exists);
         }
         if (!exists) continue;
@@ -3416,18 +3531,19 @@ function primaryReferenceHasAvailableFallback(record, availableFallbackGroups) {
 }
 
 async function handleLinkDiscovery(filePath) {
+    if (disposed) return;
     const cleanSource = normalizePath(filePath);
     clearBrokenLinksForSource(cleanSource);
     clearLinkRecordsForSource(cleanSource);
     try {
-        const records = await scanGraphFileForLinkRecords(cleanSource);
+        const records = await alive(scanGraphFileForLinkRecords(cleanSource));
         activeGraphRenderPerf?.count("filesScanned");
         activeGraphRenderPerf?.count("linkRecords", Array.isArray(records) ? records.length : 0);
         incrementPerformanceCounter("GraphManager.filesScanned");
         incrementPerformanceCounter("GraphManager.linkRecords", Array.isArray(records) ? records.length : 0);
 
         if (records && Array.isArray(records)) {
-            const availableFallbackGroups = await collectAvailableFallbackGroups(records);
+            const availableFallbackGroups = await alive(collectAvailableFallbackGroups(records));
             for (const record of records) {
                 const rawTarget = record.targetRaw;
                 if (!rawTarget) continue;
@@ -3436,9 +3552,9 @@ async function handleLinkDiscovery(filePath) {
                     const extNode = makeExternalNodeFromUrl(rawTarget);
                     if (!extNode) continue;
                     addExternalNodesToGraph([extNode]);
-                    await persistExternalNodes([extNode]);
+                    await alive(persistExternalNodes([extNode]));
                     rememberLink(cleanSource, extNode.id, record);
-                    await persistGraphEdge({
+                    await alive(persistGraphEdge({
                         source: cleanSource,
                         target: extNode.id,
                         linkKind: record.linkKind,
@@ -3449,14 +3565,14 @@ async function handleLinkDiscovery(filePath) {
                         label: record.label,
                         displayText: record.displayText,
                         edgeLabel: makeEdgeLabel(record)
-                    });
+                    }));
                     continue;
                 }
 
                 const cleanTarget = normalizePath(linkRecordTargetId(record));
                 if (!cleanTarget) continue;
 
-                const exists = await notebookAssetExists(cleanTarget);
+                const exists = await alive(notebookAssetExists(cleanTarget));
                 if (!exists) {
                     if (primaryReferenceHasAvailableFallback(record, availableFallbackGroups)) continue;
                     rememberBrokenLink(cleanSource, cleanTarget, record);
@@ -3465,7 +3581,7 @@ async function handleLinkDiscovery(filePath) {
                 }
 
                 rememberLink(cleanSource, cleanTarget, record);
-                await persistGraphEdge({
+                await alive(persistGraphEdge({
                     source: cleanSource,
                     target: cleanTarget,
                     linkKind: record.linkKind,
@@ -3476,24 +3592,26 @@ async function handleLinkDiscovery(filePath) {
                     label: record.label,
                     displayText: record.displayText,
                     edgeLabel: makeEdgeLabel(record)
-                });
+                }));
             }
         }
         applyBrokenLinkBadge(cleanSource);
     } catch (err) {
+        if (disposed) return;
         console.error("Link discovery failed for " + cleanSource + ":", err);
     }
 }
 
 
 async function toggleCompoundDirectory(node) {
+    if (disposed) return;
     const path = node.data('fullPath');
     const descendants = node.descendants();
-    
+
     if (!descendants.empty()) {
         cy.remove(descendants);
     } else {
-        await fetchDirectoryContents(path, (data) => renderGraphData(data, path), null, null);
+        await alive(fetchDirectoryContents(path, (data) => renderGraphData(data, path), null, null));
     }
 
     navigationState.setLastOpenedDirectory(path || "", "GraphManager");
@@ -3527,16 +3645,17 @@ function fileActionModuleCandidates(actionKey = "") {
     return names.map((name) => `/ToolbarCallbacks/file/${name}.mjs`);
 }
 
-export async function handleGraphManagerAction(actionKey) {
+async function handleGraphManagerAction(actionKey) {
+    if (disposed) return;
     console.log(`GraphManagerCore: handling toolbar action "${actionKey}"`);
 
     if (actionKey === "setGraphAbstractionRootFromSelection") {
-        await setGraphAbstractionRootFromSelection();
+        await alive(enqueue(setGraphAbstractionRootFromSelection));
         return;
     }
 
     if (actionKey === "reopenGraphRootFromSelection") {
-        await reopenGraphRootFromSelection();
+        await alive(enqueue(reopenGraphRootFromSelection));
         return;
     }
 
@@ -3545,12 +3664,14 @@ export async function handleGraphManagerAction(actionKey) {
 
     for (const modulePath of modulePaths) {
         try {
-            const callbackModule = await import(modulePath);
+            const callbackModule = await alive(import(modulePath));
+            if (activeGraphManager() !== instance) return;
             if (typeof callbackModule.default === "function") {
-                await callbackModule.default();
+                await alive(callbackModule.default());
                 return;
             }
         } catch (err) {
+        if (disposed) return;
             importErrors.push(err);
         }
     }
@@ -3562,9 +3683,10 @@ export async function handleGraphManagerAction(actionKey) {
 
     if (callbackFromWindow) {
         try {
-            await callbackFromWindow();
+            await alive(callbackFromWindow());
             return;
         } catch (err) {
+        if (disposed) return;
             console.error(`Error executing toolbar action ${actionKey}:`, err);
             alert(`Error executing toolbar action "${actionKey}": ${err.message}`);
             return;
@@ -3577,7 +3699,6 @@ export async function handleGraphManagerAction(actionKey) {
     alert(`Error executing toolbar action "${actionKey}": ${rootCauseMessage}`);
 }
 
-window.handleGraphManagerAction = handleGraphManagerAction;
 
 // ------------------------------
 // Keyboard shortcuts (Copy / Paste / Cut)
@@ -3591,6 +3712,7 @@ function isEditableTarget(target) {
 }
 
 function shouldHandleGraphManagerShortcut() {
+    if (activeGraphManager() !== instance) return false;
     const state = window.NodevisionState || {};
     const handlerMatches = state.activeActionHandler === window.handleGraphManagerAction;
     const panelMatches = state.activePanelType === "GraphManager";
@@ -3602,7 +3724,7 @@ function shouldHandleGraphManagerShortcut() {
 }
 
 function registerGraphManagerClipboardShortcuts() {
-    if (window.__nvGraphManagerClipboardShortcutsBound) return;
+
 
     const listener = async (e) => {
         if (e.altKey || !(e.ctrlKey || e.metaKey) || e.repeat) return;
@@ -3614,14 +3736,126 @@ function registerGraphManagerClipboardShortcuts() {
 
         e.preventDefault();
         try {
-            await window.handleGraphManagerAction(actionKey);
+            await alive(window.handleGraphManagerAction(actionKey));
         } catch (err) {
+        if (disposed) return;
             console.error("GraphManager clipboard shortcut failed:", err);
         }
     };
 
     document.addEventListener("keydown", listener);
-    window.__nvGraphManagerClipboardShortcutsBound = true;
+    cleanups.push(() => document.removeEventListener("keydown", listener));
 }
 
+// Keyboard listener is owned by this instance and removed on close.
 registerGraphManagerClipboardShortcuts();
+
+function activate() {
+    if (disposed) return;
+    suspended = false;
+    if (!isVisible()) return;
+    if (cy && container && !container.__nvResourceDragCleanup) {
+        container.__nvResourceDragCleanup = installGraphResourceDrag(cy, getGraphViewportSurface(container) || container);
+    }
+    if (heldBatch && cy) { heldBatch = false; cy.endBatch(); }
+    mqttGraphLayer?.resume?.();
+    tdGraphLayer?.resume?.();
+    if (appearanceDirty) { appearanceDirty = false; updateGraphDirectoryAppearance(); }
+    scheduleGraphViewportResize(container);
+    if (needsRefresh) { needsRefresh = false; enqueue(() => refreshGraphView({ fit: false, reason: 'reactivate-dirty' })).catch(reportError); }
+    else if (layoutPendingReasons.size) queueRelayout({ fit: layoutPendingFit, reason: 'reactivate-pending' });
+    if (activeGraphManager() === instance) {
+        noteGraphManagerNavigation(instance);
+        updateToolbarState({ activePanelType: 'GraphManager', activeActionHandler: window.handleGraphManagerAction });
+        window.bindGraphManagerLayerControls(document.querySelector('[data-graph-manager-layer-controls]'));
+        notifyExternalLinkedFilesVisibility();
+    }
+}
+function cancelScheduledWork() {
+    clearTimeout(layoutDebounceTimer); layoutDebounceTimer = null;
+    if (graphViewportResizeFrame) cancelAnimationFrame(graphViewportResizeFrame);
+    graphViewportResizeFrame = 0; graphViewportResizeShouldFit = false;
+    if (expandedDirectoryCollisionFrame) { cancelAnimationFrame(expandedDirectoryCollisionFrame); clearTimeout(expandedDirectoryCollisionFrame); }
+    expandedDirectoryCollisionFrame = null; expandedDirectoryCollisionNodeId = null;
+    activeLayout?.stop?.(); activeLayout = null;
+}
+function deactivate() {
+    if (disposed) return;
+    suspended = true;
+    if (cy && !heldBatch) { cy.startBatch(); heldBatch = true; }
+    cancelScheduledWork();
+    bindGraphManagerLayerControls(null);
+    container?.__nvResourceDragCleanup?.();
+    if (container) delete container.__nvResourceDragCleanup;
+    cancelDialog?.();
+}
+function destroy() {
+    if (disposed) return;
+    disposed = true;
+    lifetime.abort();
+    cancelDialog?.(); clearTimeout(dialogFocusTimer); dialogFocusTimer = null;
+    cancelScheduledWork();
+    layoutPendingReasons.clear(); layoutPendingFit = false; activeGraphRenderPerf = null;
+    resizeObserver?.disconnect(); resizeObserver = null;
+    graphViewportEventCleanup?.(); graphViewportEventCleanup = null;
+    for (const cleanup of cleanups.splice(0)) cleanup();
+    mqttGraphLayer?.cleanup?.(); mqttGraphLayer = null;
+    tdGraphLayer?.cleanup?.(); tdGraphLayer = null;
+    container?.__nvExternalFileDropCleanup?.();
+    container?.__nvResourceDragCleanup?.();
+    // Cytoscape batches notifications, including destroy. Release our held batch first
+    // so renderer-owned DOM observers/listeners receive the destroy notification.
+    if (heldBatch && cy) { heldBatch = false; cy.endBatch(); }
+    cy?.destroy();
+    container?.__nvGraphSemanticZoom?.();
+    if (container) {
+        delete container.__nvGraphResizeObserver;
+        delete container.__nvExternalFileDropCleanup;
+        delete container.__nvResourceDragCleanup;
+    }
+    discoveredLinks.clear(); linkRecordsBySourceTarget.clear(); brokenLinksBySource.clear();
+    brokenLinkRecordsBySourceTarget.clear(); htmlPreviewCache.clear(); hydratedEdgeBucketSymbols.clear();
+    graphAbstractionOriginalParents.clear(); graphAbstractionVisibleNodeIds = null; graphAbstractionFilter = null;
+    activeGraphRenderExistenceCache?.clear(); activeGraphLinkScanCache?.clear();
+    activeGraphRenderExistenceCache = null; activeGraphLinkScanCache = null; activeGraphEdgePersistenceBatch = null;
+    localLinkSelection = null; linkInspectorElem = null; linkInspector = null; mqttInspector = null;
+    dragMoveState = null; placeholderRetargetState = null; linkEndpointEditState = null;
+    unregister();
+    if (root) delete root.__nvGraphManager;
+    root = null; container = null; statusElem = null; cy = null;
+}
+const instance = {
+    get root() { return root; }, get graph() { return cy; }, get destroyed() { return disposed; }, get inactive() { return suspended; },
+    init: options => enqueue(() => initGraphView(options)).catch(error => { if (!disposed) { destroy(); throw error; } }),
+    activate, deactivate, destroy,
+    invalidate() { if (!disposed) needsRefresh = true; },
+    refreshGraphView: options => enqueue(() => refreshGraphView(options)).catch(reportError),
+    openDirectoryInGraphManager: path => enqueue(() => openDirectoryInGraphManager(path)),
+    revealPathInGraphManager: (path, options) => enqueue(() => revealPathInGraphManager(path, options)),
+    graphPasteDestinationDirectory,
+    // Generic file callbacks can await window.refreshGraphManager. Do not hold the load
+    // queue while invoking them, or that refresh would wait on its own caller.
+    handleGraphManagerAction: key => handleGraphManagerAction(key).catch(reportError),
+    getGraphManagerExternalLinkedFilesVisible, setGraphManagerExternalLinkedFilesVisible,
+    clearGraphAbstractionFilter,
+    setGraphAbstractionRootFromSelection: () => enqueue(setGraphAbstractionRootFromSelection),
+    reopenGraphRootFromSelection: () => enqueue(reopenGraphRootFromSelection),
+    bindGraphManagerLayerControls,
+};
+const unregister = registerGraphManager(instance);
+root.__nvGraphManager = instance;
+return instance;
+}
+
+// Existing imported entry points resolve the active instance, never a module-global graph.
+export const handleGraphManagerAction = (...args) => callActiveGraphManager('handleGraphManagerAction', ...args);
+export const getGraphManagerExternalLinkedFilesVisible = (...args) => callActiveGraphManager('getGraphManagerExternalLinkedFilesVisible', ...args);
+export const setGraphManagerExternalLinkedFilesVisible = (...args) => callActiveGraphManager('setGraphManagerExternalLinkedFilesVisible', ...args);
+export const clearGraphAbstractionFilter = (...args) => callActiveGraphManager('clearGraphAbstractionFilter', ...args);
+export const setGraphAbstractionRootFromSelection = (...args) => callActiveGraphManager('setGraphAbstractionRootFromSelection', ...args);
+export const reopenGraphRootFromSelection = (...args) => callActiveGraphManager('reopenGraphRootFromSelection', ...args);
+export async function initGraphView(options) {
+    const instance = createGraphManagerInstance(options);
+    await instance.init(options);
+    return instance;
+}

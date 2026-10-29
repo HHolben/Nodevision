@@ -137,11 +137,11 @@ async function openPathInPanel(panelType, path, options = {}) {
 
   if (panelType === "GraphManager") {
     if (typeof window.revealPathInGraphManager === "function") {
-      const revealed = await window.revealPathInGraphManager(path, { isDirectory, selectFile: options.selectFile });
+      const revealed = await window.revealPathInGraphManager(path, { instanceId: window.getGraphManagerNavigationInstanceId?.(), isDirectory, selectFile: options.selectFile });
       if (revealed) return true;
     }
     if (isDirectory && typeof window.openDirectoryInGraphManager === "function") {
-      await window.openDirectoryInGraphManager(path);
+      await window.openDirectoryInGraphManager(path, { instanceId: window.getGraphManagerNavigationInstanceId?.() });
       return true;
     }
     return false;

@@ -1,0 +1,100 @@
+[
+  {
+    "n": 10,
+    "setupMs": 236.4000000001397,
+    "totalMs": 441.9000000001397,
+    "functions": {
+      "renderGraphLinkInspector": [
+        0.30000000004656613
+      ],
+      "applyGraphViewportSize": [
+        1,
+        0.20000000018626451
+      ],
+      "queueRelayout": [
+        0.10000000009313226,
+        0,
+        0,
+        0,
+        0.10000000009313226,
+        0,
+        0,
+        0,
+        0
+      ],
+      "scheduleGraphViewportResize": [
+        0
+      ],
+      "rebuildVisibleEdges": [
+        90.0999999998603
+      ],
+      "runRelayout": [
+        58.300000000046566
+      ]
+    }
+  },
+  {
+    "n": 100,
+    "setupMs": 278.39999999990687,
+    "totalMs": 861.5,
+    "functions": {
+      "renderGraphLinkInspector": [
+        0
+      ],
+      "applyGraphViewportSize": [
+        0.5,
+        0.19999999995343387
+      ],
+      "queueRelayout": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "scheduleGraphViewportResize": [
+        0
+      ],
+      "rebuildVisibleEdges": [
+        128.19999999995343
+      ],
+      "runRelayout": [
+        220.60000000009313
+      ]
+    }
+  },
+  {
+    "n": 1000,
+    "setupMs": 1885.3999999999069,
+    "totalMs": 14885.899999999907,
+    "functions": {
+      "renderGraphLinkInspector": [
+        0.09999999986030161
+      ],
+      "applyGraphViewportSize": [
+        0.6999999999534339,
+        0.19999999995343387
+      ],
+      "queueRelayout": [
+        0,
+        0,
+        0,
+        0,
+        0.10000000009313226,
+        0,
+        0
+      ],
+      "scheduleGraphViewportResize": [
+        0
+      ],
+      "rebuildVisibleEdges": [
+        800
+      ],
+      "runRelayout": [
+        11009
+      ]
+    }
+  }
+]

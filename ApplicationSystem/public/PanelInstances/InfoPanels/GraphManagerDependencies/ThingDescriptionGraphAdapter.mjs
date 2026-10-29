@@ -41,13 +41,14 @@ function renderControl(container, state, refresh) {
   });
 }
 
-async function elementsForVisibleTdFiles(cy) {
+async function elementsForVisibleTdFiles(cy, signal) {
   const elements = [];
   const fileNodes = cy.nodes('node[type="file"]').filter((node) => isThingDescriptionPath(node.data('fullPath') || node.data('label') || ''));
   for (const fileNode of fileNodes) {
+    if (signal.aborted) return [];
     const path = fileNode.data('fullPath');
     try {
-      const res = await fetch(notebookUrl(path), { cache: 'no-store' });
+      const res = await fetch(notebookUrl(path), { cache: 'no-store', signal });
       if (!res.ok) continue;
       const td = parseThingDescriptionText(await res.text());
       const derived = deriveThingDescriptionGraph(td).map((element) => {
@@ -61,22 +62,28 @@ async function elementsForVisibleTdFiles(cy) {
       }
       elements.push(...derived);
     } catch (err) {
+      if (signal.aborted) return [];
       console.warn('[ThingDescriptionGraph] Failed to derive graph for TD:', path, err?.message || err);
     }
   }
   return elements;
 }
 
-export function attachThingDescriptionGraphLayer({ cy, controlsEl, relayout } = {}) {
+export function attachThingDescriptionGraphLayer({ cy, controlsEl, relayout, isVisible = () => true } = {}) {
   if (!cy) return { refresh: () => {}, setControlsElement: () => {}, cleanup: () => {} };
+  let disposed = false;
+  const lifetime = new AbortController();
   const state = { enabled: true, rendering: false, pending: false };
   let currentControlsEl = controlsEl || null;
 
   const refresh = async () => {
+    if (disposed) return;
+    if (!isVisible()) { state.pending = true; return; }
     if (state.rendering) {
       state.pending = true;
       return;
     }
+    state.pending = false;
     state.rendering = true;
     try {
       renderControl(currentControlsEl, state, refresh);
@@ -85,7 +92,9 @@ export function attachThingDescriptionGraphLayer({ cy, controlsEl, relayout } = 
         relayout?.({ fit: false, reason: 'td-layer-disabled' });
         return;
       }
-      const elements = await elementsForVisibleTdFiles(cy);
+      const elements = await elementsForVisibleTdFiles(cy, lifetime.signal);
+      if (disposed) return;
+      if (!isVisible()) { state.pending = true; return; }
       const ids = new Set(elements.map((element) => element.data.id));
       cy.batch(() => {
         cy.elements('.td-live').filter((element) => !ids.has(element.id())).remove();
@@ -98,7 +107,7 @@ export function attachThingDescriptionGraphLayer({ cy, controlsEl, relayout } = 
       relayout?.({ fit: false, reason: 'td-layer' });
     } finally {
       state.rendering = false;
-      if (state.pending) {
+      if (!disposed && isVisible() && state.pending) {
         state.pending = false;
         refresh();
       }
@@ -109,10 +118,18 @@ export function attachThingDescriptionGraphLayer({ cy, controlsEl, relayout } = 
   refresh();
   return {
     refresh,
+    resume() { if (state.pending) refresh(); },
     setControlsElement(container) {
+      if (disposed) return;
+      if (currentControlsEl && currentControlsEl !== container) currentControlsEl.querySelector("[data-td-layer-controls]")?.remove();
       currentControlsEl = container || null;
       renderControl(currentControlsEl, state, refresh);
     },
-    cleanup: () => cy.elements(".td-live").remove(),
+    cleanup() {
+      if (disposed) return;
+      disposed = true; state.pending = false; lifetime.abort();
+      currentControlsEl?.querySelector("[data-td-layer-controls]")?.remove();
+      currentControlsEl = null;
+    },
   };
 }

@@ -5,8 +5,9 @@
 window.settingsCallbacks = {
     toggleViewMode: (state) => {
       console.log("Toggle View Mode callback fired. State:", state);
-      const cyContainer = document.getElementById('cy');
+      const cyContainer = window.cy?.container?.() || document.getElementById('cy');
       const fileViewContainer = document.getElementById('file-view');
+      if (!cyContainer || !fileViewContainer) return;
   
       if (state) {
         // Show graph view.

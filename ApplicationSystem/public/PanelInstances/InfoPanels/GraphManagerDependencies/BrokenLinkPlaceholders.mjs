@@ -77,7 +77,10 @@ export async function retargetGraphLinkRecord(record, nextTargetPath, options = 
     throw new Error("Save or close the dirty source editor before editing this link.");
   }
 
-  const loaded = await fetchNotebookText(record.sourcePath);
+  const isCurrent = options.isCurrent || (() => true);
+  if (!isCurrent()) return { changed: false, cancelled: true };
+  const loaded = await fetchNotebookText(record.sourcePath, { signal: options.signal });
+  if (!isCurrent()) return { changed: false, cancelled: true };
   if (loaded.isBinary) throw new Error("Refusing to edit a binary-looking source file.");
 
   const targetRaw = replacementTargetForRecord(record, nextTargetPath);
@@ -91,8 +94,10 @@ export async function retargetGraphLinkRecord(record, nextTargetPath, options = 
     bom: loaded.bom,
   });
 
-  const records = await scanFileForLinkRecords(record.sourcePath);
+  if (!isCurrent()) return { changed: true, cancelled: true };
+  const records = await scanFileForLinkRecords(record.sourcePath, { signal: options.signal });
+  if (!isCurrent()) return { changed: true, cancelled: true };
   const selection = nextSelectionFromRecords(records, result.updatedRecord || record, options.selection || null);
-  setSelectedGraphLink(selection);
+  (options.publishSelection || setSelectedGraphLink)(selection);
   return { changed: true, selection, targetRaw };
 }

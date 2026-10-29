@@ -34,7 +34,8 @@ background-color: #ffffff;
   display: flex;
   width: 90%;
 }
-#cy {
+#cy,
+[data-graph-container] {
   flex: 1;
   height: 600px;
   border: 1px solid #ccc;

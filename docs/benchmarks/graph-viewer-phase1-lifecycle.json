@@ -1,0 +1,27 @@
+{
+  "checks": [
+    "A independent initialization",
+    "B routing and C interaction",
+    "F retained hidden lifecycle and live update",
+    "D complete cleanup",
+    "E 100 open/close cycles",
+    "late style/directory responses and real tab close during mount",
+    "late TD response after disposal",
+    "late retarget read cannot persist or publish after disposal",
+    "real tab switch/restore/close and context routing; 10 additional real-tab cycles"
+  ],
+  "baseline": {
+    "resize": 0,
+    "mutation": 0,
+    "listeners": 2,
+    "mqtt": 0
+  },
+  "final": {
+    "resize": 0,
+    "mutation": 0,
+    "listeners": 2,
+    "mqtt": 0
+  },
+  "cycles": 100,
+  "unhandledRejections": []
+}

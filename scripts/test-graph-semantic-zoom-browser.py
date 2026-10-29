@@ -45,7 +45,25 @@ class Handler(http.server.BaseHTTPRequestHandler):
                     pattern = r'(function ' + name + r'\([^\n]*\) \{)'
                     content = re.sub(pattern, r'\1' + '\nwindow.__graphCalls ||= {}; window.__graphCalls["' + name + '"] = (window.__graphCalls["' + name + '"] || 0) + 1;', content)
                 if scope_investigation:
-                    content += (root / 'scripts/graph-scope-core-probe.mjs').read_text()
+                    probe = (root / 'scripts/graph-scope-core-probe.mjs').read_text()
+                    if 'export function createGraphManagerInstance' in content:
+                        content = content.replace('return instance;\n}', probe.replace('export const ', 'const ') + '\ninstance.__scopeProbe = scopeInvestigation;\nreturn instance;\n}', 1)
+                        content += """
+let scopeOwner;
+export const scopeInvestigation = new Proxy({}, { get: (_, key) => (...args) => {
+  if (key === 'attach') {
+    scopeOwner?.destroy();
+    const container = args[0].container();
+    window.activeCell = container;
+    scopeOwner = createGraphManagerInstance({ root: container, container });
+  }
+  const result = scopeOwner?.__scopeProbe[key](...args);
+  if (key === 'detach') { scopeOwner?.destroy(); scopeOwner = null; }
+  return result;
+} });
+"""
+                    else:
+                        content += probe
             mime = 'text/css' if path.suffix == '.css' else 'text/javascript'
         self.send_response(200)
         self.send_header('Content-Type', mime)

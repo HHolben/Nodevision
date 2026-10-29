@@ -29,6 +29,7 @@ export async function revealLinkedPathInOriginNavigator(path, {
       }
       if (panelType === "GraphManager") {
         const opened = await window.revealPathInGraphManager(cleanPath, {
+          instanceId: window.getGraphManagerNavigationInstanceId?.(),
           isDirectory,
           selectFile: false
         });
