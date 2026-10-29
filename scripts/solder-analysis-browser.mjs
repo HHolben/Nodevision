@@ -30,6 +30,13 @@ try {
   check(Math.abs(session.result.overallPercentage-100/3)<1e-9,'Area weighted percentage');
   check(session.result.regions[2].label==='A-1' && session.result.regions[4].label==='B-1','Parent labels');
   check(session.result.regions.every(r=>r.rgba[3]===255),'JPEG alpha');
+  check(button('Pan').nextElementSibling===button('Select'),'Select button immediately follows Pan');
+  button('Select').click();
+  const selectionTarget=svg.querySelector('[data-region-id]');
+  event('pointerdown',5,5,selectionTarget);event('pointerup',5,5);
+  check(session.surface.querySelector('[aria-label="Selected region"]').value===session.snapshot().regions[0].id,'Select mode selects existing area');
+  check(svg.querySelector('[data-region-id]').style.pointerEvents==='all' && !svg.querySelector('[data-vertex]'),'Selection accepts interiors without vertex handles');
+  check(session.snapshot().regions.length===5 && !session.editor.hasDraft,'Selection does not draw or start dragging');
   const measure = JSON.stringify(session.result);
   button('+').click();button('Fit').click();session.surface.querySelector('main').scrollLeft=15;
   check(JSON.stringify(session.result)===measure,'Zoom and pan leave native measurement unchanged');

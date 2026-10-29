@@ -64,7 +64,7 @@ export async function startSolderJointAreaAnalysis(context = {}) {
       state.regions.push(region); selected = region.id; record(before); calculate();
     }
   });
-  const modes = { freehand: ['Freehand Trace', 'Drag to trace; release to close. Escape cancels.'], polygon: ['Polygon / Vertex', 'Click vertices; Enter or click the first vertex to close.'], select: ['Edit Perimeter', 'Select a boundary; G moves, S scales, or drag points to edit. Click or Enter confirms; Escape cancels.'], bezier: ['Bezier', 'Click anchors; drag to curve. Enter closes.'], pan: ['Pan', 'Drag to pan the image.'] };
+  const modes = { freehand: ['Freehand Trace', 'Drag to trace; release to close. Escape cancels.'], polygon: ['Polygon / Vertex', 'Click vertices; Enter or click the first vertex to close.'], select: ['Edit Perimeter', 'Select a boundary; G moves, S scales, or drag points to edit. Click or Enter confirms; Escape cancels.'], bezier: ['Bezier', 'Click anchors; drag to curve. Enter closes.'], pan: ['Pan', 'Drag to pan the image.'], selection: ['Select', 'Click a drawn area to select it. G moves, S scales; Edit Perimeter adjusts individual points.'] };
   const modeButtons = new Map();
   function setMode(tool) { editor.setTool(tool); for (const [key, b] of modeButtons) b.setAttribute('aria-pressed', String(key === tool)); setStatus(modes[tool][1]); }
   for (const [tool, [label]] of Object.entries(modes)) { const b = button(label, () => setMode(tool)); b.setAttribute('aria-pressed', String(tool === 'freehand')); modeButtons.set(tool, b); }

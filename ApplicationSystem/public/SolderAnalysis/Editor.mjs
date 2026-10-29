@@ -75,7 +75,7 @@ export function mountEditor(host, api) {
     for (const r of state.regions) {
       const l = state.layers.find(l => l.id === r.type); if (!l?.visible) continue;
       const path = svgNode('path', { d: regionPath(r), fill: 'none', stroke: colors[r.type], 'stroke-width': api.selected() === r.id ? 2 : 1, 'vector-effect': 'non-scaling-stroke', 'data-region-id': r.id });
-      path.style.pointerEvents = tool === 'select' && !l.locked ? 'stroke' : 'none'; artwork.append(path);
+      path.style.pointerEvents = !l.locked && tool === 'selection' ? 'all' : tool === 'select' && !l.locked ? 'stroke' : 'none'; artwork.append(path);
       path.addEventListener('pointerdown', e => startDrag(e, r, null));
       const first = r.model?.nodes[0] || { x: r.points[0][0], y: r.points[0][1] };
       const text = svgNode('text', { x: first.x, y: first.y, fill: colors[r.type], stroke: '#111', 'stroke-width': 3 / zoom, 'paint-order': 'stroke', 'font-size': 14 / zoom });
@@ -94,8 +94,9 @@ export function mountEditor(host, api) {
     }
   }
   function startDrag(event, region, vertex) {
-    if (drag || (event.pointerType === 'touch' && (!touchEnabled || event.isPrimary === false)) || event.button !== 0 || tool !== 'select') return;
+    if (drag || (event.pointerType === 'touch' && (!touchEnabled || event.isPrimary === false)) || event.button !== 0 || !['select', 'selection'].includes(tool)) return;
     event.preventDefault(); event.stopPropagation(); api.select(region.id);
+    if (tool === 'selection') { api.keyboardHost.focus({ preventScroll: true }); paint(); return; }
     drag = { id: region.id, vertex, start: toPoint(event), before: structuredClone(api.state()), pointerId: event.pointerId };
     try { svg.setPointerCapture(event.pointerId); } catch { /* Synthetic or released pointer. */ } api.keyboardHost.focus(); paint();
   }
@@ -135,7 +136,7 @@ export function mountEditor(host, api) {
   svg.addEventListener('pointerdown', down); svg.addEventListener('pointermove', move); svg.addEventListener('pointerup', up);
   svg.addEventListener('pointercancel', event => { if (drag?.pointerId === event.pointerId) cancel(); }); svg.addEventListener('lostpointercapture', () => { if (drag) { cancel(); paint(); } }); host.addEventListener('wheel', wheel, { passive: false }); api.keyboardHost.addEventListener('keydown', key);
   return { paint, cancel, setTouchEnabled(value) { cancel(); touchEnabled = value; },
-    redraw(id) { cancel(); redrawId = id; }, get hasDraft() { return transforms.active || binding.controller.active || bezier.isActive() || !!drag; }, setZoom, get zoom() { return zoom; }, setTool(value) { cancel(); tool = value; svg.style.cursor = value === 'pan' ? 'grab' : value === 'select' ? 'default' : 'crosshair'; paint(); },
+    redraw(id) { cancel(); redrawId = id; }, get hasDraft() { return transforms.active || binding.controller.active || bezier.isActive() || !!drag; }, setZoom, get zoom() { return zoom; }, setTool(value) { cancel(); tool = value; svg.style.cursor = value === 'pan' ? 'grab' : ['select', 'selection'].includes(value) ? 'default' : 'crosshair'; paint(); },
     fit() { const s = api.state(); setZoom(Math.min((host.clientWidth - 20) / s.width, (host.clientHeight - 20) / s.height)); },
     dispose() { cancel(); transforms.dispose(); binding.dispose(); host.removeEventListener('wheel', wheel); api.keyboardHost.removeEventListener('keydown', key); svg.remove(); }
   };
