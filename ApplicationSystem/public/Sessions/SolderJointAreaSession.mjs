@@ -64,10 +64,15 @@ export async function startSolderJointAreaAnalysis(context = {}) {
       state.regions.push(region); selected = region.id; record(before); calculate();
     }
   });
-  const modes = { freehand: ['Freehand Trace', 'Drag to trace; release to close. Escape cancels.'], polygon: ['Polygon / Vertex', 'Click vertices; Enter or click the first vertex to close.'], select: ['Edit Perimeter', 'Select a boundary; G moves, S scales, or drag points to edit. Click or Enter confirms; Escape cancels.'], bezier: ['Bezier', 'Click anchors; drag to curve. Enter closes.'], pan: ['Pan', 'Drag to pan the image.'], selection: ['Select', 'Click a drawn area to select it. G moves, S scales; Edit Perimeter adjusts individual points.'] };
+  const modes = { freehand: ['Freehand Trace', 'Drag to trace; release to close. Escape cancels.'], polygon: ['Polygon / Vertex', 'Click vertices; Enter or click the first vertex to close.'], select: ['Edit Perimeter', 'Select a boundary; G moves, S scales, R rotates, or drag points to edit. Click or Enter confirms; Escape cancels.'], bezier: ['Bezier', 'Click anchors; drag to curve. Enter closes.'], pan: ['Pan', 'Drag to pan the image.'], selection: ['Select', 'Click a drawn area to select it. G moves, S scales, R rotates; Edit Perimeter adjusts individual points.'] };
   const modeButtons = new Map();
   function setMode(tool) { editor.setTool(tool); for (const [key, b] of modeButtons) b.setAttribute('aria-pressed', String(key === tool)); setStatus(modes[tool][1]); }
   for (const [tool, [label]] of Object.entries(modes)) { const b = button(label, () => setMode(tool)); b.setAttribute('aria-pressed', String(tool === 'freehand')); modeButtons.set(tool, b); }
+  button('Move', () => editor.startTransform('g'));
+  button('Scale', () => editor.startTransform('s'));
+  button('Rotate', () => editor.startTransform('r'));
+  button('Delete', deleteSelected);
+  button('Cancel Transform', () => editor.cancel());
   const touchLabel = node('label', '', header), touch = node('input', '', touchLabel); touch.type = 'checkbox'; touch.checked = true; touchLabel.append('Touch drawing');
   touch.onchange = () => editor.setTouchEnabled(touch.checked);
   touch.title = 'Disable when using a stylus to prevent palm marks before or after pen contact.';
@@ -86,11 +91,12 @@ export async function startSolderJointAreaAnalysis(context = {}) {
   }
   const undo = () => { editor.cancel(); history.undo(); }, redo = () => { editor.cancel(); history.redo(); };
   button('Undo', undo); button('Redo', redo);
-  button('Delete region', () => {
+  function deleteSelected() {
     editor.cancel();
     const r = state.regions.find(r => r.id === selected); if (!r || layers.layers.find(l => l.id === r.type)?.locked) return;
     const before = snapshot(); state.regions = state.regions.filter(r => r.id !== selected); selected = null; record(before); editor.paint(); calculate();
-  }, controls);
+  }
+  button('Delete region', deleteSelected, controls);
   button('Save analysis', async () => { if (!state.source) throw Error('Open a JPEG first'); if (editor.hasDraft) throw Error('Complete or cancel the unfinished path before saving'); const savedRevision = documentRevision; const saved = await (context.save || saveAnalysisFile)(snapshot(), serializeAnalysis(snapshot()), false); if (saved) { if (savedRevision === documentRevision) dirty = false; setStatus(`Saved ${saved}`); } }, controls);
   const report = button('Generate HTML Report', async () => {
     if (editor.hasDraft) throw Error('Complete or cancel the unfinished path before generating a report');

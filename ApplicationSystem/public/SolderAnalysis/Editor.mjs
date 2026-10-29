@@ -135,7 +135,7 @@ export function mountEditor(host, api) {
   function setZoom(value) { zoom = Math.max(.02, Math.min(32, value)); paint(); }
   svg.addEventListener('pointerdown', down); svg.addEventListener('pointermove', move); svg.addEventListener('pointerup', up);
   svg.addEventListener('pointercancel', event => { if (drag?.pointerId === event.pointerId) cancel(); }); svg.addEventListener('lostpointercapture', () => { if (drag) { cancel(); paint(); } }); host.addEventListener('wheel', wheel, { passive: false }); api.keyboardHost.addEventListener('keydown', key);
-  return { paint, cancel, setTouchEnabled(value) { cancel(); touchEnabled = value; },
+  return { paint, cancel, startTransform(kind) { cancel(); if (!transforms.start(kind, true)) api.status('Select an unlocked, visible area first.'); }, setTouchEnabled(value) { cancel(); touchEnabled = value; },
     redraw(id) { cancel(); redrawId = id; }, get hasDraft() { return transforms.active || binding.controller.active || bezier.isActive() || !!drag; }, setZoom, get zoom() { return zoom; }, setTool(value) { cancel(); tool = value; svg.style.cursor = value === 'pan' ? 'grab' : ['select', 'selection'].includes(value) ? 'default' : 'crosshair'; paint(); },
     fit() { const s = api.state(); setZoom(Math.min((host.clientWidth - 20) / s.width, (host.clientHeight - 20) / s.height)); },
     dispose() { cancel(); transforms.dispose(); binding.dispose(); host.removeEventListener('wheel', wheel); api.keyboardHost.removeEventListener('keydown', key); svg.remove(); }

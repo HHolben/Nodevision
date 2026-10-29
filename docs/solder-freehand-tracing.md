@@ -94,3 +94,37 @@ suspend measurement, and commit through the session's existing undo/redo path.
 Shortcuts ignore text inputs, modified key combinations, active drawing gestures,
 and hidden/locked regions. Browser regressions cover pointer and typed transforms,
 zoom, measurement, cancellation, click confirmation, lock protection and history.
+
+## Tablet toolbar
+
+Select an area, then tap **Move** or **Scale** in the toolbar. Drag on the image
+with touch, a pen, or a mouse and release to commit. For scaling, start away from
+the area's center and drag outward or inward. **Cancel Transform** restores the
+original without requiring Escape. Pointer cancellation also restores geometry.
+Only the initiating pointer controls the gesture; pointer capture retains the
+gesture outside the SVG. Explicit tablet transforms work independently of the
+Touch drawing checkbox, which controls creating/editing strokes.
+
+The toolbar **Delete** button and existing **Delete region** control share the
+same undoable action and locked-layer protection. S/G keyboard behavior remains
+available. Verification: 60 browser checks and all four targeted unit test files
+pass, including touch movement/scaling, interrupted gestures, toolbar cancellation,
+deletion and undo.
+
+## Rotation
+
+**R** starts rotation around the selected boundary's bounding-box center. Type
+an angle in radians, or press **R**, then **D**, to enter degrees (for example,
+`R D 90 Enter`). With an empty angle buffer, R returns to radians. Minus toggles
+the typed angle's direction; plus selects positive rotation. Enter/click confirms,
+Escape cancels, and Backspace edits numeric input.
+
+The toolbar **Rotate** button starts free pen/touch/mouse rotation. Start a drag
+away from the center, move around it, and release to commit. Anchors and Bezier
+handles rotate together in image coordinates; measurements update after commit.
+Cancel Transform, pointer cancellation, and undo/redo use the existing transform
+workflow. This does not implement the SVG editor's separate rotation-origin tool.
+
+Verification: 68 browser checks pass, including radians, degrees, negative angles,
+undo/redo, Escape, free pen rotation with foreign touch input, and interrupted pen
+gestures. All four targeted unit test files and `git diff --check` also pass.
