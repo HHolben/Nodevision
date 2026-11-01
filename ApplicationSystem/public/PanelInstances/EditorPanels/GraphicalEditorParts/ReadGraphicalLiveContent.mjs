@@ -9,6 +9,7 @@ import { clearEditorContext } from "../../../EditorAttentionState.mjs";
 
 // Read Graphical Live Content operations.
 export function readGraphicalLiveContent(filePath, editorDiv) {
+  if(resolveExtension(filePath)==='nvmap')return undefined;
   if (editorDiv?.__nvHtmlEditorContext) return editorDiv.__nvHtmlEditorContext.getHTML();
   const ext = resolveExtension(filePath);
   const markdownPreferred = new Set(["md", "markdown", "txt", "tex", "latex", "scad", "usd", "usda", "mtl", "obj", "ics", "php", "json", "xml"]);
@@ -40,6 +41,7 @@ export function graphicalLiveMutationRecordsContainDocumentChange(records = [], 
 }
 
 export function registerGraphicalEditorLiveProvider(filePath, editorDiv) {
+  if(resolveExtension(filePath)==='nvmap')return null; // Binary map previews use tiled source overlays, never unrelated HTML buffers.
   if (editorDiv?.__nvHtmlEditorContext) return registerHtmlLiveContent(editorDiv, editorDiv.__nvHtmlEditorContext);
   if (typeof GraphicalEditorModuleState.currentGraphicalLiveCleanup === "function") {
     GraphicalEditorModuleState.currentGraphicalLiveCleanup();

@@ -44,6 +44,7 @@ export function connectHtmlImageInteraction(scope) {
     }
   });
   scope.imageToolsState.toggleSelectedImageInlineEditor = createToggleSelectedImageInlineEditorHandler({
+    get wysiwyg() { return scope.wysiwyg; },
     get imageToolsState() {
       return scope.imageToolsState;
     },

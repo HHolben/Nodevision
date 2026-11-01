@@ -12,7 +12,7 @@ export function geographicVegetation(base,def) {
   const environmentBase={...base,getEnvironment(x,z){
     const biome=AEGEAN_BIOMES.find(b=>b.id===base.getBiome(x,z)),height=base.getTerrainHeight(x,z);
     return {height,waterTop:0,sea:-10000,weights:height&&biome?[{biome,weight:1}]:[],slope:base.getSlope(x,z),moisture:biome?(biome.moisture[0]+biome.moisture[1])/2:.5,
-      temperature:18,elevation:sampleRaster(def.geographic.elevation,...geographicPoint(def.geographic,x,z))??0,soil:'schist',exposure:.3,stream:false};
+      temperature:18,elevation:base.getSurfaceElevation?.(x,z)??(def.geographic?sampleRaster(def.geographic.elevation,...geographicPoint(def.geographic,x,z)):0)??0,soil:'schist',exposure:.3,stream:false};
   }};
   const mediterranean=createAegeanPlacement(environmentBase,{...def,environment:{season:'summer',seasonMode:'manual',vegetationDensity:.35}});
   return [forest,mediterranean];

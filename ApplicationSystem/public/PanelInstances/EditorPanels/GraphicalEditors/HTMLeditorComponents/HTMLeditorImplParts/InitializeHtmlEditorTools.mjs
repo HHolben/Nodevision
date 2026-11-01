@@ -1,8 +1,11 @@
-import { installHtmlResourceDrops } from '/ResourceDrop/EditorResourceDrops.mjs';
-import { installLinkedResourcePresentation } from '/ResourceDrop/LinkedResourcePresentation.mjs';
 // Nodevision/ApplicationSystem/public/PanelInstances/EditorPanels/GraphicalEditors/HTMLeditorComponents/HTMLeditorImplParts/InitializeHtmlEditorTools.mjs
 // This module implements initialize Html Editor Tools behavior for the HTMLeditorImpl feature. Its dependencies and instance state are supplied explicitly so other editor instances remain independent.
+import {installEducationalHtml} from '/Education/HtmlController.mjs';
+import { installHtmlResourceDrops } from '/ResourceDrop/EditorResourceDrops.mjs';
+import { installLinkedResourcePresentation } from '/ResourceDrop/LinkedResourcePresentation.mjs';
 
+import { installHtmlFootnotes } from "/References/HtmlFootnotes.mjs";
+import { setStatus } from "/StatusBar.mjs";
 import { installIframeEditing } from '/Media/IframeEditing.mjs';
 import { handleTableArrowKeyNavigation } from "/ToolbarCallbacks/insert/tableTools.mjs";
 import { createCleanupHTMLTableToolbarHandler, createHtmlNativeInputHandler, createHtmlSaveSerialization } from "./CreateCleanupHTMLTableToolbarHandler.mjs";
@@ -150,5 +153,14 @@ export async function initializeHtmlEditorTools(scope) {
       htmlTextSelectionActive: false
     });
   };
+  const references = installHtmlFootnotes(scope.htmlSession.wysiwyg, {
+    getRange: () => getCurrentSelectionRangeInEditor(scope.htmlSession.wysiwyg) || getRememberedSelectionRange(scope.htmlSession.wysiwyg),
+    report: message => setStatus("Footnotes", message),
+    markDirty: () => markHtmlEditorDirty(scope.htmlSession.wysiwyg, scope.filePath)
+  });
+  const education=installEducationalHtml(scope.htmlSession.wysiwyg,{filePath:scope.filePath,head:scope.htmlSession.headClone,
+    getRange:()=>getCurrentSelectionRangeInEditor(scope.htmlSession.wysiwyg)||getRememberedSelectionRange(scope.htmlSession.wysiwyg),
+    run:(label,action)=>scope.htmlSession.wysiwyg.__nvHtmlTransactions.run(label,action),report:message=>setStatus('Educational Associations',message)});
+  scope.container.__cleanupHTMLReferences = () => {references.dispose();education.dispose();};
   scope.container.__cleanupHTMLAttention = scope.htmlSession.htmlAttentionCleanup;
 }

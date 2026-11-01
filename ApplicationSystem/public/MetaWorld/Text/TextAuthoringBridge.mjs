@@ -24,6 +24,7 @@ export function installTextAuthoring(bridge,{THREE,scene,objects,layerEntries,wo
   const entry=entryFor(id),runtime=entry?.object3d?.userData?.textRuntime;
   if(id&&!runtime)throw Error('Text no longer exists.');
   const def=normalizeText({...runtime?.serialize(),...patch,id:id||crypto.randomUUID()});
+  if(entry?.def?.educationalLinks)def.educationalLinks=structuredClone(entry.def.educationalLinks);
   let ancestor=def.parentId;const visited=new Set([def.id]);
   while(ancestor){if(visited.has(ancestor))throw Error('Text parenting would create a cycle.');visited.add(ancestor);ancestor=bridge.getTextDefinition(ancestor)?.parentId;}
   bridge.recordHistory();

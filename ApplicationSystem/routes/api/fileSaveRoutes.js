@@ -1,5 +1,6 @@
 // Nodevision/ApplicationSystem/routes/api/fileSaveRoutes.js
 // This file defines notebook file save and filesystem manipulation routes so that the Nodevision client can create, update, move, and delete notebook content.
+import {mapPath,mapRevision,saveTerrainMap} from './fileSaveRoutes/terrainMapSave.mjs';
 
 import { syncAttributionFileOperation } from '../../AssetDownloads/AttributionFileOperations.mjs';
 import express from 'express';
@@ -37,6 +38,9 @@ export default function createFileSaveRouter(ctx = BASE_CONTEXT) {
       return { changed: false, warning: err?.message || "Directory appearance metadata was not remapped." };
     }
   }
+
+  router.get('/terrain-map/revision',async(req,res)=>{try{res.json({revision:await mapRevision(await mapPath(NOTEBOOK_ROOT,req.query.path))});}catch(e){res.status(400).json({error:e.message});}});
+  router.post('/terrain-map/save',async(req,res)=>{if(await rejectIfLanWriteDenied(req,res,ctx))return;try{res.json(await saveTerrainMap({root:NOTEBOOK_ROOT,payload:req.body,beforeReplace:filePath=>backupNotebookFileBeforeSave({notebookRoot:NOTEBOOK_ROOT,userSettingsRoot:USER_SETTINGS_ROOT,filePath,relativePath:req.body.path})}));}catch(e){res.status(409).json({error:e.message});}});
 
   router.post('/save', async (req, res) => {
     if (await rejectIfLanWriteDenied(req, res, ctx)) return;

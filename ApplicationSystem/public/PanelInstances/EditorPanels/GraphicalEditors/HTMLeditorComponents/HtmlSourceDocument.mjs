@@ -27,6 +27,8 @@ export function createHtmlSourceDocument({ head, body, hidden }) {
     if (node.nodeType !== 1) return;
     // Templates are already inert, including their scripts and nested templates.
     if (node.localName === 'template') return;
+    // Educational JSON-LD is inert document data and participates in ordinary body history.
+    if(node.matches('script[type="application/ld+json"][data-nv-education]'))return;
     if (['script', 'base', 'meta'].includes(node.localName)) {
       const id = prefix + nextId++;
       retained.set(id, node.cloneNode(true));

@@ -5,6 +5,7 @@ import { installHtmlHistoryRouting } from './HtmlHistoryRouting.mjs';
 
 export function createHtmlDomHistory(root, options = {}) {
   const measurements = {};
+  const beforeCommit = new Set();
   let measuring = false;
   function measure(name, action) {
     if (!measuring) return action();
@@ -44,6 +45,10 @@ export function createHtmlDomHistory(root, options = {}) {
   }
   function commit(changes, before, after, type, merge = false) {
     if (!changes.length) return false;
+    if (beforeCommit.size) {
+      for (const reconcile of beforeCommit) reconcile(changes);
+      changes = [...changes, ...patches()]; after = bookmark();
+    }
     redo.length = 0;
     if (!merge || run?.type !== type) flush();
     if (!run) run = { patches: [], before, after, type };
@@ -114,6 +119,7 @@ export function createHtmlDomHistory(root, options = {}) {
   const events = [['beforeinput', before], ['input', input], ['compositionstart', start], ['compositionend', end], ['keydown', navigation], ['pointerdown', boundary], ['focusout', boundary]].map(([name, fn]) => [name, event => measure(name, () => fn(event))]);
   const history = {
     owned: true, flush,
+    subscribeBeforeCommit(callback) { beforeCommit.add(callback); return () => beforeCommit.delete(callback); },
     captureCommand(action) {
       if (composing) return false;
       if (transaction) return action();
@@ -142,7 +148,7 @@ export function createHtmlDomHistory(root, options = {}) {
     inspect() { return { undoEntries: undo.length + Number(Boolean(run)), redoEntries: redo.length, maxEntries, maxBytes,
       retainedBytes: [...undo, ...redo, ...(run ? [run] : [])].reduce((sum, entry) => sum + patchBytes(entry.patches), 0) }; },
     clear,
-    dispose() { if (disposed) return; delete root.__nvHtmlDiagnostics; disposed = true; clear(); observer.disconnect(); removeRouting(); events.forEach(([name, fn]) => root.removeEventListener(name, fn, true)); root.ownerDocument.removeEventListener('selectionchange', selectionChanged); },
+    dispose() { if (disposed) return; delete root.__nvHtmlDiagnostics; disposed = true; beforeCommit.clear(); clear(); observer.disconnect(); removeRouting(); events.forEach(([name, fn]) => root.removeEventListener(name, fn, true)); root.ownerDocument.removeEventListener('selectionchange', selectionChanged); },
   };
   const removeRouting = installHtmlHistoryRouting(root, history);
   events.forEach(([name, fn]) => root.addEventListener(name, fn, true));

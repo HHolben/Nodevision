@@ -1,5 +1,6 @@
 // Nodevision/ApplicationSystem/public/MetaWorld/ProceduralVoxelWorld/VoxelWorldDefinition.mjs
 // This module validates trusted declarative voxel terrain settings before any runtime allocation.
+import {validateMapSource} from '../TerrainMaps/Source.mjs';
 
 import { terrainRepresentation } from '../TerrainRepresentation/Representation.mjs';
 import { validateGeographic } from '../Geographic/Definition.mjs';
@@ -31,6 +32,7 @@ export function validateVoxelWorld(def) {
   if (def.voxelPattern || def.isVoxel || def.voxelPlacer) fail("authored voxel metadata is unsupported");
   terrainRepresentation(def.representation);
   validateGeographic(def);
+  validateMapSource(def);
   validateAuthoringTerrain(def);
   validateProtectedRegions(def);
   validateVegetationRevisions(def);

@@ -1,5 +1,7 @@
 // Nodevision/ApplicationSystem/public/MetaWorld/ProceduralVoxelWorld/VoxelWorldDialog.mjs
 // This dialog collects a compact procedural terrain definition using the existing floating-panel component. Validation and cancellation happen before scene mutation, and the dialog closes when its owning world bridge changes.
+import {openMap,httpRanges} from '../TerrainMaps/Reader.mjs';
+import {mapReference} from '../TerrainMaps/Source.mjs';
 import { mountGeographicPanel } from '../Geographic/ImportPanel.mjs';
 import { createFloatingInventoryPanel } from '../../PanelInstances/InfoPanels/PlayerInventory.mjs';
 import { getActiveMetaWorldLayerBridge, META_WORLD_LAYER_EVENTS } from '../MetaWorldLayerState.mjs';
@@ -39,12 +41,20 @@ export function openVoxelWorldDialog(bridge = getActiveMetaWorldLayerBridge(), o
     for(const [value,text] of options)input.add(new Option(text,value));
     input.value=values[key];fields[key]=input;row.append(input);form.append(row);return input;
   }
-  const source=choice('terrainSource','Terrain source',[['procedural','Procedural'],['geographic','Geographic']]);
+  const source=choice('terrainSource','Terrain source',[['procedural','Procedural'],['map','Custom Map'],['hybrid','Hybrid'],['geographic','Geographic']]);
+  const mapFields=document.createElement('fieldset');mapFields.dataset.terrainMapSettings='';form.append(mapFields);
+  field('mapPath','Terrain map (.nvmap, relative to world)','text',mapFields);
+  field('detailStrength','Hybrid elevation detail (m)','number',mapFields).min=0;field('detailScale','Hybrid detail scale (m)','number',mapFields).min=.001;
+  const outside=choice('mapOutside','Outside map',[['empty','Empty (bounded)'],['procedural','Procedural fallback']]);mapFields.append(outside.parentElement);
+  const browse=document.createElement('button');browse.type='button';browse.textContent='Browse Notebook';mapFields.append(browse);
+  browse.onclick=async()=>{const host=document.createElement('div');mapFields.append(host);const {mountImageMapNotebookPicker}=await import('../../PanelInstances/Common/ImageMap/ImageMapNotebookPicker.mjs');if(!host.isConnected)return;const picker=mountImageMapNotebookPicker(host,{onDone:({path,isDirectory})=>{if(isDirectory||!path.toLowerCase().endsWith('.nvmap'))return;const owner=bridge.sourcePath.replace(/^\/?Notebook\//,'').split('/').slice(0,-1),target=path.replace(/^\/?Notebook\//,'').split('/');while(owner.length&&owner[0]===target[0]){owner.shift();target.shift();}fields.mapPath.value='../'.repeat(owner.length)+target.join('/');picker.destroy();host.remove();},onCancel:()=>{picker.destroy();host.remove();}});};
+  const mapNote=document.createElement('p');mapNote.textContent='Map heights and origin use meters local to this terrain object. Heights are clipped to the selected vertical bounds. Biomes and surface materials come from the map; seeded soil/rock remains below. Map terrain does not synthesize waterways or landform caves. Paths and constructions remain independent.';mapFields.append(mapNote);
   geographicPanel=mountGeographicPanel(form,values);
   const updateSource=()=>{
-    const geographic=source.value==='geographic';geographicPanel.host.hidden=!geographic;geographicPanel.host.disabled=!geographic;
+    const geographic=source.value==='geographic',mapped=['map','hybrid'].includes(source.value);mapFields.hidden=!mapped;mapFields.disabled=!mapped;for(const key of ['detailStrength','detailScale']){fields[key].parentElement.hidden=source.value!=='hybrid';fields[key].disabled=source.value!=='hybrid';}geographicPanel.host.hidden=!geographic;geographicPanel.host.disabled=!geographic;
     for(const key of ['sizeX','sizeZ','maxHeight','minHeight','startingBiome','water','caves'])if(fields[key]){fields[key].parentElement.hidden=geographic;fields[key].disabled=geographic;}
-    biomeNote.hidden=geographic;preset.dispatchEvent(new Event('change'));
+    if(mapped){fields.startingBiome.value='auto';for(const key of ['startingBiome','water','caves'])if(fields[key]){fields[key].disabled=true;fields[key].parentElement.hidden=true;}}
+    biomeNote.hidden=geographic||mapped;preset.dispatchEvent(new Event('change'));
   };
   source.onchange=updateSource;
   const preset=choice('startingBiome','Starting biome',STARTING_BIOMES);
@@ -59,7 +69,7 @@ export function openVoxelWorldDialog(bridge = getActiveMetaWorldLayerBridge(), o
   field('seaLevel','Sea level (m)','number',aegean);
   const density=field('vegetationDensity','Vegetation density','number',aegean);density.min=0;density.max=1;density.step='.05';
   field('uplandOak','Include upland oak woodland','checkbox',aegean);field('mountains','Include rocky mountains','checkbox',aegean);
-  const updatePreset=()=>{aegean.hidden=source.value==='geographic'||preset.value!=='aegean';aegean.disabled=aegean.hidden;};preset.onchange=updatePreset;updatePreset();
+  const updatePreset=()=>{aegean.hidden=source.value!=='procedural'||preset.value!=='aegean';aegean.disabled=aegean.hidden;};preset.onchange=updatePreset;updatePreset();
   const advanced=document.createElement('details'),summary=document.createElement('summary');summary.textContent='Advanced';advanced.append(summary);form.append(advanced);
   const radius=field('loadRadius','Render distance (chunks)','number',advanced);radius.min=1;radius.max=8;radius.step=1;
   field('vegetation','Trees and vegetation','checkbox',advanced);field('water','Generate water','checkbox',advanced);field('caves','Generate caves','checkbox',advanced);
@@ -69,13 +79,14 @@ export function openVoxelWorldDialog(bridge = getActiveMetaWorldLayerBridge(), o
   const actions=document.createElement('div'),generate=document.createElement('button'),cancel=document.createElement('button');
   generate.type='submit';generate.textContent=objectId?'Regenerate':options.onConfigure?'Apply Settings':'Generate';cancel.type='button';cancel.textContent='Cancel';cancel.onclick=close;actions.append(generate,cancel);form.append(actions);
   form.addEventListener('keydown',event=>{event.stopPropagation();if(event.key==='Escape'){event.preventDefault();close();}});
-  form.onsubmit=event=>{
+  form.onsubmit=async event=>{
     event.preventDefault();if(generate.disabled||closed)return;
     try {
       if(getActiveMetaWorldLayerBridge()!==bridge)throw Error('The active world changed. Reopen Insert → Voxel World.');
       const input=Object.fromEntries(Object.entries(fields).map(([key,field])=>[key,field.type==='checkbox'?field.checked:field.value]));
       if(input.terrainSource==='geographic')input.geographic=geographicPanel.get();
       const def=definitionFromVoxelForm(input,previous);generate.disabled=true;
+      if(['map','hybrid'].includes(def.terrainSource)){status.textContent='Validating terrain map…';const path=mapReference(bridge.sourcePath,def.terrainMap.path),map=await openMap(httpRanges('/Notebook/'+path.split('/').map(encodeURIComponent).join('/')));try{const o=map.manifest.origin;await map.prepare({minX:o[0],maxX:o[0],minZ:o[2],maxZ:o[2]});}finally{map.dispose();}if(closed||getActiveMetaWorldLayerBridge()!==bridge)return;}
       const result=options.onConfigure ? (options.onConfigure(input,def), true) : objectId?bridge.regenerateVoxelWorld(objectId,def):bridge.addVoxelWorld(def);
       if(!result)throw Error('This world is not currently editable.');
       close();

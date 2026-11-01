@@ -41,7 +41,11 @@ export async function createNewFile() {
     const { filename, useTemplate } = documentRequest;
     let result = null;
 
-    if (!useTemplate) {
+    if (/\.nvmap$/i.test(filename) && !useTemplate) {
+      const {createMapFile}=await import('/MetaWorld/TerrainMaps/Editor/Create.mjs');
+      result=await createMapFile(destinationDirectory?`${destinationDirectory}/${filename}`:filename);
+      if(!result)return;
+    } else if (!useTemplate) {
       result = await createBlankFile(destinationDirectory, filename);
     } else {
       const selectedTemplate = await showTemplatePanel({ filename });

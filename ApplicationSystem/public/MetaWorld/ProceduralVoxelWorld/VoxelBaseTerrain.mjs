@@ -1,5 +1,7 @@
 // Nodevision/ApplicationSystem/public/MetaWorld/ProceduralVoxelWorld/VoxelBaseTerrain.mjs
 // This module produces deterministic finite heightfield terrain without depending on rendering or scene state.
+import {usesMap,proceduralSource} from '../TerrainMaps/Source.mjs';
+import {biomeSurface} from '../Geographic/Biomes.mjs';
 
 import { createGeographicTerrain } from '../Geographic/Terrain.mjs';
 import { createProtectedField } from '../Aegean/ProtectedRegions.mjs';
@@ -17,9 +19,12 @@ import { createWaterways } from './VoxelWaterways.mjs';
 import { createLandforms } from './VoxelLandforms.mjs';
 import { cavernColumn, sampleCavern } from './VoxelCaverns.mjs';
 const materialIndices=new Map(VOXEL_MATERIAL_IDS.map((id,index)=>[id,index]));
-export function createBaseTerrain(def) {
+export function createBaseTerrain(def,terrainSource=null) {
   if(def.terrainSource==='geographic')return createGeographicTerrain(def);
-  const dimensions = voxelDimensions(def.size), seed = def.generator.seed;
+  const dimensions = voxelDimensions(def.size), seed = def.generator.seed, mapped=usesMap(def);
+  if(mapped&&!terrainSource)throw Error('Map terrain requires a prepared terrain source');
+  const mapSamples=new Array(4096);const mapSample=(x,z)=>{const key=(x&127)+((z&31)<<7),cached=mapSamples[key];if(cached?.x===x&&cached.z===z)return cached.value;const value=terrainSource.sample((x+.5)*.25,(z+.5)*.25);if(!value.pending)mapSamples[key]={x,z,value};return value;};
+  const mapHeight=s=>s.covered?Math.max(0,Math.min(dimensions[1],Math.floor((s.elevation-(def.heightLimits?.min||0))/.25+1e-9))):0;
   const startingBiomeAt = createStartingBiomeSampler(def, dimensions);
   const coast=def.environment?.id==='aegean'?createProtectedField(def,dimensions,createCoastalField(def,dimensions)):null;
   const heights=new Array(4096);
@@ -32,8 +37,8 @@ export function createBaseTerrain(def) {
   }
   const landforms=createLandforms(rawHeight,dimensions,seed);
   const waterways=createWaterways(rawHeight,dimensions,seed);
-  function getTerrainHeight(x,z){if(coast)return coast.sample(x,z).height;const raw=rawHeight(x,z);return raw?Math.max(1,Math.min(landforms.sample(x,z,raw).height,waterways.sample(x,z)?.bed??raw)):0;}
-  function getWaterTop(x,z){if(coast)return coast.sample(x,z).waterTop;if(def.generation?.water === false)return 0;return Math.min(dimensions[1],Math.max(P.waterLevelVoxelY+1,waterways.sample(x,z)?.top??0));}
+  function getTerrainHeight(x,z){if(mapped){if(x<0||z<0||x>=dimensions[0]||z>=dimensions[2])return 0;const s=mapSample(x,z);if(s.covered||s.pending||def.terrainMap.outside!=='procedural')return mapHeight(s);}if(coast)return coast.sample(x,z).height;const raw=rawHeight(x,z);return raw?Math.max(1,Math.min(landforms.sample(x,z,raw).height,waterways.sample(x,z)?.bed??raw)):0;}
+  function getWaterTop(x,z){if(mapped&&(mapSample(x,z).covered||def.terrainMap.outside!=='procedural'))return 0;if(coast)return coast.sample(x,z).waterTop;if(def.generation?.water === false)return 0;return Math.min(dimensions[1],Math.max(P.waterLevelVoxelY+1,waterways.sample(x,z)?.top??0));}
   function getSlope(x,z){
     const sample=(dx,dz)=>getTerrainHeight(Math.max(0,Math.min(dimensions[0]-1,x+dx)),Math.max(0,Math.min(dimensions[2]-1,z+dz)));
     const hs=[sample(-2,0),sample(2,0),sample(0,-2),sample(0,2)];return (Math.max(...hs)-Math.min(...hs))/4;
@@ -42,6 +47,11 @@ export function createBaseTerrain(def) {
   function materialColumn(x, z) {
     const key=(x&127)+((z&31)<<7),cached=columns[key];
     if(cached?.x===x&&cached.z===z)return cached;
+    if(mapped&&(x<0||z<0||x>=dimensions[0]||z>=dimensions[2]))return {height:0,surface:0,waterTop:0,cavern:null};
+    if(mapped){const s=mapSample(x,z);if(s.covered||s.pending||def.terrainMap.outside!=='procedural'){
+      const field=noise(x/P.limestoneScale,z/P.limestoneScale,seed^P.limestoneSeedSalt),column={x,z,height:mapHeight(s),waterTop:0,limestone:field>P.limestoneThreshold,stratum:Math.floor(P.stratumBase+P.stratumAmplitude*field),surface:materialIndices.get(s.material||biomeSurface(s.biome)),cavern:null};
+      if(!s.pending)columns[key]=column;return column;
+    }}
     if(coast){
       const e=coast.sample(x,z);
       const column={x,z,height:e.height,waterTop:e.waterTop,surface:materialIndices.get(e.surface),rock:materialIndices.get(e.rock),water:materialIndices.get(e.water),cavern:e.cavern};
@@ -92,5 +102,5 @@ export function createBaseTerrain(def) {
     for(let y=Math.min(top,Math.floor(maxY));y>0;y--)if(solid(y-1)&&!solid(y))return y;
     return 0;
   }
-  return { getEnvironment:(x,z)=>coast?.sample(x,z), getCavern:(x,z)=>materialColumn(x,z).cavern, getLandform:(x,z)=>landforms.sample(x,z,rawHeight(x,z)), getWaterTop, getWaterway:(x,z)=>waterways.sample(x,z), getSlope, getSolidHeight, getBiome:(x,z)=>coast?coast.sample(x,z).biome?.id:startingBiomeAt(x,z).id, clearColumns:()=>{columns.fill(undefined);heights.fill(undefined);coast?.clear();waterways.clear();landforms.clear();}, dimensions, maxSolidHeight: coast?dimensions[1]:maximumTerrainHeight(dimensions[1]), getTerrainHeight, getVoxel, getVoxelMaterialId, generateChunk };
+  return { terrainSampler:terrainSource||proceduralSource((x,z)=>({elevation:(def.heightLimits?.min||0)+getTerrainHeight(Math.floor(x/.25),Math.floor(z/.25))*.25,biome:coast?coast.sample(Math.floor(x/.25),Math.floor(z/.25)).biome?.id:startingBiomeAt(Math.floor(x/.25),Math.floor(z/.25)).id}),{minX:0,minZ:0,maxX:def.size[0],maxZ:def.size[2]}),getSurfaceElevation:(x,z)=>mapped?mapSample(x,z).elevation:getTerrainHeight(x,z)*.25, getEnvironment:(x,z)=>coast?.sample(x,z), getCavern:(x,z)=>materialColumn(x,z).cavern, getLandform:(x,z)=>mapped?null:landforms.sample(x,z,rawHeight(x,z)), getWaterTop, getWaterway:(x,z)=>waterways.sample(x,z), getSlope, getSolidHeight, getBiome:(x,z)=>mapped&&mapSample(x,z).covered?mapSample(x,z).biome:coast?coast.sample(x,z).biome?.id:startingBiomeAt(x,z).id, clearColumns:()=>{columns.fill(undefined);heights.fill(undefined);mapSamples.fill(undefined);coast?.clear();waterways.clear();landforms.clear();}, dimensions, maxSolidHeight: mapped||coast?dimensions[1]:maximumTerrainHeight(dimensions[1]), getTerrainHeight, getVoxel, getVoxelMaterialId, generateChunk };
 }

@@ -1,6 +1,9 @@
 // Nodevision/ApplicationSystem/public/PanelInstances/EditorPanels/GraphicalEditors/HTMLeditorComponents/HTMLeditorImplParts/CreateCloseInlineImageEditorHandler.mjs
 // This module implements create Close Inline Image Editor Handler behavior for the HTMLeditorImpl feature. Its dependencies and instance state are supplied explicitly so other editor instances remain independent.
 
+import { isImageTextElement, applyImageTextPresentation } from "../HtmlImageText.mjs";
+import { markHtmlEditorDirty } from "./EnsureHTMLLayoutStyles.mjs";
+import { markSelectedImageText, updateSelectedImageTextState, buildImageTextContextFromElement } from "./UpdateSelectedImageState.mjs";
 import { rebuildLayoutDividersForContainer } from "/panels/workspace.mjs";
 import { inferExtensionFromPath, encodeNotebookUrl, sourceFromNotebookPath } from "./IsVirtualEditorPath.mjs";
 import { RASTER_IMAGE_EXTENSIONS, SVG_IMAGE_EXTENSIONS } from "./EnsureHTMLLayoutStyles.mjs";
@@ -23,7 +26,7 @@ export function createCloseInlineImageEditorHandler(owner) {
     if (!session) return;
     owner.imageToolsState.inlineEditorSession = null;
     const dismissInlineSvgLayersPanel = () => {
-      const htmlEditorCell = container?.closest?.(".panel-cell");
+      const htmlEditorCell = owner.wysiwyg?.closest?.(".panel-cell");
       const splitContainer = htmlEditorCell?.parentElement;
       if (!htmlEditorCell || !splitContainer) return false;
       if (!splitContainer.classList?.contains?.("panel-row")) return false;
@@ -68,24 +71,30 @@ export function createCloseInlineImageEditorHandler(owner) {
         console.warn("Inline image editor cleanup failed:", err);
       }
     }
-    if (session.targetImage) {
+    // Reattach before replacing the source so the DOM journal observes geometry changes.
+    if (session.frame?.isConnected && session.targetImage) session.frame.replaceWith(session.targetImage);
+    if (applyChanges && session.targetImage) {
       try {
         if (session.temporaryPath) {
           const inlineUpdated = await sourceInputToInlineDataUrl(encodeNotebookUrl(session.temporaryPath), owner.editorFilePath);
-          session.targetImage.setAttribute("src", inlineUpdated);
+          if (isImageTextElement(session.targetImage)) applyImageTextPresentation(session.targetImage, {src:inlineUpdated});
+          else session.targetImage.setAttribute("src", inlineUpdated);
           session.targetImage.removeAttribute("data-nv-linked-path");
         } else {
           const preservedSrc = String(session.originalSrcAttribute || "").trim();
           const fallbackSrc = sourceFromNotebookPath(session.editorPath, owner.editorFilePath);
-          session.targetImage.setAttribute("src", preservedSrc || fallbackSrc);
+          if (isImageTextElement(session.targetImage)) applyImageTextPresentation(session.targetImage, {src:preservedSrc || fallbackSrc});
+          else session.targetImage.setAttribute("src", preservedSrc || fallbackSrc);
           session.targetImage.setAttribute("data-nv-linked-path", normalizeNotebookPathInput(session.editorPath));
         }
       } catch (err) {
         console.warn("Failed to sync edited image back into document:", err);
       }
     }
-    if (session.frame?.isConnected && session.targetImage) {
-      session.frame.replaceWith(session.targetImage);
+    if (!applyChanges) owner.wysiwyg.__nvProgrammaticHistory?.cancelTransaction();
+    if (applyChanges && session.beforeHtml != null) {
+      owner.wysiwyg.__nvProgrammaticHistory?.record(session.beforeHtml);
+      markHtmlEditorDirty(owner.wysiwyg, owner.editorFilePath);
     }
     owner.imageToolsState.restoreGlobalEditorFileContext(session);
     owner.imageToolsState.restoreGlobalEditorRuntime(session);
@@ -99,7 +108,10 @@ export function createCloseInlineImageEditorHandler(owner) {
       htmlInlineImageEditorMode: null
     });
     dismissInlineSvgLayersPanel();
-    if (session.targetImage?.isConnected) {
+    if (session.targetImage?.isConnected && isImageTextElement(session.targetImage)) {
+      markSelectedImageText(owner.wysiwyg, session.targetImage);
+      updateSelectedImageTextState(buildImageTextContextFromElement(session.targetImage, owner.editorFilePath), {clearHtmlImageSelection:true});
+    } else if (session.targetImage?.isConnected) {
       markSelectedImage(owner.wysiwyg, session.targetImage);
       updateSelectedImageState(buildImageContextFromElement(session.targetImage, owner.editorFilePath));
       owner.imageToolsState.setSelectedImageForHandles(session.targetImage);

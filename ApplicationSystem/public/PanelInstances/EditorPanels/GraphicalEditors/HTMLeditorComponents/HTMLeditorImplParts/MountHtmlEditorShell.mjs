@@ -11,6 +11,8 @@ import { installHtmlEditorZoom } from "../HtmlEditorZoom.mjs";
 // Mount Html Editor Shell operations.
 export function mountHtmlEditorShell(scope) {
   if (!scope.container) throw new Error("Container required");
+  scope.container.__cleanupHTMLReferences?.();
+  scope.container.__cleanupHTMLReferences = null;
   if (typeof scope.container.__cleanupHTMLHotkeys === "function") {
     scope.container.__cleanupHTMLHotkeys();
     scope.container.__cleanupHTMLHotkeys = null;

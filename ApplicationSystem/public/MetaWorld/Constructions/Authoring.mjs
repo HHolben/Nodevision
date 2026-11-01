@@ -38,9 +38,12 @@ export function installConstructionAuthoring(bridge,{THREE,scene,objects,collide
   if(runtime){const current=runtime.serialize(),relink=input.constructionFile&&input.constructionFile!==current.constructionFile;
    source={...current,...Object.fromEntries(['constructionFile','active','visible'].filter(k=>k in input).map(k=>[k,input[k]])),overrides:relink?undefined:{...current.overrides,...Object.fromEntries(['name','position','terrainVolumes','geometry','gridOrigin','metadata'].filter(k=>k in input).map(k=>[k,input[k]]))}};
   }else {if(all().length>=256)throw Error('At most 256 construction instances are supported');source={id:'construction-'+crypto.randomUUID(),type:'construction',constructionFile:input.constructionFile,active:input.active!==false,visible:input.visible!==false};}
+  if(old?.def?.educationalLinks)source.educationalLinks=structuredClone(old.def.educationalLinks);
   const object=createConstruction(THREE,source,filePath,colliders),candidate=object.userData.constructionRuntime;
+  if(source.educationalLinks)object.userData.educationalLinks=structuredClone(source.educationalLinks);
   try{await candidate.ready;if(!candidate.getDefinition())throw Error(candidate.warning);allowed();if(!alive()||(old&&(!layerEntries.includes(old)||old.object3d!==runtime.root)))throw Error('The originating world or construction changed');checkAlignment(candidate.getDefinition());
    if(source.active!==false)for(const r of all())if(r!==runtime&&r.source.active!==false&&r.bounds&&volumesOverlap(candidate.getDefinition(),r.getDefinition()))throw Error('Active terrain volumes cannot overlap');
+   if(old?.def?.educationalLinks){source.educationalLinks=structuredClone(old.def.educationalLinks);object.userData.educationalLinks=structuredClone(source.educationalLinks);}
    source.name=candidate.getDefinition().name;bridge.recordHistory();if(old){const index=worldData.objects.indexOf(old.def);worldData.objects[index]=source;runtime.dispose();objects.splice(objects.indexOf(old.object3d),1);old.def=source;old.object3d=object;}
    else{worldData.objects.push(source);layerEntries.push({id:source.id,def:source,object3d:object});}
    scene.add(object);objects.push(object);object.userData.onBreakTarget=()=>bridge.removeObjectLayer(source.id);sync();changed(source.id);select(source.id);return source;
@@ -61,7 +64,7 @@ export function installConstructionAuthoring(bridge,{THREE,scene,objects,collide
    const next=[...all().filter(r=>!targets.includes(r)),...candidates.map(c=>c.r)];for(const {r} of candidates)if(r.source.active!==false)for(const other of next)if(other!==r&&other.source.active!==false&&other.bounds&&volumesOverlap(r.getDefinition(),other.getDefinition()))throw Error('Refreshed construction terrain volumes overlap; resolve the conflict before publishing the instance');
    if(!alive()||targets.some(r=>!objects.includes(r.root)))throw Error('World changed during source refresh');
    if(uniqueSource)bridge.recordHistory();
-   for(const {old,source,object,r} of candidates){const entry=layerEntries.find(e=>e.object3d===old.root),index=worldData.objects.indexOf(entry.def);worldData.objects[index]=source;entry.def=source;entry.object3d=object;objects.splice(objects.indexOf(old.root),1,object);old.dispose();scene.add(object);r.attachColliders(colliders);object.userData.onBreakTarget=()=>bridge.removeObjectLayer(source.id);}
+   for(const {old,source,object,r} of candidates){const entry=layerEntries.find(e=>e.object3d===old.root),index=worldData.objects.indexOf(entry.def);if(entry.def.educationalLinks){source.educationalLinks=structuredClone(entry.def.educationalLinks);object.userData.educationalLinks=structuredClone(source.educationalLinks);}worldData.objects[index]=source;entry.def=source;entry.object3d=object;objects.splice(objects.indexOf(old.root),1,object);old.dispose();scene.add(object);r.attachColliders(colliders);object.userData.onBreakTarget=()=>bridge.removeObjectLayer(source.id);}
    sync();bridge.sessionVoxels?.sync();if(uniqueSource){changed(uniqueSource.id);select(uniqueSource.id);}else if(candidates.length)select(candidates[0].source.id);return candidates.map(c=>c.r);
   }catch(error){for(const c of candidates)if(!objects.includes(c.object))c.r.dispose();throw error;}
  };

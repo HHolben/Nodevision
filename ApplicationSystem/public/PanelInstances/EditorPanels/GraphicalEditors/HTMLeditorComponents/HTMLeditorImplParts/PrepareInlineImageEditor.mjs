@@ -7,13 +7,14 @@ import { updateToolbarState } from "../../../../../panels/createToolbar.mjs";
 
 // Prepare Inline Image Editor operations.
 export async function prepareInlineImageEditor(scope) {
-  scope.inlineImageState.context = window.NodevisionState?.activeHtmlImageContext;
+  scope.inlineImageState.context = window.NodevisionState?.activeHtmlImageTextContext || window.NodevisionState?.activeHtmlImageContext;
   if (!scope.inlineImageState.context?.element) {
     alert("Select an image first.");
     return {
       value: void 0
     };
   }
+  scope.inlineImageState.beforeHtml = scope.owner.wysiwyg.innerHTML;
   scope.inlineImageState.targetImage = scope.inlineImageState.context.element;
   if (scope.owner.imageToolsState.inlineEditorSession?.targetImage === scope.inlineImageState.targetImage) {
     await scope.owner.imageToolsState.closeInlineImageEditor({
@@ -92,6 +93,7 @@ export async function prepareInlineImageEditor(scope) {
   scope.inlineImageState.host.style.cssText = "position:absolute;inset:0;overflow:hidden;";
   scope.inlineImageState.body.appendChild(scope.inlineImageState.host);
   if (scope.inlineImageState.targetImage.parentNode) {
+    scope.owner.wysiwyg.__nvProgrammaticHistory?.beginTransaction();
     scope.owner.imageToolsState.setSelectedImageForHandles(null);
     scope.inlineImageState.targetImage.replaceWith(scope.inlineImageState.frame);
   } else {

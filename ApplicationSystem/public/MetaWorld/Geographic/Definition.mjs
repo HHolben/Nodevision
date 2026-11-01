@@ -43,7 +43,7 @@ export function insideCrop(g,p) {
   return !polygon||inPolygon(p,polygon);
 }
 export function validateGeographic(def) {
-  if(def.terrainSource!==undefined&&!['procedural','geographic'].includes(def.terrainSource))throw Error('Unsupported terrain source.');
+  if(def.terrainSource!==undefined&&!['procedural','geographic','map','hybrid'].includes(def.terrainSource))throw Error('Unsupported terrain source.');
   if(def.terrainSource!=='geographic')return;
   const g=def.geographic;
   if(g?.version===2)return validateRecipeV2(def);

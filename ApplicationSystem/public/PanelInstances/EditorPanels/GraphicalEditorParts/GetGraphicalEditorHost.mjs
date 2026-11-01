@@ -53,6 +53,7 @@ export function activateGraphicalEditorHost(host) {
     activeEditorFilePath: filePath || null,
     activeActionHandler: null
   });
+  editorDiv.querySelector('[data-nv-map-editor]')?.__nvMapApi?.activate();
   const svgContext = editorDiv.__nvSvgEditorContext || owningCell?.__nvSvgEditorContext || null;
   if (svgContext?.kind === "svg" && typeof svgContext.activate === "function" && svgContext.activate()) {
     // SVG files need their precise toolbar mode; the generic GraphicalEditing mode hides SVG Draw/Insert items.

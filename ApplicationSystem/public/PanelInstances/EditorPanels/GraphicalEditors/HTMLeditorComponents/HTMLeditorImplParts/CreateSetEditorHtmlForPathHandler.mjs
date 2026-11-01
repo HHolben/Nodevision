@@ -39,6 +39,7 @@ export function createSetEditorHtmlForPathHandler(owner) {
     updateSelectedCircuitState(null);
     owner.htmlSession.refreshCircuitReferences();
     owner.htmlSession.updateWordCount();
+    owner.htmlSession.wysiwyg.__nvReferences?.reconcile();
     owner.htmlSession.transactions.reset();
   };
 }
@@ -47,6 +48,8 @@ export function createHtmlEditorCleanup(owner) {
   return () => {
     owner.container.__nvHtmlZoomCleanup?.();
     owner.container.__nvHtmlZoomCleanup = null;
+    owner.container.__cleanupHTMLReferences?.();
+    owner.container.__cleanupHTMLReferences = null;
     owner.container.__cleanupHTMLHotkeys?.();
     owner.container.__cleanupHTMLCanvasDeletion?.();
     owner.container.__cleanupHTMLImageTools?.();

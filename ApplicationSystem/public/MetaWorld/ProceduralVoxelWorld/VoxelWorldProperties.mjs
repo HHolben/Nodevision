@@ -17,8 +17,9 @@ export function createVoxelWorldProperties(host, ordinaryControls) {
     const status=document.createElement('p');status.setAttribute('role','status');
     const note=document.createElement('p');note.textContent='Terrain cells are generated and read-only. Authored objects are separate and survive regeneration. Move this object with the editor’s translation controls; rotation and scaling are unsupported.';
     container.append(title,summary,edit,status,note);
+    if(runtime.map){const mapEdit=document.createElement('button');mapEdit.textContent='Edit Terrain Map';mapEdit.onclick=async()=>{try{const {openTerrainMap}=await import('../TerrainMaps/Editor/Open.mjs');await openTerrainMap(runtime.map.path);}catch(e){status.textContent=e.message;}};container.append(mapEdit);}
     appendRegenerationControls(container,def,getActiveMetaWorldLayerBridge());
-    const update=()=>{status.textContent=runtime.materialError ? 'Material loading failed: '+runtime.materialError.message : `${runtime.stats.loaded} chunks loaded; ${runtime.stats.queued} queued chunks/columns. Terrain streams as the camera moves.${def.environment?.id==='aegean'?` Season: ${runtime.seasonState.season} (${runtime.seasonState.source}).`:''}`;};
+    const update=()=>{status.textContent=runtime.mapError?'Terrain map: '+runtime.mapError.message:runtime.map?.warnings.length?runtime.map.warnings.join('; '):runtime.materialError ? 'Material loading failed: '+runtime.materialError.message : `${runtime.stats.loaded} chunks loaded; ${runtime.stats.queued} queued chunks/columns. Terrain streams as the camera moves.${def.environment?.id==='aegean'?` Season: ${runtime.seasonState.season} (${runtime.seasonState.source}).`:''}`;};
     update();timer=setInterval(update,500);return true;
   }
   const changed=()=>{if(target && !getActiveMetaWorldLayerBridge()?.listObjects().some(entry=>entry.id===target.userData.metaWorldLayerId))hide();};

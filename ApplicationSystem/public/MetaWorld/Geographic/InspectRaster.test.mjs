@@ -1,0 +1,10 @@
+// Nodevision/ApplicationSystem/public/MetaWorld/Geographic/InspectRaster.test.mjs
+// This test suite verifies metadata-only raster inspection and geographic source diagnostics. It checks that unsupported imagery, missing resources, and unbounded responses are handled explicitly.
+import test from 'node:test';import assert from 'node:assert/strict';
+import {fromArrayBuffer} from '../../vendor/geographic/reader.mjs';
+import {rasterFixture} from './Fixtures.mjs';
+import {inspectRaster} from './InspectRaster.mjs';
+import {openRangeRaster} from './RangeSource.mjs';
+test('inspection reads georeferencing and NoData without decoding any pixels',async()=>{const image=await(await fromArrayBuffer(rasterFixture({crs:4326}))).getImage();image.readRasters=()=>{throw Error('Must not decode pixels');};const report=inspectRaster(image);assert.equal(report.width,16);assert.equal(report.crs,4326);assert.equal(report.noData,-9999);assert.equal(report.terrainImport,true);assert.equal(report.verticalUnits,'not encoded');assert.equal(report.bits[0],32);});
+test('RGB visualization is diagnosed independently of terrain validation',async()=>{const image=await(await fromArrayBuffer(rasterFixture())).getImage(),fd=image.getFileDirectory(),get=fd.getValue.bind(fd);image.getSamplesPerPixel=()=>3;fd.getValue=key=>key==='PhotometricInterpretation'?2:get(key);const report=inspectRaster(image);assert.match(report.classification,/RGB visualization/);assert.equal(report.terrainImport,false);assert.match(report.importDiagnostic,/single-band/);});
+test('missing, invalid and full-file raster responses are rejected',async()=>{const fetch=globalThis.fetch;try{globalThis.fetch=async()=>new Response('missing',{status:404});await assert.rejects(openRangeRaster('/Notebook/missing.tif'),/missing or unavailable/);globalThis.fetch=async()=>new Response(new Uint8Array(32));await assert.rejects(openRangeRaster('/Notebook/unbounded.tif'),/full-file downloads are disabled/);globalThis.fetch=async()=>new Response(new Uint8Array(32),{status:206,headers:{'content-range':'bytes 0-31/32'}});await assert.rejects(openRangeRaster('/Notebook/invalid.tif'));}finally{globalThis.fetch=fetch;}});

@@ -34,7 +34,7 @@ export function mountImageMapNotebookPicker(root, options = {}) {
 
   let selectedPath = "";
   let selectedIsDirectory = false;
-  let currentDirectory = normalizePickerPath(navigationState.getSearchRoot?.() || window.currentDirectoryPath || "");
+  let currentDirectory = normalizePickerPath(options.initialDirectory ?? navigationState.getSearchRoot?.() ?? window.currentDirectoryPath ?? "");
 
   function finish(path, isDirectory) {
     const clean = normalizePickerPath(path);

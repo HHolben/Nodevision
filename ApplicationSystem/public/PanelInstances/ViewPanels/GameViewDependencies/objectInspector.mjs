@@ -184,6 +184,7 @@ export function createObjectInspector({ THREE, panel, scene, sceneObjects, colli
   root.style.flexDirection = "column";
   root.style.gap = "10px";
   root.style.font = "12px/1.3 monospace";
+  const educationalButton=document.createElement('button');educationalButton.type='button';educationalButton.textContent='Educational Associations';educationalButton.onclick=()=>import('/ToolbarCallbacks/edit/educationalAssociations.mjs').then(m=>m.default());floatingPanel.content.append(educationalButton);
   floatingPanel.content.appendChild(root);
   const terrainProperties = createVoxelWorldProperties(floatingPanel.content, root);
   const pathProperties = createPathProperties(floatingPanel.content, root);
@@ -1251,6 +1252,8 @@ export function createObjectInspector({ THREE, panel, scene, sceneObjects, colli
   return {
     showConstructionEditing(section){root.style.display="none";constructionProperties.hide();terrainProperties.hide();pathProperties.hide();root.style.display="none";floatingPanel.content.append(section);floatingPanel.setVisible(true);floatingPanel.undock();},
     inspectTarget(target, distance = null) {
+      let educationalTarget=target;while(educationalTarget&&!educationalTarget.userData?.metaWorldLayerId)educationalTarget=educationalTarget.parent;
+      if(educationalTarget)window.dispatchEvent(new CustomEvent('nv-educational-selection',{detail:{objectId:educationalTarget.userData.metaWorldLayerId}}));
       const textTarget = target?.userData?.textRoot || target;
       if (textTarget?.userData?.textRuntime) return openTextEditor(textTarget);
       pathProperties.hide();constructionProperties.hide();

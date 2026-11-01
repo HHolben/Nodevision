@@ -7,7 +7,9 @@ import { validateVoxelWorld } from './VoxelWorldDefinition.mjs';
 export function installVoxelWorldAuthoring(bridge, { THREE, scene, objects, colliders, waterVolumes, layerEntries, worldData, changed, select, camera }) {
   const entryFor = id => layerEntries.find(entry=>entry.id===id && entry.def.type==='procedural-voxel-world');
   function register(def, previous = null) {
-    const mesh = createProceduralVoxelWorld(THREE, def, colliders);
+    if(previous?.def?.educationalLinks)def.educationalLinks=structuredClone(previous.def.educationalLinks);
+    const mesh = createProceduralVoxelWorld(THREE, def, colliders,{worldPath:bridge.sourcePath});
+    if(def.educationalLinks)mesh.userData.educationalLinks=structuredClone(def.educationalLinks);
     bridge.recordHistory();
     if (previous) {
       const old = previous.object3d;

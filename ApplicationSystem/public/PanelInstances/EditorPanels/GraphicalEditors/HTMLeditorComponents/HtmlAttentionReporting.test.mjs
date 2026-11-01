@@ -11,6 +11,9 @@ const paragraph = { nodeType: 1, tagName: 'P', id: 'paragraph', closest: () => n
 const cell = { nodeType: 1, tagName: 'TD', id: 'cell', closest: selector => selector === 'td, th' ? cell : null };
 let anchor = paragraph;
 const root = new EventTarget();
+const attributes = new Map();
+root.setAttribute = (name, value) => attributes.set(name, String(value));
+root.removeAttribute = name => attributes.delete(name);
 root.ownerDocument = { getSelection: () => ({ anchorNode: anchor }) };
 root.contains = node => node === paragraph || node === cell;
 window.__nvActiveHtmlEditorContext = { editorElement: root };

@@ -231,6 +231,7 @@ function stableTerrainClone(terrain = {}) {
 }
 
 function terrainMergeKey(def) {
+  if(def?.educationalLinks?.length)return null;
   if (!def?.terrain || def.type !== "box" || !Array.isArray(def.size) || def.size.length < 3) return null;
   const [sx, sy, sz] = def.size.map(Number);
   if (![sx, sy, sz].every(Number.isFinite) || sx <= 0 || sy <= 0 || sz <= 0) return null;
@@ -415,6 +416,7 @@ function moduloPositiveNumber(value, modulus) {
 }
 
 function voxelCompactEntry(def) {
+  if(def?.educationalLinks?.length)return null;
   if (!isVoxelDefinition(def) || String(def.type || "").toLowerCase() !== "box") return null;
   if (hasVoxelPatternBlockingMetadata(def)) return null;
   const position = finiteNumberArray(def.position, 3);
@@ -541,6 +543,7 @@ function compactVoxelDefinitions(defs = []) {
 
 export function serializeMesh(mesh) {
   const def=serializeMeshGeometry(mesh);
+  if(def && mesh?.userData?.educationalLinks)def.educationalLinks=structuredClone(mesh.userData.educationalLinks);
   if(def && mesh?.userData?.soundProperty)def.soundProperty=JSON.parse(JSON.stringify(mesh.userData.soundProperty));
   return def;
 }
@@ -899,6 +902,8 @@ function serializeLight(light) {
   else if (light.isHemisphereLight) lightType = "hemisphere";
   return {
     type: "light",
+    ...(light.userData?.metaWorldLayerId?{id:light.userData.metaWorldLayerId}:{}),
+    ...(light.userData?.educationalLinks?{educationalLinks:structuredClone(light.userData.educationalLinks)}:{}),
     lightType,
     position: vec3(light.position),
     color: light.color?.isColor ? `#${light.color.getHexString()}` : "#ffffff",

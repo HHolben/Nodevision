@@ -131,6 +131,7 @@ function createFieldControl(field, values) {
   input.id = id;
   input.name = field.name;
   input.type = field.type || "text";
+  if(field.step!==undefined)input.step=String(field.step);
   input.placeholder = field.placeholder || "";
   input.value = defaultFieldValue(field);
   input.required = Boolean(field.required);

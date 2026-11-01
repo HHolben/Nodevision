@@ -1,0 +1,4 @@
+// Nodevision/ApplicationSystem/public/CursorFamilies/providers/TerrainMapCursorProvider.mjs
+// This module exposes terrain-map editing tools through the shared contextual cursor interface. It delegates tool selection to the owning editor so cursor controls remain consistent across panels.
+import {MAP_TOOLS,toolLabel} from '/MetaWorld/TerrainMaps/Editor/Tools.mjs';
+export function createCursorFamilyProvider(){return {id:'terrain-map-tools',withContext(context){return {...this,context};},getTools(){return MAP_TOOLS.map(id=>({id,label:toolLabel(id),glyph:id==='pan'?'✋':id==='raise'?'↑':id==='lower'?'↓':'○'}));},getActiveToolId(){return this.context?.source?.getSelectedTool?.()||'pan';},getFallbackToolId(){return 'pan';},activateTool(id){this.context?.source?.activateTool?.(id);return true;}};}

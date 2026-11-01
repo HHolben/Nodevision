@@ -1,6 +1,7 @@
 // Nodevision/ApplicationSystem/public/PanelInstances/EditorPanels/GraphicalEditors/HTMLeditorComponents/HTMLeditorImplParts/RegisterHTMLLayoutTools.mjs
 // This module implements register HTMLLayout Tools behavior for the HTMLeditorImpl feature. Its dependencies and instance state are supplied explicitly so other editor instances remain independent.
 
+import { createCalligraphyHandler } from "./CreateCalligraphyHandler.mjs";
 import { refreshReferencedCircuits } from "../../CircuitEditorComponents/HtmlReferencedCircuitIntegration.mjs";
 import { markHtmlEditorDirty, insertNodeAtCaret, getCurrentSelectionRangeInEditor, getRememberedSelectionRange, rememberCurrentSelectionRange } from "./EnsureHTMLLayoutStyles.mjs";
 import { createHtmlDomHistory } from "../HtmlDomHistory.mjs";
@@ -145,6 +146,7 @@ export function registerHTMLLayoutTools(wysiwyg, editorFilePath) {
     return nextLayout;
   };
   window.HTMLWysiwygTools = {
+    insertCalligraphyLetter: createCalligraphyHandler(wysiwyg, editorFilePath, layoutToolsState.programmaticHistory),
     insertImageAtCaret: layoutToolsState.insertImageAtCaret,
     replaceSelectedTextWithImage: layoutToolsState.replaceSelectedTextWithImage,
     changeSelectedTextImage: layoutToolsState.changeSelectedTextImage,

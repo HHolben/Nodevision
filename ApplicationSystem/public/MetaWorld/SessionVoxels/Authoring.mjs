@@ -14,7 +14,7 @@ export function installSessionAuthoring(bridge,{objects,filePath}){
  const point=p=>p.map((v,i)=>(ensureOrigin()?.[i]||0)+(v+.5)*.25),cell=p=>p.map((v,i)=>Math.floor((v-(ensureOrigin()?.[i]||0))/.25+1e-8));
  const local=(r,p)=>point(p).map((v,i)=>Math.floor((v-r.sessionOrigin()[i])/.25));
  const valid=r=>ensureOrigin()&&r.sessionOrigin().every((n,i)=>Math.abs((n-owner.origin[i])/.25-Math.round((n-owner.origin[i])/.25))<1e-6);
- const contains=p=>terrain().some(r=>valid(r)&&local(r,p).every((n,i)=>n>=0&&n<r.generator.dimensions[i]));
+ const contains=p=>terrain().some(r=>valid(r)&&(!r.mapSampleReady||r.mapSampleReady(point(p)))&&local(r,p).every((n,i)=>n>=0&&n<r.generator.dimensions[i]));
  function persistent(p){const world=point(p);for(const r of constructions()){const value=r.sampleVoxel(world);if(value)return value;}
   for(const r of terrain()){const at=local(r,p);if(valid(r)&&at.every((n,i)=>n>=0&&n<r.generator.dimensions[i])){const value=r.getPersistentMaterial(...at);if(value)return value;}}return null;}
  function changed(points){for(const p of points)pending.set(p.join(','),p);if(context.panel)context.panel.dataset.temporaryVoxelEdits=String(session.count);context.inventory?.setTemporaryVoxelStatus?.(session.count,settings,constructionEdit?{count:constructionEdit.layer.count}:null);}

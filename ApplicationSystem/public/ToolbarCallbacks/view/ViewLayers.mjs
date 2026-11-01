@@ -5,6 +5,7 @@ import { getActiveSvgLayersContext, getActiveSvgDocumentPath } from "/PanelInsta
 
 export default function ViewLayers() {
   const hasContext =
+    window.NVMapLayersContext?.attachHost ||
     getActiveSvgDocumentPath() ||
     window.HTMLLayersContext?.attachHost ||
     window.HTMLViewLayersContext?.attachHost ||

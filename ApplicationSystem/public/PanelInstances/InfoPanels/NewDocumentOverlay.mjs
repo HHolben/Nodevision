@@ -127,7 +127,7 @@ export function createPanel(contentElem, panelVars = {}, panelRoot = null) {
   const filenameInput = document.createElement("input");
   filenameInput.id = "nv-new-document-filename";
   filenameInput.type = "text";
-  filenameInput.placeholder = "example.html";
+  filenameInput.placeholder = "example.html or landscape.nvmap";
   filenameInput.required = true;
   filenameInput.value = panelVars.defaultFilename || "";
 

@@ -75,7 +75,7 @@ export async function prepareImageForUndockedEditor(context, editorFilePath) {
       temporaryPath: null
     };
   }
-  const source = context.element.getAttribute("src") || context.element.currentSrc || "";
+  const source = context.src || context.element.getAttribute("src") || context.element.currentSrc || "";
   if (!source.startsWith("data:image/")) return null;
   const parsed = parseDataUrl(source);
   const extension = inferExtensionFromMime(parsed?.mimeType || "") || context.extension || "png";

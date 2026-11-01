@@ -12,6 +12,7 @@ export function installPathAuthoring(bridge,{THREE,scene,objects,colliders,layer
       const r=o.userData?.proceduralVoxelRuntime;if(!r)continue;
       const vx=Math.floor((x-o.position.x)/.25),vz=Math.floor((z-o.position.z)/.25),base=r.generator.base;
       if(vx>=0&&vz>=0&&vx<base.dimensions[0]&&vz<base.dimensions[2]) {
+        if(r.map){if(!r.map.reader||![0,.5].every(dx=>[0,.5].every(dz=>r.mapSampleReady([x+dx,0,z+dz])))){r.requestMapPoint(x,z);return NaN;}if(r.definition.terrainMap.outside!=='procedural'&&!r.map.reader.covers(x-o.position.x,z-o.position.z))return NaN;}
         const tx=(x-o.position.x)/.25-vx,tz=(z-o.position.z)/.25-vz;
         const h=(dx,dz)=>base.getTerrainHeight(Math.min(base.dimensions[0]-1,vx+dx),Math.min(base.dimensions[2]-1,vz+dz));
         return o.position.y+(r.definition.heightLimits?.min||0)+((h(0,0)*(1-tx)+h(1,0)*tx)*(1-tz)+(h(0,1)*(1-tx)+h(1,1)*tx)*tz)*.25;
@@ -34,7 +35,7 @@ export function installPathAuthoring(bridge,{THREE,scene,objects,colliders,layer
     for(const entry of layerEntries) {
       const r=entry.object3d?.userData?.pathRuntime;if(!r)continue;
       const def=r.serialize();
-      const fingerprint=entry.object3d.uuid+JSON.stringify(def)+objects.filter(o=>o.userData?.proceduralVoxelRuntime||o.userData?.nvType==='terrain-surface').map(o=>o.uuid+o.position.toArray()+(o.geometry?.attributes?.position?.version||0)).join();
+      const fingerprint=entry.object3d.uuid+JSON.stringify(def)+objects.filter(o=>o.userData?.proceduralVoxelRuntime||o.userData?.nvType==='terrain-surface').map(o=>o.uuid+o.position.toArray()+(o.geometry?.attributes?.position?.version||0)+(o.userData?.proceduralVoxelRuntime?.mapRevisionFor?.(r.ribbon?.bounds)||0)).join();
       const old=previous.get(def.id);
       if(old?.fingerprint!==fingerprint){
         try{r.rebuild(terrainHeight);r.warning='';}catch(error){r.warning=error.message;r.retainGeometry();}
@@ -54,8 +55,10 @@ export function installPathAuthoring(bridge,{THREE,scene,objects,colliders,layer
     const entry=layerEntries.find(e=>e.id===id),old=entry?.object3d?.userData?.pathRuntime;
     if(id&&!old)throw Error('Path no longer exists.');
     const def=validatePath({...(old?old.serialize():{terrainInteraction:'excavate'}),...patch,id:id||crypto.randomUUID()});
+    if(entry?.def?.educationalLinks)def.educationalLinks=structuredClone(entry.def.educationalLinks);
     const candidate=ribbonForPath(def,samplePath(THREE,def,terrainHeight));pathSurface(candidate,supportFor(candidate),gridOrigin());
     const mesh=createPathObject(THREE,def,colliders,terrainHeight);mesh.userData.pathRuntime.setClearancePreview(old?.showClearanceEnvelope||false);
+    if(def.educationalLinks)mesh.userData.educationalLinks=structuredClone(def.educationalLinks);
     bridge.recordHistory();
     if(entry){const i=worldData.objects.indexOf(entry.def);worldData.objects[i]=def;old.dispose();objects.splice(objects.indexOf(entry.object3d),1);entry.def=def;entry.object3d=mesh;}
     else {worldData.objects.push(def);layerEntries.push({id:def.id,def,object3d:mesh});}
@@ -68,7 +71,7 @@ export function installPathAuthoring(bridge,{THREE,scene,objects,colliders,layer
   }
   let last='',pending=false,changedAt=0;
   bridge.updatePathTransforms=()=>{
-    const stamp=objects.filter(o=>o.userData?.pathRuntime||o.userData?.proceduralVoxelRuntime||o.userData?.nvType==='terrain-surface').map(o=>o.uuid+o.position.toArray()+o.visible+(o.geometry?.attributes?.position?.version||0)).join();
+    const stamp=objects.filter(o=>o.userData?.pathRuntime||o.userData?.proceduralVoxelRuntime||o.userData?.nvType==='terrain-surface').map(o=>o.uuid+o.position.toArray()+o.visible+(o.geometry?.attributes?.position?.version||0)+(o.userData?.proceduralVoxelRuntime?.mapRevision||0)).join();
     if(stamp!==last){last=stamp;pending=true;changedAt=performance.now();}
     if(pending&&performance.now()-changedAt>=120){pending=false;bridge.syncPaths();}
   };

@@ -10,7 +10,8 @@ export function importControls(form,old,invalidate) {
     const el=input(key,label,value),button=document.createElement('button');button.type='button';button.textContent='Browse Notebook';el.parentElement.append(button);
     button.onclick=async()=>{
       const root=document.createElement('div');host.append(root);const {mountImageMapNotebookPicker}=await import('../../PanelInstances/Common/ImageMap/ImageMapNotebookPicker.mjs');if(!root.isConnected)return;
-      const picker=mountImageMapNotebookPicker(root,{onDone:({path,isDirectory})=>{if(isDirectory)return;el.value='/Notebook/'+path.split('/').map(encodeURIComponent).join('/');invalidate(key);picker.destroy();root.remove();},onCancel:()=>{picker.destroy();root.remove();}});
+      let initialDirectory;try{const {loadResourcePaths}=await import('../../ResourcePaths/ResourcePathsClient.mjs');initialDirectory=(await loadResourcePaths()).find(r=>r.key==='maps.terrain')?.path;}catch(error){root.textContent='Terrain resource directory unavailable: '+error.message;return;}if(!root.isConnected)return;
+      const picker=mountImageMapNotebookPicker(root,{initialDirectory,onDone:({path,isDirectory})=>{if(isDirectory)return;el.value='/Notebook/'+path.split('/').map(encodeURIComponent).join('/');invalidate(key);picker.destroy();root.remove();},onCancel:()=>{picker.destroy();root.remove();}});
     };
   }
   input('crop','Crop west,south,east,north (degrees; blank = center or selected polygon)',old?.crop?.join(',')??'');

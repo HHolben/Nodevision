@@ -1,0 +1,49 @@
+<!doctype html><html><head><meta charset="utf-8"><title>Custom terrain map example</title></head><body><h1>Custom terrain map example</h1><p>Open in the Virtual World Editor. Map source settings are in Edit Generation Parameters.</p><script id="nodevision-metaworld" type="application/json" data-nodevision-meta-world>{
+  "worldType": "NodevisionMetaWorld",
+  "type": "world",
+  "objects": [
+    {
+      "type": "procedural-voxel-world",
+      "id": "custom-map-terrain",
+      "name": "Plain, mountain and valley",
+      "position": [
+        0,
+        0,
+        0
+      ],
+      "size": [
+        256,
+        80,
+        256
+      ],
+      "heightLimits": {
+        "min": -16,
+        "max": 64
+      },
+      "voxelSize": 0.25,
+      "generator": {
+        "id": "nodevision-terrain-v1",
+        "version": 1,
+        "seed": 314159
+      },
+      "chunks": {
+        "voxelsPerAxis": 32,
+        "loadRadius": 2
+      },
+      "terrainSource": "map",
+      "terrainMap": {
+        "version": 1,
+        "path": "./CustomTerrain.nvmap",
+        "detailStrength": 0,
+        "detailScale": 16,
+        "outside": "empty"
+      },
+      "generation": {
+        "vegetation": true,
+        "water": false,
+        "caves": false
+      },
+      "boundaryMode": "open"
+    }
+  ]
+}</script></body></html>

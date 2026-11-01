@@ -1,7 +1,8 @@
-import { installWorldResourceDrops } from '/ResourceDrop/WorldResourceDrops.mjs';
-import {installConstructionEditing} from '../../../MetaWorld/ConstructionEditing/Session.mjs';
 // Nodevision/ApplicationSystem/public/PanelInstances/ViewPanels/GameViewDependencies/worldLoading.mjs
 // This file loads a world definition from the server and builds its scene objects. The loader registers live MetaWorld layer data for side panels.
+import {installEducationalWorldBridge} from '/Education/WorldLinks.mjs';
+import { installWorldResourceDrops } from '/ResourceDrop/WorldResourceDrops.mjs';
+import {installConstructionEditing} from '../../../MetaWorld/ConstructionEditing/Session.mjs';
 
 import {installSessionAuthoring} from '../../../MetaWorld/SessionVoxels/Authoring.mjs';
 import {worldSession,confirmWorldSessionReplacement} from '../../../MetaWorld/SessionVoxels/WorldSession.mjs';
@@ -1214,6 +1215,7 @@ export function registerMetaWorldLayerBridge({ state, filePath, worldData, layer
     history.redoStack.length = 0;
   };
   const attachLayerBreakHandler = (entry) => {
+    if(entry.object3d){if(entry.def.educationalLinks!==undefined)entry.object3d.userData.educationalLinks=structuredClone(entry.def.educationalLinks);else delete entry.object3d.userData.educationalLinks;}
     if (!entry?.object3d) return;
     if (['construction','physical-path','world-text','gox-model','model-asset'].includes(entry.def?.type)) { entry.object3d.userData.onBreakTarget = () => bridge.removeObjectLayer(entry.id); return; }
     if (isExpressionLayerType(entry.def?.type)) {
@@ -1334,7 +1336,7 @@ export function registerMetaWorldLayerBridge({ state, filePath, worldData, layer
           : def.type === 'construction' ? createConstruction(THREE,def,filePath,colliders)
           : def.type === 'physical-path' ? createPathObject(THREE, def, colliders)
           : def.type === "terrain-surface" ? terrainGridFromDefinition(THREE,def)
-          : def.type === "procedural-voxel-world" ? createProceduralVoxelWorld(THREE, def, colliders)
+          : def.type === "procedural-voxel-world" ? createProceduralVoxelWorld(THREE, def, colliders,{worldPath:filePath})
           : def.type === "iframe" ? createIframeObjectMesh(THREE, def)
           : createEquationColliderPlaneMesh(THREE, def.equationCollider, { color: def.color, opacity: def.opacity });
         mesh.position.fromArray(def.position || [0, 0, 0]);
@@ -1361,6 +1363,7 @@ export function registerMetaWorldLayerBridge({ state, filePath, worldData, layer
       const visible = entry.def?.visible !== false && entry.def?.hidden !== true;
       if (entry.object3d) entry.object3d.visible = visible;
     });
+    for(const entry of layerEntries)if(entry.object3d){if(entry.def.educationalLinks!==undefined)entry.object3d.userData.educationalLinks=structuredClone(entry.def.educationalLinks);else delete entry.object3d.userData.educationalLinks;}
     bridge.syncPaths?.();
     markMetaWorldLayersDirty(worldData);
     syncBridgeWorldState(state, worldData);
@@ -1553,6 +1556,7 @@ export function registerMetaWorldLayerBridge({ state, filePath, worldData, layer
       mesh.position.set(...def.position);
       mesh.userData.nvType = def.type;
       mesh.userData.metaWorldLayerId = objectId;
+      if(def.educationalLinks)mesh.userData.educationalLinks=structuredClone(def.educationalLinks);
       mesh.userData.tag = def.tag;
       mesh.userData.isSolid = def.isSolid === true || def.collidable === true;
       mesh.userData.breakable = def.breakable !== false;
@@ -1656,6 +1660,7 @@ export function registerMetaWorldLayerBridge({ state, filePath, worldData, layer
       mesh.position.set(...def.position);
       mesh.userData.nvType = def.type;
       mesh.userData.metaWorldLayerId = objectId;
+      if(def.educationalLinks)mesh.userData.educationalLinks=structuredClone(def.educationalLinks);
       mesh.userData.tag = def.tag;
       mesh.userData.isSolid = def.isSolid === true || def.collidable === true;
       mesh.userData.breakable = def.breakable !== false;
@@ -1781,6 +1786,7 @@ export function registerMetaWorldLayerBridge({ state, filePath, worldData, layer
       mesh.position.set(...def.position);
       mesh.userData.nvType = "object-file";
       mesh.userData.metaWorldLayerId = objectId;
+      if(def.educationalLinks)mesh.userData.educationalLinks=structuredClone(def.educationalLinks);
       mesh.userData.tag = def.tag;
       mesh.userData.isSolid = colliderRequested;
       mesh.userData.breakable = def.breakable !== false;
@@ -1832,6 +1838,7 @@ export function registerMetaWorldLayerBridge({ state, filePath, worldData, layer
       mesh.position.set(...def.position);
       mesh.userData.nvType = "sound-object";
       mesh.userData.metaWorldLayerId = objectId;
+      if(def.educationalLinks)mesh.userData.educationalLinks=structuredClone(def.educationalLinks);
       mesh.userData.tag = def.tag;
       mesh.userData.isSolid = false;
       mesh.userData.physicsEnabled = false;
@@ -1853,6 +1860,8 @@ export function registerMetaWorldLayerBridge({ state, filePath, worldData, layer
       let entry = existingId ? layerEntries.find((candidate) => candidate.id === existingId) : null;
       const objectId = entry?.id || makeUniqueObjectId(layerEntries, def.id || def.tag || def.name, def.type || mesh.userData?.nvType || "object");
       const nextDef = JSON.parse(JSON.stringify({ ...def, id: objectId }));
+      if(entry?.def?.educationalLinks&&!nextDef.educationalLinks)nextDef.educationalLinks=structuredClone(entry.def.educationalLinks);
+      if(nextDef.educationalLinks)mesh.userData.educationalLinks=structuredClone(nextDef.educationalLinks);
       const existingName = typeof entry?.def?.name === "string" && entry.def.name.trim() ? entry.def.name.trim() : "";
       nextDef.name = typeof nextDef.name === "string" && nextDef.name.trim()
         ? nextDef.name.trim()
@@ -1874,6 +1883,7 @@ export function registerMetaWorldLayerBridge({ state, filePath, worldData, layer
         else defs.push(nextDef);
       }
       mesh.userData.metaWorldLayerId = objectId;
+      if(def.educationalLinks)mesh.userData.educationalLinks=structuredClone(def.educationalLinks);
       if (mesh.userData.terrain && typeof mesh.userData.terrain === "object") {
         mesh.userData.terrain.id = objectId;
         mesh.userData.terrain.name = nextDef.name;
@@ -1934,6 +1944,7 @@ export function registerMetaWorldLayerBridge({ state, filePath, worldData, layer
     changed(objectId) { markMetaWorldLayersDirty(worldData); syncBridgeWorldState(state,worldData); notifyMetaWorldLayersChanged({reason:'pathUpdated',objectId}); }
   });
   installConstructionAuthoring(bridge,{THREE,scene,objects,colliders,layerEntries,worldData,filePath,select:selectMetaWorldObject,changed(objectId){markMetaWorldLayersDirty(worldData);syncBridgeWorldState(state,worldData);notifyMetaWorldLayersChanged({reason:'constructionUpdated',objectId});}});
+  installEducationalWorldBridge(bridge,{entries:layerEntries,THREE,camera,changed(objectId){markMetaWorldLayersDirty(worldData);syncBridgeWorldState(state,worldData);notifyMetaWorldLayersChanged({reason:'educationalLinks',objectId});}});
   installSessionAuthoring(bridge,{objects,filePath});
   installConstructionEditing(bridge,filePath);
   installSoundAuthoring(bridge, {layerEntries,
@@ -3375,7 +3386,7 @@ export async function loadWorldFromFile(filePath, state, THREE, options = {}) {
       } else if (def.type === 'physical-path') {
         mesh = createPathObject(THREE, def, colliders);
       } else if (def.type === "procedural-voxel-world") {
-        mesh = createProceduralVoxelWorld(THREE, def, colliders);
+        mesh = createProceduralVoxelWorld(THREE, def, colliders,{worldPath:filePath});
       } else if (def.type === "terrain-surface") {
         mesh = terrainGridFromDefinition(THREE,def);
       } else if (portalShape === "box") {
@@ -3765,7 +3776,7 @@ export async function loadWorldFromFile(filePath, state, THREE, options = {}) {
       }
       if (!position) position = fallbackSpawn.position;
       controls.getObject().position.set(position[0], position[1], position[2]);
-      objects.forEach(object => object.userData?.proceduralVoxelRuntime?.prepareSpawn(controls.getObject().position, movementState?.playerHeight || 1.75));
+      for(const object of objects){const runtime=object.userData?.proceduralVoxelRuntime;if(runtime?.map){await runtime.ready;const p=controls.getObject().position,origin=object.position;await runtime.prepareMapRegion({minX:Math.max(0,Math.min(runtime.definition.size[0],p.x-origin.x-16)),maxX:Math.max(0,Math.min(runtime.definition.size[0],p.x-origin.x+16)),minZ:Math.max(0,Math.min(runtime.definition.size[2],p.z-origin.z-16)),maxZ:Math.max(0,Math.min(runtime.definition.size[2],p.z-origin.z+16))});}runtime?.prepareSpawn(controls.getObject().position,movementState?.playerHeight||1.75);}
       if (movementState?.worldMode === "2d" && movementState?.movementMode !== "topdown") {
         movementState.planeZ = Number.isFinite(position[2]) ? position[2] : 0;
         controls.getObject().position.z = movementState.planeZ;

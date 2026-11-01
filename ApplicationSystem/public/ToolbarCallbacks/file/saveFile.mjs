@@ -1,11 +1,12 @@
 // Nodevision/ApplicationSystem/public/ToolbarCallbacks/file/saveFile.mjs
-// This file defines browser-side save File logic for the Nodevision UI. It renders interface components and handles user interactions.
+// This module dispatches save requests to the active native editor while preserving document ownership and editor priority. Shared helpers resolve editor context and SVG serialization, while this entry point coordinates save notifications and failure handling.
 
-import { saveSvgRequest } from "../../FileInterop/SvgSaveRecovery.mjs";
-import { cleanupSvgCloneForSave } from "../../PanelInstances/EditorPanels/GraphicalEditors/SVGeditorComponents/SvgPreservation.mjs";
 import {
-  getFileExtension,
-  isRasterContext,
+  activeHtmlEditorContext, finishInlineImageSave, htmlEditorPath,
+  markdownEditorPath, readEditorSaveContext, refuseMismatchedEditorSave,
+} from "./saveFile/EditorContext.mjs";
+import { saveSvgEditor } from "./saveFile/SvgSave.mjs";
+import {
   notifyFileSaved,
   resolveFilePath,
   sameSavePath,
@@ -13,56 +14,23 @@ import {
   saveViaApi,
 } from "./saveFile/utils.mjs";
 
-function firstSavePath(...paths) {
-  return paths.find((path) => String(path || "").trim()) || "";
+// Editors with their own panel API own the complete save operation.
+function activePanelApi(selector, property) {
+  const nodes = window.activeCell?.querySelectorAll?.(selector) || [];
+  return [...nodes].find((node) => !node.closest('[hidden],[aria-hidden="true"]'))?.[property];
 }
 
-function refuseMismatchedEditorSave(editorLabel, editorPath, savePath) {
-  if (!editorPath || !savePath || sameSavePath(editorPath, savePath)) return false;
-  console.error("[saveFile] Refusing to save " + editorLabel + " buffer into a different path.", {
-    editorPath,
-    savePath,
-  });
-  return true;
-}
-
-function markdownEditorPath() {
-  return firstSavePath(window.__nvMarkdownActivePath, window.__nvCodeEditorActivePath);
-}
-
-function activeHtmlEditorContext(preferredPath = "") {
-  const activeCellContext = window.activeCell?.__nvHtmlEditorContext || null;
-  const focusedCellContext = document.activeElement?.closest?.(".panel-cell")?.__nvHtmlEditorContext || null;
-  const globalContext = window.__nvActiveHtmlEditorContext || null;
-  for (const context of [activeCellContext, focusedCellContext, globalContext]) {
-    if (context?.kind !== "html" || !context.filePath) continue;
-    if (preferredPath && !sameSavePath(preferredPath, context.filePath)) continue;
-    if (typeof context.activate === "function") context.activate();
-    return context;
-  }
-  return null;
-}
-
-function htmlEditorPath() {
-  return firstSavePath(
-    activeHtmlEditorContext()?.filePath,
-    window.__nvWysiwygActivePath,
-    window.__nvHtmlEditorActivePath,
-  );
-}
-
-function svgEditorPath() {
-  return firstSavePath(window.__nvSvgEditorActivePath);
-}
-
-function pdfEditorPath() {
-  return firstSavePath(window.__nvPdfEditorActivePath);
-}
-
+// Dispatch saves in the established editor-priority order.
 export default async function saveFile(options = {}) {
   const requestedPath =
     typeof options === "string" ? options : options?.path;
-  const gox = [...(window.activeCell?.querySelectorAll?.("[data-nv-gox]")||[])].find(node=>!node.closest('[hidden],[aria-hidden="true"]'))?.__nvGoxApi;
+  const terrainMap = activePanelApi("[data-nv-map-editor]", "__nvMapApi")
+    || (window.NodevisionState?.currentMode === "NVMAPediting" ? window.NVMapLayersContext?.api : null);
+  if (terrainMap) {
+    if (requestedPath && !sameSavePath(requestedPath, terrainMap.filePath)) return false;
+    return terrainMap.save();
+  }
+  const gox = activePanelApi("[data-nv-gox]", "__nvGoxApi");
   if (gox) {
     if (typeof gox.save !== "function" || (requestedPath && !sameSavePath(requestedPath, gox.filePath))) return false;
     return gox.save();
@@ -83,51 +51,12 @@ export default async function saveFile(options = {}) {
   }
 
   try {
-    const mode = window.NodevisionState?.currentMode || window.currentMode || "";
-    const inGraphicalEditor =
-      window.NodevisionState?.activePanelType === "GraphicalEditor" ||
-      !!document.getElementById("graphical-editor");
-    const svgEditorElement =
-      document.getElementById("svg-editor-root") ||
-      document.getElementById("svg-editor");
-    const activeSvgPath = svgEditorPath();
-    const activePdfPath = pdfEditorPath();
-    const activeGifPath = firstSavePath(window.__nvGifEditorActivePath, window.GIFEditorContext?.filePath);
-    const inSvgEditor =
-      !!svgEditorElement &&
-      (String(mode).toLowerCase().includes("svg") ||
-        (activeSvgPath && sameSavePath(activeSvgPath, filePath)));
-    const inMarkdownEditor =
-      mode === "MDediting" ||
-      !!document.getElementById("markdown-editor") ||
-      typeof window.getEditorMarkdown === "function";
-    const inWysiwygEditor =
-      mode === "HTMLediting" ||
-      mode === "CSVediting" ||
-      !!document.getElementById("wysiwyg") ||
-      typeof window.getEditorHTML === "function";
-    const inMidiEditor = mode === "MIDIediting";
-    const inKMLEditor = mode === "KMLeditorMode" || mode === "KMLeditingMode";
-    const fileExt = getFileExtension(filePath);
-    const { canSaveRasterCanvas } = isRasterContext({ mode, fileExt, inWysiwygEditor });
-
-    // Inline image editing embeds raster/SVG editors into HTML/EPUB.
-    // Finalize that session first so save targets the parent document,
-    // not the temporary inline editor canvas path.
-    if (window.NodevisionState?.htmlImageEditingInline) {
-      if (typeof window.HTMLWysiwygTools?.finishInlineImageEditor !== "function") {
-        throw new Error("Inline image editor is active but cannot be finalized for document save.");
-      }
-      try {
-        await window.HTMLWysiwygTools.finishInlineImageEditor();
-      } catch (inlineErr) {
-        console.warn("[saveFile] Failed to finalize inline image editor before save:", inlineErr);
-        throw inlineErr;
-      }
-      if (window.NodevisionState?.htmlImageEditingInline) {
-        throw new Error("Inline image editor is still active; aborting save to avoid corrupting document markup.");
-      }
-    }
+    const context = readEditorSaveContext(filePath, activeHtmlContext);
+    const {
+      mode, inGraphicalEditor, activePdfPath, activeGifPath, inMarkdownEditor,
+      inWysiwygEditor, inMidiEditor, inKMLEditor, fileExt, canSaveRasterCanvas,
+    } = context;
+    await finishInlineImageSave();
 
     if (mode === "EPUBediting" && (activeHtmlContext?.save || typeof window.saveWYSIWYGFile === "function")) {
       const editorPath = activeHtmlContext?.filePath || htmlEditorPath();
@@ -198,36 +127,7 @@ export default async function saveFile(options = {}) {
       await saveViaApi({ path: filePath, sourcePath: editorPath || filePath, content });
       return notifyFileSaved(filePath);
     }
-    if (inSvgEditor && window.SVGEditorContext?.save && sameSavePath(window.SVGEditorContext.filePath, filePath)) {
-      if (await window.SVGEditorContext.save(filePath) === false) return false;
-      return notifyFileSaved(filePath);
-    }
-    if (inSvgEditor && typeof window.currentSaveSVG === "function") {
-      const editorPath = svgEditorPath();
-      if (refuseMismatchedEditorSave("SVG Editor", editorPath, filePath)) return false;
-      if (fileExt !== "svg") {
-        console.error("[saveFile] Refusing to save SVG Editor buffer into a non-SVG path.", { savePath: filePath });
-        return false;
-      }
-      if (await window.currentSaveSVG(filePath) === false) return false;
-      return notifyFileSaved(filePath);
-    }
-    if (inSvgEditor) {
-      const editorPath = svgEditorPath();
-      if (refuseMismatchedEditorSave("SVG Editor", editorPath, filePath)) return false;
-      if (fileExt !== "svg") {
-        console.error("[saveFile] Refusing to save SVG Editor buffer into a non-SVG path.", { savePath: filePath });
-        return false;
-      }
-      const svgSource =
-        svgEditorElement instanceof SVGElement
-          ? svgEditorElement
-          : svgEditorElement?.querySelector?.("svg");
-      if (!svgSource) throw new Error("SVG editor root is missing an SVG element.");
-      const svgContent = new XMLSerializer().serializeToString(cleanupSvgCloneForSave(svgSource.cloneNode(true)));
-      if (!await saveSvgRequest({ path: filePath, sourcePath: editorPath || filePath, content: svgContent })) return false;
-      return notifyFileSaved(filePath);
-    }
+    if (context.inSvgEditor) return await saveSvgEditor(context);
     if (inWysiwygEditor && (activeHtmlContext?.getHTML || typeof window.getEditorHTML === "function")) {
       const editorPath = activeHtmlContext?.filePath || htmlEditorPath();
       if (refuseMismatchedEditorSave("HTML/WYSIWYG Editor", editorPath, filePath)) return false;
@@ -296,6 +196,7 @@ export default async function saveFile(options = {}) {
   }
 }
 
+// Preserve the global entry points used by existing toolbars and hotkeys.
 if (typeof window !== "undefined") {
   window.saveFile = saveFile;
   window.saveCurrentFile = saveFile;

@@ -1,5 +1,7 @@
 // Nodevision/ApplicationSystem/public/MetaWorld/ProceduralVoxelWorld/ProceduralVoxelWorldRuntime.mjs
 // This module owns one logical terrain object, its streamed chunk resources, and its analytic movement collider.
+import {usesMap} from '../TerrainMaps/Source.mjs';
+import {bindMap} from '../TerrainMaps/Binding.mjs';
 
 import {raycastCells} from '../SessionVoxels/Raycast.mjs';
 import {createSessionPalette} from '../SessionVoxels/SessionPalette.mjs';
@@ -22,20 +24,21 @@ import { createVoxelMaterialPalette } from "./VoxelMaterialPalette.mjs";
 import { createVoxelLiquidVolume } from "./VoxelLiquidVolume.mjs";
 import { VoxelChunkManager } from "./VoxelChunkManager.mjs";
 export function createProceduralVoxelWorld(THREE, source, colliders, materialOptions = {}) {
-  const definition = validateVoxelWorld(source), generator = composeSession(createVoxelGenerator(definition));
+  const definition = validateVoxelWorld(source), map=usesMap(definition)?bindMap(definition,materialOptions):null, generator = composeSession(createVoxelGenerator(definition,map));
+  let mapWindow=null,mapWork=null,mapFailedWindow=null,mapRevision=0;const mapEvents=[],mapPointRequests=new Map();
   const root = new THREE.Group();
   root.position.fromArray(definition.position);
   root.visible = definition.visible !== false && definition.hidden !== true;
   Object.assign(root.userData, { nvType: definition.type, metaWorldLayerId: definition.id, breakable: false });
   let constructionEdited=false,sessionEdited=false;const sessionPalette=createSessionPalette(THREE);generator.setConstructionMaterialResolver(sessionPalette.material);
-  let palette = null, disposed = false, lastPosition = null, activeAstronomy = null;
+  let palette = null, resolvedPalette=null, disposed = false, lastPosition = null, activeAstronomy = null;
   const floorOffset = definition.heightLimits?.min || 0;
   const originPoint = () => new THREE.Vector3(root.position.x,root.position.y+floorOffset,root.position.z);
   const origin = () => originPoint().toArray();
   const collider = { type: "expression-heightfield", target: root, layerId: definition.id,
     materialId: "grass", physicsMaterialId: "grass", voxelTerrain: true,
     sampleGroundY(x, z, maxY = Infinity) {
-      if (disposed || !root.visible) return NaN;
+      if (disposed || !root.visible || map&&!map.readyAt(x-root.position.x,z-root.position.z)) return NaN;
       if(representation.active==='polygonal'&&!constructionEdited&&!sessionEdited){const surface=polygonCollision.sampleGroundY(x,z,maxY);if(Number.isFinite(surface))return surface;}
       // Until a streamed surface arrives, retain local analytic ground support.
       const voxelOrigin = origin();
@@ -78,7 +81,7 @@ export function createProceduralVoxelWorld(THREE, source, colliders, materialOpt
     const meshed=yield* timedSteps((mode==='polygonal'?surfaceNetSteps:meshVoxelChunkSteps)(generated.value,cell,generator.getRenderVoxel));
     return finishChunk(cell,meshed.value,generated.cpuMs,meshed.cpuMs,hidden);
   }
-  const progressive=definition.geographic?.version===2;
+  const progressive=definition.geographic?.version===2||!!map;
   const manager = new VoxelChunkManager(generator,definition.chunks.loadRadius,cell=>{
     if(manager.options)return progressiveChunk(cell);
     const start=performance.now(),data=generator.generateChunk(...cell),generated=performance.now();
@@ -94,7 +97,13 @@ export function createProceduralVoxelWorld(THREE, source, colliders, materialOpt
   });
   const runtime = {
     seasonState:seasons.state,updateCalendar(astronomy){if(disposed)return false;activeAstronomy=astronomy;return seasons.update(astronomy);},
-    generator, manager, definition, stats: manager.stats,
+    generator, manager, definition, stats: manager.stats,map,
+    get mapRevision(){return mapRevision;},mapRevisionFor(bounds){if(!bounds)return mapRevision;return mapEvents.reduce((n,e)=>!e.bounds||e.bounds.minX<=bounds.maxX&&e.bounds.maxX>=bounds.minX&&e.bounds.minZ<=bounds.maxZ&&e.bounds.maxZ>=bounds.minZ?Math.max(n,e.revision):n,0);},
+    sampleTerrainSource(x,z){const lx=x-root.position.x,lz=z-root.position.z,sample=generator.terrainSampler?.sample(lx,lz)||{covered:lx>=0&&lz>=0&&lx<definition.size[0]&&lz<definition.size[2],elevation:floorOffset+generator.base.getTerrainHeight(Math.floor(lx/.25),Math.floor(lz/.25))*.25,biome:generator.getBiome(Math.floor(lx/.25),Math.floor(lz/.25)),material:null};return {...sample,elevation:sample.elevation===null?null:sample.elevation+root.position.y};},
+    requestMapPoint(x,z){if(!map||disposed)return;const lx=x-root.position.x,lz=z-root.position.z,key=`${Math.floor(lx)},${Math.floor(lz)}`;if(mapPointRequests.has(key))return;const work=runtime.prepareMapRegion({minX:lx-1,maxX:lx+1,minZ:lz-1,maxZ:lz+1}).catch(error=>{if(!disposed)runtime.mapError=error;}).finally(()=>mapPointRequests.delete(key));mapPointRequests.set(key,work);},
+    async prepareMapRegion(bounds){if(!map)return;await map.prepare(bounds);generator.invalidateTerrainSource();mapLoaded(bounds);mapWindow=null;},
+    async declareMapRegionChanged(bounds){if(!map)throw Error('This terrain has no map');return map.declareChanged(bounds);},
+    mapSampleReady(point){return !map||map.readyAt(point[0]-root.position.x,point[2]-root.position.z);},
     data:terrainData(root,{kind:'occupancy',parameters:definition,dimensions:definition.size,seed:definition.generator.seed,originOffset:[0,floorOffset,0],sampleVoxel:generator.getVoxel,sampleHeight:(x,z)=>generator.getSolidHeight(Math.floor(x/.25),Math.floor(z/.25))*.25,biome:generator.getBiome,materials:()=>palette?.materials||[]}),
     get representation(){return representation.active;},
     async setRepresentation(mode,beforeCommit){await runtime.ready;if(disposed)return false;const result=await representation.setRepresentation(mode,beforeCommit);if(result)manager.options=progressive||mode==='polygonal'?{budgetMs:B.frameMs,maxChunks:B.residentChunks,maxBytes:B.residentBytes}:null;return result;},
@@ -135,11 +144,13 @@ export function createProceduralVoxelWorld(THREE, source, colliders, materialOpt
       if(disposed)return;
       activeAstronomy=astronomy;seasons.update(astronomy);
       lastPosition = { x: position.x, y: position.y, z: position.z };
+      if(map&&palette){const {key,bounds}=mapArea(position);if(mapWindow!==key){if(!mapWork&&mapFailedWindow!==key){mapWork=map.prepare(bounds).then(()=>{if(disposed)return;generator.invalidateTerrainSource();mapLoaded(bounds);mapWindow=key;runtime.mapError=null;}).catch(error=>{if(!disposed&&!error.message.includes('superseded')){runtime.mapError=error;mapFailedWindow=key;}}).finally(()=>{mapWork=null;if(!disposed&&mapWindow===key&&lastPosition)runtime.update(lastPosition);});}return;}}
       if (!disposed && palette && root.visible && !representation.pending) manager.update(worldToVoxel([position.x,position.y,position.z], origin()));
     },
     prepareSpawn(position, playerHeight) {
       if (!root.visible) return;
       if (definition.boundaryMode === 'open' && (position.x < root.position.x || position.z < root.position.z || position.x >= root.position.x+definition.size[0] || position.z >= root.position.z+definition.size[2])) return;
+      if(map&&!runtime.mapSampleReady(position.toArray())){runtime.update(position);return;}
       const requested=worldToVoxel([position.x,position.y,position.z],origin());
       const [x,y,z]=findVoxelSpawn(generator,requested[0],requested[2],playerHeight);
       position.x=root.position.x+(x+.5)*VOXEL_SIZE;position.z=root.position.z+(z+.5)*VOXEL_SIZE;
@@ -151,15 +162,19 @@ export function createProceduralVoxelWorld(THREE, source, colliders, materialOpt
     },
     dispose() {
       if (disposed) return;
-      disposed = true; representation.dispose();generator.features.clear(); generator.clearColumns(); manager.dispose(); palette?.dispose();sessionPalette.dispose();
+      disposed = true; map?.dispose();representation.dispose();generator.features.clear(); generator.clearColumns(); manager.dispose(); palette?.dispose();sessionPalette.dispose();
       const index = colliders.indexOf(collider); if (index >= 0) colliders.splice(index,1);
       root.removeFromParent();
     }
   };
+  function mapLoaded(b){mapRevision++;mapEvents.push({revision:mapRevision,bounds:{minX:b.minX+root.position.x,maxX:b.maxX+root.position.x,minZ:b.minZ+root.position.z,maxZ:b.maxZ+root.position.z}});if(mapEvents.length>64){const old=mapEvents.splice(0,mapEvents.length-63).at(-1);mapEvents.unshift({revision:old.revision,bounds:null});}}
+  function mapArea(position){const x=Math.floor((position.x-root.position.x)/8),z=Math.floor((position.z-root.position.z)/8),radius=manager.radius*8+8+generator.pathFeatureReach*.25+4;return {key:`${x},${z},${manager.radius}`,bounds:{minX:Math.max(0,Math.min(definition.size[0],x*8-radius)),maxX:Math.max(0,Math.min(definition.size[0],x*8+8+radius)),minZ:Math.max(0,Math.min(definition.size[2],z*8-radius)),maxZ:Math.max(0,Math.min(definition.size[2],z*8+8+radius))}};}
+  map?.onChanged(bounds=>{if(disposed)return;representation.cancel();generator.invalidateTerrainSource();mapLoaded(bounds);mapWindow=null;mapFailedWindow=null;const margin=generator.pathFeatureReach+2;manager.invalidateBounds({minX:bounds.minX/.25-margin,maxX:bounds.maxX/.25+margin,minZ:bounds.minZ/.25-margin,maxZ:bounds.maxZ/.25+margin});if(lastPosition)runtime.update(lastPosition);});
   collider.sampleMaterial = (x,y,z) => runtime.getVoxelMaterial(...worldToVoxel([x,y,z], origin()));
-  runtime.ready = createVoxelMaterialPalette(THREE, {...materialOptions,aegean:definition.environment?.id==='aegean'||definition.terrainSource==='geographic'}).then(resolved => {
-    if (disposed) { resolved.dispose(); return false; }
+  runtime.ready = Promise.all([createVoxelMaterialPalette(THREE, {...materialOptions,aegean:definition.environment?.id==='aegean'||definition.terrainSource==='geographic'||!!map}).then(value=>{if(disposed||map?.error){value.dispose();return null;}resolvedPalette=value;return value;}),map?.ready]).then(async ([resolved]) => {
+    if (disposed||!resolved) { resolved?.dispose(); return false; }
     palette = resolved;sessionPalette.attach(palette);
+    if(map){const area=mapArea(lastPosition||{x:root.position.x+definition.size[0]/2,z:root.position.z+definition.size[2]/2});await map.prepare(area.bounds);if(disposed)return false;generator.invalidateTerrainSource();mapLoaded(area.bounds);mapWindow=area.key;}
     const voxelCollision=createFeatureCollision(root, generator, palette.entries, () => disposed, originPoint);
     collider.intersectsPlayer=(...args)=>representation.active==='polygonal'&&!constructionEdited&&!sessionEdited?polygonCollision.intersectsPlayer(...args):voxelCollision(...args);
     root.userData.waterVolumeRef = createVoxelLiquidVolume(root, runtime, palette.entries, () => disposed, originPoint);
@@ -170,7 +185,7 @@ export function createProceduralVoxelWorld(THREE, source, colliders, materialOpt
       physicsMaterialFile: surface.materialFile, MatterState: surface.matterState, matterState: surface.matterState });
     if (lastPosition) runtime.update(lastPosition);
     return true;
-  }).catch(error => { runtime.materialError = error; console.error('Procedural terrain material loading failed:', error); return false; });
+  }).catch(error => {if(!palette)resolvedPalette?.dispose(); if(map)runtime.mapError=error;else runtime.materialError=error;console.error('Terrain asset loading failed:', error); return false; });
   // Existing picking uses nonrecursive raycasts; forward terrain hits to child chunks.
   root.raycast = (raycaster, hits) => {
     if (!root.visible || disposed) return;

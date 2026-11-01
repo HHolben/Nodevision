@@ -273,3 +273,5 @@ xigt.xml,DataStorage,ViewXML.mjs,XMLFamilyEditor.mjs
 xml,DataStorage,ViewXML.mjs,XMLFamilyEditor.mjs
 xmp,DataStorage,ViewXMP.mjs,XMLFamilyEditor.mjs
 gox,Model,ViewGOX.mjs,GOXeditor.mjs,GoxCursorProvider.mjs
+
+nvmap,Geographic,ViewNVMAP.mjs,NVMAPeditor.mjs,TerrainMapCursorProvider.mjs

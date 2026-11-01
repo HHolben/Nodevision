@@ -7,6 +7,7 @@ function collectProviders(instanceVars = {}) {
   // Session-owned providers avoid changing the active document’s global layer context.
   if (instanceVars.layerProvider?.attachHost) return [instanceVars.layerProvider];
   const providers = [];
+  if(window.NVMapLayersContext?.attachHost)providers.push(window.NVMapLayersContext);
   if (window.GOXLayersContext?.attachHost) providers.push({ id: "gox", title: "Voxel Layers", attachHost: window.GOXLayersContext.attachHost, actions: [] });
   const preferredContext = String(instanceVars.preferredContext || instanceVars.providerId || "").trim().toLowerCase();
   const inKMLMode = String(window.NodevisionState?.currentMode || "").toLowerCase().startsWith("kml");

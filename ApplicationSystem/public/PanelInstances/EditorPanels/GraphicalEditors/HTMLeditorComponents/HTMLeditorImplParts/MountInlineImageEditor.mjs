@@ -58,8 +58,9 @@ export async function mountInlineImageEditor(scope) {
       scope.inlineImageState.editorCleanup = scope.inlineImageState.instance.destroy;
     }
     scope.owner.imageToolsState.inlineEditorSession = {
+      beforeHtml: scope.inlineImageState.beforeHtml,
       targetImage: scope.inlineImageState.targetImage,
-      originalSrcAttribute: scope.inlineImageState.targetImage.getAttribute("src") || "",
+      originalSrcAttribute: scope.inlineImageState.context.src || scope.inlineImageState.targetImage.getAttribute("src") || "",
       frame: scope.inlineImageState.frame,
       host: scope.inlineImageState.host,
       editorPath: scope.inlineImageState.linkedPath,
@@ -115,6 +116,7 @@ export async function mountInlineImageEditor(scope) {
     } else {
       scope.owner.imageToolsState.setSelectedImageForHandles(null);
     }
+    scope.owner.wysiwyg.__nvProgrammaticHistory?.cancelTransaction();
     alert(`Failed to open editor: ${err.message}`);
   }
 }

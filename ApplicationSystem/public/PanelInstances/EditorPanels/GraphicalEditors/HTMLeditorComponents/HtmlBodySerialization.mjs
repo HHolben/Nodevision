@@ -1,5 +1,6 @@
 // Nodevision/ApplicationSystem/public/PanelInstances/EditorPanels/GraphicalEditors/HTMLeditorComponents/HtmlBodySerialization.mjs
 // This module serializes a detached HTML body projection, preserving authored marker collisions and restoring explicitly tracked resources while removing proven editor presentation.
+import { reconcileFootnotes } from "/References/ReconcileFootnotes.mjs";
 import { serializeInlineEquationsForSave } from "/Equation/HtmlInlineEquation.mjs";
 import { syncImageTextPresentation } from "./HtmlImageText.mjs";
 
@@ -10,5 +11,7 @@ export function cloneHtmlBodyForSave(wysiwyg) {
   if (!provenance) throw new Error('HTML source provenance is unavailable.');
   syncImageTextPresentation(clone);
   serializeInlineEquationsForSave(clone, { preservePresentation: true });
-  return provenance.clean(clone);
+  const clean = provenance.clean(clone);
+  reconcileFootnotes(clean);
+  return clean;
 }
