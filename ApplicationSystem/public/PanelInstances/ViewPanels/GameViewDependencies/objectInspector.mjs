@@ -1,6 +1,7 @@
 // Nodevision/ApplicationSystem/public/PanelInstances/ViewPanels/GameViewDependencies/objectInspector.mjs
 // This file defines browser-side object Inspector logic for the Nodevision UI. It renders interface components and handles user interactions.
 
+import { mountWorldAssociations } from '../../../Education/WorldAssociations.mjs';
 import {createConstructionProperties} from '../../../MetaWorld/Constructions/Properties.mjs';
 import { openTextEditor } from '../../../MetaWorld/Text/TextEditor.mjs';
 import { createVoxelWorldProperties } from "../../../MetaWorld/ProceduralVoxelWorld/VoxelWorldProperties.mjs";
@@ -171,6 +172,7 @@ export function createObjectInspector({ THREE, panel, scene, sceneObjects, colli
     title: "Inspect / Modify",
     closeBehavior: "hide",
     onRequestClose: () => {
+      associations.show(null);
       stopPreviewLoop();
       terrainProperties.hide();
       pathProperties.hide();constructionProperties.hide();
@@ -184,7 +186,7 @@ export function createObjectInspector({ THREE, panel, scene, sceneObjects, colli
   root.style.flexDirection = "column";
   root.style.gap = "10px";
   root.style.font = "12px/1.3 monospace";
-  const educationalButton=document.createElement('button');educationalButton.type='button';educationalButton.textContent='Educational Associations';educationalButton.onclick=()=>import('/ToolbarCallbacks/edit/educationalAssociations.mjs').then(m=>m.default());floatingPanel.content.append(educationalButton);
+  const associations = mountWorldAssociations(floatingPanel.content);
   floatingPanel.content.appendChild(root);
   const terrainProperties = createVoxelWorldProperties(floatingPanel.content, root);
   const pathProperties = createPathProperties(floatingPanel.content, root);
@@ -1252,8 +1254,7 @@ export function createObjectInspector({ THREE, panel, scene, sceneObjects, colli
   return {
     showConstructionEditing(section){root.style.display="none";constructionProperties.hide();terrainProperties.hide();pathProperties.hide();root.style.display="none";floatingPanel.content.append(section);floatingPanel.setVisible(true);floatingPanel.undock();},
     inspectTarget(target, distance = null) {
-      let educationalTarget=target;while(educationalTarget&&!educationalTarget.userData?.metaWorldLayerId)educationalTarget=educationalTarget.parent;
-      if(educationalTarget)window.dispatchEvent(new CustomEvent('nv-educational-selection',{detail:{objectId:educationalTarget.userData.metaWorldLayerId}}));
+      associations.show(target);
       const textTarget = target?.userData?.textRoot || target;
       if (textTarget?.userData?.textRuntime) return openTextEditor(textTarget);
       pathProperties.hide();constructionProperties.hide();
@@ -1283,6 +1284,7 @@ export function createObjectInspector({ THREE, panel, scene, sceneObjects, colli
       return true;
     },
     hide() {
+      associations.show(null);
       pathProperties.hide();constructionProperties.hide();
       terrainProperties.hide();
       activeTarget = null;
@@ -1308,6 +1310,7 @@ export function createObjectInspector({ THREE, panel, scene, sceneObjects, colli
       return true;
     },
     dispose() {
+      associations.dispose();
       pathProperties.dispose();constructionProperties.dispose();
       terrainProperties.dispose();
       activeTarget = null;

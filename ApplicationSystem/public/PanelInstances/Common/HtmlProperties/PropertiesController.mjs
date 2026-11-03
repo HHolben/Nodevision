@@ -1,5 +1,6 @@
 // Nodevision/ApplicationSystem/public/PanelInstances/Common/HtmlProperties/PropertiesController.mjs
 // This module binds the minimal Properties panel to existing HTML selection owners, pins asynchronous edits to their destination, and cancels previews when ownership changes.
+import { mountHtmlAssociations } from '../../../Education/HtmlAssociations.mjs';
 import { createPropertiesSurface } from './PropertiesSurface.mjs';
 import { activeHtmlPropertiesContext, htmlPropertiesContexts, subscribeHtmlPropertiesContext } from './HtmlPropertiesContexts.mjs';
 import { prepareHtmlCssDocument, discoverHtmlProperties } from './HtmlCssDocument.mjs';
@@ -8,6 +9,7 @@ import { beginPropertiesEdit } from './PropertiesEdit.mjs';
 export function mountHtmlProperties(host) {
   const ui = createPropertiesSurface(host);
   let context = null, element = null, targets = [], edit = null, last = null, unsubscribe = null, serial = 0, disposed = false, busy = false, restoring = false;
+  const associations = mountHtmlAssociations(host, () => context, () => element);
   const message = text => { ui.status.textContent = text; };
   function cancel() { const current = edit; edit = null; if (current) { restoring = true; try { current.cancel(); } finally { restoring = false; element = context?.selection.getElement(); } } }
   function controls() {
@@ -20,6 +22,7 @@ export function mountHtmlProperties(host) {
     ui.property.disabled = ui.destination.disabled = ui.value.disabled = busy;
   }
   async function refresh() {
+    associations.refresh();
     const token = ++serial, owner = context, selected = element;
     ui.identity.textContent = owner && selected ? `${owner.filePath} · ${selected.localName}${selected.id ? '#' + selected.id : ''}${[...selected.classList].map(c => '.' + c).join('')}` : 'Select an HTML element in a graphical editor.';
     ui.destinations([]); targets = []; controls();
@@ -98,6 +101,6 @@ export function mountHtmlProperties(host) {
   host.addEventListener('keydown', saveKey);
   bind(activeHtmlPropertiesContext());
   return { ui, refresh, invoke,
-    dispose() { if (disposed) return; disposed = true; serial++; unsubscribe?.(); offOwner(); try { cancel(); } catch {} window.removeEventListener('nv-html-properties-history-blocked', blockMessage); host.removeEventListener('keydown', saveKey); },
+    dispose() { if (disposed) return; disposed = true; associations.dispose(); serial++; unsubscribe?.(); offOwner(); try { cancel(); } catch {} window.removeEventListener('nv-html-properties-history-blocked', blockMessage); host.removeEventListener('keydown', saveKey); },
   };
 }

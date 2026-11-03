@@ -4,6 +4,7 @@ import { spawn } from 'node:child_process';
 import { mkdtemp, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+const expectedResult = process.argv[6] || 'PASS:';
 const profile = await mkdtemp(join(tmpdir(), 'nodevision-browser-test-'));
 const browser = spawn(process.argv[3] || 'chromium', ['--headless', '--no-sandbox', ...(process.env.NODEVISION_TEST_WEBGL === '1' ? ['--enable-unsafe-swiftshader', '--use-angle=swiftshader'] : []), '--disable-gpu', '--disable-dev-shm-usage', '--force-device-scale-factor=2', '--remote-debugging-pipe', `--user-data-dir=${profile}`, 'about:blank'], { stdio: ['ignore', 'ignore', 'pipe', 'pipe', 'pipe'] });
 let nextId = 0, buffer = '', errors = '';
@@ -37,7 +38,7 @@ try {
   await send('Page.navigate', { url: process.argv[2] }, sessionId);
   await send('Page.bringToFront', {}, sessionId);
   await loaded;
-  const result = await send('Runtime.evaluate', { awaitPromise: true, returnByValue: true, expression: `new Promise(resolve => { const poll = () => { const text = document.querySelector('#result')?.textContent; if (text && /^(PASS|FAIL):/.test(text)) resolve(text); else setTimeout(poll, 50); }; poll(); })` }, sessionId);
+  const result = await send('Runtime.evaluate', { awaitPromise: true, returnByValue: true, expression: `new Promise(resolve => { const poll = () => { const text = document.querySelector('#result')?.textContent; if (text && (text.startsWith('FAIL:') || text.startsWith(${JSON.stringify(expectedResult)}))) resolve(text); else setTimeout(poll, 50); }; poll(); })` }, sessionId);
   const report = result.result?.value || JSON.stringify(result);
   if(report.startsWith('PASS:')&&process.env.NODEVISION_NATIVE_PATHS==='1')await (await import('./paths-chromium-input.mjs')).runPathNativeChecks(send,sessionId);
   if(report.startsWith('PASS:')&&process.env.NODEVISION_NATIVE_TERRAIN_MAPS==='1')await (await import('./terrain-map-native-input.mjs')).runMapNativeChecks(send,sessionId);

@@ -47,23 +47,13 @@ The HTML source projection permits only the specifically marked inert JSON-LD sc
 
 ## Native editor controls
 
-Open **Edit → Educational Associations**, or use **Educational Associations** in the existing world object inspector. This is an ordinary Nodevision InfoPanel with inherited styling, selection and cleanup conventions.
+The separate Educational Associations panel and Edit-menu command have been removed. Use **HTML Properties → World associations** for the selected HTML element, or **Document associations** in the existing world-object inspector. Generic elements receive stable `document-element` records when needed; existing educational identities are reused.
 
-The panel supports:
+HTML Properties exposes **Associate with World Object**, **Go to Associated World Object**, and **Remove World Association**. The world inspector exposes **Link to Document Element**, **Go to Document Element**, and **Remove Document Association**. Save each changed document through its existing editor.
 
-- Choose an open HTML document and inspect stable record identities.
-- Select an existing table row or STEM list entry; create a record or assign an existing one.
-- Explicitly create records from the six-column alphabet table.
-- Edit the name, user-defined classification, related IDs, Notebook link and source references.
-- Remove an HTML association or delete a record while retaining unresolved references.
-- Select a world object, assign/remove records, focus a linked object, or navigate to its document entry.
-- Create a normal world portal from a record's existing Notebook link. The destination is checked before creation; no linked page is copied.
-- Associate an existing physical path's start/end endpoint with a record.
-- Validate references in open documents; browse existing bibliography anchors/source links.
+JSON-LD records, unknown fields, bibliography links, route references, and ordinary hyperlinks retain their existing format. The reusable controller still supports structured record editing and explicit alphabet extraction; there are no Greek-specific normal toolbar commands. Existing portal and resource services remain available through their native workflows and reusable APIs.
 
-Source citations reuse ordinary bibliography/footnote anchors and links. No competing citation database is introduced. Portal creation uses the existing world bridge and native `/Notebook/...` application route, while the record retains its original relative hyperlink. Application routes contain no machine-specific filesystem paths.
-
-Document and world registry events update the panel. No semantic selection triggers a toolbar rebuild, no per-frame DOM scans are added, and cached record parsing is unaffected by pointer movement. Panel subscriptions and document observers are released on cleanup.
+Association changes use native HTML/world history and do not rebuild geometry or toolbars. Inspector subscriptions are released on disposal; world-inspector subscriptions are also released when its target is hidden or its world changes. See [GeoTIFF and association implementation report](GeoTIFFAndAssociations.md) for current tests and exact steps.
 
 ## Alphabet-trail compatibility
 
@@ -127,20 +117,18 @@ Use the existing geographic voxel-world dialog to select the raw TIFF, choose a 
 
 ## User walkthrough
 
-1. Open a working copy of `GreekAlphabet.html` in the graphical HTML editor. Open its embedded world through Nodevision's existing Virtual World/Build workflow, and author a mnemonic object normally.
-2. Select Alpha's table row or a STEM list entry. Open **Edit → Educational Associations**.
-3. Choose **Create Records from Alphabet Table** for explicit batch annotation, or choose kind `alphabet-letter`, identity `greek-alpha`, name `Alpha`, and **Create Record** for a single row. Existing STEM list entries can be assigned independent records.
-4. Choose `greek-alpha` and the desired world object, then **Link to World Object**. Repeat for additional mnemonic objects or other records.
-5. Use **Go to Linked Object**. From the world inspector, reopen the panel, select the object and use **Go to Document Entry**. Removing either association leaves the object and educational text intact.
-6. For a STEM portal, select the concept with its existing Notebook link and choose **Create Portal Using Notebook Link**. Broken/unresolvable destinations are reported. Relative links in the shallow representative fixture may not resolve because the primary Notebook's directory hierarchy is absent; do not rewrite them to match the VM.
-7. Configure `maps.terrain` as described above. Select the raw DEM and a crop within its coverage; the topographic TIFF cannot provide heights.
-8. Save the HTML document and use the normal world save operation for scene changes. Close/reopen and inspect the same record/object link. HTML and world undo/redo use their respective existing histories.
+1. Open the HTML document in the graphical editor and its world in Build mode.
+2. Select the desired HTML element and open **HTML Properties**.
+3. Under **World associations**, select a world object and choose **Associate with World Object**. Existing record IDs are preserved; ordinary elements receive generic stable IDs automatically.
+4. Choose **Go to Associated World Object**, or inspect the object with **Y** and use **Go to Document Element** under **Document associations**.
+5. Remove a link with **Remove World Association** or **Remove Document Association**. These actions preserve the element, record, and world object. Use each editor's existing undo/redo controls.
+6. Continue using ordinary hyperlinks, bibliography/footnote controls, and native portal tools for Notebook resources. Save the HTML document and world after changing their associations.
 
 ## Implementation files
 
 New reusable modules are under `ApplicationSystem/public/Education/`: `Records`, `HtmlController`, `WorldLinks`, `Navigation`, `PanelNavigation`, `Resources`, `RouteReferences`, plus focused tests.
 
-Editor integration extends `InitializeHtmlEditorTools.mjs`, `HtmlSourceDocument.mjs`, `objectInspector.mjs`, `WorldAuthoringPermissions.mjs`, `editToolbar.json`, the new `edit/educationalAssociations.mjs` callback, and the new `InfoPanels/EducationalLinksPanel.mjs`.
+Editor integration extends `InitializeHtmlEditorTools.mjs`, `HtmlSourceDocument.mjs`, `objectInspector.mjs`, `WorldAuthoringPermissions.mjs`, `editToolbar.json`, the existing HTML Properties controller, and the generic association controls in `Education/`. The initial dedicated callback and panel have been removed.
 
 Persistence changes extend `worldLoading.mjs`, `worldSave.mjs`, `Paths/PathDefinition.mjs`, `Paths/PathAuthoringBridge.mjs`, `ProceduralVoxelWorld/VoxelWorldAuthoringBridge.mjs`, `Text/TextAuthoringBridge.mjs`, and `Constructions/Authoring.mjs`.
 
@@ -150,7 +138,7 @@ Browser coverage is in `scripts/education-browser.mjs`, with a public synthetic 
 
 ## Validation and remaining limits
 
-Final targeted runs passed:
+The original Phase 1 targeted runs passed (current follow-up results are in [GeoTIFFAndAssociations.md](GeoTIFFAndAssociations.md)):
 
 | Command / suite | Result |
 |---|---|
@@ -177,7 +165,7 @@ node --loader ./scripts/html-test-loader.mjs --test \
   ApplicationSystem/public/PanelInstances/EditorPanels/GraphicalEditors/HTMLeditorComponents/Html*.test.mjs
 ```
 
-New focused coverage includes eight educational model/relationship tests and three raster inspection/error tests. Browser assertions cover normalized body-markup preservation, Unicode, hyperlinks, bibliography, unchanged editable-element count, explicit batch annotation, missing references, unknown fields, metadata version/head errors, multiple relationships, HTML/world history, real panel-factory initialization, both navigation controls, portal creation, path edits, terrain regeneration, linked-voxel compaction protection, light identity, full save/reopen, and duplicate-view cleanup. All application writes in the education browser fixture are intercepted in memory.
+New focused coverage includes eight educational model/relationship tests and three raster inspection/error tests. Browser assertions cover normalized body-markup preservation, Unicode, hyperlinks, bibliography, unchanged editable-element count, explicit batch annotation, missing references, unknown fields, metadata version/head errors, multiple relationships, HTML/world history, the original panel-factory initialization (subsequently replaced by existing-inspector integration), both navigation controls, portal creation, path edits, terrain regeneration, linked-voxel compaction protection, light identity, full save/reopen, and duplicate-view cleanup. All application writes in the education browser fixture are intercepted in memory.
 
 Performance assertions verify no additional parsing across 1,000 pointer events/repeated record reads, unchanged mesh identity for association-only edits, and no rebuilding of HTML record controls when world associations change. A local footnote regression run measured 30 edits in a 60,000-word/300-note document at 30.9 ms with zero reconciliation scans; this is a local observation, not a general performance guarantee. Terrain tests retained five renderer geometries across repeated representation switches and preserved imported asset identities and source-fetch counts.
 
@@ -189,6 +177,6 @@ Implemented limitations:
 - A world must be loaded to locate its objects. Missing/closed documents and unresolved records receive diagnostics; there is no repository-wide semantic search service.
 - IDs remain stable through text/geometry edits. Moving or renaming a document file can still require repairing relative references, as with other Notebook links; automatic cross-file refactoring is not included.
 - The record stores source text at annotation time. Later prose edits do not silently reinterpret scientific facts or regenerate record fields.
-- Arbitrary record fields are preserved and editable through the controller/source editor; the initial panel exposes common fields rather than a full ontology editor.
+- Arbitrary record fields are preserved and editable through the controller/source editor; the existing inspectors expose generic linking rather than a separate ontology editor.
 - Real fixture navigation/save uses the native editor and world loader with writes intercepted in memory. Full desktop interaction, closed-document tab creation, and every imported construction refresh combination have not been exhaustively exercised.
 - No separate citation system, complete junction graph, NPC, archery targets, lesson engine, scoring, adaptive learning, or terrain assets were created. These should reference the stable educational and route identities while keeping session state separate.

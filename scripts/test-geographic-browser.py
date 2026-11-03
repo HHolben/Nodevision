@@ -1,12 +1,16 @@
 # Nodevision/scripts/test-geographic-browser.py
 # Serves real geographic modules and Three.js with isolated persistence and toolbar hosts.
 import http.server,pathlib,subprocess,threading,sys,os,tempfile,re,shutil
+module=sys.argv[1] if len(sys.argv)>1 else 'geographic-browser.mjs'
+if not re.fullmatch(r'[\w-]+\.mjs',module):raise ValueError('Invalid test module')
 fixture=tempfile.TemporaryDirectory(prefix="nodevision-geographic-")
 root=pathlib.Path(__file__).resolve().parents[1]
 subprocess.run(['node',str(root/'scripts/geographic-fixtures.mjs'),fixture.name],check=True)
 large=pathlib.Path(os.environ.get('NV_GEO_LARGE_FIXTURES','/tmp/nodevision-geographic-large'))
-if not (large/'large-dem.tif').is_file():raise RuntimeError('Generate large fixtures with scripts/geographic-large-fixtures.py first.')
+if module=='geographic-browser.mjs' and not (large/'large-dem.tif').is_file():raise RuntimeError('Generate large fixtures with scripts/geographic-large-fixtures.py first.')
 for file in large.glob('*.tif'):shutil.copyfile(file,pathlib.Path(fixture.name)/file.name)
+for file in (root/'Notebook/test-fixtures/GreekAlphabet/Terrain').glob('*.tiff'):
+ shutil.copyfile(file,pathlib.Path(fixture.name)/('pelion-raw.tiff' if '(Raw)' in file.name else 'pelion-rgb.tiff'))
 class Handler(http.server.SimpleHTTPRequestHandler):
  changed=False
  offline=False
@@ -14,7 +18,7 @@ class Handler(http.server.SimpleHTTPRequestHandler):
  def log_message(self,*a):pass
  def do_GET(self):
   url=self.path.split('?')[0]
-  if url=='/':content='<div id="editor" style="width:800px;height:600px"></div><pre id="result">RUNNING</pre><script type="module" src="/scripts/geographic-browser.mjs"></script>';mime='text/html'
+  if url=='/':content='<div id="editor" style="width:800px;height:600px"></div><pre id="result">RUNNING</pre><script type="module" src="/scripts/'+module+'"></script>';mime='text/html'
   elif url in ['/test/offline','/test/online']:
    Handler.offline=url=='/test/offline';self.send_response(200);self.end_headers();return
   elif url in ['/test/change','/test/restore']:

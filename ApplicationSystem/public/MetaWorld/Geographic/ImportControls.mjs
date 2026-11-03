@@ -14,7 +14,7 @@ export function importControls(form,old,invalidate) {
       const picker=mountImageMapNotebookPicker(root,{initialDirectory,onDone:({path,isDirectory})=>{if(isDirectory)return;el.value='/Notebook/'+path.split('/').map(encodeURIComponent).join('/');invalidate(key);picker.destroy();root.remove();},onCancel:()=>{picker.destroy();root.remove();}});
     };
   }
-  input('crop','Crop west,south,east,north (degrees; blank = center or selected polygon)',old?.crop?.join(',')??'');
+  input('crop','Crop west,south,east,north (degrees; required unless a polygon is selected)',old?.crop?.join(',')??'');
   input('horizontalScale','World meters per geographic meter',old?.horizontalScale??1,'number').step='any';
   input('verticalExaggeration','Vertical exaggeration',old?.verticalExaggeration??1,'number').step='any';
   input('verticalOffset','Vertical offset (m; blank = crop minimum at 1 m)',old?.verticalOffset??'','number').step='any';

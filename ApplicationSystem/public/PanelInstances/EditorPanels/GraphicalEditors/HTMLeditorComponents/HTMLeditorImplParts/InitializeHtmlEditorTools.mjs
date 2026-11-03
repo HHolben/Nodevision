@@ -160,7 +160,7 @@ export async function initializeHtmlEditorTools(scope) {
   });
   const education=installEducationalHtml(scope.htmlSession.wysiwyg,{filePath:scope.filePath,head:scope.htmlSession.headClone,
     getRange:()=>getCurrentSelectionRangeInEditor(scope.htmlSession.wysiwyg)||getRememberedSelectionRange(scope.htmlSession.wysiwyg),
-    run:(label,action)=>scope.htmlSession.wysiwyg.__nvHtmlTransactions.run(label,action),report:message=>setStatus('Educational Associations',message)});
+    run:(label,action)=>scope.htmlSession.wysiwyg.__nvHtmlTransactions.run(label,action),report:message=>setStatus('Document associations',message)});
   scope.container.__cleanupHTMLReferences = () => {references.dispose();education.dispose();};
   scope.container.__cleanupHTMLAttention = scope.htmlSession.htmlAttentionCleanup;
 }

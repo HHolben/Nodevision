@@ -5,7 +5,6 @@
   {"ToolbarCategory":"Edit","parentHeading":"Footnotes","heading":"Delete Footnote","callbackKey":"deleteFootnote","modes":["HTMLediting"]},
   {"ToolbarCategory":"Edit","parentHeading":"Footnotes","heading":"Validate Footnotes","callbackKey":"validateFootnotes","modes":["HTMLediting"]},
   {"ToolbarCategory":"Edit","parentHeading":"Edit Text Image","heading":"Edit Image Here","callbackKey":"editImageHere","modes":["HTMLediting","EPUBediting"],"conditions":{"htmlImageTextSelected":true}},
-  {"ToolbarCategory":"Edit","heading":"Educational Associations","callbackKey":"educationalAssociations"},
   {"ToolbarCategory":"Edit","parentHeading":"Edit","heading":"Edit Construction","callbackKey":"editConstruction","modes":["VirtualWorldEditing","VRWorldEditing"]},
   {"ToolbarCategory":"Edit","parentHeading":"Edit","heading":"Save as Construction","callbackKey":"saveAsConstruction","modes":["VirtualWorldEditing","VRWorldEditing"]},
   {"ToolbarCategory":"Edit","parentHeading":"Edit","heading":"Extrude","preventDropdown":true,"modes":["GOXediting"]},

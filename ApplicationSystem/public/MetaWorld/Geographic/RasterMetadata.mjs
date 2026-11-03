@@ -11,7 +11,7 @@ export function rasterMetadata(image) {
   if(keys.VerticalUnitsGeoKey&&keys.VerticalUnitsGeoKey!==9001)throw Error('Elevation units must be meters.');
   if((crs===32634&&keys.ProjLinearUnitsGeoKey&&keys.ProjLinearUnitsGeoKey!==9001)||(crs===4326&&keys.GeogAngularUnitsGeoKey&&keys.GeogAngularUnitsGeoKey!==9102))throw Error('Unsupported coordinate units.');
   if(width<2||height<2||!Number.isSafeInteger(width*height))throw Error('Raster must have at least 2 × 2 samples and safely addressable dimensions.');
-  if(image.getSamplesPerPixel()!==1)throw Error('Only single-band rasters are supported.');
+  if(image.getSamplesPerPixel()!==1)throw Error('Select a single-band elevation DEM. RGB/topographic visualizations cannot supply terrain heights; use the raw DEM TIFF.');
   const bits=fd.getValue('BitsPerSample')?.[0]??8,format=fd.getValue('SampleFormat')?.[0]??1,compression=fd.getValue('Compression')??1;
   if(!((format===1||format===2)&&[8,16,32].includes(bits)||format===3&&[32,64].includes(bits)))throw Error('Supported samples: signed/unsigned 8/16/32-bit integers or 32/64-bit floats.');
   if(![1,5,8,32946,32773].includes(compression))throw Error('Supported TIFF compression: none, LZW, Deflate or PackBits.');

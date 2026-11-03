@@ -51,6 +51,7 @@ export function openVoxelWorldDialog(bridge = getActiveMetaWorldLayerBridge(), o
   const mapNote=document.createElement('p');mapNote.textContent='Map heights and origin use meters local to this terrain object. Heights are clipped to the selected vertical bounds. Biomes and surface materials come from the map; seeded soil/rock remains below. Map terrain does not synthesize waterways or landform caves. Paths and constructions remain independent.';mapFields.append(mapNote);
   geographicPanel=mountGeographicPanel(form,values);
   const updateSource=()=>{
+    fields.seed.parentElement.firstChild.textContent=source.value==='geographic'?'Auxiliary seed (vegetation/detail)':'Seed';
     const geographic=source.value==='geographic',mapped=['map','hybrid'].includes(source.value);mapFields.hidden=!mapped;mapFields.disabled=!mapped;for(const key of ['detailStrength','detailScale']){fields[key].parentElement.hidden=source.value!=='hybrid';fields[key].disabled=source.value!=='hybrid';}geographicPanel.host.hidden=!geographic;geographicPanel.host.disabled=!geographic;
     for(const key of ['sizeX','sizeZ','maxHeight','minHeight','startingBiome','water','caves'])if(fields[key]){fields[key].parentElement.hidden=geographic;fields[key].disabled=geographic;}
     if(mapped){fields.startingBiome.value='auto';for(const key of ['startingBiome','water','caves'])if(fields[key]){fields[key].disabled=true;fields[key].parentElement.hidden=true;}}
@@ -87,6 +88,7 @@ export function openVoxelWorldDialog(bridge = getActiveMetaWorldLayerBridge(), o
       if(input.terrainSource==='geographic')input.geographic=geographicPanel.get();
       const def=definitionFromVoxelForm(input,previous);generate.disabled=true;
       if(['map','hybrid'].includes(def.terrainSource)){status.textContent='Validating terrain map…';const path=mapReference(bridge.sourcePath,def.terrainMap.path),map=await openMap(httpRanges('/Notebook/'+path.split('/').map(encodeURIComponent).join('/')));try{const o=map.manifest.origin;await map.prepare({minX:o[0],maxX:o[0],minZ:o[2],maxZ:o[2]});}finally{map.dispose();}if(closed||getActiveMetaWorldLayerBridge()!==bridge)return;}
+      if (previous && !window.confirm('Regenerate terrain from the selected source? Ground elevations may change beneath authored objects. Paths, constructions, models, and associations remain; Undo restores the previous terrain.')) { generate.disabled=false; return; }
       const result=options.onConfigure ? (options.onConfigure(input,def), true) : objectId?bridge.regenerateVoxelWorld(objectId,def):bridge.addVoxelWorld(def);
       if(!result)throw Error('This world is not currently editable.');
       close();

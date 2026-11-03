@@ -11,7 +11,7 @@ import { parseRegions } from '/MetaWorld/Geographic/KmlRegions.mjs';
 const ok=(v,m)=>{if(!v)throw Error(m);};
 const wait=async fn=>{const start=performance.now();while(!fn()){if(performance.now()-start>15000)throw Error('Timed out: '+document.querySelector('[data-geographic-preview]')?.textContent);await new Promise(r=>setTimeout(r,20));}};
 try {
-  window.NodevisionState={currentMode:'Virtual World Editing'};
+  window.NodevisionState={currentMode:'Virtual World Editing'};window.confirm=()=>true;
   const panel=document.getElementById('editor'),scene=new THREE.Scene(),camera=new THREE.PerspectiveCamera(75,1.6,.1,1000);
   const state={currentWorldPath:'page.html'},movementState={playerMode:'creative',playerHeight:1.75,environment:{},isGrounded:true};
   const context=window.VRWorldContext={THREE,scene,camera,panel,state,movementState,objects:[],colliders:[],lights:[],portals:[],collisionActions:[],useTargets:[],spawnPoints:[],waterVolumes:[],measurementVisuals:[],controls:{getObject:()=>camera},inventory:{getSelectedItem:()=>({id:'procedural-voxel-world'})}};
@@ -31,6 +31,7 @@ try {
   openVoxelWorldToolSettings(bridge);ok(form(),'inventory G settings dialog');
   set('terrainSource','geographic');form().elements.terrainSource.dispatchEvent(new Event('change'));
   set('geo_elevation','/Notebook/dem.tif');set('geo_landcover','/Notebook/cover.tif');set('geo_kml','/Notebook/regions.kml');
+  if (!form().elements.geo_crop.value) {button('Fit to source').click();await wait(()=>form().querySelector('[data-geographic-preview]').textContent.includes('Crop updated'));}
   button('Import / Preview').click();await wait(()=>form().querySelector('[data-geographic-preview]').textContent.startsWith('Ready.'));
   const previewText=form().querySelector('[data-geographic-preview]').textContent;ok(previewText.includes('16 × 16')&&previewText.includes('conservative bilinear-support'),'preview metadata');
   button('Apply Settings').click();ok(!form(),'shared tool configuration accepted');
@@ -54,6 +55,7 @@ try {
   bridge.removeObjectLayer(root.userData.metaWorldLayerId);openVoxelWorldDialog(bridge);set('terrainSource','geographic');form().elements.terrainSource.dispatchEvent(new Event('change'));set('geo_elevation','/Notebook/missing.tif');
   button('Import / Preview').click();await wait(()=>form().querySelector('[data-geographic-preview]').textContent.includes('missing or unavailable'));ok(context.objects.length===1,'failed import does not place terrain');
   set('geo_elevation','/Notebook/dem.tif');button('Import / Preview').click();button('Cancel import').click();await wait(()=>form().querySelector('[data-geographic-preview]').textContent.includes('cancelled'));
+  if (!form().elements.geo_crop.value) {button('Fit to source').click();await wait(()=>form().querySelector('[data-geographic-preview]').textContent.includes('Crop updated'));}
   button('Import / Preview').click();await wait(()=>form().querySelector('[data-geographic-preview]').textContent.startsWith('Ready.'));button('Generate').click();ok(!form(),'Insert path places imported terrain');
   const kml=await(await originalFetch('/Notebook/regions.kml')).text();ok(parseRegions(kml).length===2,'polygon parser');
   const withHole=kml.replace('</outerBoundaryIs>','</outerBoundaryIs><innerBoundaryIs><LinearRing><coordinates>23.049,39.349 23.051,39.349 23.051,39.351 23.049,39.351 23.049,39.349</coordinates></LinearRing></innerBoundaryIs>');ok(parseRegions(withHole)[0].rings.length===2,'KML holes retained');

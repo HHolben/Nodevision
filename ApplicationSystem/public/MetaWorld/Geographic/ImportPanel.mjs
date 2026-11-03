@@ -3,8 +3,7 @@
 import { importControls } from './ImportControls.mjs';
 import { ImportJobs } from './ImportJobs.mjs';
 import { drawCropPreview,showRecipe } from './CropPreview.mjs';
-import { geographicBounds,rectangle,transformGeometry } from './CropGeometry.mjs';
-import { project,unproject } from './Coordinates.mjs';
+import { geographicBounds } from './CropGeometry.mjs';
 import { parseRegions } from './KmlRegions.mjs';
 export function mountGeographicPanel(form,values) {
   const old=values.geographic,jobs=new ImportJobs();let snapshot=old??null,metadata=null,regions=old?.regions??[],disposed=false,busy=false,explicit=!!old,fitCoverage=old?.fitCoverage??false;
@@ -28,17 +27,13 @@ export function mountGeographicPanel(form,values) {
     const selected=controls.boundary.value;controls.boundary.replaceChildren(new Option('No polygon',''),...regions.map(r=>new Option(r.name,r.id)));controls.boundary.value=selected;
     return kml;
   }
-  function centerCrop(){
-    const b=metadata.bounds,center=project([(b[0]+b[2])/2,(b[1]+b[3])/2]);
-    const geo=geographicBounds(rectangle([center[0]-64,center[1]-64,center[0]+64,center[1]+64]));
-    return [Math.max(geo[0],b[0]+(b[2]-b[0])*.05),Math.max(geo[1],b[1]+(b[3]-b[1])*.05),Math.min(geo[2],b[2]-(b[2]-b[0])*.05),Math.min(geo[3],b[3]-(b[3]-b[1])*.05)];
-  }
   preview.onclick=async()=>{
     const revision=begin();status.textContent='Inspecting source metadata and range support…';
     try{
       const kml=await inspect(revision);if(!current(revision))return;
       const requested=valuesNow(),polygon=regions.find(r=>r.id===requested.boundary);
-      const crop=requested.crop.trim()?requested.crop.split(',').map(Number):polygon?geographicBounds([polygon.rings]):centerCrop();
+      if (!requested.crop.trim() && !polygon) throw Error('Choose crop bounds or click Fit to source, then Import / Preview. No small center crop is selected automatically.');
+      const crop=requested.crop.trim()?requested.crop.split(',').map(Number):geographicBounds([polygon.rings]);
       const settings={...requested,crop,regions,kml,fitCoverage,mapping:JSON.parse(requested.mapping)};
       const result=await jobs.read({op:'prepare',path:requested.elevation,landcover:requested.landcover,settings},text=>{if(current(revision))status.textContent=text;});
       if(!current(revision))return;snapshot=result;controls.crop.value=crop.join(',');showRecipe(ui,result);

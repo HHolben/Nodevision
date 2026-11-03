@@ -2,6 +2,7 @@
 // This heightfield adapter supplies imported elevation and deterministic mapped surfaces to the existing chunk engine while retaining path grading and feature placement interfaces.
 import { AEGEAN_SPECIES_DATA } from '../Aegean/SpeciesData.mjs';
 import { geographicPoint, insideCrop } from './Definition.mjs';
+import { rasterToMeters } from './CropGeometry.mjs';
 import { sampleRaster, inPolygon } from './Coordinates.mjs';
 import { biomeSurface } from './Biomes.mjs';
 import { VOXEL_MATERIAL_IDS, voxelMaterialId } from '../ProceduralVoxelWorld/VoxelMaterialIds.mjs';
@@ -17,9 +18,10 @@ export function createGeographicTerrain(def) {
     let biome=g.defaultBiome,category=null;
     if(g.landcover&&inside){category=sampleRaster(g.landcover,...p,true);biome=g.mapping[category]??biome;}
     for(const region of g.regions)if(region.biome&&inPolygon(p,region)){biome=region.biome;category=null;}
-    const height=elevation===null?0:Math.floor((elevation*g.verticalExaggeration+g.verticalOffset+(g.detail?.25*noise(x/40,z/40,def.generator.seed):0))*4);
+    // Bilinear roundoff must not lower an exact voxel boundary by one cell.
+    const height=elevation===null?0:Math.floor((elevation*g.verticalExaggeration+g.verticalOffset+(g.detail?.25*noise(x/40,z/40,def.generator.seed):0))*4+1e-9);
     const surface=VOXEL_MATERIAL_IDS.indexOf(biomeSurface(biome));
-    const value={height,biome,surface,category};
+    const value={height,biome,surface,category,covered:elevation!==null};
     if(cache.size>=8192)cache.delete(cache.keys().next().value);cache.set(key,value);return value;
   }
   const getTerrainHeight=(x,z)=>column(x,z).height;
@@ -37,7 +39,17 @@ export function createGeographicTerrain(def) {
     for(let z=f.min[2];z<f.max[2];z++)for(let x=f.min[0];x<f.max[0];x++)if(!permitted(column(x,z)))return false;
     return true;
   }
-  return {cacheStats:()=>({columns:cache.size}),dimensions,maxSolidHeight:dimensions[1],getTerrainHeight,getSolidHeight:getTerrainHeight,getWaterTop:()=>0,getCavern:()=>null,getWaterway:()=>null,getLandform:()=>null,
+  // Report the actual crop footprint to paths and other metre-space consumers.
+  const sample = (x,z) => {
+    if (!Number.isFinite(x) || !Number.isFinite(z)) return {covered:false,elevation:null,biome:null,material:null};
+    const c=column(Math.floor(x/.25),Math.floor(z/.25));
+    return {covered:c.covered,elevation:c.covered?c.height*.25:null,biome:c.covered?c.biome:null,material:c.covered?voxelMaterialId(c.surface):null};
+  };
+  const start=rasterToMeters(g.elevation,[0,0]);
+  const resolution=[[1,0],[0,1]].map(cell=>{const point=rasterToMeters(g.elevation,cell);return Math.hypot(point[0]-start[0],point[1]-start[1])*g.horizontalScale;});
+  const terrainSampler={kind:'geographic',bounds:{minX:0,minZ:0,maxX:def.size[0],maxZ:def.size[2]},
+    resolution,sample,covers:(x,z)=>sample(x,z).covered};
+  return {terrainSampler,cacheStats:()=>({columns:cache.size}),dimensions,maxSolidHeight:dimensions[1],getTerrainHeight,getSolidHeight:getTerrainHeight,getWaterTop:()=>0,getCavern:()=>null,getWaterway:()=>null,getLandform:()=>null,
     getBiome:(x,z)=>column(x,z).biome,getSlope:(x,z)=>Math.max(Math.abs(getTerrainHeight(x+1,z)-getTerrainHeight(x-1,z)),Math.abs(getTerrainHeight(x,z+1)-getTerrainHeight(x,z-1)))/2,
     allowsFeature,getVoxel,getVoxelMaterialId:(x,y,z)=>voxelMaterialId(getVoxel(x,y,z)),generateChunk,clearColumns:()=>cache.clear()};
 }
