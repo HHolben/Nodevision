@@ -295,6 +295,8 @@ export function clearActiveMetaWorldLayerBridge(sourceId = null) {
   setActiveMetaWorldLayerBridge(null);
 }
 
+export function getSelectedMetaWorldObjectId() { return selectedMetaWorldLayerId; }
+
 export function getActiveMetaWorldLayerBridge() {
   return activeBridge;
 }
@@ -349,6 +351,7 @@ export function selectMetaWorldObject(objectId) {
   }
   const selected = activeBridge.selectObject(objectId) !== false;
   if (selected) {
+    selectedMetaWorldLayerId = objectId;
     dispatchLayerEvent(META_WORLD_LAYER_EVENTS.selectionChanged, { objectId });
   }
   return selected;

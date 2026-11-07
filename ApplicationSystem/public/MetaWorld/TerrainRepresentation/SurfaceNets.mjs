@@ -7,14 +7,18 @@ const edges=[];for(let i=0;i<8;i++)for(let a=0;a<3;a++)if(!(i&(1<<a)))edges.push
 export function* surfaceNetSteps(data,chunk,getVoxel){
   const origin=chunk.map(v=>v*32),cache=new Uint16Array(34**3),at=(x,y,z)=>(x+1)+34*((y+1)+34*(z+1));
   for(let z=-1;z<=32;z++)for(let y=-1;y<=32;y++){for(let x=-1;x<=32;x++)cache[at(x,y,z)]=[x,y,z].every(v=>v>=0&&v<32)?data[voxelIndex(x,y,z)]:getVoxel(origin[0]+x,origin[1]+y,origin[2]+z);yield;}
-  const positions=[],normals=[],uvs=[],indices=[],buckets=new Map();let solidVoxels=0;
-  for(const m of data)if(m&&!isLiquidVoxel(m))solidVoxels++;
+  const positions=[],normals=[],uvs=[],indices=[],buckets=new Map();let solidVoxels=0,liquidVoxels=0;
+  for(const m of data)if(m){if(isLiquidVoxel(m))liquidVoxels++;else solidVoxels++;}
   for(const liquid of [false,true]){
+    if(liquid?!liquidVoxels:!solidVoxels)continue;
     const inside=m=>m!==0&&isLiquidVoxel(m)===liquid,nodes=new Map(),key=(x,y,z)=>x+1+33*(y+1+33*(z+1));
+    // Classify once, then reject uniform cells without allocating corner arrays.
+    const occupancy=Uint8Array.from(cache,m=>inside(m)?1:0);
     for(let z=-1;z<32;z++)for(let y=-1;y<32;y++){
       for(let x=-1;x<32;x++){
-        const values=corners.map(c=>inside(cache[at(x+c[0],y+c[1],z+c[2])])?1:0);
-        const count=values.reduce((a,b)=>a+b,0);if(!count||count===8)continue;
+        const i=at(x,y,z),mask=occupancy[i]|occupancy[i+1]<<1|occupancy[i+34]<<2|occupancy[i+35]<<3|occupancy[i+1156]<<4|occupancy[i+1157]<<5|occupancy[i+1190]<<6|occupancy[i+1191]<<7;
+        if(mask===0||mask===255)continue;
+        const values=corners.map((_,index)=>(mask>>index)&1);
         const p=[0,0,0];let n=0;
         for(const [a,b] of edges)if(values[a]!==values[b]){for(let axis=0;axis<3;axis++)p[axis]+=(corners[a][axis]+corners[b][axis])*.5;n++;}
         const normal=[0,0,0];for(let a=0;a<3;a++)for(let i=0;i<8;i++)normal[a]+=(corners[i][a]?-1:1)*values[i];

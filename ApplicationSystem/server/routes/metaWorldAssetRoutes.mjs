@@ -5,6 +5,7 @@ import { createDefaultHtmlWorld } from "../../public/MetaWorld/DefaultHtmlWorld.
 import path from "node:path";
 import fs from "node:fs/promises";
 import * as cheerio from "cheerio";
+import { parseWorldJson } from "./worldJson.mjs";
 
 import { validateAndNormalizePath } from "../pathUtils.mjs";
 
@@ -174,10 +175,6 @@ function defaultObjectForCharacter(characterPath, character, placement = "origin
   };
 }
 
-function stripJsonComments(value) {
-  return String(value || "").replace(/\/\*[\s\S]*?\*\//g, "").replace(/(^|[^:])\/\/.*$/gm, "$1").trim();
-}
-
 function defaultWorld(fileName) {
   return {
     version: 1,
@@ -256,7 +253,7 @@ async function readWorldDefinition(worldFsPath, worldRelPath) {
   let world = createDefaultHtmlWorld(worldRelPath);
 
   if (script.length) {
-    const parsed = JSON.parse(stripJsonComments(script.html()));
+    const parsed = parseWorldJson(script.html());
     world = { ...defaultWorld(worldRelPath), ...(parsed && typeof parsed === "object" ? parsed : {}) };
   }
 

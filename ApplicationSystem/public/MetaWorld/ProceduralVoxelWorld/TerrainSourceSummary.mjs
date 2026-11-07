@@ -8,7 +8,7 @@ export function terrainSourceSummary(def) {
     return [
       'Source: Geographic DEM.',
       `File: ${g.elevation.asset.path}. Format: GeoTIFF. Source CRS: EPSG:${g.elevation.crs}; local projection: ${g.projection}.`,
-      `Crop (west, south, east, north): ${g.crop.join(', ')}. Geographic origin: ${g.geographicOrigin?.join(', ') ?? 'not recorded'}; projected origin: ${g.origin.join(', ')}.`,
+      `Crop (west, south, east, north): ${g.crop?.join(', ') ?? 'not recorded'}. Geographic origin: ${g.geographicOrigin?.join(', ') ?? 'not recorded'}; projected origin: ${g.origin.join(', ')}.`,
       `Horizontal scale: ${g.horizontalScale}. Elevation scale: ${g.verticalExaggeration}; vertical offset: ${g.verticalOffset} m.`,
       `Biome source: ${g.landcover?.asset?.path ?? 'default ' + g.defaultBiome}${!g.landcover && g.landcoverSource ? ' (land-cover source has no overlap: ' + g.landcoverSource.path + ')' : ''}; ${g.regions?.length ?? 0} polygon overrides.`,
       `Auxiliary seed: ${def.generator.seed} (vegetation${g.detail ? ' and explicitly enabled surface detail' : '; no elevation noise'}).`,
@@ -23,7 +23,7 @@ export function terrainSourceSummary(def) {
 
 // Availability diagnostics supplement rendering errors rather than hiding them.
 export function terrainRuntimeStatus(runtime, def) {
-  const messages = [];
+  const messages = [`Active representation: ${runtime.representation || def.representation || 'voxel'}.`];
   if (runtime.mapError) messages.push('Terrain map: ' + runtime.mapError.message);
   if (runtime.materialError) messages.push('Material loading failed: ' + runtime.materialError.message);
   if (runtime.geographicStatus?.message) messages.push(runtime.geographicStatus.message);

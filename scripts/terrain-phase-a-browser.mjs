@@ -1,0 +1,88 @@
+// Nodevision/scripts/terrain-phase-a-browser.mjs
+// Exercises real menu creation, delayed world loading, geometric replacement, inspector state, history, persisted viewing, and resource cleanup through production HTTP routes.
+import { createToolbar } from '/panels/createToolbar.mjs';
+import * as THREE from '/lib/three/three.module.js';
+import { loadWorldFromFile } from '/PanelInstances/ViewPanels/GameViewDependencies/worldLoading.mjs';
+import { saveCurrentWorldFile } from '/PanelInstances/ViewPanels/GameViewDependencies/worldSave.mjs';
+import { getActiveMetaWorldLayerBridge, selectMetaWorldObject } from '/MetaWorld/MetaWorldLayerState.mjs';
+import { createVoxelWorldProperties } from '/MetaWorld/ProceduralVoxelWorld/VoxelWorldProperties.mjs';
+import { terrainDiagnostics } from '/MetaWorld/TerrainDiagnostics/Snapshot.mjs';
+import { acquireWorldViewPermissions } from '/MetaWorld/WorldAuthoringPermissions.mjs';
+const check = (v,m) => { if (!v) throw Error(m); };
+const wait = async (fn, message='UI timeout', timeout=90000) => {
+  const end=performance.now()+timeout;
+  while(!fn()){if(performance.now()>end)throw Error(message);await new Promise(r=>setTimeout(r,20));}
+};
+try {
+  window.NodevisionState={currentMode:'Virtual World Editing'};
+  window.alert=message=>{throw Error(message);};
+  await createToolbar();
+  const view=[...document.querySelectorAll('button')].find(b=>b.textContent.trim()==='View'); check(view,'View menu exists');view.click();
+  const button=[...document.querySelectorAll('button')].find(b=>b.textContent.trim().endsWith('Terrain Representation'));check(button,'Terrain menu entry');button.click();
+  await wait(()=>document.querySelector('#sub-toolbar [aria-label="Terrain representation"]'));
+  const panel=document.getElementById('editor'),scene=new THREE.Scene(),camera=new THREE.PerspectiveCamera(60,4/3,.1,2000),state={currentWorldPath:'world.html'},movementState={playerMode:'creative',playerHeight:1.75};
+  const context=window.VRWorldContext={THREE,scene,camera,panel,state,movementState,objects:[],colliders:[],lights:[],portals:[],collisionActions:[],useTargets:[],spawnPoints:[],waterVolumes:[],measurementVisuals:[],controls:{getObject:()=>camera}};
+  await loadWorldFromFile('world.html',state,THREE,{throwOnError:true});
+  await wait(()=>!document.querySelector('#sub-toolbar [aria-label="Terrain representation"]').disabled,'Existing control refreshes after world loading');
+  let root=context.objects.find(o=>o.userData.terrainRuntime),runtime=root.userData.terrainRuntime;await runtime.ready;
+  const id=runtime.definition.id,source=JSON.stringify(runtime.definition.geographic),generator=runtime.generator,other=context.objects.filter(o=>o!==root);
+  runtime.setRenderDistance(8);
+  const center=new THREE.Vector3(root.position.x+Math.min(12,runtime.definition.size[0]/2),root.position.y+20,root.position.z+Math.min(12,runtime.definition.size[2]/2));
+  center.y=Math.max(center.y,(runtime.sampleTerrainSource(center.x,center.z).elevation || 0)+6);
+  camera.position.copy(center).add(new THREE.Vector3(0,20,35));camera.lookAt(center);
+  const renderer=new THREE.WebGLRenderer();renderer.setSize(640,480);context.renderer=renderer;panel.append(renderer.domElement);scene.add(new THREE.HemisphereLight(0xffffff,0x888888,3));
+  let running=true;const animate=()=>{if(!running)return;runtime.update(center);renderer.render(scene,camera);requestAnimationFrame(animate);};animate();
+  await wait(()=>runtime.manager.loaded.size>0&&!runtime.manager.queue.length&&!runtime.manager.pending,'Initial terrain fills');
+  selectMetaWorldObject(id);button.click();button.click();
+  check(document.querySelectorAll('#sub-toolbar [aria-label="Terrain representation"]').length===1,'Repeated opening keeps one control');
+  const fingerprints=()=>[...runtime.manager.loaded.values()].filter(e=>e.mesh).map(e=>({cell:e.cell.join(','),positions:Array.from(e.mesh.geometry.attributes.position.array),indices:e.mesh.geometry.index.count}));
+  const voxel=JSON.stringify(fingerprints()),samples=[];
+  const change=async value=>{
+    const old=[...root.children],oldGeometries=old.map(o=>o.geometry);let disposed=0;
+    oldGeometries.forEach(g=>g.addEventListener('dispose',()=>disposed++));
+    const mode=document.querySelector('#sub-toolbar [aria-label="Terrain representation"]');
+    mode.value=value;const started=performance.now();mode.dispatchEvent(new Event('change',{bubbles:true}));
+    await wait(()=>!mode.disabled,'Switch finishes');
+    check(runtime.representation===value,'UI reaches active runtime');check(disposed===oldGeometries.length,'Every obsolete geometry disposed');
+    check(root.children.length===[...runtime.manager.loaded.values()].filter(e=>e.mesh).length,'No retained hidden replacement meshes');
+    check(runtime.generator===generator,'Authoritative generator retained');check(JSON.stringify(runtime.definition.geographic)===source,'Geographic recipe retained');
+    for(const object of other)check(context.objects.includes(object),'Authored object identity retained');
+    renderer.render(scene,camera);samples.push({mode:value,switchMs:performance.now()-started,resources:renderer.info.memory.geometries,diagnostics:terrainDiagnostics(context)});
+  };
+  await change('polygonal');check(JSON.stringify(fingerprints())!==voxel,'Actual geometry differs');
+  check(root.children.some(mesh=>Array.from(mesh.geometry.attributes.position.array).some(v=>Math.abs(v/.25-Math.round(v/.25))>.001)),'Polygonal vertices are not unchanged cubes');
+  const propertiesHost=document.createElement('div'),ordinary=document.createElement('div');panel.append(propertiesHost,ordinary);
+  const properties=createVoxelWorldProperties(propertiesHost,ordinary);properties.show(root);
+  check(propertiesHost.textContent.includes('Active representation: polygonal'),'Y inspector reports active mode');properties.dispose();
+  for(const value of ['voxel','polygonal','voxel','polygonal'])await change(value);
+  check(samples.filter(s=>s.mode==='polygonal').every(s=>s.resources===samples[0].resources),'Repeated switches have stable renderer geometry counts');
+  await getActiveMetaWorldLayerBridge().setTerrainRepresentation(id,'invalid').then(()=>{throw Error('Invalid mode accepted');},e=>check(e.message.includes('voxel or polygonal'),'Invalid transition has useful error'));
+  check(runtime.representation==='polygonal','Failure retains terrain');
+  const bridge=getActiveMetaWorldLayerBridge();
+  const surface=runtime.sampleTerrainSource(center.x,center.z).elevation;
+  const path=bridge.updatePath(null,{name:'Persistent hillside cut',controlPoints:[[center.x-3,surface-1,center.z],[center.x+3,surface-1,center.z]],width:2,terrainInteraction:'excavate',elevationMode:'authored',interpolation:'straight'});
+  await wait(()=>!runtime.manager.queue.length&&!runtime.manager.pending,'Excavated terrain rebuilds');
+  const edited=Array.from(runtime.generator.generateChunk(1,0,1));
+  await change('voxel');await change('polygonal');
+  check(JSON.stringify(Array.from(runtime.generator.generateChunk(1,0,1)))===JSON.stringify(edited),'Excavation occupancy survives switches');
+  const savedPath=JSON.stringify(bridge.getPathDefinition(path.id));
+  running=false;
+  check(await saveCurrentWorldFile({state,movementState,objects:context.objects,lights:context.lights}),'Real save');
+  const saved=await (await fetch('/api/load-world',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({worldPath:'world.html'})})).json();
+  check(saved.worldDefinition.objects.find(o=>o.id===id).representation==='polygonal','Persisted representation');
+  const release=acquireWorldViewPermissions({authoring:false});movementState.viewPermissions={authoring:false};window.NodevisionState.currentMode='Virtual World Viewing';
+  await loadWorldFromFile('world.html',state,THREE,{throwOnError:true});root=context.objects.find(o=>o.userData.terrainRuntime);runtime=root.userData.terrainRuntime;await runtime.ready;
+  check(runtime.representation==='polygonal','Viewer loads persisted polygonal state');
+  check(JSON.stringify(getActiveMetaWorldLayerBridge().getPathDefinition(path.id))===savedPath,'Edited path persists through save/reopen');
+  check(JSON.stringify(runtime.definition.geographic)===source,'Viewer preserves source');
+  release();delete movementState.viewPermissions;window.NodevisionState.currentMode='Virtual World Editing';
+  await getActiveMetaWorldLayerBridge().setTerrainRepresentation(id,'voxel');
+  check(runtime.representation==='voxel','Reopened world switches back');
+  getActiveMetaWorldLayerBridge().undo();
+  check(context.objects.find(o=>o.userData.terrainRuntime).userData.terrainRuntime.representation==='polygonal','Undo restores representation');
+  getActiveMetaWorldLayerBridge().redo();
+  check(context.objects.find(o=>o.userData.terrainRuntime).userData.terrainRuntime.representation==='voxel','Redo restores representation');
+  await fetch('/test/results',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({ui:samples})});
+  runtime.dispose();renderer.dispose();
+  document.getElementById('result').textContent='PASS: actual View menu, delayed loading, selection, geometry, inspector, resource disposal, source identity, HTTP save/reopen and Viewer permissions';
+}catch(e){document.getElementById('result').textContent='FAIL: '+e.stack;}

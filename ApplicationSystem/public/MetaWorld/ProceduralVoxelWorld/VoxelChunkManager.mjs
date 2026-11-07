@@ -8,7 +8,7 @@ export class VoxelChunkManager {
   constructor(generator, radius, build, release, options=null) {
     Object.assign(this, { generator, radius, build, release, options });
     this.loaded = new ChunkRegionIndex(); this.invalidated = new Set(); this.queue = []; this.center = "";
-    this.stats = { residentBytes:0,peakLoaded:0,maxUpdateMs:0,cancelled:0, loaded: 0, queued: 0, generated: 0, voxels: 0, faces: 0, generationMs: 0, meshingMs: 0, maxBuildMs: 0 };
+    this.stats = { installationMs:0,evicted:0,requestedChunks:0,residentHits:0,residentMisses:0, residentBytes:0,peakLoaded:0,maxUpdateMs:0,cancelled:0, loaded: 0, queued: 0, generated: 0, voxels: 0, faces: 0, generationMs: 0, meshingMs: 0, maxBuildMs: 0 };
   }
   update(voxel) {
     const [cx,,cz] = voxelToChunk(voxel), center = `${cx},${cz}`;
@@ -23,7 +23,7 @@ export class VoxelChunkManager {
       }
       for (const [key, entry] of this.loaded) {
         if (Math.abs(entry.cell[0]-cx)>this.radius+1 || Math.abs(entry.cell[2]-cz)>this.radius+1) {
-          this.release(entry); this.loaded.delete(key); this.invalidated.delete(key);
+          this.stats.evicted++;this.release(entry); this.loaded.delete(key); this.invalidated.delete(key);
           this.stats.residentBytes-=entry.residentBytes??0;this.stats.voxels -= entry.solidVoxels; this.stats.faces -= entry.faceCount;
         }
       }
@@ -34,11 +34,13 @@ export class VoxelChunkManager {
     // One fixed-size chunk per update; workers can later replace build without changing residency.
     let cell = this.queue.shift();
     if (cell && cell[1] === null) {
-      const [x,,z] = cell;
+      const [x,,z] = cell, queryStart=performance.now();
       const levels = this.generator.getChunkLevels?.(x,z) || Array.from({length:Math.ceil(this.generator.maxSolidHeight/CHUNK_SIZE)},(_,y)=>y);
+      this.stats.levelQueryMs=(this.stats.levelQueryMs||0)+performance.now()-queryStart;
       // Include previously resident levels so cuts also replace chunks above the new surface.
       const dirty=[...this.loaded.values()].filter(e=>e.cell[0]===x&&e.cell[2]===z&&this.invalidated.has(chunkKey(e.cell))).map(e=>e.cell[1]);
       const cells = [...new Set([...levels,...dirty])].sort((a,b)=>b-a).map(y=>[x,y,z]).filter(c=>!this.loaded.has(chunkKey(c))||this.invalidated.has(chunkKey(c)));
+      this.stats.requestedChunks+=cells.length;this.stats.residentMisses+=cells.length;this.stats.residentHits+=Math.max(0,levels.length-cells.length);
       this.queue.unshift(...cells);
       cell = cells.length ? this.queue.shift() : null;
     }
@@ -49,6 +51,7 @@ export class VoxelChunkManager {
       this.invalidated.delete(key);
       this.loaded.set(chunkKey(cell), { ...entry, cell });
       this.stats.residentBytes+=entry.residentBytes??0;this.stats.generated++; this.stats.voxels += entry.solidVoxels; this.stats.faces += entry.faceCount;
+      this.stats.installationMs += entry.installationMs || 0;
       this.stats.generationMs += entry.generationMs; this.stats.meshingMs += entry.meshingMs;
       this.stats.maxBuildMs = Math.max(this.stats.maxBuildMs, performance.now()-start);
     }
@@ -61,7 +64,7 @@ export class VoxelChunkManager {
   storeEntry(cell,entry){
     const key=chunkKey(cell);this.releaseEntry(key);this.loaded.set(key,{...entry,cell});this.invalidated.delete(key);
     this.stats.generated++;this.stats.voxels+=entry.solidVoxels;this.stats.faces+=entry.faceCount;this.stats.residentBytes+=entry.residentBytes??0;
-    this.stats.generationMs+=entry.generationMs;this.stats.meshingMs+=entry.meshingMs;this.stats.maxBuildMs=Math.max(this.stats.maxBuildMs,entry.buildMs??0);
+    this.stats.installationMs+=entry.installationMs||0;this.stats.generationMs+=entry.generationMs;this.stats.meshingMs+=entry.meshingMs;this.stats.maxBuildMs=Math.max(this.stats.maxBuildMs,entry.buildMs??0);
   }
   invalidateRegion(bounds){
     cancelProgressive(this);

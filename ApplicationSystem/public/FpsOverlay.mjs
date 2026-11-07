@@ -1,6 +1,9 @@
 // Nodevision/ApplicationSystem/public/FpsOverlay.mjs
 // Optional workspace-wide FPS/frame-time overlay backed by a single requestAnimationFrame loop.
 
+import { round1, computeFrameStats } from './FpsOverlayStatistics.mjs';
+import { terrainDiagnostics, terrainDiagnosticsText } from './MetaWorld/TerrainDiagnostics/Snapshot.mjs';
+
 const STORAGE_KEY = "nodevision.fpsOverlay";
 const OVERLAY_ID = "nv-fps-overlay";
 const FRAME_WINDOW_SIZE = 90;
@@ -47,39 +50,6 @@ function nowMs() {
   return globalThis.performance?.now?.() ?? Date.now();
 }
 
-function round1(value) {
-  return Math.round(Number(value || 0) * 10) / 10;
-}
-
-function average(values) {
-  if (!values.length) return 0;
-  return values.reduce((sum, value) => sum + value, 0) / values.length;
-}
-
-function median(values) {
-  if (!values.length) return 0;
-  const sorted = [...values].sort((a, b) => a - b);
-  return sorted[Math.floor(sorted.length / 2)] || 0;
-}
-
-function slowThreshold(values) {
-  const typical = median(values) || average(values) || 16.7;
-  return Math.max(32, typical * 2.5);
-}
-
-function computeStats() {
-  const avgFrame = average(frameTimes);
-  const worst = frameTimes.length ? Math.max(...frameTimes) : 0;
-  const threshold = slowThreshold(frameTimes);
-  return {
-    fps: avgFrame > 0 ? 1000 / avgFrame : 0,
-    frameMs: avgFrame,
-    worstMs: worst,
-    slowFrames: frameTimes.filter((value) => value > threshold).length,
-    slowThresholdMs: threshold,
-  };
-}
-
 function setOverlayText(stats = lastStats) {
   if (!overlayTextNode) return;
   overlayTextNode.textContent = [
@@ -87,7 +57,7 @@ function setOverlayText(stats = lastStats) {
     `Frame: ${round1(stats.frameMs)} ms`,
     `Worst: ${round1(stats.worstMs)} ms`,
     `Slow: ${stats.slowFrames}`,
-  ].join("\n");
+  ].join("\n") + terrainDiagnosticsText(terrainDiagnostics());
 }
 
 function createOverlayElement() {
@@ -162,7 +132,7 @@ function measureFrame(timestamp) {
 
   if (!lastTextUpdate || time - lastTextUpdate >= TEXT_UPDATE_INTERVAL_MS) {
     lastTextUpdate = time;
-    lastStats = computeStats();
+    lastStats = computeFrameStats(frameTimes);
     setOverlayText(lastStats);
   }
 
@@ -251,5 +221,6 @@ if (hasWindow()) {
     destroy: destroyFpsOverlay,
     isEnabled: isFpsOverlayEnabled,
     snapshot: getFpsOverlaySnapshot,
+    terrainSnapshot: terrainDiagnostics,
   };
 }

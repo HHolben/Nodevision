@@ -72,3 +72,28 @@ test('closed surfaces crossing a chunk boundary have exactly two triangles per s
   }
   assert.ok(edges.size>100);assert.ok([...edges.values()].every(n=>n===2));
 });
+
+// World composition is initialized even when a document has no construction entries.
+test('polygonal collision stays on rendered triangles after composition initialization',async()=>{
+  const colliders=[],root=createProceduralVoxelWorld(THREE,definition,colliders,voxelMaterialOptions),r=root.userData.terrainRuntime;await r.ready;
+  r.setConstructions([],[]);
+  for(let i=0;i<35;i++)r.update(new THREE.Vector3(4,12,4));
+  await r.setRepresentation('polygonal');
+  for(const [x,z] of [[4,4],[4.13,4.37],[8.12,9.31]]){
+    const ray=new THREE.Raycaster(new THREE.Vector3(x,30,z),new THREE.Vector3(0,-1,0)),hits=[];root.raycast(ray,hits);hits.sort((a,b)=>a.distance-b.distance);
+    assert.ok(hits.length);assert.ok(Math.abs(colliders[0].sampleGroundY(x,z)-hits[0].point.y)<1e-6);
+  }
+  r.dispose();
+});
+
+test('switching reuses valid occupancy but regenerates invalidated chunks',async()=>{
+  const root=createProceduralVoxelWorld(THREE,definition,[],voxelMaterialOptions),r=root.userData.terrainRuntime;await r.ready;
+  for(let i=0;i<35;i++)r.update(new THREE.Vector3(4,12,4));
+  const data=[...r.manager.loaded.values()].map(e=>e.data),generation=r.stats.generationMs;
+  await r.setRepresentation('polygonal');
+  assert.equal(r.stats.generationMs,generation);assert.deepEqual([...r.manager.loaded.values()].map(e=>e.data),data);
+  r.manager.invalidateBounds({minX:0,minZ:0,maxX:64,maxZ:64});
+  await r.setRepresentation('voxel');assert.ok(r.stats.generationMs>generation);
+  assert.ok([...r.manager.loaded.values()].every(e=>!data.includes(e.data)));
+  r.dispose();
+});

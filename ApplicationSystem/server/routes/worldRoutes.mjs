@@ -4,6 +4,7 @@
 import { createDefaultHtmlWorld } from "../../public/MetaWorld/DefaultHtmlWorld.mjs";
 import fsPromises from "node:fs/promises";
 import * as cheerio from "cheerio";
+import { parseWorldJson } from "./worldJson.mjs";
 
 import { validateAndNormalizePath } from "../pathUtils.mjs";
 
@@ -32,12 +33,7 @@ export function registerWorldRoutes(app, ctx) {
         return res.json({ worldDefinition: createDefaultHtmlWorld(worldPath) });
       }
 
-      const cleaned = String(worldScript)
-        .replace(/\/\*[\s\S]*?\*\//g, "")
-        .replace(/(^|[^:])\/\/.*$/gm, "$1")
-        .trim();
-
-      res.json({ worldDefinition: JSON.parse(cleaned) });
+      res.json({ worldDefinition: parseWorldJson(worldScript) });
     } catch (error) {
       res.status(500).json({ error: "Error loading world", details: error?.message || "Unknown error" });
     }

@@ -8,7 +8,8 @@
     "replaceActive": false,
     "conditions": { "activeFileIsSvg": true }
   },
-  {"ToolbarCategory":"View","heading":"Terrain Representation","script":"terrainRepresentationWidget.mjs","modes":["HTMLediting","Virtual World Editing"]},
+  {"ToolbarCategory":"View","heading":"Terrain Representation","preventDropdown":true,"modes":["HTMLediting","Virtual World Editing","Virtual World Viewing"]},
+  {"ToolbarCategory":"View","parentHeading":"Terrain Representation","heading":"Terrain Controls","script":"terrainRepresentationWidget.mjs","modes":["HTMLediting","Virtual World Editing","Virtual World Viewing"]},
   {
     "ToolbarCategory": "View",
     "heading": "Analysis Tools",

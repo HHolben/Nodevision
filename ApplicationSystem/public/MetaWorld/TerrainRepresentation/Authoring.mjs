@@ -4,7 +4,7 @@ import {terrainRepresentation} from './Representation.mjs';
 import {worldAuthoringAllowed} from '../WorldAuthoringPermissions.mjs';
 export function installTerrainRepresentation(bridge,{layerEntries,changed}){
   const owned=e=>['procedural-voxel-world','terrain-surface'].includes(e.def.type)&&e.object3d?.userData?.terrainRuntime;
-  bridge.getTerrainRepresentations=()=>layerEntries.filter(owned).map(e=>({id:e.id,name:e.def.name||e.id,representation:e.object3d.userData.terrainRuntime.representation}));
+  bridge.getTerrainRepresentations=()=>layerEntries.filter(owned).map(e=>({id:e.id,name:e.def.name||e.id,representation:e.object3d.userData.terrainRuntime.representation,...e.object3d.userData.terrainRuntime.representationProgress}));
   bridge.setTerrainRepresentation=async(id,value)=>{
     if(!worldAuthoringAllowed(globalThis.window?.VRWorldContext?.movementState))throw Error('Terrain representation requires an editable world.');
     const mode=terrainRepresentation(value),entry=layerEntries.find(e=>e.id===id&&owned(e));if(!entry)throw Error('Select a generated terrain instance.');

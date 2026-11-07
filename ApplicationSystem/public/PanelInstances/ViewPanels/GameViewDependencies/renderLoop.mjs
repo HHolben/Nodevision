@@ -1,12 +1,14 @@
 // Nodevision/ApplicationSystem/public/PanelInstances/ViewPanels/GameViewDependencies/renderLoop.mjs
 // This file runs the animation loop and renders each frame.
 
+import { createTerrainFrameSampler } from '../../../MetaWorld/TerrainDiagnostics/Frames.mjs';
 import { createVoxelEnvironmentLighting } from './voxelEnvironmentLighting.mjs';
 import { installWorldAstronomy } from './worldAstronomy.mjs';
 import { installWorldWeather } from './worldWeather.mjs';
 
 export function startRenderLoop(renderer, scene, cameraOrResolver, update) {
   let running = true;
+  const sampleFrame = createTerrainFrameSampler();
   const weather = installWorldWeather(scene);
   const astronomy = installWorldAstronomy(scene);
   let voxelLighting = null;
@@ -18,6 +20,8 @@ export function startRenderLoop(renderer, scene, cameraOrResolver, update) {
   function animate() {
     if (!running) return;
     requestAnimationFrame(animate);
+    const measuring = window.NodevisionState?.fpsOverlayVisible || window.VRWorldContext?.terrainDiagnosticsEnabled;
+    const start = measuring ? performance.now() : 0;
     astronomy.prepare();
     if (update) update();
     const activeCamera = typeof cameraOrResolver === "function"
@@ -29,6 +33,7 @@ export function startRenderLoop(renderer, scene, cameraOrResolver, update) {
     if (!voxelLighting && context?.THREE) voxelLighting = createVoxelEnvironmentLighting(context.THREE, scene);
     voxelLighting?.update(context);
     if (activeCamera) renderer.render(scene, activeCamera);
+    sampleFrame(context, start, measuring ? performance.now() - start : 0, measuring);
   }
   animate();
   return () => {
