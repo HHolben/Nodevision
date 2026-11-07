@@ -1,17 +1,20 @@
 // Nodevision/ApplicationSystem/public/MetaWorld/ProceduralVoxelWorld/VoxelChunkManager.mjs
 // This module bounds chunk residency and synchronous work while exposing cumulative and resident generation measurements.
 
+import { planColumns } from '../TerrainLOD/PredictiveColumns.mjs';
 import {ChunkRegionIndex} from './ChunkRegionIndex.mjs';
 import { advanceProgressive,cancelProgressive } from './ProgressiveChunks.mjs';
 import { CHUNK_SIZE, chunkKey, voxelToChunk } from "./VoxelCoordinates.mjs";
 export class VoxelChunkManager {
   constructor(generator, radius, build, release, options=null) {
     Object.assign(this, { generator, radius, build, release, options });
+    this.columnLevels = new Map(); this.streaming = false; this.predictive = false;
     this.loaded = new ChunkRegionIndex(); this.invalidated = new Set(); this.queue = []; this.center = "";
     this.stats = { installationMs:0,evicted:0,requestedChunks:0,residentHits:0,residentMisses:0, residentBytes:0,peakLoaded:0,maxUpdateMs:0,cancelled:0, loaded: 0, queued: 0, generated: 0, voxels: 0, faces: 0, generationMs: 0, meshingMs: 0, maxBuildMs: 0 };
   }
   update(voxel) {
     const [cx,,cz] = voxelToChunk(voxel), center = `${cx},${cz}`;
+    if (center !== this.center && this.streaming) planColumns(this,cx,cz);
     if (center !== this.center) {
       cancelProgressive(this);this.center = center;
       const wanted = [];
@@ -39,6 +42,7 @@ export class VoxelChunkManager {
       this.stats.levelQueryMs=(this.stats.levelQueryMs||0)+performance.now()-queryStart;
       // Include previously resident levels so cuts also replace chunks above the new surface.
       const dirty=[...this.loaded.values()].filter(e=>e.cell[0]===x&&e.cell[2]===z&&this.invalidated.has(chunkKey(e.cell))).map(e=>e.cell[1]);
+      this.columnLevels.set(`${x},${z}`,levels);
       const cells = [...new Set([...levels,...dirty])].sort((a,b)=>b-a).map(y=>[x,y,z]).filter(c=>!this.loaded.has(chunkKey(c))||this.invalidated.has(chunkKey(c)));
       this.stats.requestedChunks+=cells.length;this.stats.residentMisses+=cells.length;this.stats.residentHits+=Math.max(0,levels.length-cells.length);
       this.queue.unshift(...cells);
@@ -57,6 +61,7 @@ export class VoxelChunkManager {
     }
     this.stats.loaded = this.loaded.size; this.stats.queued = this.queue.length;
   }
+  columnReady(x,z){const levels=this.columnLevels.get(`${x},${z}`);return !!levels&&levels.every(y=>this.loaded.has(`${x},${y},${z}`)&&!this.invalidated.has(`${x},${y},${z}`));}
   releaseEntry(key){
     const e=this.loaded.get(key);if(!e)return;this.release(e);this.loaded.delete(key);this.invalidated.delete(key);
     this.stats.voxels-=e.solidVoxels;this.stats.faces-=e.faceCount;this.stats.residentBytes-=e.residentBytes??0;
@@ -67,11 +72,13 @@ export class VoxelChunkManager {
     this.stats.installationMs+=entry.installationMs||0;this.stats.generationMs+=entry.generationMs;this.stats.meshingMs+=entry.meshingMs;this.stats.maxBuildMs=Math.max(this.stats.maxBuildMs,entry.buildMs??0);
   }
   invalidateRegion(bounds){
+    for(const key of this.columnLevels.keys()){const [x,z]=key.split(',').map(Number);if((x+1)*32>bounds.min[0]&&x*32<bounds.max[0]&&(z+1)*32>bounds.min[2]&&z*32<bounds.max[2])this.columnLevels.delete(key);}
     cancelProgressive(this);
     for(const key of [...this.loaded.region(bounds)])this.releaseEntry(key);
     this.queue.length=0;this.center='';this.stats.loaded=this.loaded.size;
   }
   invalidateBounds(bounds) {
+    for(const key of this.columnLevels.keys()){const [x,z]=key.split(',').map(Number);if((x+1)*32>bounds.minX&&x*32<bounds.maxX&&(z+1)*32>bounds.minZ&&z*32<bounds.maxZ)this.columnLevels.delete(key);}
     cancelProgressive(this);
     for (const [key,entry] of this.loaded) {
       const [x,,z]=entry.cell;
@@ -83,7 +90,7 @@ export class VoxelChunkManager {
   dispose() {
     cancelProgressive(this);
     for (const entry of this.loaded.values()) this.release(entry);
-    this.loaded.clear(); this.invalidated.clear(); this.queue.length = 0; this.center = "";
+    this.loaded.clear(); this.columnLevels.clear(); this.invalidated.clear(); this.queue.length = 0; this.center = "";
     Object.assign(this.stats, { loaded: 0, queued: 0, voxels: 0, faces: 0,residentBytes:0 });
   }
 }

@@ -1,0 +1,6734 @@
+{
+  "environment": {
+    "userAgent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/156.0.0.0 Safari/537.36",
+    "viewport": [
+      640,
+      480
+    ],
+    "renderer": "SwiftShader software renderer"
+  },
+  "metric": "Downward rays at a fixed forward ground grid, excluding points outside source coverage and camera frustum. Includes skirts; not a viewport pixel percentage. Detail readiness uses complete columns in Phase B and any resident column in Phase A.",
+  "rows": [
+    {
+      "version": "phase-a",
+      "case": "small-procedural",
+      "mode": "voxel",
+      "enteredColumns": 2,
+      "preparedOnEntry": null,
+      "firstCoarseMs": null,
+      "firstDetailMs": 253,
+      "meanFrameMs": 17.847083333333334,
+      "p95FrameMs": 33.299999999999955,
+      "coverage": 1,
+      "eligibleProbes": 35,
+      "missingProbes": 0,
+      "collisionReadyFraction": 1,
+      "probes": [
+        {
+          "frame": 0,
+          "eligible": 2,
+          "covered": 2,
+          "missing": 0,
+          "detailed": 1
+        },
+        {
+          "frame": 12,
+          "eligible": 2,
+          "covered": 2,
+          "missing": 0,
+          "detailed": 2
+        },
+        {
+          "frame": 24,
+          "eligible": 2,
+          "covered": 2,
+          "missing": 0,
+          "detailed": 2
+        },
+        {
+          "frame": 36,
+          "eligible": 2,
+          "covered": 2,
+          "missing": 0,
+          "detailed": 2
+        },
+        {
+          "frame": 48,
+          "eligible": 2,
+          "covered": 2,
+          "missing": 0,
+          "detailed": 2
+        },
+        {
+          "frame": 60,
+          "eligible": 2,
+          "covered": 2,
+          "missing": 0,
+          "detailed": 2
+        },
+        {
+          "frame": 72,
+          "eligible": 2,
+          "covered": 2,
+          "missing": 0,
+          "detailed": 2
+        },
+        {
+          "frame": 84,
+          "eligible": 2,
+          "covered": 2,
+          "missing": 0,
+          "detailed": 2
+        },
+        {
+          "frame": 96,
+          "eligible": 2,
+          "covered": 2,
+          "missing": 0,
+          "detailed": 2
+        },
+        {
+          "frame": 108,
+          "eligible": 2,
+          "covered": 2,
+          "missing": 0,
+          "detailed": 2
+        },
+        {
+          "frame": 120,
+          "eligible": 2,
+          "covered": 2,
+          "missing": 0,
+          "detailed": 2
+        },
+        {
+          "frame": 132,
+          "eligible": 2,
+          "covered": 2,
+          "missing": 0,
+          "detailed": 2
+        },
+        {
+          "frame": 144,
+          "eligible": 2,
+          "covered": 2,
+          "missing": 0,
+          "detailed": 2
+        },
+        {
+          "frame": 156,
+          "eligible": 2,
+          "covered": 2,
+          "missing": 0,
+          "detailed": 2
+        },
+        {
+          "frame": 168,
+          "eligible": 2,
+          "covered": 2,
+          "missing": 0,
+          "detailed": 2
+        },
+        {
+          "frame": 180,
+          "eligible": 1,
+          "covered": 1,
+          "missing": 0,
+          "detailed": 1
+        },
+        {
+          "frame": 192,
+          "eligible": 1,
+          "covered": 1,
+          "missing": 0,
+          "detailed": 1
+        },
+        {
+          "frame": 204,
+          "eligible": 1,
+          "covered": 1,
+          "missing": 0,
+          "detailed": 1
+        },
+        {
+          "frame": 216,
+          "eligible": 1,
+          "covered": 1,
+          "missing": 0,
+          "detailed": 1
+        },
+        {
+          "frame": 228,
+          "eligible": 1,
+          "covered": 1,
+          "missing": 0,
+          "detailed": 1
+        }
+      ],
+      "diagnostics": {
+        "sampledAt": 4805.800000000745,
+        "terrains": [
+          {
+            "id": "terrain",
+            "source": "procedural",
+            "representation": "voxel",
+            "lod": null,
+            "switch": {
+              "pending": false,
+              "completed": 0,
+              "total": 0
+            },
+            "renderDistanceMeters": 16,
+            "radiusChunks": 2,
+            "chunkMeters": 8,
+            "activeChunks": 44,
+            "drawableChunks": 44,
+            "visibleChunks": 18,
+            "requestedChunks": 44,
+            "queuedChunks": 0,
+            "queuedColumns": 0,
+            "generating": 0,
+            "awaitingInstall": 0,
+            "awaitingFirstRender": 2,
+            "awaitingGpuUpload": null,
+            "preparedReplacements": 0,
+            "evictedChunks": 0,
+            "cancelled": 0,
+            "generatedChunks": 44,
+            "generationCpuMs": 35.900000009685755,
+            "levelQueryCpuMs": 62.30000000074506,
+            "meshingCpuMs": 340.4000000022352,
+            "installationCpuMs": 20.50000001490116,
+            "maxUpdateMs": 0,
+            "switchMs": 0,
+            "occupancyReuseHits": 0,
+            "residentHits": 76,
+            "residentMisses": 44,
+            "triangles": 150564,
+            "estimatedGeometryBytes": 10539480,
+            "occupancyBytes": 1441792,
+            "estimatedVisibleTerrainDrawCalls": 40,
+            "sourceCache": {
+              "pathColumns": 0,
+              "pathLookupTiles": 0,
+              "pathModifiers": 0,
+              "features": 0,
+              "neighborhoods": 11,
+              "levels": 16
+            },
+            "workerQueueLatencyMs": null,
+            "gpuUploadMs": null
+          }
+        ],
+        "frame": null,
+        "renderer": {
+          "drawCalls": 40,
+          "triangles": 62786,
+          "geometries": 42,
+          "textures": 0
+        },
+        "notes": "CPU timings are cumulative. Queued columns have not yet expanded into chunks. Geometry bytes estimate typed buffers, not driver allocations. First-render counts track CPU submissions, not GPU completion. Upload is deferred to render; GPU time is unavailable. Terrain generation runs on the main thread, without a worker queue."
+      },
+      "travelMeters": 19
+    },
+    {
+      "version": "phase-a",
+      "case": "small-procedural",
+      "mode": "polygonal",
+      "enteredColumns": 2,
+      "preparedOnEntry": null,
+      "firstCoarseMs": null,
+      "firstDetailMs": 267.30000000074506,
+      "meanFrameMs": 16.735416666666666,
+      "p95FrameMs": 16.799999999999272,
+      "coverage": 0.6571428571428571,
+      "eligibleProbes": 35,
+      "missingProbes": 12,
+      "collisionReadyFraction": 1,
+      "probes": [
+        {
+          "frame": 0,
+          "eligible": 2,
+          "covered": 0,
+          "missing": 2,
+          "detailed": 0
+        },
+        {
+          "frame": 12,
+          "eligible": 2,
+          "covered": 0,
+          "missing": 2,
+          "detailed": 0
+        },
+        {
+          "frame": 24,
+          "eligible": 2,
+          "covered": 2,
+          "missing": 0,
+          "detailed": 1
+        },
+        {
+          "frame": 36,
+          "eligible": 2,
+          "covered": 2,
+          "missing": 0,
+          "detailed": 1
+        },
+        {
+          "frame": 48,
+          "eligible": 2,
+          "covered": 1,
+          "missing": 1,
+          "detailed": 1
+        },
+        {
+          "frame": 60,
+          "eligible": 2,
+          "covered": 1,
+          "missing": 1,
+          "detailed": 1
+        },
+        {
+          "frame": 72,
+          "eligible": 2,
+          "covered": 1,
+          "missing": 1,
+          "detailed": 1
+        },
+        {
+          "frame": 84,
+          "eligible": 2,
+          "covered": 1,
+          "missing": 1,
+          "detailed": 1
+        },
+        {
+          "frame": 96,
+          "eligible": 2,
+          "covered": 1,
+          "missing": 1,
+          "detailed": 1
+        },
+        {
+          "frame": 108,
+          "eligible": 2,
+          "covered": 1,
+          "missing": 1,
+          "detailed": 1
+        },
+        {
+          "frame": 120,
+          "eligible": 2,
+          "covered": 2,
+          "missing": 0,
+          "detailed": 2
+        },
+        {
+          "frame": 132,
+          "eligible": 2,
+          "covered": 2,
+          "missing": 0,
+          "detailed": 2
+        },
+        {
+          "frame": 144,
+          "eligible": 2,
+          "covered": 2,
+          "missing": 0,
+          "detailed": 2
+        },
+        {
+          "frame": 156,
+          "eligible": 2,
+          "covered": 1,
+          "missing": 1,
+          "detailed": 1
+        },
+        {
+          "frame": 168,
+          "eligible": 2,
+          "covered": 1,
+          "missing": 1,
+          "detailed": 1
+        },
+        {
+          "frame": 180,
+          "eligible": 1,
+          "covered": 1,
+          "missing": 0,
+          "detailed": 1
+        },
+        {
+          "frame": 192,
+          "eligible": 1,
+          "covered": 1,
+          "missing": 0,
+          "detailed": 1
+        },
+        {
+          "frame": 204,
+          "eligible": 1,
+          "covered": 1,
+          "missing": 0,
+          "detailed": 1
+        },
+        {
+          "frame": 216,
+          "eligible": 1,
+          "covered": 1,
+          "missing": 0,
+          "detailed": 1
+        },
+        {
+          "frame": 228,
+          "eligible": 1,
+          "covered": 1,
+          "missing": 0,
+          "detailed": 1
+        }
+      ],
+      "diagnostics": {
+        "sampledAt": 8841.300000000745,
+        "terrains": [
+          {
+            "id": "terrain",
+            "source": "procedural",
+            "representation": "polygonal",
+            "lod": null,
+            "switch": {
+              "pending": false,
+              "completed": 0,
+              "total": 0
+            },
+            "renderDistanceMeters": 16,
+            "radiusChunks": 2,
+            "chunkMeters": 8,
+            "activeChunks": 26,
+            "drawableChunks": 26,
+            "visibleChunks": 11,
+            "requestedChunks": 30,
+            "queuedChunks": 0,
+            "queuedColumns": 8,
+            "generating": 1,
+            "awaitingInstall": 0,
+            "awaitingFirstRender": 5,
+            "awaitingGpuUpload": null,
+            "preparedReplacements": 0,
+            "evictedChunks": 0,
+            "cancelled": 2,
+            "generatedChunks": 26,
+            "generationCpuMs": 105.69999999552965,
+            "levelQueryCpuMs": 33.7999999858439,
+            "meshingCpuMs": 691.3999999649823,
+            "installationCpuMs": 8.199999995529652,
+            "maxUpdateMs": 11.699999999254942,
+            "switchMs": 0,
+            "occupancyReuseHits": 0,
+            "residentHits": 6,
+            "residentMisses": 30,
+            "triangles": 83072,
+            "estimatedGeometryBytes": 1894752,
+            "occupancyBytes": 851968,
+            "estimatedVisibleTerrainDrawCalls": 25,
+            "sourceCache": {
+              "pathColumns": 0,
+              "pathLookupTiles": 0,
+              "pathModifiers": 0,
+              "features": 0,
+              "neighborhoods": 32,
+              "levels": 11
+            },
+            "workerQueueLatencyMs": null,
+            "gpuUploadMs": null
+          }
+        ],
+        "frame": null,
+        "renderer": {
+          "drawCalls": 25,
+          "triangles": 36120,
+          "geometries": 21,
+          "textures": 0
+        },
+        "notes": "CPU timings are cumulative. Queued columns have not yet expanded into chunks. Geometry bytes estimate typed buffers, not driver allocations. First-render counts track CPU submissions, not GPU completion. Upload is deferred to render; GPU time is unavailable. Terrain generation runs on the main thread, without a worker queue."
+      },
+      "travelMeters": 19
+    },
+    {
+      "version": "phase-a",
+      "case": "synthetic-geotiff",
+      "mode": "voxel",
+      "enteredColumns": 3,
+      "preparedOnEntry": null,
+      "firstCoarseMs": null,
+      "firstDetailMs": 182.80000000074506,
+      "meanFrameMs": 16.73583333333333,
+      "p95FrameMs": 16.700000000000728,
+      "coverage": 0.7333333333333333,
+      "eligibleProbes": 15,
+      "missingProbes": 4,
+      "collisionReadyFraction": 1,
+      "probes": [
+        {
+          "frame": 0,
+          "eligible": 1,
+          "covered": 0,
+          "missing": 1,
+          "detailed": 0
+        },
+        {
+          "frame": 12,
+          "eligible": 1,
+          "covered": 0,
+          "missing": 1,
+          "detailed": 0
+        },
+        {
+          "frame": 24,
+          "eligible": 1,
+          "covered": 0,
+          "missing": 1,
+          "detailed": 0
+        },
+        {
+          "frame": 36,
+          "eligible": 1,
+          "covered": 1,
+          "missing": 0,
+          "detailed": 1
+        },
+        {
+          "frame": 48,
+          "eligible": 1,
+          "covered": 0,
+          "missing": 1,
+          "detailed": 0
+        },
+        {
+          "frame": 60,
+          "eligible": 1,
+          "covered": 1,
+          "missing": 0,
+          "detailed": 1
+        },
+        {
+          "frame": 72,
+          "eligible": 1,
+          "covered": 1,
+          "missing": 0,
+          "detailed": 1
+        },
+        {
+          "frame": 84,
+          "eligible": 1,
+          "covered": 1,
+          "missing": 0,
+          "detailed": 1
+        },
+        {
+          "frame": 96,
+          "eligible": 1,
+          "covered": 1,
+          "missing": 0,
+          "detailed": 1
+        },
+        {
+          "frame": 108,
+          "eligible": 1,
+          "covered": 1,
+          "missing": 0,
+          "detailed": 1
+        },
+        {
+          "frame": 120,
+          "eligible": 1,
+          "covered": 1,
+          "missing": 0,
+          "detailed": 1
+        },
+        {
+          "frame": 132,
+          "eligible": 1,
+          "covered": 1,
+          "missing": 0,
+          "detailed": 1
+        },
+        {
+          "frame": 144,
+          "eligible": 1,
+          "covered": 1,
+          "missing": 0,
+          "detailed": 1
+        },
+        {
+          "frame": 156,
+          "eligible": 1,
+          "covered": 1,
+          "missing": 0,
+          "detailed": 1
+        },
+        {
+          "frame": 168,
+          "eligible": 1,
+          "covered": 1,
+          "missing": 0,
+          "detailed": 1
+        },
+        {
+          "frame": 180,
+          "eligible": 0,
+          "covered": 0,
+          "missing": 0,
+          "detailed": 0
+        },
+        {
+          "frame": 192,
+          "eligible": 0,
+          "covered": 0,
+          "missing": 0,
+          "detailed": 0
+        },
+        {
+          "frame": 204,
+          "eligible": 0,
+          "covered": 0,
+          "missing": 0,
+          "detailed": 0
+        },
+        {
+          "frame": 216,
+          "eligible": 0,
+          "covered": 0,
+          "missing": 0,
+          "detailed": 0
+        },
+        {
+          "frame": 228,
+          "eligible": 0,
+          "covered": 0,
+          "missing": 0,
+          "detailed": 0
+        }
+      ],
+      "diagnostics": {
+        "sampledAt": 12888.20000000298,
+        "terrains": [
+          {
+            "id": "terrain",
+            "source": "geographic",
+            "representation": "voxel",
+            "lod": null,
+            "switch": {
+              "pending": false,
+              "completed": 0,
+              "total": 0
+            },
+            "renderDistanceMeters": 16,
+            "radiusChunks": 2,
+            "chunkMeters": 8,
+            "activeChunks": 12,
+            "drawableChunks": 12,
+            "visibleChunks": 3,
+            "requestedChunks": 13,
+            "queuedChunks": 0,
+            "queuedColumns": 0,
+            "generating": 0,
+            "awaitingInstall": 0,
+            "awaitingFirstRender": 2,
+            "awaitingGpuUpload": null,
+            "preparedReplacements": 0,
+            "evictedChunks": 0,
+            "cancelled": 1,
+            "generatedChunks": 12,
+            "generationCpuMs": 143.0999999679625,
+            "levelQueryCpuMs": 56.80000000447035,
+            "meshingCpuMs": 76.50000001490116,
+            "installationCpuMs": 8.299999997019768,
+            "maxUpdateMs": 5,
+            "switchMs": 0,
+            "occupancyReuseHits": 0,
+            "residentHits": 26,
+            "residentMisses": 13,
+            "triangles": 59940,
+            "estimatedGeometryBytes": 4195800,
+            "occupancyBytes": 393216,
+            "estimatedVisibleTerrainDrawCalls": 9,
+            "sourceCache": {
+              "columns": 8192,
+              "pathColumns": 0,
+              "pathLookupTiles": 0,
+              "pathModifiers": 0,
+              "features": 0,
+              "neighborhoods": 8,
+              "levels": 12
+            },
+            "workerQueueLatencyMs": null,
+            "gpuUploadMs": null
+          }
+        ],
+        "frame": null,
+        "renderer": {
+          "drawCalls": 9,
+          "triangles": 16560,
+          "geometries": 10,
+          "textures": 0
+        },
+        "notes": "CPU timings are cumulative. Queued columns have not yet expanded into chunks. Geometry bytes estimate typed buffers, not driver allocations. First-render counts track CPU submissions, not GPU completion. Upload is deferred to render; GPU time is unavailable. Terrain generation runs on the main thread, without a worker queue."
+      },
+      "travelMeters": 18.625
+    },
+    {
+      "version": "phase-a",
+      "case": "synthetic-geotiff",
+      "mode": "polygonal",
+      "enteredColumns": 3,
+      "preparedOnEntry": null,
+      "firstCoarseMs": null,
+      "firstDetailMs": 230.59999999776483,
+      "meanFrameMs": 16.804999999999996,
+      "p95FrameMs": 16.700000000000728,
+      "coverage": 0.4666666666666667,
+      "eligibleProbes": 15,
+      "missingProbes": 8,
+      "collisionReadyFraction": 1,
+      "probes": [
+        {
+          "frame": 0,
+          "eligible": 1,
+          "covered": 0,
+          "missing": 1,
+          "detailed": 0
+        },
+        {
+          "frame": 12,
+          "eligible": 1,
+          "covered": 0,
+          "missing": 1,
+          "detailed": 0
+        },
+        {
+          "frame": 24,
+          "eligible": 1,
+          "covered": 0,
+          "missing": 1,
+          "detailed": 0
+        },
+        {
+          "frame": 36,
+          "eligible": 1,
+          "covered": 0,
+          "missing": 1,
+          "detailed": 0
+        },
+        {
+          "frame": 48,
+          "eligible": 1,
+          "covered": 0,
+          "missing": 1,
+          "detailed": 0
+        },
+        {
+          "frame": 60,
+          "eligible": 1,
+          "covered": 0,
+          "missing": 1,
+          "detailed": 0
+        },
+        {
+          "frame": 72,
+          "eligible": 1,
+          "covered": 0,
+          "missing": 1,
+          "detailed": 0
+        },
+        {
+          "frame": 84,
+          "eligible": 1,
+          "covered": 0,
+          "missing": 1,
+          "detailed": 0
+        },
+        {
+          "frame": 96,
+          "eligible": 1,
+          "covered": 1,
+          "missing": 0,
+          "detailed": 1
+        },
+        {
+          "frame": 108,
+          "eligible": 1,
+          "covered": 1,
+          "missing": 0,
+          "detailed": 1
+        },
+        {
+          "frame": 120,
+          "eligible": 1,
+          "covered": 1,
+          "missing": 0,
+          "detailed": 1
+        },
+        {
+          "frame": 132,
+          "eligible": 1,
+          "covered": 1,
+          "missing": 0,
+          "detailed": 1
+        },
+        {
+          "frame": 144,
+          "eligible": 1,
+          "covered": 1,
+          "missing": 0,
+          "detailed": 1
+        },
+        {
+          "frame": 156,
+          "eligible": 1,
+          "covered": 1,
+          "missing": 0,
+          "detailed": 1
+        },
+        {
+          "frame": 168,
+          "eligible": 1,
+          "covered": 1,
+          "missing": 0,
+          "detailed": 1
+        },
+        {
+          "frame": 180,
+          "eligible": 0,
+          "covered": 0,
+          "missing": 0,
+          "detailed": 0
+        },
+        {
+          "frame": 192,
+          "eligible": 0,
+          "covered": 0,
+          "missing": 0,
+          "detailed": 0
+        },
+        {
+          "frame": 204,
+          "eligible": 0,
+          "covered": 0,
+          "missing": 0,
+          "detailed": 0
+        },
+        {
+          "frame": 216,
+          "eligible": 0,
+          "covered": 0,
+          "missing": 0,
+          "detailed": 0
+        },
+        {
+          "frame": 228,
+          "eligible": 0,
+          "covered": 0,
+          "missing": 0,
+          "detailed": 0
+        }
+      ],
+      "diagnostics": {
+        "sampledAt": 16937.900000002235,
+        "terrains": [
+          {
+            "id": "terrain",
+            "source": "geographic",
+            "representation": "polygonal",
+            "lod": null,
+            "switch": {
+              "pending": false,
+              "completed": 0,
+              "total": 0
+            },
+            "renderDistanceMeters": 16,
+            "radiusChunks": 2,
+            "chunkMeters": 8,
+            "activeChunks": 12,
+            "drawableChunks": 12,
+            "visibleChunks": 3,
+            "requestedChunks": 14,
+            "queuedChunks": 0,
+            "queuedColumns": 0,
+            "generating": 0,
+            "awaitingInstall": 0,
+            "awaitingFirstRender": 3,
+            "awaitingGpuUpload": null,
+            "preparedReplacements": 0,
+            "evictedChunks": 0,
+            "cancelled": 2,
+            "generatedChunks": 12,
+            "generationCpuMs": 130.49999998137355,
+            "levelQueryCpuMs": 55.29999999701977,
+            "meshingCpuMs": 385.19999996572733,
+            "installationCpuMs": 5.299999989569187,
+            "maxUpdateMs": 10.5,
+            "switchMs": 0,
+            "occupancyReuseHits": 0,
+            "residentHits": 21,
+            "residentMisses": 14,
+            "triangles": 59940,
+            "estimatedGeometryBytes": 1364248,
+            "occupancyBytes": 393216,
+            "estimatedVisibleTerrainDrawCalls": 9,
+            "sourceCache": {
+              "columns": 8192,
+              "pathColumns": 0,
+              "pathLookupTiles": 0,
+              "pathModifiers": 0,
+              "features": 0,
+              "neighborhoods": 32,
+              "levels": 12
+            },
+            "workerQueueLatencyMs": null,
+            "gpuUploadMs": null
+          }
+        ],
+        "frame": null,
+        "renderer": {
+          "drawCalls": 9,
+          "triangles": 16560,
+          "geometries": 9,
+          "textures": 0
+        },
+        "notes": "CPU timings are cumulative. Queued columns have not yet expanded into chunks. Geometry bytes estimate typed buffers, not driver allocations. First-render counts track CPU submissions, not GPU completion. Upload is deferred to render; GPU time is unavailable. Terrain generation runs on the main thread, without a worker queue."
+      },
+      "travelMeters": 18.625
+    },
+    {
+      "version": "phase-a",
+      "case": "supplied-geographic",
+      "mode": "voxel",
+      "enteredColumns": 3,
+      "preparedOnEntry": null,
+      "firstCoarseMs": null,
+      "firstDetailMs": 221.59999999776483,
+      "meanFrameMs": 16.73583333333333,
+      "p95FrameMs": 16.700000000000728,
+      "coverage": 0.07058823529411765,
+      "eligibleProbes": 340,
+      "missingProbes": 316,
+      "collisionReadyFraction": 1,
+      "probes": [
+        {
+          "frame": 0,
+          "eligible": 18,
+          "covered": 0,
+          "missing": 18,
+          "detailed": 0
+        },
+        {
+          "frame": 12,
+          "eligible": 18,
+          "covered": 1,
+          "missing": 17,
+          "detailed": 1
+        },
+        {
+          "frame": 24,
+          "eligible": 18,
+          "covered": 2,
+          "missing": 16,
+          "detailed": 1
+        },
+        {
+          "frame": 36,
+          "eligible": 18,
+          "covered": 2,
+          "missing": 16,
+          "detailed": 1
+        },
+        {
+          "frame": 48,
+          "eligible": 18,
+          "covered": 1,
+          "missing": 17,
+          "detailed": 1
+        },
+        {
+          "frame": 60,
+          "eligible": 18,
+          "covered": 1,
+          "missing": 17,
+          "detailed": 1
+        },
+        {
+          "frame": 72,
+          "eligible": 18,
+          "covered": 1,
+          "missing": 17,
+          "detailed": 1
+        },
+        {
+          "frame": 84,
+          "eligible": 18,
+          "covered": 1,
+          "missing": 17,
+          "detailed": 1
+        },
+        {
+          "frame": 96,
+          "eligible": 18,
+          "covered": 1,
+          "missing": 17,
+          "detailed": 1
+        },
+        {
+          "frame": 108,
+          "eligible": 18,
+          "covered": 2,
+          "missing": 16,
+          "detailed": 2
+        },
+        {
+          "frame": 120,
+          "eligible": 18,
+          "covered": 2,
+          "missing": 16,
+          "detailed": 2
+        },
+        {
+          "frame": 132,
+          "eligible": 18,
+          "covered": 2,
+          "missing": 16,
+          "detailed": 2
+        },
+        {
+          "frame": 144,
+          "eligible": 18,
+          "covered": 2,
+          "missing": 16,
+          "detailed": 2
+        },
+        {
+          "frame": 156,
+          "eligible": 16,
+          "covered": 1,
+          "missing": 15,
+          "detailed": 1
+        },
+        {
+          "frame": 168,
+          "eligible": 15,
+          "covered": 1,
+          "missing": 14,
+          "detailed": 1
+        },
+        {
+          "frame": 180,
+          "eligible": 15,
+          "covered": 1,
+          "missing": 14,
+          "detailed": 1
+        },
+        {
+          "frame": 192,
+          "eligible": 15,
+          "covered": 0,
+          "missing": 15,
+          "detailed": 0
+        },
+        {
+          "frame": 204,
+          "eligible": 15,
+          "covered": 1,
+          "missing": 14,
+          "detailed": 1
+        },
+        {
+          "frame": 216,
+          "eligible": 15,
+          "covered": 1,
+          "missing": 14,
+          "detailed": 1
+        },
+        {
+          "frame": 228,
+          "eligible": 15,
+          "covered": 1,
+          "missing": 14,
+          "detailed": 1
+        }
+      ],
+      "diagnostics": {
+        "sampledAt": 21024.300000000745,
+        "terrains": [
+          {
+            "id": "voxel-world",
+            "source": "geographic",
+            "representation": "voxel",
+            "lod": null,
+            "switch": {
+              "pending": false,
+              "completed": 0,
+              "total": 0
+            },
+            "renderDistanceMeters": 16,
+            "radiusChunks": 2,
+            "chunkMeters": 8,
+            "activeChunks": 24,
+            "drawableChunks": 24,
+            "visibleChunks": 9,
+            "requestedChunks": 37,
+            "queuedChunks": 0,
+            "queuedColumns": 22,
+            "generating": 1,
+            "awaitingInstall": 0,
+            "awaitingFirstRender": 8,
+            "awaitingGpuUpload": null,
+            "preparedReplacements": 0,
+            "evictedChunks": 6,
+            "cancelled": 3,
+            "generatedChunks": 30,
+            "generationCpuMs": 315.1999999731779,
+            "levelQueryCpuMs": 186.80000001192093,
+            "meshingCpuMs": 271.00000001490116,
+            "installationCpuMs": 13.99999999627471,
+            "maxUpdateMs": 4.699999999254942,
+            "switchMs": 0,
+            "occupancyReuseHits": 0,
+            "residentHits": 8,
+            "residentMisses": 37,
+            "triangles": 44832,
+            "estimatedGeometryBytes": 3138240,
+            "occupancyBytes": 786432,
+            "estimatedVisibleTerrainDrawCalls": 9,
+            "sourceCache": {
+              "columns": 8192,
+              "pathColumns": 0,
+              "pathLookupTiles": 0,
+              "pathModifiers": 0,
+              "features": 175,
+              "neighborhoods": 24,
+              "levels": 12
+            },
+            "workerQueueLatencyMs": null,
+            "gpuUploadMs": null
+          }
+        ],
+        "frame": null,
+        "renderer": {
+          "drawCalls": 9,
+          "triangles": 19006,
+          "geometries": 16,
+          "textures": 0
+        },
+        "notes": "CPU timings are cumulative. Queued columns have not yet expanded into chunks. Geometry bytes estimate typed buffers, not driver allocations. First-render counts track CPU submissions, not GPU completion. Upload is deferred to render; GPU time is unavailable. Terrain generation runs on the main thread, without a worker queue."
+      },
+      "travelMeters": 26.000000000000533
+    },
+    {
+      "version": "phase-a",
+      "case": "supplied-geographic",
+      "mode": "polygonal",
+      "enteredColumns": 3,
+      "preparedOnEntry": null,
+      "firstCoarseMs": null,
+      "firstDetailMs": 318.30000000074506,
+      "meanFrameMs": 16.66624999999999,
+      "p95FrameMs": 16.799999999999272,
+      "coverage": 0.05,
+      "eligibleProbes": 340,
+      "missingProbes": 323,
+      "collisionReadyFraction": 1,
+      "probes": [
+        {
+          "frame": 0,
+          "eligible": 18,
+          "covered": 0,
+          "missing": 18,
+          "detailed": 0
+        },
+        {
+          "frame": 12,
+          "eligible": 18,
+          "covered": 0,
+          "missing": 18,
+          "detailed": 0
+        },
+        {
+          "frame": 24,
+          "eligible": 18,
+          "covered": 2,
+          "missing": 16,
+          "detailed": 1
+        },
+        {
+          "frame": 36,
+          "eligible": 18,
+          "covered": 2,
+          "missing": 16,
+          "detailed": 1
+        },
+        {
+          "frame": 48,
+          "eligible": 18,
+          "covered": 1,
+          "missing": 17,
+          "detailed": 1
+        },
+        {
+          "frame": 60,
+          "eligible": 18,
+          "covered": 1,
+          "missing": 17,
+          "detailed": 1
+        },
+        {
+          "frame": 72,
+          "eligible": 18,
+          "covered": 1,
+          "missing": 17,
+          "detailed": 1
+        },
+        {
+          "frame": 84,
+          "eligible": 18,
+          "covered": 1,
+          "missing": 17,
+          "detailed": 1
+        },
+        {
+          "frame": 96,
+          "eligible": 18,
+          "covered": 1,
+          "missing": 17,
+          "detailed": 1
+        },
+        {
+          "frame": 108,
+          "eligible": 18,
+          "covered": 1,
+          "missing": 17,
+          "detailed": 1
+        },
+        {
+          "frame": 120,
+          "eligible": 18,
+          "covered": 1,
+          "missing": 17,
+          "detailed": 1
+        },
+        {
+          "frame": 132,
+          "eligible": 18,
+          "covered": 1,
+          "missing": 17,
+          "detailed": 1
+        },
+        {
+          "frame": 144,
+          "eligible": 18,
+          "covered": 1,
+          "missing": 17,
+          "detailed": 1
+        },
+        {
+          "frame": 156,
+          "eligible": 16,
+          "covered": 1,
+          "missing": 15,
+          "detailed": 1
+        },
+        {
+          "frame": 168,
+          "eligible": 15,
+          "covered": 1,
+          "missing": 14,
+          "detailed": 1
+        },
+        {
+          "frame": 180,
+          "eligible": 15,
+          "covered": 0,
+          "missing": 15,
+          "detailed": 0
+        },
+        {
+          "frame": 192,
+          "eligible": 15,
+          "covered": 0,
+          "missing": 15,
+          "detailed": 0
+        },
+        {
+          "frame": 204,
+          "eligible": 15,
+          "covered": 0,
+          "missing": 15,
+          "detailed": 1
+        },
+        {
+          "frame": 216,
+          "eligible": 15,
+          "covered": 1,
+          "missing": 14,
+          "detailed": 1
+        },
+        {
+          "frame": 228,
+          "eligible": 15,
+          "covered": 1,
+          "missing": 14,
+          "detailed": 1
+        }
+      ],
+      "diagnostics": {
+        "sampledAt": 25074.5,
+        "terrains": [
+          {
+            "id": "voxel-world",
+            "source": "geographic",
+            "representation": "polygonal",
+            "lod": null,
+            "switch": {
+              "pending": false,
+              "completed": 0,
+              "total": 0
+            },
+            "renderDistanceMeters": 16,
+            "radiusChunks": 2,
+            "chunkMeters": 8,
+            "activeChunks": 15,
+            "drawableChunks": 15,
+            "visibleChunks": 4,
+            "requestedChunks": 27,
+            "queuedChunks": 1,
+            "queuedColumns": 23,
+            "generating": 1,
+            "awaitingInstall": 0,
+            "awaitingFirstRender": 5,
+            "awaitingGpuUpload": null,
+            "preparedReplacements": 0,
+            "evictedChunks": 2,
+            "cancelled": 3,
+            "generatedChunks": 17,
+            "generationCpuMs": 197.3999999947846,
+            "levelQueryCpuMs": 116.19999999552965,
+            "meshingCpuMs": 513.9000000096858,
+            "installationCpuMs": 5.499999992549419,
+            "maxUpdateMs": 10.400000002235174,
+            "switchMs": 0,
+            "occupancyReuseHits": 0,
+            "residentHits": 3,
+            "residentMisses": 27,
+            "triangles": 29010,
+            "estimatedGeometryBytes": 681068,
+            "occupancyBytes": 491520,
+            "estimatedVisibleTerrainDrawCalls": 4,
+            "sourceCache": {
+              "columns": 8192,
+              "pathColumns": 0,
+              "pathLookupTiles": 0,
+              "pathModifiers": 0,
+              "features": 209,
+              "neighborhoods": 64,
+              "levels": 8
+            },
+            "workerQueueLatencyMs": null,
+            "gpuUploadMs": null
+          }
+        ],
+        "frame": null,
+        "renderer": {
+          "drawCalls": 4,
+          "triangles": 9334,
+          "geometries": 10,
+          "textures": 0
+        },
+        "notes": "CPU timings are cumulative. Queued columns have not yet expanded into chunks. Geometry bytes estimate typed buffers, not driver allocations. First-render counts track CPU submissions, not GPU completion. Upload is deferred to render; GPU time is unavailable. Terrain generation runs on the main thread, without a worker queue."
+      },
+      "travelMeters": 26.000000000000533
+    },
+    {
+      "version": "phase-a",
+      "case": "4km-procedural",
+      "mode": "voxel",
+      "enteredColumns": 3,
+      "preparedOnEntry": null,
+      "firstCoarseMs": null,
+      "firstDetailMs": 36.19999999925494,
+      "meanFrameMs": 17.012916666666676,
+      "p95FrameMs": 16.799999999999272,
+      "coverage": 0.20277777777777778,
+      "eligibleProbes": 360,
+      "missingProbes": 287,
+      "collisionReadyFraction": 1,
+      "probes": [
+        {
+          "frame": 0,
+          "eligible": 18,
+          "covered": 2,
+          "missing": 16,
+          "detailed": 1
+        },
+        {
+          "frame": 12,
+          "eligible": 18,
+          "covered": 2,
+          "missing": 16,
+          "detailed": 2
+        },
+        {
+          "frame": 24,
+          "eligible": 18,
+          "covered": 4,
+          "missing": 14,
+          "detailed": 2
+        },
+        {
+          "frame": 36,
+          "eligible": 18,
+          "covered": 5,
+          "missing": 13,
+          "detailed": 2
+        },
+        {
+          "frame": 48,
+          "eligible": 18,
+          "covered": 4,
+          "missing": 14,
+          "detailed": 2
+        },
+        {
+          "frame": 60,
+          "eligible": 18,
+          "covered": 4,
+          "missing": 14,
+          "detailed": 2
+        },
+        {
+          "frame": 72,
+          "eligible": 18,
+          "covered": 4,
+          "missing": 14,
+          "detailed": 2
+        },
+        {
+          "frame": 84,
+          "eligible": 18,
+          "covered": 4,
+          "missing": 14,
+          "detailed": 2
+        },
+        {
+          "frame": 96,
+          "eligible": 18,
+          "covered": 4,
+          "missing": 14,
+          "detailed": 2
+        },
+        {
+          "frame": 108,
+          "eligible": 18,
+          "covered": 4,
+          "missing": 14,
+          "detailed": 2
+        },
+        {
+          "frame": 120,
+          "eligible": 18,
+          "covered": 4,
+          "missing": 14,
+          "detailed": 2
+        },
+        {
+          "frame": 132,
+          "eligible": 18,
+          "covered": 4,
+          "missing": 14,
+          "detailed": 2
+        },
+        {
+          "frame": 144,
+          "eligible": 18,
+          "covered": 4,
+          "missing": 14,
+          "detailed": 2
+        },
+        {
+          "frame": 156,
+          "eligible": 18,
+          "covered": 4,
+          "missing": 14,
+          "detailed": 2
+        },
+        {
+          "frame": 168,
+          "eligible": 18,
+          "covered": 4,
+          "missing": 14,
+          "detailed": 2
+        },
+        {
+          "frame": 180,
+          "eligible": 18,
+          "covered": 3,
+          "missing": 15,
+          "detailed": 2
+        },
+        {
+          "frame": 192,
+          "eligible": 18,
+          "covered": 2,
+          "missing": 16,
+          "detailed": 2
+        },
+        {
+          "frame": 204,
+          "eligible": 18,
+          "covered": 3,
+          "missing": 15,
+          "detailed": 2
+        },
+        {
+          "frame": 216,
+          "eligible": 18,
+          "covered": 4,
+          "missing": 14,
+          "detailed": 2
+        },
+        {
+          "frame": 228,
+          "eligible": 18,
+          "covered": 4,
+          "missing": 14,
+          "detailed": 2
+        }
+      ],
+      "diagnostics": {
+        "sampledAt": 29169.800000000745,
+        "terrains": [
+          {
+            "id": "terrain",
+            "source": "procedural",
+            "representation": "voxel",
+            "lod": null,
+            "switch": {
+              "pending": false,
+              "completed": 0,
+              "total": 0
+            },
+            "renderDistanceMeters": 16,
+            "radiusChunks": 2,
+            "chunkMeters": 8,
+            "activeChunks": 61,
+            "drawableChunks": 61,
+            "visibleChunks": 30,
+            "requestedChunks": 83,
+            "queuedChunks": 0,
+            "queuedColumns": 0,
+            "generating": 0,
+            "awaitingInstall": 0,
+            "awaitingFirstRender": 7,
+            "awaitingGpuUpload": null,
+            "preparedReplacements": 0,
+            "evictedChunks": 22,
+            "cancelled": 0,
+            "generatedChunks": 83,
+            "generationCpuMs": 55.00000001490116,
+            "levelQueryCpuMs": 80.69999999925494,
+            "meshingCpuMs": 400.100000012666,
+            "installationCpuMs": 20.599999990314245,
+            "maxUpdateMs": 0,
+            "switchMs": 0,
+            "occupancyReuseHits": 0,
+            "residentHits": 98,
+            "residentMisses": 83,
+            "triangles": 134210,
+            "estimatedGeometryBytes": 9394700,
+            "occupancyBytes": 1998848,
+            "estimatedVisibleTerrainDrawCalls": 34,
+            "sourceCache": {
+              "pathColumns": 0,
+              "pathLookupTiles": 0,
+              "pathModifiers": 0,
+              "features": 0,
+              "neighborhoods": 39,
+              "levels": 40
+            },
+            "workerQueueLatencyMs": null,
+            "gpuUploadMs": null
+          }
+        ],
+        "frame": null,
+        "renderer": {
+          "drawCalls": 34,
+          "triangles": 68904,
+          "geometries": 54,
+          "textures": 0
+        },
+        "notes": "CPU timings are cumulative. Queued columns have not yet expanded into chunks. Geometry bytes estimate typed buffers, not driver allocations. First-render counts track CPU submissions, not GPU completion. Upload is deferred to render; GPU time is unavailable. Terrain generation runs on the main thread, without a worker queue."
+      },
+      "travelMeters": 25.999999999999858
+    },
+    {
+      "version": "phase-a",
+      "case": "4km-procedural",
+      "mode": "polygonal",
+      "enteredColumns": 3,
+      "preparedOnEntry": null,
+      "firstCoarseMs": null,
+      "firstDetailMs": 172.69999999925494,
+      "meanFrameMs": 16.735416666666666,
+      "p95FrameMs": 16.700000000004366,
+      "coverage": 0.06944444444444445,
+      "eligibleProbes": 360,
+      "missingProbes": 335,
+      "collisionReadyFraction": 1,
+      "probes": [
+        {
+          "frame": 0,
+          "eligible": 18,
+          "covered": 0,
+          "missing": 18,
+          "detailed": 0
+        },
+        {
+          "frame": 12,
+          "eligible": 18,
+          "covered": 2,
+          "missing": 16,
+          "detailed": 1
+        },
+        {
+          "frame": 24,
+          "eligible": 18,
+          "covered": 2,
+          "missing": 16,
+          "detailed": 1
+        },
+        {
+          "frame": 36,
+          "eligible": 18,
+          "covered": 2,
+          "missing": 16,
+          "detailed": 1
+        },
+        {
+          "frame": 48,
+          "eligible": 18,
+          "covered": 1,
+          "missing": 17,
+          "detailed": 1
+        },
+        {
+          "frame": 60,
+          "eligible": 18,
+          "covered": 1,
+          "missing": 17,
+          "detailed": 1
+        },
+        {
+          "frame": 72,
+          "eligible": 18,
+          "covered": 1,
+          "missing": 17,
+          "detailed": 1
+        },
+        {
+          "frame": 84,
+          "eligible": 18,
+          "covered": 1,
+          "missing": 17,
+          "detailed": 1
+        },
+        {
+          "frame": 96,
+          "eligible": 18,
+          "covered": 2,
+          "missing": 16,
+          "detailed": 2
+        },
+        {
+          "frame": 108,
+          "eligible": 18,
+          "covered": 2,
+          "missing": 16,
+          "detailed": 2
+        },
+        {
+          "frame": 120,
+          "eligible": 18,
+          "covered": 2,
+          "missing": 16,
+          "detailed": 2
+        },
+        {
+          "frame": 132,
+          "eligible": 18,
+          "covered": 2,
+          "missing": 16,
+          "detailed": 2
+        },
+        {
+          "frame": 144,
+          "eligible": 18,
+          "covered": 2,
+          "missing": 16,
+          "detailed": 2
+        },
+        {
+          "frame": 156,
+          "eligible": 18,
+          "covered": 1,
+          "missing": 17,
+          "detailed": 1
+        },
+        {
+          "frame": 168,
+          "eligible": 18,
+          "covered": 1,
+          "missing": 17,
+          "detailed": 1
+        },
+        {
+          "frame": 180,
+          "eligible": 18,
+          "covered": 0,
+          "missing": 18,
+          "detailed": 0
+        },
+        {
+          "frame": 192,
+          "eligible": 18,
+          "covered": 0,
+          "missing": 18,
+          "detailed": 0
+        },
+        {
+          "frame": 204,
+          "eligible": 18,
+          "covered": 1,
+          "missing": 17,
+          "detailed": 1
+        },
+        {
+          "frame": 216,
+          "eligible": 18,
+          "covered": 1,
+          "missing": 17,
+          "detailed": 1
+        },
+        {
+          "frame": 228,
+          "eligible": 18,
+          "covered": 1,
+          "missing": 17,
+          "detailed": 1
+        }
+      ],
+      "diagnostics": {
+        "sampledAt": 33207.300000000745,
+        "terrains": [
+          {
+            "id": "terrain",
+            "source": "procedural",
+            "representation": "polygonal",
+            "lod": null,
+            "switch": {
+              "pending": false,
+              "completed": 0,
+              "total": 0
+            },
+            "renderDistanceMeters": 16,
+            "radiusChunks": 2,
+            "chunkMeters": 8,
+            "activeChunks": 18,
+            "drawableChunks": 18,
+            "visibleChunks": 3,
+            "requestedChunks": 28,
+            "queuedChunks": 0,
+            "queuedColumns": 21,
+            "generating": 1,
+            "awaitingInstall": 0,
+            "awaitingFirstRender": 8,
+            "awaitingGpuUpload": null,
+            "preparedReplacements": 0,
+            "evictedChunks": 6,
+            "cancelled": 3,
+            "generatedChunks": 24,
+            "generationCpuMs": 139.50000001862645,
+            "levelQueryCpuMs": 45.30000001564622,
+            "meshingCpuMs": 647.6000000238419,
+            "installationCpuMs": 7.399999998509884,
+            "maxUpdateMs": 12.099999997764826,
+            "switchMs": 0,
+            "occupancyReuseHits": 0,
+            "residentHits": 6,
+            "residentMisses": 28,
+            "triangles": 39826,
+            "estimatedGeometryBytes": 916428,
+            "occupancyBytes": 589824,
+            "estimatedVisibleTerrainDrawCalls": 3,
+            "sourceCache": {
+              "pathColumns": 0,
+              "pathLookupTiles": 0,
+              "pathModifiers": 0,
+              "features": 0,
+              "neighborhoods": 64,
+              "levels": 12
+            },
+            "workerQueueLatencyMs": null,
+            "gpuUploadMs": null
+          }
+        ],
+        "frame": null,
+        "renderer": {
+          "drawCalls": 3,
+          "triangles": 6792,
+          "geometries": 10,
+          "textures": 0
+        },
+        "notes": "CPU timings are cumulative. Queued columns have not yet expanded into chunks. Geometry bytes estimate typed buffers, not driver allocations. First-render counts track CPU submissions, not GPU completion. Upload is deferred to render; GPU time is unavailable. Terrain generation runs on the main thread, without a worker queue."
+      },
+      "travelMeters": 25.999999999999858
+    },
+    {
+      "version": "phase-a",
+      "case": "excavation-and-object",
+      "mode": "voxel",
+      "enteredColumns": 2,
+      "preparedOnEntry": null,
+      "firstCoarseMs": null,
+      "firstDetailMs": 81.10000000149012,
+      "meanFrameMs": 19.44375,
+      "p95FrameMs": 33.39999999999418,
+      "coverage": 1,
+      "eligibleProbes": 35,
+      "missingProbes": 0,
+      "collisionReadyFraction": 1,
+      "probes": [
+        {
+          "frame": 0,
+          "eligible": 2,
+          "covered": 2,
+          "missing": 0,
+          "detailed": 1
+        },
+        {
+          "frame": 12,
+          "eligible": 2,
+          "covered": 2,
+          "missing": 0,
+          "detailed": 2
+        },
+        {
+          "frame": 24,
+          "eligible": 2,
+          "covered": 2,
+          "missing": 0,
+          "detailed": 2
+        },
+        {
+          "frame": 36,
+          "eligible": 2,
+          "covered": 2,
+          "missing": 0,
+          "detailed": 2
+        },
+        {
+          "frame": 48,
+          "eligible": 2,
+          "covered": 2,
+          "missing": 0,
+          "detailed": 2
+        },
+        {
+          "frame": 60,
+          "eligible": 2,
+          "covered": 2,
+          "missing": 0,
+          "detailed": 2
+        },
+        {
+          "frame": 72,
+          "eligible": 2,
+          "covered": 2,
+          "missing": 0,
+          "detailed": 2
+        },
+        {
+          "frame": 84,
+          "eligible": 2,
+          "covered": 2,
+          "missing": 0,
+          "detailed": 2
+        },
+        {
+          "frame": 96,
+          "eligible": 2,
+          "covered": 2,
+          "missing": 0,
+          "detailed": 2
+        },
+        {
+          "frame": 108,
+          "eligible": 2,
+          "covered": 2,
+          "missing": 0,
+          "detailed": 2
+        },
+        {
+          "frame": 120,
+          "eligible": 2,
+          "covered": 2,
+          "missing": 0,
+          "detailed": 2
+        },
+        {
+          "frame": 132,
+          "eligible": 2,
+          "covered": 2,
+          "missing": 0,
+          "detailed": 2
+        },
+        {
+          "frame": 144,
+          "eligible": 2,
+          "covered": 2,
+          "missing": 0,
+          "detailed": 2
+        },
+        {
+          "frame": 156,
+          "eligible": 2,
+          "covered": 2,
+          "missing": 0,
+          "detailed": 2
+        },
+        {
+          "frame": 168,
+          "eligible": 2,
+          "covered": 2,
+          "missing": 0,
+          "detailed": 2
+        },
+        {
+          "frame": 180,
+          "eligible": 1,
+          "covered": 1,
+          "missing": 0,
+          "detailed": 1
+        },
+        {
+          "frame": 192,
+          "eligible": 1,
+          "covered": 1,
+          "missing": 0,
+          "detailed": 1
+        },
+        {
+          "frame": 204,
+          "eligible": 1,
+          "covered": 1,
+          "missing": 0,
+          "detailed": 1
+        },
+        {
+          "frame": 216,
+          "eligible": 1,
+          "covered": 1,
+          "missing": 0,
+          "detailed": 1
+        },
+        {
+          "frame": 228,
+          "eligible": 1,
+          "covered": 1,
+          "missing": 0,
+          "detailed": 1
+        }
+      ],
+      "diagnostics": {
+        "sampledAt": 37903.10000000149,
+        "terrains": [
+          {
+            "id": "terrain",
+            "source": "procedural",
+            "representation": "voxel",
+            "lod": null,
+            "switch": {
+              "pending": false,
+              "completed": 0,
+              "total": 0
+            },
+            "renderDistanceMeters": 16,
+            "radiusChunks": 2,
+            "chunkMeters": 8,
+            "activeChunks": 46,
+            "drawableChunks": 45,
+            "visibleChunks": 18,
+            "requestedChunks": 46,
+            "queuedChunks": 0,
+            "queuedColumns": 0,
+            "generating": 0,
+            "awaitingInstall": 0,
+            "awaitingFirstRender": 2,
+            "awaitingGpuUpload": null,
+            "preparedReplacements": 0,
+            "evictedChunks": 0,
+            "cancelled": 0,
+            "generatedChunks": 46,
+            "generationCpuMs": 438.29999999701977,
+            "levelQueryCpuMs": 72.30000000074506,
+            "meshingCpuMs": 392.9000000022352,
+            "installationCpuMs": 14.899999994784594,
+            "maxUpdateMs": 0,
+            "switchMs": 0,
+            "occupancyReuseHits": 0,
+            "residentHits": 80,
+            "residentMisses": 46,
+            "triangles": 164068,
+            "estimatedGeometryBytes": 11484760,
+            "occupancyBytes": 1507328,
+            "estimatedVisibleTerrainDrawCalls": 40,
+            "sourceCache": {
+              "pathColumns": 2160,
+              "pathLookupTiles": 1,
+              "pathModifiers": 2160,
+              "features": 0,
+              "neighborhoods": 12,
+              "levels": 16
+            },
+            "workerQueueLatencyMs": null,
+            "gpuUploadMs": null
+          }
+        ],
+        "frame": null,
+        "renderer": {
+          "drawCalls": 40,
+          "triangles": 62786,
+          "geometries": 43,
+          "textures": 0
+        },
+        "notes": "CPU timings are cumulative. Queued columns have not yet expanded into chunks. Geometry bytes estimate typed buffers, not driver allocations. First-render counts track CPU submissions, not GPU completion. Upload is deferred to render; GPU time is unavailable. Terrain generation runs on the main thread, without a worker queue."
+      },
+      "travelMeters": 19
+    },
+    {
+      "version": "phase-a",
+      "case": "excavation-and-object",
+      "mode": "polygonal",
+      "enteredColumns": 2,
+      "preparedOnEntry": null,
+      "firstCoarseMs": null,
+      "firstDetailMs": 420.29999999701977,
+      "meanFrameMs": 16.666250000000005,
+      "p95FrameMs": 16.799999999995634,
+      "coverage": 0.45714285714285713,
+      "eligibleProbes": 35,
+      "missingProbes": 19,
+      "collisionReadyFraction": 1,
+      "probes": [
+        {
+          "frame": 0,
+          "eligible": 2,
+          "covered": 0,
+          "missing": 2,
+          "detailed": 0
+        },
+        {
+          "frame": 12,
+          "eligible": 2,
+          "covered": 0,
+          "missing": 2,
+          "detailed": 0
+        },
+        {
+          "frame": 24,
+          "eligible": 2,
+          "covered": 2,
+          "missing": 0,
+          "detailed": 1
+        },
+        {
+          "frame": 36,
+          "eligible": 2,
+          "covered": 2,
+          "missing": 0,
+          "detailed": 1
+        },
+        {
+          "frame": 48,
+          "eligible": 2,
+          "covered": 1,
+          "missing": 1,
+          "detailed": 1
+        },
+        {
+          "frame": 60,
+          "eligible": 2,
+          "covered": 1,
+          "missing": 1,
+          "detailed": 1
+        },
+        {
+          "frame": 72,
+          "eligible": 2,
+          "covered": 1,
+          "missing": 1,
+          "detailed": 1
+        },
+        {
+          "frame": 84,
+          "eligible": 2,
+          "covered": 1,
+          "missing": 1,
+          "detailed": 1
+        },
+        {
+          "frame": 96,
+          "eligible": 2,
+          "covered": 1,
+          "missing": 1,
+          "detailed": 1
+        },
+        {
+          "frame": 108,
+          "eligible": 2,
+          "covered": 1,
+          "missing": 1,
+          "detailed": 1
+        },
+        {
+          "frame": 120,
+          "eligible": 2,
+          "covered": 1,
+          "missing": 1,
+          "detailed": 1
+        },
+        {
+          "frame": 132,
+          "eligible": 2,
+          "covered": 1,
+          "missing": 1,
+          "detailed": 1
+        },
+        {
+          "frame": 144,
+          "eligible": 2,
+          "covered": 1,
+          "missing": 1,
+          "detailed": 1
+        },
+        {
+          "frame": 156,
+          "eligible": 2,
+          "covered": 0,
+          "missing": 2,
+          "detailed": 0
+        },
+        {
+          "frame": 168,
+          "eligible": 2,
+          "covered": 0,
+          "missing": 2,
+          "detailed": 0
+        },
+        {
+          "frame": 180,
+          "eligible": 1,
+          "covered": 0,
+          "missing": 1,
+          "detailed": 0
+        },
+        {
+          "frame": 192,
+          "eligible": 1,
+          "covered": 0,
+          "missing": 1,
+          "detailed": 0
+        },
+        {
+          "frame": 204,
+          "eligible": 1,
+          "covered": 1,
+          "missing": 0,
+          "detailed": 1
+        },
+        {
+          "frame": 216,
+          "eligible": 1,
+          "covered": 1,
+          "missing": 0,
+          "detailed": 1
+        },
+        {
+          "frame": 228,
+          "eligible": 1,
+          "covered": 1,
+          "missing": 0,
+          "detailed": 1
+        }
+      ],
+      "diagnostics": {
+        "sampledAt": 41923.60000000149,
+        "terrains": [
+          {
+            "id": "terrain",
+            "source": "procedural",
+            "representation": "polygonal",
+            "lod": null,
+            "switch": {
+              "pending": false,
+              "completed": 0,
+              "total": 0
+            },
+            "renderDistanceMeters": 16,
+            "radiusChunks": 2,
+            "chunkMeters": 8,
+            "activeChunks": 10,
+            "drawableChunks": 10,
+            "visibleChunks": 4,
+            "requestedChunks": 15,
+            "queuedChunks": 0,
+            "queuedColumns": 10,
+            "generating": 1,
+            "awaitingInstall": 0,
+            "awaitingFirstRender": 2,
+            "awaitingGpuUpload": null,
+            "preparedReplacements": 0,
+            "evictedChunks": 0,
+            "cancelled": 2,
+            "generatedChunks": 10,
+            "generationCpuMs": 314.70000003278255,
+            "levelQueryCpuMs": 46.10000001266599,
+            "meshingCpuMs": 424.2000000104308,
+            "installationCpuMs": 3.3999999910593033,
+            "maxUpdateMs": 8.399999998509884,
+            "switchMs": 0,
+            "occupancyReuseHits": 0,
+            "residentHits": 1,
+            "residentMisses": 15,
+            "triangles": 32526,
+            "estimatedGeometryBytes": 746100,
+            "occupancyBytes": 327680,
+            "estimatedVisibleTerrainDrawCalls": 8,
+            "sourceCache": {
+              "pathColumns": 5406,
+              "pathLookupTiles": 1,
+              "pathModifiers": 5406,
+              "features": 0,
+              "neighborhoods": 26,
+              "levels": 5
+            },
+            "workerQueueLatencyMs": null,
+            "gpuUploadMs": null
+          }
+        ],
+        "frame": null,
+        "renderer": {
+          "drawCalls": 8,
+          "triangles": 11630,
+          "geometries": 8,
+          "textures": 0
+        },
+        "notes": "CPU timings are cumulative. Queued columns have not yet expanded into chunks. Geometry bytes estimate typed buffers, not driver allocations. First-render counts track CPU submissions, not GPU completion. Upload is deferred to render; GPU time is unavailable. Terrain generation runs on the main thread, without a worker queue."
+      },
+      "travelMeters": 19
+    },
+    {
+      "version": "phase-a",
+      "case": "rapid-direction-changes",
+      "mode": "voxel",
+      "enteredColumns": 16,
+      "preparedOnEntry": null,
+      "firstCoarseMs": null,
+      "firstDetailMs": 34.69999999925494,
+      "meanFrameMs": 17.013333333333353,
+      "p95FrameMs": 16.80000000000291,
+      "coverage": 0.19722222222222222,
+      "eligibleProbes": 360,
+      "missingProbes": 289,
+      "collisionReadyFraction": 1,
+      "probes": [
+        {
+          "frame": 0,
+          "eligible": 18,
+          "covered": 2,
+          "missing": 16,
+          "detailed": 1
+        },
+        {
+          "frame": 12,
+          "eligible": 18,
+          "covered": 2,
+          "missing": 16,
+          "detailed": 2
+        },
+        {
+          "frame": 24,
+          "eligible": 18,
+          "covered": 4,
+          "missing": 14,
+          "detailed": 2
+        },
+        {
+          "frame": 36,
+          "eligible": 18,
+          "covered": 5,
+          "missing": 13,
+          "detailed": 2
+        },
+        {
+          "frame": 48,
+          "eligible": 18,
+          "covered": 2,
+          "missing": 16,
+          "detailed": 2
+        },
+        {
+          "frame": 60,
+          "eligible": 18,
+          "covered": 4,
+          "missing": 14,
+          "detailed": 4
+        },
+        {
+          "frame": 72,
+          "eligible": 18,
+          "covered": 3,
+          "missing": 15,
+          "detailed": 3
+        },
+        {
+          "frame": 84,
+          "eligible": 18,
+          "covered": 4,
+          "missing": 14,
+          "detailed": 4
+        },
+        {
+          "frame": 96,
+          "eligible": 18,
+          "covered": 4,
+          "missing": 14,
+          "detailed": 4
+        },
+        {
+          "frame": 108,
+          "eligible": 18,
+          "covered": 4,
+          "missing": 14,
+          "detailed": 4
+        },
+        {
+          "frame": 120,
+          "eligible": 18,
+          "covered": 4,
+          "missing": 14,
+          "detailed": 4
+        },
+        {
+          "frame": 132,
+          "eligible": 18,
+          "covered": 4,
+          "missing": 14,
+          "detailed": 4
+        },
+        {
+          "frame": 144,
+          "eligible": 18,
+          "covered": 4,
+          "missing": 14,
+          "detailed": 4
+        },
+        {
+          "frame": 156,
+          "eligible": 18,
+          "covered": 4,
+          "missing": 14,
+          "detailed": 4
+        },
+        {
+          "frame": 168,
+          "eligible": 18,
+          "covered": 4,
+          "missing": 14,
+          "detailed": 4
+        },
+        {
+          "frame": 180,
+          "eligible": 18,
+          "covered": 4,
+          "missing": 14,
+          "detailed": 4
+        },
+        {
+          "frame": 192,
+          "eligible": 18,
+          "covered": 4,
+          "missing": 14,
+          "detailed": 4
+        },
+        {
+          "frame": 204,
+          "eligible": 18,
+          "covered": 2,
+          "missing": 16,
+          "detailed": 2
+        },
+        {
+          "frame": 216,
+          "eligible": 18,
+          "covered": 3,
+          "missing": 15,
+          "detailed": 3
+        },
+        {
+          "frame": 228,
+          "eligible": 18,
+          "covered": 4,
+          "missing": 14,
+          "detailed": 4
+        }
+      ],
+      "diagnostics": {
+        "sampledAt": 46019.300000000745,
+        "terrains": [
+          {
+            "id": "terrain",
+            "source": "procedural",
+            "representation": "voxel",
+            "lod": null,
+            "switch": {
+              "pending": false,
+              "completed": 0,
+              "total": 0
+            },
+            "renderDistanceMeters": 16,
+            "radiusChunks": 2,
+            "chunkMeters": 8,
+            "activeChunks": 49,
+            "drawableChunks": 49,
+            "visibleChunks": 13,
+            "requestedChunks": 79,
+            "queuedChunks": 0,
+            "queuedColumns": 21,
+            "generating": 0,
+            "awaitingInstall": 0,
+            "awaitingFirstRender": 7,
+            "awaitingGpuUpload": null,
+            "preparedReplacements": 0,
+            "evictedChunks": 28,
+            "cancelled": 0,
+            "generatedChunks": 77,
+            "generationCpuMs": 46.49999999627471,
+            "levelQueryCpuMs": 62.600000001490116,
+            "meshingCpuMs": 345.3999999836087,
+            "installationCpuMs": 17.399999987334013,
+            "maxUpdateMs": 0,
+            "switchMs": 0,
+            "occupancyReuseHits": 0,
+            "residentHits": 342,
+            "residentMisses": 79,
+            "triangles": 104988,
+            "estimatedGeometryBytes": 7349160,
+            "occupancyBytes": 1605632,
+            "estimatedVisibleTerrainDrawCalls": 16,
+            "sourceCache": {
+              "pathColumns": 0,
+              "pathLookupTiles": 0,
+              "pathModifiers": 0,
+              "features": 0,
+              "neighborhoods": 42,
+              "levels": 36
+            },
+            "workerQueueLatencyMs": null,
+            "gpuUploadMs": null
+          }
+        ],
+        "frame": null,
+        "renderer": {
+          "drawCalls": 16,
+          "triangles": 30710,
+          "geometries": 42,
+          "textures": 0
+        },
+        "notes": "CPU timings are cumulative. Queued columns have not yet expanded into chunks. Geometry bytes estimate typed buffers, not driver allocations. First-render counts track CPU submissions, not GPU completion. Upload is deferred to render; GPU time is unavailable. Terrain generation runs on the main thread, without a worker queue."
+      },
+      "travelMeters": 25.05114767830009
+    },
+    {
+      "version": "phase-a",
+      "case": "rapid-direction-changes",
+      "mode": "polygonal",
+      "enteredColumns": 16,
+      "preparedOnEntry": null,
+      "firstCoarseMs": null,
+      "firstDetailMs": 207.60000000149012,
+      "meanFrameMs": 16.735416666666666,
+      "p95FrameMs": 16.799999999995634,
+      "coverage": 0.06111111111111111,
+      "eligibleProbes": 360,
+      "missingProbes": 338,
+      "collisionReadyFraction": 1,
+      "probes": [
+        {
+          "frame": 0,
+          "eligible": 18,
+          "covered": 0,
+          "missing": 18,
+          "detailed": 0
+        },
+        {
+          "frame": 12,
+          "eligible": 18,
+          "covered": 2,
+          "missing": 16,
+          "detailed": 1
+        },
+        {
+          "frame": 24,
+          "eligible": 18,
+          "covered": 2,
+          "missing": 16,
+          "detailed": 1
+        },
+        {
+          "frame": 36,
+          "eligible": 18,
+          "covered": 2,
+          "missing": 16,
+          "detailed": 1
+        },
+        {
+          "frame": 48,
+          "eligible": 18,
+          "covered": 1,
+          "missing": 17,
+          "detailed": 1
+        },
+        {
+          "frame": 60,
+          "eligible": 18,
+          "covered": 1,
+          "missing": 17,
+          "detailed": 1
+        },
+        {
+          "frame": 72,
+          "eligible": 18,
+          "covered": 1,
+          "missing": 17,
+          "detailed": 1
+        },
+        {
+          "frame": 84,
+          "eligible": 18,
+          "covered": 1,
+          "missing": 17,
+          "detailed": 1
+        },
+        {
+          "frame": 96,
+          "eligible": 18,
+          "covered": 1,
+          "missing": 17,
+          "detailed": 1
+        },
+        {
+          "frame": 108,
+          "eligible": 18,
+          "covered": 1,
+          "missing": 17,
+          "detailed": 1
+        },
+        {
+          "frame": 120,
+          "eligible": 18,
+          "covered": 1,
+          "missing": 17,
+          "detailed": 1
+        },
+        {
+          "frame": 132,
+          "eligible": 18,
+          "covered": 1,
+          "missing": 17,
+          "detailed": 1
+        },
+        {
+          "frame": 144,
+          "eligible": 18,
+          "covered": 1,
+          "missing": 17,
+          "detailed": 1
+        },
+        {
+          "frame": 156,
+          "eligible": 18,
+          "covered": 2,
+          "missing": 16,
+          "detailed": 2
+        },
+        {
+          "frame": 168,
+          "eligible": 18,
+          "covered": 2,
+          "missing": 16,
+          "detailed": 2
+        },
+        {
+          "frame": 180,
+          "eligible": 18,
+          "covered": 1,
+          "missing": 17,
+          "detailed": 1
+        },
+        {
+          "frame": 192,
+          "eligible": 18,
+          "covered": 1,
+          "missing": 17,
+          "detailed": 1
+        },
+        {
+          "frame": 204,
+          "eligible": 18,
+          "covered": 0,
+          "missing": 18,
+          "detailed": 0
+        },
+        {
+          "frame": 216,
+          "eligible": 18,
+          "covered": 1,
+          "missing": 17,
+          "detailed": 1
+        },
+        {
+          "frame": 228,
+          "eligible": 18,
+          "covered": 0,
+          "missing": 18,
+          "detailed": 0
+        }
+      ],
+      "diagnostics": {
+        "sampledAt": 50056.400000002235,
+        "terrains": [
+          {
+            "id": "terrain",
+            "source": "procedural",
+            "representation": "polygonal",
+            "lod": null,
+            "switch": {
+              "pending": false,
+              "completed": 0,
+              "total": 0
+            },
+            "renderDistanceMeters": 16,
+            "radiusChunks": 2,
+            "chunkMeters": 8,
+            "activeChunks": 15,
+            "drawableChunks": 15,
+            "visibleChunks": 1,
+            "requestedChunks": 44,
+            "queuedChunks": 1,
+            "queuedColumns": 24,
+            "generating": 1,
+            "awaitingInstall": 0,
+            "awaitingFirstRender": 7,
+            "awaitingGpuUpload": null,
+            "preparedReplacements": 0,
+            "evictedChunks": 4,
+            "cancelled": 15,
+            "generatedChunks": 19,
+            "generationCpuMs": 113.20000002160668,
+            "levelQueryCpuMs": 54.099999997764826,
+            "meshingCpuMs": 478.9999999962747,
+            "installationCpuMs": 5.49999999627471,
+            "maxUpdateMs": 10.799999997019768,
+            "switchMs": 0,
+            "occupancyReuseHits": 0,
+            "residentHits": 67,
+            "residentMisses": 44,
+            "triangles": 30790,
+            "estimatedGeometryBytes": 712100,
+            "occupancyBytes": 491520,
+            "estimatedVisibleTerrainDrawCalls": 1,
+            "sourceCache": {
+              "pathColumns": 0,
+              "pathLookupTiles": 0,
+              "pathModifiers": 0,
+              "features": 0,
+              "neighborhoods": 64,
+              "levels": 15
+            },
+            "workerQueueLatencyMs": null,
+            "gpuUploadMs": null
+          }
+        ],
+        "frame": null,
+        "renderer": {
+          "drawCalls": 1,
+          "triangles": 2184,
+          "geometries": 8,
+          "textures": 0
+        },
+        "notes": "CPU timings are cumulative. Queued columns have not yet expanded into chunks. Geometry bytes estimate typed buffers, not driver allocations. First-render counts track CPU submissions, not GPU completion. Upload is deferred to render; GPU time is unavailable. Terrain generation runs on the main thread, without a worker queue."
+      },
+      "travelMeters": 25.05114767830009
+    },
+    {
+      "version": "phase-b",
+      "case": "small-procedural",
+      "mode": "voxel",
+      "enteredColumns": 2,
+      "preparedOnEntry": 2,
+      "firstCoarseMs": 156.59999999776483,
+      "firstDetailMs": 254.59999999776483,
+      "meanFrameMs": 16.805000000000017,
+      "p95FrameMs": 16.799999999995634,
+      "coverage": 0.9428571428571428,
+      "eligibleProbes": 35,
+      "missingProbes": 2,
+      "collisionReadyFraction": 1,
+      "probes": [
+        {
+          "frame": 0,
+          "eligible": 2,
+          "covered": 0,
+          "missing": 2,
+          "detailed": 0
+        },
+        {
+          "frame": 12,
+          "eligible": 2,
+          "covered": 2,
+          "missing": 0,
+          "detailed": 1
+        },
+        {
+          "frame": 24,
+          "eligible": 2,
+          "covered": 2,
+          "missing": 0,
+          "detailed": 1
+        },
+        {
+          "frame": 36,
+          "eligible": 2,
+          "covered": 2,
+          "missing": 0,
+          "detailed": 1
+        },
+        {
+          "frame": 48,
+          "eligible": 2,
+          "covered": 2,
+          "missing": 0,
+          "detailed": 1
+        },
+        {
+          "frame": 60,
+          "eligible": 2,
+          "covered": 2,
+          "missing": 0,
+          "detailed": 2
+        },
+        {
+          "frame": 72,
+          "eligible": 2,
+          "covered": 2,
+          "missing": 0,
+          "detailed": 2
+        },
+        {
+          "frame": 84,
+          "eligible": 2,
+          "covered": 2,
+          "missing": 0,
+          "detailed": 2
+        },
+        {
+          "frame": 96,
+          "eligible": 2,
+          "covered": 2,
+          "missing": 0,
+          "detailed": 2
+        },
+        {
+          "frame": 108,
+          "eligible": 2,
+          "covered": 2,
+          "missing": 0,
+          "detailed": 2
+        },
+        {
+          "frame": 120,
+          "eligible": 2,
+          "covered": 2,
+          "missing": 0,
+          "detailed": 2
+        },
+        {
+          "frame": 132,
+          "eligible": 2,
+          "covered": 2,
+          "missing": 0,
+          "detailed": 2
+        },
+        {
+          "frame": 144,
+          "eligible": 2,
+          "covered": 2,
+          "missing": 0,
+          "detailed": 2
+        },
+        {
+          "frame": 156,
+          "eligible": 2,
+          "covered": 2,
+          "missing": 0,
+          "detailed": 2
+        },
+        {
+          "frame": 168,
+          "eligible": 2,
+          "covered": 2,
+          "missing": 0,
+          "detailed": 2
+        },
+        {
+          "frame": 180,
+          "eligible": 1,
+          "covered": 1,
+          "missing": 0,
+          "detailed": 1
+        },
+        {
+          "frame": 192,
+          "eligible": 1,
+          "covered": 1,
+          "missing": 0,
+          "detailed": 1
+        },
+        {
+          "frame": 204,
+          "eligible": 1,
+          "covered": 1,
+          "missing": 0,
+          "detailed": 1
+        },
+        {
+          "frame": 216,
+          "eligible": 1,
+          "covered": 1,
+          "missing": 0,
+          "detailed": 1
+        },
+        {
+          "frame": 228,
+          "eligible": 1,
+          "covered": 1,
+          "missing": 0,
+          "detailed": 1
+        }
+      ],
+      "diagnostics": {
+        "sampledAt": 54319.20000000298,
+        "terrains": [
+          {
+            "id": "terrain",
+            "source": "procedural",
+            "representation": "voxel",
+            "lod": {
+              "requests": 2,
+              "generated": 2,
+              "evictions": 0,
+              "cancelled": 0,
+              "coarseCpuMs": 17.399999998509884,
+              "installationMs": 1.9000000022351742,
+              "bytes": {
+                "0": 12884656,
+                "1": 77824,
+                "2": 0
+              },
+              "firstGeometryMs": 146.19999999925494,
+              "started": 50173.800000000745,
+              "queue": 0,
+              "requestedRegions": 1,
+              "distanceCandidateRegions": 1,
+              "missingRequestedTiles": 0,
+              "triangles": 0,
+              "drawCalls": 0,
+              "levels": {
+                "0": 44,
+                "1": 1,
+                "2": 0
+              },
+              "visibilityDistance": 512,
+              "predictive": true,
+              "refinementColumns": 0,
+              "tiles": 1,
+              "queueAgeMs": 0,
+              "gpuUploadMs": null
+            },
+            "switch": {
+              "pending": false,
+              "completed": 0,
+              "total": 0
+            },
+            "renderDistanceMeters": 16,
+            "radiusChunks": 2,
+            "chunkMeters": 8,
+            "activeChunks": 44,
+            "drawableChunks": 44,
+            "visibleChunks": 18,
+            "requestedChunks": 44,
+            "queuedChunks": 0,
+            "queuedColumns": 0,
+            "generating": 0,
+            "awaitingInstall": 0,
+            "awaitingFirstRender": 5,
+            "awaitingGpuUpload": null,
+            "preparedReplacements": 0,
+            "evictedChunks": 0,
+            "cancelled": 0,
+            "generatedChunks": 44,
+            "generationCpuMs": 104.80000000447035,
+            "levelQueryCpuMs": 31.899999991059303,
+            "meshingCpuMs": 279.60000003501773,
+            "installationCpuMs": 16.899999994784594,
+            "maxUpdateMs": 5.199999999254942,
+            "switchMs": 0,
+            "occupancyReuseHits": 0,
+            "residentHits": 76,
+            "residentMisses": 44,
+            "triangles": 150564,
+            "estimatedGeometryBytes": 10539480,
+            "occupancyBytes": 1441792,
+            "estimatedVisibleTerrainDrawCalls": 40,
+            "sourceCache": {
+              "pathColumns": 0,
+              "pathLookupTiles": 0,
+              "pathModifiers": 0,
+              "features": 0,
+              "neighborhoods": 11,
+              "levels": 16
+            },
+            "workerQueueLatencyMs": null,
+            "gpuUploadMs": null
+          }
+        ],
+        "frame": null,
+        "renderer": {
+          "drawCalls": 40,
+          "triangles": 62786,
+          "geometries": 40,
+          "textures": 0
+        },
+        "notes": "CPU timings are cumulative. Queued columns have not yet expanded into chunks. Geometry bytes estimate typed buffers, not driver allocations. First-render counts track CPU submissions, not GPU completion. Upload is deferred to render; GPU time is unavailable. Terrain generation runs on the main thread, without a worker queue."
+      },
+      "travelMeters": 19
+    },
+    {
+      "version": "phase-b",
+      "case": "small-procedural",
+      "mode": "polygonal",
+      "enteredColumns": 2,
+      "preparedOnEntry": 1,
+      "firstCoarseMs": 40.69999999925494,
+      "firstDetailMs": 280.69999999925494,
+      "meanFrameMs": 16.735416666666666,
+      "p95FrameMs": 16.799999999995634,
+      "coverage": 0.9428571428571428,
+      "eligibleProbes": 35,
+      "missingProbes": 2,
+      "collisionReadyFraction": 1,
+      "probes": [
+        {
+          "frame": 0,
+          "eligible": 2,
+          "covered": 0,
+          "missing": 2,
+          "detailed": 0
+        },
+        {
+          "frame": 12,
+          "eligible": 2,
+          "covered": 2,
+          "missing": 0,
+          "detailed": 0
+        },
+        {
+          "frame": 24,
+          "eligible": 2,
+          "covered": 2,
+          "missing": 0,
+          "detailed": 1
+        },
+        {
+          "frame": 36,
+          "eligible": 2,
+          "covered": 2,
+          "missing": 0,
+          "detailed": 1
+        },
+        {
+          "frame": 48,
+          "eligible": 2,
+          "covered": 2,
+          "missing": 0,
+          "detailed": 1
+        },
+        {
+          "frame": 60,
+          "eligible": 2,
+          "covered": 2,
+          "missing": 0,
+          "detailed": 1
+        },
+        {
+          "frame": 72,
+          "eligible": 2,
+          "covered": 2,
+          "missing": 0,
+          "detailed": 1
+        },
+        {
+          "frame": 84,
+          "eligible": 2,
+          "covered": 2,
+          "missing": 0,
+          "detailed": 1
+        },
+        {
+          "frame": 96,
+          "eligible": 2,
+          "covered": 2,
+          "missing": 0,
+          "detailed": 1
+        },
+        {
+          "frame": 108,
+          "eligible": 2,
+          "covered": 2,
+          "missing": 0,
+          "detailed": 2
+        },
+        {
+          "frame": 120,
+          "eligible": 2,
+          "covered": 2,
+          "missing": 0,
+          "detailed": 2
+        },
+        {
+          "frame": 132,
+          "eligible": 2,
+          "covered": 2,
+          "missing": 0,
+          "detailed": 2
+        },
+        {
+          "frame": 144,
+          "eligible": 2,
+          "covered": 2,
+          "missing": 0,
+          "detailed": 2
+        },
+        {
+          "frame": 156,
+          "eligible": 2,
+          "covered": 2,
+          "missing": 0,
+          "detailed": 1
+        },
+        {
+          "frame": 168,
+          "eligible": 2,
+          "covered": 2,
+          "missing": 0,
+          "detailed": 1
+        },
+        {
+          "frame": 180,
+          "eligible": 1,
+          "covered": 1,
+          "missing": 0,
+          "detailed": 0
+        },
+        {
+          "frame": 192,
+          "eligible": 1,
+          "covered": 1,
+          "missing": 0,
+          "detailed": 0
+        },
+        {
+          "frame": 204,
+          "eligible": 1,
+          "covered": 1,
+          "missing": 0,
+          "detailed": 0
+        },
+        {
+          "frame": 216,
+          "eligible": 1,
+          "covered": 1,
+          "missing": 0,
+          "detailed": 1
+        },
+        {
+          "frame": 228,
+          "eligible": 1,
+          "covered": 1,
+          "missing": 0,
+          "detailed": 1
+        }
+      ],
+      "diagnostics": {
+        "sampledAt": 58356.400000002235,
+        "terrains": [
+          {
+            "id": "terrain",
+            "source": "procedural",
+            "representation": "polygonal",
+            "lod": {
+              "requests": 2,
+              "generated": 2,
+              "evictions": 0,
+              "cancelled": 0,
+              "coarseCpuMs": 9.800000000745058,
+              "installationMs": 1,
+              "bytes": {
+                "0": 3745744,
+                "1": 77824,
+                "2": 0
+              },
+              "firstGeometryMs": 31,
+              "started": 54339.300000000745,
+              "queue": 0,
+              "requestedRegions": 1,
+              "distanceCandidateRegions": 1,
+              "missingRequestedTiles": 0,
+              "triangles": 320,
+              "drawCalls": 1,
+              "levels": {
+                "0": 30,
+                "1": 1,
+                "2": 0
+              },
+              "visibilityDistance": 512,
+              "predictive": true,
+              "refinementColumns": 0,
+              "tiles": 1,
+              "queueAgeMs": 0,
+              "gpuUploadMs": null
+            },
+            "switch": {
+              "pending": false,
+              "completed": 0,
+              "total": 0
+            },
+            "renderDistanceMeters": 16,
+            "radiusChunks": 2,
+            "chunkMeters": 8,
+            "activeChunks": 30,
+            "drawableChunks": 30,
+            "visibleChunks": 11,
+            "requestedChunks": 34,
+            "queuedChunks": 1,
+            "queuedColumns": 8,
+            "generating": 1,
+            "awaitingInstall": 0,
+            "awaitingFirstRender": 6,
+            "awaitingGpuUpload": null,
+            "preparedReplacements": 0,
+            "evictedChunks": 0,
+            "cancelled": 0,
+            "generatedChunks": 30,
+            "generationCpuMs": 97.6000000052154,
+            "levelQueryCpuMs": 31.100000001490116,
+            "meshingCpuMs": 721.0000000298023,
+            "installationCpuMs": 7.599999990314245,
+            "maxUpdateMs": 9.899999998509884,
+            "switchMs": 0,
+            "occupancyReuseHits": 0,
+            "residentHits": 7,
+            "residentMisses": 34,
+            "triangles": 95884,
+            "estimatedGeometryBytes": 2187400,
+            "occupancyBytes": 983040,
+            "estimatedVisibleTerrainDrawCalls": 25,
+            "sourceCache": {
+              "pathColumns": 0,
+              "pathLookupTiles": 0,
+              "pathModifiers": 0,
+              "features": 0,
+              "neighborhoods": 32,
+              "levels": 12
+            },
+            "workerQueueLatencyMs": null,
+            "gpuUploadMs": null
+          }
+        ],
+        "frame": null,
+        "renderer": {
+          "drawCalls": 26,
+          "triangles": 36964,
+          "geometries": 25,
+          "textures": 0
+        },
+        "notes": "CPU timings are cumulative. Queued columns have not yet expanded into chunks. Geometry bytes estimate typed buffers, not driver allocations. First-render counts track CPU submissions, not GPU completion. Upload is deferred to render; GPU time is unavailable. Terrain generation runs on the main thread, without a worker queue."
+      },
+      "travelMeters": 19
+    },
+    {
+      "version": "phase-b",
+      "case": "synthetic-geotiff",
+      "mode": "voxel",
+      "enteredColumns": 3,
+      "preparedOnEntry": 3,
+      "firstCoarseMs": 73.59999999776483,
+      "firstDetailMs": 181.59999999776483,
+      "meanFrameMs": 16.735416666666666,
+      "p95FrameMs": 16.799999999995634,
+      "coverage": 0.9333333333333333,
+      "eligibleProbes": 15,
+      "missingProbes": 1,
+      "collisionReadyFraction": 1,
+      "probes": [
+        {
+          "frame": 0,
+          "eligible": 1,
+          "covered": 0,
+          "missing": 1,
+          "detailed": 0
+        },
+        {
+          "frame": 12,
+          "eligible": 1,
+          "covered": 1,
+          "missing": 0,
+          "detailed": 0
+        },
+        {
+          "frame": 24,
+          "eligible": 1,
+          "covered": 1,
+          "missing": 0,
+          "detailed": 1
+        },
+        {
+          "frame": 36,
+          "eligible": 1,
+          "covered": 1,
+          "missing": 0,
+          "detailed": 1
+        },
+        {
+          "frame": 48,
+          "eligible": 1,
+          "covered": 1,
+          "missing": 0,
+          "detailed": 0
+        },
+        {
+          "frame": 60,
+          "eligible": 1,
+          "covered": 1,
+          "missing": 0,
+          "detailed": 1
+        },
+        {
+          "frame": 72,
+          "eligible": 1,
+          "covered": 1,
+          "missing": 0,
+          "detailed": 1
+        },
+        {
+          "frame": 84,
+          "eligible": 1,
+          "covered": 1,
+          "missing": 0,
+          "detailed": 1
+        },
+        {
+          "frame": 96,
+          "eligible": 1,
+          "covered": 1,
+          "missing": 0,
+          "detailed": 1
+        },
+        {
+          "frame": 108,
+          "eligible": 1,
+          "covered": 1,
+          "missing": 0,
+          "detailed": 1
+        },
+        {
+          "frame": 120,
+          "eligible": 1,
+          "covered": 1,
+          "missing": 0,
+          "detailed": 1
+        },
+        {
+          "frame": 132,
+          "eligible": 1,
+          "covered": 1,
+          "missing": 0,
+          "detailed": 1
+        },
+        {
+          "frame": 144,
+          "eligible": 1,
+          "covered": 1,
+          "missing": 0,
+          "detailed": 1
+        },
+        {
+          "frame": 156,
+          "eligible": 1,
+          "covered": 1,
+          "missing": 0,
+          "detailed": 1
+        },
+        {
+          "frame": 168,
+          "eligible": 1,
+          "covered": 1,
+          "missing": 0,
+          "detailed": 1
+        },
+        {
+          "frame": 180,
+          "eligible": 0,
+          "covered": 0,
+          "missing": 0,
+          "detailed": 0
+        },
+        {
+          "frame": 192,
+          "eligible": 0,
+          "covered": 0,
+          "missing": 0,
+          "detailed": 0
+        },
+        {
+          "frame": 204,
+          "eligible": 0,
+          "covered": 0,
+          "missing": 0,
+          "detailed": 0
+        },
+        {
+          "frame": 216,
+          "eligible": 0,
+          "covered": 0,
+          "missing": 0,
+          "detailed": 0
+        },
+        {
+          "frame": 228,
+          "eligible": 0,
+          "covered": 0,
+          "missing": 0,
+          "detailed": 0
+        }
+      ],
+      "diagnostics": {
+        "sampledAt": 62403.10000000149,
+        "terrains": [
+          {
+            "id": "terrain",
+            "source": "geographic",
+            "representation": "voxel",
+            "lod": {
+              "requests": 2,
+              "generated": 2,
+              "evictions": 0,
+              "cancelled": 0,
+              "coarseCpuMs": 18.900000009685755,
+              "installationMs": 1.5,
+              "bytes": {
+                "0": 4948656,
+                "1": 77824,
+                "2": 0
+              },
+              "firstGeometryMs": 58,
+              "started": 58378.400000002235,
+              "queue": 0,
+              "requestedRegions": 1,
+              "distanceCandidateRegions": 1,
+              "missingRequestedTiles": 0,
+              "triangles": 256,
+              "drawCalls": 1,
+              "levels": {
+                "0": 12,
+                "1": 1,
+                "2": 0
+              },
+              "visibilityDistance": 512,
+              "predictive": true,
+              "refinementColumns": 0,
+              "tiles": 1,
+              "queueAgeMs": 0,
+              "gpuUploadMs": null
+            },
+            "switch": {
+              "pending": false,
+              "completed": 0,
+              "total": 0
+            },
+            "renderDistanceMeters": 16,
+            "radiusChunks": 2,
+            "chunkMeters": 8,
+            "activeChunks": 12,
+            "drawableChunks": 12,
+            "visibleChunks": 3,
+            "requestedChunks": 12,
+            "queuedChunks": 0,
+            "queuedColumns": 0,
+            "generating": 0,
+            "awaitingInstall": 0,
+            "awaitingFirstRender": 2,
+            "awaitingGpuUpload": null,
+            "preparedReplacements": 0,
+            "evictedChunks": 0,
+            "cancelled": 0,
+            "generatedChunks": 12,
+            "generationCpuMs": 152.30000001192093,
+            "levelQueryCpuMs": 58.099999979138374,
+            "meshingCpuMs": 85.0999999716878,
+            "installationCpuMs": 11.300000004470348,
+            "maxUpdateMs": 4.600000001490116,
+            "switchMs": 0,
+            "occupancyReuseHits": 0,
+            "residentHits": 27,
+            "residentMisses": 12,
+            "triangles": 59940,
+            "estimatedGeometryBytes": 4195800,
+            "occupancyBytes": 393216,
+            "estimatedVisibleTerrainDrawCalls": 9,
+            "sourceCache": {
+              "columns": 8192,
+              "pathColumns": 0,
+              "pathLookupTiles": 0,
+              "pathModifiers": 0,
+              "features": 0,
+              "neighborhoods": 8,
+              "levels": 12
+            },
+            "workerQueueLatencyMs": null,
+            "gpuUploadMs": null
+          }
+        ],
+        "frame": null,
+        "renderer": {
+          "drawCalls": 10,
+          "triangles": 16816,
+          "geometries": 11,
+          "textures": 0
+        },
+        "notes": "CPU timings are cumulative. Queued columns have not yet expanded into chunks. Geometry bytes estimate typed buffers, not driver allocations. First-render counts track CPU submissions, not GPU completion. Upload is deferred to render; GPU time is unavailable. Terrain generation runs on the main thread, without a worker queue."
+      },
+      "travelMeters": 18.625
+    },
+    {
+      "version": "phase-b",
+      "case": "synthetic-geotiff",
+      "mode": "polygonal",
+      "enteredColumns": 3,
+      "preparedOnEntry": 3,
+      "firstCoarseMs": 58,
+      "firstDetailMs": 214.89999999850988,
+      "meanFrameMs": 16.735833333333357,
+      "p95FrameMs": 16.70000000001164,
+      "coverage": 0.9333333333333333,
+      "eligibleProbes": 15,
+      "missingProbes": 1,
+      "collisionReadyFraction": 1,
+      "probes": [
+        {
+          "frame": 0,
+          "eligible": 1,
+          "covered": 0,
+          "missing": 1,
+          "detailed": 0
+        },
+        {
+          "frame": 12,
+          "eligible": 1,
+          "covered": 1,
+          "missing": 0,
+          "detailed": 0
+        },
+        {
+          "frame": 24,
+          "eligible": 1,
+          "covered": 1,
+          "missing": 0,
+          "detailed": 0
+        },
+        {
+          "frame": 36,
+          "eligible": 1,
+          "covered": 1,
+          "missing": 0,
+          "detailed": 0
+        },
+        {
+          "frame": 48,
+          "eligible": 1,
+          "covered": 1,
+          "missing": 0,
+          "detailed": 0
+        },
+        {
+          "frame": 60,
+          "eligible": 1,
+          "covered": 1,
+          "missing": 0,
+          "detailed": 0
+        },
+        {
+          "frame": 72,
+          "eligible": 1,
+          "covered": 1,
+          "missing": 0,
+          "detailed": 1
+        },
+        {
+          "frame": 84,
+          "eligible": 1,
+          "covered": 1,
+          "missing": 0,
+          "detailed": 1
+        },
+        {
+          "frame": 96,
+          "eligible": 1,
+          "covered": 1,
+          "missing": 0,
+          "detailed": 1
+        },
+        {
+          "frame": 108,
+          "eligible": 1,
+          "covered": 1,
+          "missing": 0,
+          "detailed": 1
+        },
+        {
+          "frame": 120,
+          "eligible": 1,
+          "covered": 1,
+          "missing": 0,
+          "detailed": 1
+        },
+        {
+          "frame": 132,
+          "eligible": 1,
+          "covered": 1,
+          "missing": 0,
+          "detailed": 1
+        },
+        {
+          "frame": 144,
+          "eligible": 1,
+          "covered": 1,
+          "missing": 0,
+          "detailed": 1
+        },
+        {
+          "frame": 156,
+          "eligible": 1,
+          "covered": 1,
+          "missing": 0,
+          "detailed": 1
+        },
+        {
+          "frame": 168,
+          "eligible": 1,
+          "covered": 1,
+          "missing": 0,
+          "detailed": 1
+        },
+        {
+          "frame": 180,
+          "eligible": 0,
+          "covered": 0,
+          "missing": 0,
+          "detailed": 0
+        },
+        {
+          "frame": 192,
+          "eligible": 0,
+          "covered": 0,
+          "missing": 0,
+          "detailed": 0
+        },
+        {
+          "frame": 204,
+          "eligible": 0,
+          "covered": 0,
+          "missing": 0,
+          "detailed": 0
+        },
+        {
+          "frame": 216,
+          "eligible": 0,
+          "covered": 0,
+          "missing": 0,
+          "detailed": 0
+        },
+        {
+          "frame": 228,
+          "eligible": 0,
+          "covered": 0,
+          "missing": 0,
+          "detailed": 0
+        }
+      ],
+      "diagnostics": {
+        "sampledAt": 66452.40000000224,
+        "terrains": [
+          {
+            "id": "terrain",
+            "source": "geographic",
+            "representation": "polygonal",
+            "lod": {
+              "requests": 2,
+              "generated": 2,
+              "evictions": 0,
+              "cancelled": 0,
+              "coarseCpuMs": 14.100000005215406,
+              "installationMs": 1.300000000745058,
+              "bytes": {
+                "0": 2117104,
+                "1": 77824,
+                "2": 0
+              },
+              "firstGeometryMs": 41.30000000074506,
+              "started": 62429.60000000149,
+              "queue": 0,
+              "requestedRegions": 1,
+              "distanceCandidateRegions": 1,
+              "missingRequestedTiles": 0,
+              "triangles": 256,
+              "drawCalls": 1,
+              "levels": {
+                "0": 12,
+                "1": 1,
+                "2": 0
+              },
+              "visibilityDistance": 512,
+              "predictive": true,
+              "refinementColumns": 0,
+              "tiles": 1,
+              "queueAgeMs": 0,
+              "gpuUploadMs": null
+            },
+            "switch": {
+              "pending": false,
+              "completed": 0,
+              "total": 0
+            },
+            "renderDistanceMeters": 16,
+            "radiusChunks": 2,
+            "chunkMeters": 8,
+            "activeChunks": 12,
+            "drawableChunks": 12,
+            "visibleChunks": 3,
+            "requestedChunks": 12,
+            "queuedChunks": 0,
+            "queuedColumns": 0,
+            "generating": 0,
+            "awaitingInstall": 0,
+            "awaitingFirstRender": 3,
+            "awaitingGpuUpload": null,
+            "preparedReplacements": 0,
+            "evictedChunks": 0,
+            "cancelled": 0,
+            "generatedChunks": 12,
+            "generationCpuMs": 133.1000000089407,
+            "levelQueryCpuMs": 42.80000000447035,
+            "meshingCpuMs": 313.0000000074506,
+            "installationCpuMs": 4.50000000372529,
+            "maxUpdateMs": 10.399999998509884,
+            "switchMs": 0,
+            "occupancyReuseHits": 0,
+            "residentHits": 25,
+            "residentMisses": 12,
+            "triangles": 59940,
+            "estimatedGeometryBytes": 1364248,
+            "occupancyBytes": 393216,
+            "estimatedVisibleTerrainDrawCalls": 9,
+            "sourceCache": {
+              "columns": 8192,
+              "pathColumns": 0,
+              "pathLookupTiles": 0,
+              "pathModifiers": 0,
+              "features": 0,
+              "neighborhoods": 32,
+              "levels": 12
+            },
+            "workerQueueLatencyMs": null,
+            "gpuUploadMs": null
+          }
+        ],
+        "frame": null,
+        "renderer": {
+          "drawCalls": 10,
+          "triangles": 16816,
+          "geometries": 10,
+          "textures": 0
+        },
+        "notes": "CPU timings are cumulative. Queued columns have not yet expanded into chunks. Geometry bytes estimate typed buffers, not driver allocations. First-render counts track CPU submissions, not GPU completion. Upload is deferred to render; GPU time is unavailable. Terrain generation runs on the main thread, without a worker queue."
+      },
+      "travelMeters": 18.625
+    },
+    {
+      "version": "phase-b",
+      "case": "supplied-geographic",
+      "mode": "voxel",
+      "enteredColumns": 3,
+      "preparedOnEntry": 2,
+      "firstCoarseMs": 117.69999999925494,
+      "firstDetailMs": 163.5,
+      "meanFrameMs": 18.609999999999975,
+      "p95FrameMs": 33.30000000000291,
+      "coverage": 0.9264705882352942,
+      "eligibleProbes": 340,
+      "missingProbes": 25,
+      "collisionReadyFraction": 1,
+      "probes": [
+        {
+          "frame": 0,
+          "eligible": 18,
+          "covered": 0,
+          "missing": 18,
+          "detailed": 0
+        },
+        {
+          "frame": 12,
+          "eligible": 18,
+          "covered": 15,
+          "missing": 3,
+          "detailed": 0
+        },
+        {
+          "frame": 24,
+          "eligible": 18,
+          "covered": 15,
+          "missing": 3,
+          "detailed": 1
+        },
+        {
+          "frame": 36,
+          "eligible": 18,
+          "covered": 18,
+          "missing": 0,
+          "detailed": 1
+        },
+        {
+          "frame": 48,
+          "eligible": 18,
+          "covered": 18,
+          "missing": 0,
+          "detailed": 1
+        },
+        {
+          "frame": 60,
+          "eligible": 18,
+          "covered": 18,
+          "missing": 0,
+          "detailed": 2
+        },
+        {
+          "frame": 72,
+          "eligible": 18,
+          "covered": 18,
+          "missing": 0,
+          "detailed": 2
+        },
+        {
+          "frame": 84,
+          "eligible": 18,
+          "covered": 18,
+          "missing": 0,
+          "detailed": 2
+        },
+        {
+          "frame": 96,
+          "eligible": 18,
+          "covered": 18,
+          "missing": 0,
+          "detailed": 2
+        },
+        {
+          "frame": 108,
+          "eligible": 18,
+          "covered": 18,
+          "missing": 0,
+          "detailed": 2
+        },
+        {
+          "frame": 120,
+          "eligible": 18,
+          "covered": 18,
+          "missing": 0,
+          "detailed": 2
+        },
+        {
+          "frame": 132,
+          "eligible": 18,
+          "covered": 18,
+          "missing": 0,
+          "detailed": 2
+        },
+        {
+          "frame": 144,
+          "eligible": 18,
+          "covered": 18,
+          "missing": 0,
+          "detailed": 2
+        },
+        {
+          "frame": 156,
+          "eligible": 16,
+          "covered": 15,
+          "missing": 1,
+          "detailed": 2
+        },
+        {
+          "frame": 168,
+          "eligible": 15,
+          "covered": 15,
+          "missing": 0,
+          "detailed": 2
+        },
+        {
+          "frame": 180,
+          "eligible": 15,
+          "covered": 15,
+          "missing": 0,
+          "detailed": 1
+        },
+        {
+          "frame": 192,
+          "eligible": 15,
+          "covered": 15,
+          "missing": 0,
+          "detailed": 1
+        },
+        {
+          "frame": 204,
+          "eligible": 15,
+          "covered": 15,
+          "missing": 0,
+          "detailed": 1
+        },
+        {
+          "frame": 216,
+          "eligible": 15,
+          "covered": 15,
+          "missing": 0,
+          "detailed": 1
+        },
+        {
+          "frame": 228,
+          "eligible": 15,
+          "covered": 15,
+          "missing": 0,
+          "detailed": 2
+        }
+      ],
+      "diagnostics": {
+        "sampledAt": 70992.40000000224,
+        "terrains": [
+          {
+            "id": "voxel-world",
+            "source": "geographic",
+            "representation": "voxel",
+            "lod": {
+              "requests": 19,
+              "generated": 18,
+              "evictions": 0,
+              "cancelled": 0,
+              "coarseCpuMs": 476.4999999962747,
+              "installationMs": 11.100000008940697,
+              "bytes": {
+                "0": 10790960,
+                "1": 1342464,
+                "2": 276184
+              },
+              "firstGeometryMs": 66.20000000298023,
+              "started": 66519.5,
+              "queue": 6,
+              "requestedRegions": 12,
+              "distanceCandidateRegions": 12,
+              "missingRequestedTiles": 0,
+              "triangles": 19890,
+              "drawCalls": 12,
+              "levels": {
+                "0": 59,
+                "1": 4,
+                "2": 8
+              },
+              "visibilityDistance": 512,
+              "predictive": true,
+              "refinementColumns": 0,
+              "tiles": 12,
+              "queueAgeMs": 4457.599999997765,
+              "gpuUploadMs": null
+            },
+            "switch": {
+              "pending": false,
+              "completed": 0,
+              "total": 0
+            },
+            "renderDistanceMeters": 16,
+            "radiusChunks": 2,
+            "chunkMeters": 8,
+            "activeChunks": 59,
+            "drawableChunks": 57,
+            "visibleChunks": 18,
+            "requestedChunks": 64,
+            "queuedChunks": 2,
+            "queuedColumns": 21,
+            "generating": 1,
+            "awaitingInstall": 0,
+            "awaitingFirstRender": 24,
+            "awaitingGpuUpload": null,
+            "preparedReplacements": 0,
+            "evictedChunks": 0,
+            "cancelled": 0,
+            "generatedChunks": 59,
+            "generationCpuMs": 273.00000001490116,
+            "levelQueryCpuMs": 229.69999999552965,
+            "meshingCpuMs": 288.4000000320375,
+            "installationCpuMs": 14.200000006705523,
+            "maxUpdateMs": 5.699999999254942,
+            "switchMs": 0,
+            "occupancyReuseHits": 0,
+            "residentHits": 44,
+            "residentMisses": 64,
+            "triangles": 116548,
+            "estimatedGeometryBytes": 8158360,
+            "occupancyBytes": 1933312,
+            "estimatedVisibleTerrainDrawCalls": 18,
+            "sourceCache": {
+              "columns": 8192,
+              "pathColumns": 0,
+              "pathLookupTiles": 1,
+              "pathModifiers": 0,
+              "features": 243,
+              "neighborhoods": 40,
+              "levels": 24
+            },
+            "workerQueueLatencyMs": null,
+            "gpuUploadMs": null
+          }
+        ],
+        "frame": null,
+        "renderer": {
+          "drawCalls": 29,
+          "triangles": 60322,
+          "geometries": 44,
+          "textures": 0
+        },
+        "notes": "CPU timings are cumulative. Queued columns have not yet expanded into chunks. Geometry bytes estimate typed buffers, not driver allocations. First-render counts track CPU submissions, not GPU completion. Upload is deferred to render; GPU time is unavailable. Terrain generation runs on the main thread, without a worker queue."
+      },
+      "travelMeters": 26.000000000000533
+    },
+    {
+      "version": "phase-b",
+      "case": "supplied-geographic",
+      "mode": "polygonal",
+      "enteredColumns": 3,
+      "preparedOnEntry": 2,
+      "firstCoarseMs": 90.09999999776483,
+      "firstDetailMs": 234.29999999701977,
+      "meanFrameMs": 17.43000000000005,
+      "p95FrameMs": 16.80000000000291,
+      "coverage": 0.9352941176470588,
+      "eligibleProbes": 340,
+      "missingProbes": 22,
+      "collisionReadyFraction": 1,
+      "probes": [
+        {
+          "frame": 0,
+          "eligible": 18,
+          "covered": 0,
+          "missing": 18,
+          "detailed": 0
+        },
+        {
+          "frame": 12,
+          "eligible": 18,
+          "covered": 15,
+          "missing": 3,
+          "detailed": 0
+        },
+        {
+          "frame": 24,
+          "eligible": 18,
+          "covered": 18,
+          "missing": 0,
+          "detailed": 1
+        },
+        {
+          "frame": 36,
+          "eligible": 18,
+          "covered": 18,
+          "missing": 0,
+          "detailed": 1
+        },
+        {
+          "frame": 48,
+          "eligible": 18,
+          "covered": 18,
+          "missing": 0,
+          "detailed": 1
+        },
+        {
+          "frame": 60,
+          "eligible": 18,
+          "covered": 18,
+          "missing": 0,
+          "detailed": 1
+        },
+        {
+          "frame": 72,
+          "eligible": 18,
+          "covered": 18,
+          "missing": 0,
+          "detailed": 1
+        },
+        {
+          "frame": 84,
+          "eligible": 18,
+          "covered": 18,
+          "missing": 0,
+          "detailed": 2
+        },
+        {
+          "frame": 96,
+          "eligible": 18,
+          "covered": 18,
+          "missing": 0,
+          "detailed": 2
+        },
+        {
+          "frame": 108,
+          "eligible": 18,
+          "covered": 18,
+          "missing": 0,
+          "detailed": 2
+        },
+        {
+          "frame": 120,
+          "eligible": 18,
+          "covered": 18,
+          "missing": 0,
+          "detailed": 2
+        },
+        {
+          "frame": 132,
+          "eligible": 18,
+          "covered": 18,
+          "missing": 0,
+          "detailed": 2
+        },
+        {
+          "frame": 144,
+          "eligible": 18,
+          "covered": 18,
+          "missing": 0,
+          "detailed": 2
+        },
+        {
+          "frame": 156,
+          "eligible": 16,
+          "covered": 15,
+          "missing": 1,
+          "detailed": 1
+        },
+        {
+          "frame": 168,
+          "eligible": 15,
+          "covered": 15,
+          "missing": 0,
+          "detailed": 2
+        },
+        {
+          "frame": 180,
+          "eligible": 15,
+          "covered": 15,
+          "missing": 0,
+          "detailed": 1
+        },
+        {
+          "frame": 192,
+          "eligible": 15,
+          "covered": 15,
+          "missing": 0,
+          "detailed": 0
+        },
+        {
+          "frame": 204,
+          "eligible": 15,
+          "covered": 15,
+          "missing": 0,
+          "detailed": 0
+        },
+        {
+          "frame": 216,
+          "eligible": 15,
+          "covered": 15,
+          "missing": 0,
+          "detailed": 1
+        },
+        {
+          "frame": 228,
+          "eligible": 15,
+          "covered": 15,
+          "missing": 0,
+          "detailed": 1
+        }
+      ],
+      "diagnostics": {
+        "sampledAt": 75225.90000000224,
+        "terrains": [
+          {
+            "id": "voxel-world",
+            "source": "geographic",
+            "representation": "polygonal",
+            "lod": {
+              "requests": 21,
+              "generated": 20,
+              "evictions": 0,
+              "cancelled": 0,
+              "coarseCpuMs": 475.19999999180436,
+              "installationMs": 11.799999985843897,
+              "bytes": {
+                "0": 3633784,
+                "1": 1342464,
+                "2": 410248
+              },
+              "firstGeometryMs": 52,
+              "started": 71034,
+              "queue": 4,
+              "requestedRegions": 12,
+              "distanceCandidateRegions": 12,
+              "missingRequestedTiles": 0,
+              "triangles": 22166,
+              "drawCalls": 12,
+              "levels": {
+                "0": 40,
+                "1": 4,
+                "2": 8
+              },
+              "visibilityDistance": 512,
+              "predictive": true,
+              "refinementColumns": 0,
+              "tiles": 12,
+              "queueAgeMs": 4174.800000000745,
+              "gpuUploadMs": null
+            },
+            "switch": {
+              "pending": false,
+              "completed": 0,
+              "total": 0
+            },
+            "renderDistanceMeters": 16,
+            "radiusChunks": 2,
+            "chunkMeters": 8,
+            "activeChunks": 40,
+            "drawableChunks": 39,
+            "visibleChunks": 13,
+            "requestedChunks": 45,
+            "queuedChunks": 1,
+            "queuedColumns": 29,
+            "generating": 1,
+            "awaitingInstall": 0,
+            "awaitingFirstRender": 16,
+            "awaitingGpuUpload": null,
+            "preparedReplacements": 0,
+            "evictedChunks": 0,
+            "cancelled": 1,
+            "generatedChunks": 40,
+            "generationCpuMs": 174.69999996945262,
+            "levelQueryCpuMs": 143.5000000037253,
+            "meshingCpuMs": 501.6000000461936,
+            "installationCpuMs": 4.699999991804361,
+            "maxUpdateMs": 6.699999999254942,
+            "switchMs": 0,
+            "occupancyReuseHits": 0,
+            "residentHits": 26,
+            "residentMisses": 45,
+            "triangles": 79146,
+            "estimatedGeometryBytes": 1848188,
+            "occupancyBytes": 1310720,
+            "estimatedVisibleTerrainDrawCalls": 13,
+            "sourceCache": {
+              "columns": 8192,
+              "pathColumns": 0,
+              "pathLookupTiles": 0,
+              "pathModifiers": 0,
+              "features": 258,
+              "neighborhoods": 64,
+              "levels": 17
+            },
+            "workerQueueLatencyMs": null,
+            "gpuUploadMs": null
+          }
+        ],
+        "frame": null,
+        "renderer": {
+          "drawCalls": 24,
+          "triangles": 49292,
+          "geometries": 34,
+          "textures": 0
+        },
+        "notes": "CPU timings are cumulative. Queued columns have not yet expanded into chunks. Geometry bytes estimate typed buffers, not driver allocations. First-render counts track CPU submissions, not GPU completion. Upload is deferred to render; GPU time is unavailable. Terrain generation runs on the main thread, without a worker queue."
+      },
+      "travelMeters": 26.000000000000533
+    },
+    {
+      "version": "phase-b",
+      "case": "4km-procedural",
+      "mode": "voxel",
+      "enteredColumns": 3,
+      "preparedOnEntry": 3,
+      "firstCoarseMs": 58.5,
+      "firstDetailMs": 117.10000000149012,
+      "meanFrameMs": 22.360416666666666,
+      "p95FrameMs": 33.39999999999418,
+      "coverage": 0.9416666666666667,
+      "eligibleProbes": 360,
+      "missingProbes": 21,
+      "collisionReadyFraction": 1,
+      "probes": [
+        {
+          "frame": 0,
+          "eligible": 18,
+          "covered": 0,
+          "missing": 18,
+          "detailed": 0
+        },
+        {
+          "frame": 12,
+          "eligible": 18,
+          "covered": 15,
+          "missing": 3,
+          "detailed": 1
+        },
+        {
+          "frame": 24,
+          "eligible": 18,
+          "covered": 18,
+          "missing": 0,
+          "detailed": 1
+        },
+        {
+          "frame": 36,
+          "eligible": 18,
+          "covered": 18,
+          "missing": 0,
+          "detailed": 2
+        },
+        {
+          "frame": 48,
+          "eligible": 18,
+          "covered": 18,
+          "missing": 0,
+          "detailed": 2
+        },
+        {
+          "frame": 60,
+          "eligible": 18,
+          "covered": 18,
+          "missing": 0,
+          "detailed": 2
+        },
+        {
+          "frame": 72,
+          "eligible": 18,
+          "covered": 18,
+          "missing": 0,
+          "detailed": 2
+        },
+        {
+          "frame": 84,
+          "eligible": 18,
+          "covered": 18,
+          "missing": 0,
+          "detailed": 2
+        },
+        {
+          "frame": 96,
+          "eligible": 18,
+          "covered": 18,
+          "missing": 0,
+          "detailed": 2
+        },
+        {
+          "frame": 108,
+          "eligible": 18,
+          "covered": 18,
+          "missing": 0,
+          "detailed": 2
+        },
+        {
+          "frame": 120,
+          "eligible": 18,
+          "covered": 18,
+          "missing": 0,
+          "detailed": 2
+        },
+        {
+          "frame": 132,
+          "eligible": 18,
+          "covered": 18,
+          "missing": 0,
+          "detailed": 2
+        },
+        {
+          "frame": 144,
+          "eligible": 18,
+          "covered": 18,
+          "missing": 0,
+          "detailed": 2
+        },
+        {
+          "frame": 156,
+          "eligible": 18,
+          "covered": 18,
+          "missing": 0,
+          "detailed": 2
+        },
+        {
+          "frame": 168,
+          "eligible": 18,
+          "covered": 18,
+          "missing": 0,
+          "detailed": 2
+        },
+        {
+          "frame": 180,
+          "eligible": 18,
+          "covered": 18,
+          "missing": 0,
+          "detailed": 2
+        },
+        {
+          "frame": 192,
+          "eligible": 18,
+          "covered": 18,
+          "missing": 0,
+          "detailed": 2
+        },
+        {
+          "frame": 204,
+          "eligible": 18,
+          "covered": 18,
+          "missing": 0,
+          "detailed": 2
+        },
+        {
+          "frame": 216,
+          "eligible": 18,
+          "covered": 18,
+          "missing": 0,
+          "detailed": 3
+        },
+        {
+          "frame": 228,
+          "eligible": 18,
+          "covered": 18,
+          "missing": 0,
+          "detailed": 3
+        }
+      ],
+      "diagnostics": {
+        "sampledAt": 80613.40000000224,
+        "terrains": [
+          {
+            "id": "terrain",
+            "source": "procedural",
+            "representation": "voxel",
+            "lod": {
+              "requests": 73,
+              "generated": 73,
+              "evictions": 0,
+              "cancelled": 0,
+              "coarseCpuMs": 228.4999999962747,
+              "installationMs": 25.599999982863665,
+              "bytes": {
+                "0": 17826272,
+                "1": 1245184,
+                "2": 3161600
+              },
+              "firstGeometryMs": 48.30000000074506,
+              "started": 75237.90000000224,
+              "queue": 0,
+              "requestedRegions": 69,
+              "distanceCandidateRegions": 69,
+              "missingRequestedTiles": 0,
+              "triangles": 55232,
+              "drawCalls": 112,
+              "levels": {
+                "0": 90,
+                "1": 4,
+                "2": 65
+              },
+              "visibilityDistance": 512,
+              "predictive": true,
+              "refinementColumns": 0,
+              "tiles": 69,
+              "queueAgeMs": 0,
+              "gpuUploadMs": null
+            },
+            "switch": {
+              "pending": false,
+              "completed": 0,
+              "total": 0
+            },
+            "renderDistanceMeters": 16,
+            "radiusChunks": 2,
+            "chunkMeters": 8,
+            "activeChunks": 90,
+            "drawableChunks": 90,
+            "visibleChunks": 37,
+            "requestedChunks": 91,
+            "queuedChunks": 1,
+            "queuedColumns": 9,
+            "generating": 0,
+            "awaitingInstall": 0,
+            "awaitingFirstRender": 21,
+            "awaitingGpuUpload": null,
+            "preparedReplacements": 0,
+            "evictedChunks": 0,
+            "cancelled": 0,
+            "generatedChunks": 90,
+            "generationCpuMs": 184.1000000052154,
+            "levelQueryCpuMs": 64.70000001043081,
+            "meshingCpuMs": 419.899999987334,
+            "installationCpuMs": 20.599999997764826,
+            "maxUpdateMs": 5.099999997764826,
+            "switchMs": 0,
+            "occupancyReuseHits": 0,
+            "residentHits": 82,
+            "residentMisses": 91,
+            "triangles": 195752,
+            "estimatedGeometryBytes": 13702640,
+            "occupancyBytes": 2949120,
+            "estimatedVisibleTerrainDrawCalls": 41,
+            "sourceCache": {
+              "pathColumns": 0,
+              "pathLookupTiles": 0,
+              "pathModifiers": 0,
+              "features": 0,
+              "neighborhoods": 44,
+              "levels": 44
+            },
+            "workerQueueLatencyMs": null,
+            "gpuUploadMs": null
+          }
+        ],
+        "frame": null,
+        "renderer": {
+          "drawCalls": 110,
+          "triangles": 121760,
+          "geometries": 112,
+          "textures": 0
+        },
+        "notes": "CPU timings are cumulative. Queued columns have not yet expanded into chunks. Geometry bytes estimate typed buffers, not driver allocations. First-render counts track CPU submissions, not GPU completion. Upload is deferred to render; GPU time is unavailable. Terrain generation runs on the main thread, without a worker queue."
+      },
+      "travelMeters": 25.999999999999858
+    },
+    {
+      "version": "phase-b",
+      "case": "4km-procedural",
+      "mode": "polygonal",
+      "enteredColumns": 3,
+      "preparedOnEntry": 3,
+      "firstCoarseMs": 48.900000002235174,
+      "firstDetailMs": 162.30000000074506,
+      "meanFrameMs": 21.109999999999975,
+      "p95FrameMs": 33.39999999999418,
+      "coverage": 0.9416666666666667,
+      "eligibleProbes": 360,
+      "missingProbes": 21,
+      "collisionReadyFraction": 1,
+      "probes": [
+        {
+          "frame": 0,
+          "eligible": 18,
+          "covered": 0,
+          "missing": 18,
+          "detailed": 0
+        },
+        {
+          "frame": 12,
+          "eligible": 18,
+          "covered": 15,
+          "missing": 3,
+          "detailed": 0
+        },
+        {
+          "frame": 24,
+          "eligible": 18,
+          "covered": 18,
+          "missing": 0,
+          "detailed": 1
+        },
+        {
+          "frame": 36,
+          "eligible": 18,
+          "covered": 18,
+          "missing": 0,
+          "detailed": 1
+        },
+        {
+          "frame": 48,
+          "eligible": 18,
+          "covered": 18,
+          "missing": 0,
+          "detailed": 1
+        },
+        {
+          "frame": 60,
+          "eligible": 18,
+          "covered": 18,
+          "missing": 0,
+          "detailed": 2
+        },
+        {
+          "frame": 72,
+          "eligible": 18,
+          "covered": 18,
+          "missing": 0,
+          "detailed": 2
+        },
+        {
+          "frame": 84,
+          "eligible": 18,
+          "covered": 18,
+          "missing": 0,
+          "detailed": 2
+        },
+        {
+          "frame": 96,
+          "eligible": 18,
+          "covered": 18,
+          "missing": 0,
+          "detailed": 2
+        },
+        {
+          "frame": 108,
+          "eligible": 18,
+          "covered": 18,
+          "missing": 0,
+          "detailed": 2
+        },
+        {
+          "frame": 120,
+          "eligible": 18,
+          "covered": 18,
+          "missing": 0,
+          "detailed": 2
+        },
+        {
+          "frame": 132,
+          "eligible": 18,
+          "covered": 18,
+          "missing": 0,
+          "detailed": 2
+        },
+        {
+          "frame": 144,
+          "eligible": 18,
+          "covered": 18,
+          "missing": 0,
+          "detailed": 2
+        },
+        {
+          "frame": 156,
+          "eligible": 18,
+          "covered": 18,
+          "missing": 0,
+          "detailed": 2
+        },
+        {
+          "frame": 168,
+          "eligible": 18,
+          "covered": 18,
+          "missing": 0,
+          "detailed": 2
+        },
+        {
+          "frame": 180,
+          "eligible": 18,
+          "covered": 18,
+          "missing": 0,
+          "detailed": 1
+        },
+        {
+          "frame": 192,
+          "eligible": 18,
+          "covered": 18,
+          "missing": 0,
+          "detailed": 1
+        },
+        {
+          "frame": 204,
+          "eligible": 18,
+          "covered": 18,
+          "missing": 0,
+          "detailed": 1
+        },
+        {
+          "frame": 216,
+          "eligible": 18,
+          "covered": 18,
+          "missing": 0,
+          "detailed": 2
+        },
+        {
+          "frame": 228,
+          "eligible": 18,
+          "covered": 18,
+          "missing": 0,
+          "detailed": 2
+        }
+      ],
+      "diagnostics": {
+        "sampledAt": 85714.5,
+        "terrains": [
+          {
+            "id": "terrain",
+            "source": "procedural",
+            "representation": "polygonal",
+            "lod": {
+              "requests": 73,
+              "generated": 73,
+              "evictions": 0,
+              "cancelled": 0,
+              "coarseCpuMs": 228.8999999910593,
+              "installationMs": 26.299999989569187,
+              "bytes": {
+                "0": 5211696,
+                "1": 1245184,
+                "2": 3161600
+              },
+              "firstGeometryMs": 40.899999998509884,
+              "started": 80627.60000000149,
+              "queue": 0,
+              "requestedRegions": 69,
+              "distanceCandidateRegions": 69,
+              "missingRequestedTiles": 0,
+              "triangles": 56384,
+              "drawCalls": 112,
+              "levels": {
+                "0": 54,
+                "1": 4,
+                "2": 65
+              },
+              "visibilityDistance": 512,
+              "predictive": true,
+              "refinementColumns": 0,
+              "tiles": 69,
+              "queueAgeMs": 0,
+              "gpuUploadMs": null
+            },
+            "switch": {
+              "pending": false,
+              "completed": 0,
+              "total": 0
+            },
+            "renderDistanceMeters": 16,
+            "radiusChunks": 2,
+            "chunkMeters": 8,
+            "activeChunks": 54,
+            "drawableChunks": 54,
+            "visibleChunks": 15,
+            "requestedChunks": 59,
+            "queuedChunks": 0,
+            "queuedColumns": 20,
+            "generating": 1,
+            "awaitingInstall": 0,
+            "awaitingFirstRender": 18,
+            "awaitingGpuUpload": null,
+            "preparedReplacements": 0,
+            "evictedChunks": 0,
+            "cancelled": 0,
+            "generatedChunks": 54,
+            "generationCpuMs": 115.60000005364418,
+            "levelQueryCpuMs": 46.39999998733401,
+            "meshingCpuMs": 659.400000013411,
+            "installationCpuMs": 7.3000000193715096,
+            "maxUpdateMs": 7.600000001490116,
+            "switchMs": 0,
+            "occupancyReuseHits": 0,
+            "residentHits": 37,
+            "residentMisses": 59,
+            "triangles": 118364,
+            "estimatedGeometryBytes": 2732040,
+            "occupancyBytes": 1769472,
+            "estimatedVisibleTerrainDrawCalls": 17,
+            "sourceCache": {
+              "pathColumns": 0,
+              "pathLookupTiles": 0,
+              "pathModifiers": 0,
+              "features": 0,
+              "neighborhoods": 64,
+              "levels": 28
+            },
+            "workerQueueLatencyMs": null,
+            "gpuUploadMs": null
+          }
+        ],
+        "frame": null,
+        "renderer": {
+          "drawCalls": 86,
+          "triangles": 72982,
+          "geometries": 79,
+          "textures": 0
+        },
+        "notes": "CPU timings are cumulative. Queued columns have not yet expanded into chunks. Geometry bytes estimate typed buffers, not driver allocations. First-render counts track CPU submissions, not GPU completion. Upload is deferred to render; GPU time is unavailable. Terrain generation runs on the main thread, without a worker queue."
+      },
+      "travelMeters": 25.999999999999858
+    },
+    {
+      "version": "phase-b",
+      "case": "excavation-and-object",
+      "mode": "voxel",
+      "enteredColumns": 2,
+      "preparedOnEntry": 1,
+      "firstCoarseMs": 2170.300000000745,
+      "firstDetailMs": 250.69999999925494,
+      "meanFrameMs": 16.665416666666715,
+      "p95FrameMs": 16.70000000001164,
+      "coverage": 0.7142857142857143,
+      "eligibleProbes": 35,
+      "missingProbes": 10,
+      "collisionReadyFraction": 1,
+      "probes": [
+        {
+          "frame": 0,
+          "eligible": 2,
+          "covered": 0,
+          "missing": 2,
+          "detailed": 0
+        },
+        {
+          "frame": 12,
+          "eligible": 2,
+          "covered": 0,
+          "missing": 2,
+          "detailed": 0
+        },
+        {
+          "frame": 24,
+          "eligible": 2,
+          "covered": 2,
+          "missing": 0,
+          "detailed": 0
+        },
+        {
+          "frame": 36,
+          "eligible": 2,
+          "covered": 2,
+          "missing": 0,
+          "detailed": 1
+        },
+        {
+          "frame": 48,
+          "eligible": 2,
+          "covered": 1,
+          "missing": 1,
+          "detailed": 1
+        },
+        {
+          "frame": 60,
+          "eligible": 2,
+          "covered": 1,
+          "missing": 1,
+          "detailed": 1
+        },
+        {
+          "frame": 72,
+          "eligible": 2,
+          "covered": 1,
+          "missing": 1,
+          "detailed": 1
+        },
+        {
+          "frame": 84,
+          "eligible": 2,
+          "covered": 1,
+          "missing": 1,
+          "detailed": 1
+        },
+        {
+          "frame": 96,
+          "eligible": 2,
+          "covered": 1,
+          "missing": 1,
+          "detailed": 1
+        },
+        {
+          "frame": 108,
+          "eligible": 2,
+          "covered": 1,
+          "missing": 1,
+          "detailed": 1
+        },
+        {
+          "frame": 120,
+          "eligible": 2,
+          "covered": 2,
+          "missing": 0,
+          "detailed": 2
+        },
+        {
+          "frame": 132,
+          "eligible": 2,
+          "covered": 2,
+          "missing": 0,
+          "detailed": 2
+        },
+        {
+          "frame": 144,
+          "eligible": 2,
+          "covered": 2,
+          "missing": 0,
+          "detailed": 2
+        },
+        {
+          "frame": 156,
+          "eligible": 2,
+          "covered": 2,
+          "missing": 0,
+          "detailed": 1
+        },
+        {
+          "frame": 168,
+          "eligible": 2,
+          "covered": 2,
+          "missing": 0,
+          "detailed": 1
+        },
+        {
+          "frame": 180,
+          "eligible": 1,
+          "covered": 1,
+          "missing": 0,
+          "detailed": 0
+        },
+        {
+          "frame": 192,
+          "eligible": 1,
+          "covered": 1,
+          "missing": 0,
+          "detailed": 0
+        },
+        {
+          "frame": 204,
+          "eligible": 1,
+          "covered": 1,
+          "missing": 0,
+          "detailed": 1
+        },
+        {
+          "frame": 216,
+          "eligible": 1,
+          "covered": 1,
+          "missing": 0,
+          "detailed": 1
+        },
+        {
+          "frame": 228,
+          "eligible": 1,
+          "covered": 1,
+          "missing": 0,
+          "detailed": 1
+        }
+      ],
+      "diagnostics": {
+        "sampledAt": 89740.70000000298,
+        "terrains": [
+          {
+            "id": "terrain",
+            "source": "procedural",
+            "representation": "voxel",
+            "lod": {
+              "requests": 2,
+              "generated": 1,
+              "evictions": 0,
+              "cancelled": 0,
+              "coarseCpuMs": 502.5999999716878,
+              "installationMs": 4.5,
+              "bytes": {
+                "0": 9438608,
+                "1": 0,
+                "2": 709536
+              },
+              "firstGeometryMs": 2164.900000002235,
+              "started": 85725,
+              "queue": 1,
+              "requestedRegions": 1,
+              "distanceCandidateRegions": 1,
+              "missingRequestedTiles": 0,
+              "triangles": 2354,
+              "drawCalls": 1,
+              "levels": {
+                "0": 33,
+                "1": 0,
+                "2": 1
+              },
+              "visibilityDistance": 512,
+              "predictive": true,
+              "refinementColumns": 4,
+              "tiles": 1,
+              "queueAgeMs": 1850.800000000745,
+              "gpuUploadMs": null
+            },
+            "switch": {
+              "pending": false,
+              "completed": 0,
+              "total": 0
+            },
+            "renderDistanceMeters": 16,
+            "radiusChunks": 2,
+            "chunkMeters": 8,
+            "activeChunks": 33,
+            "drawableChunks": 32,
+            "visibleChunks": 13,
+            "requestedChunks": 35,
+            "queuedChunks": 0,
+            "queuedColumns": 6,
+            "generating": 0,
+            "awaitingInstall": 0,
+            "awaitingFirstRender": 7,
+            "awaitingGpuUpload": null,
+            "preparedReplacements": 0,
+            "evictedChunks": 0,
+            "cancelled": 0,
+            "generatedChunks": 33,
+            "generationCpuMs": 432.80000003427267,
+            "levelQueryCpuMs": 56.49999999627471,
+            "meshingCpuMs": 343.6000000089407,
+            "installationCpuMs": 11.49999999254942,
+            "maxUpdateMs": 4.600000001490116,
+            "switchMs": 0,
+            "occupancyReuseHits": 0,
+            "residentHits": 11,
+            "residentMisses": 35,
+            "triangles": 109964,
+            "estimatedGeometryBytes": 7697480,
+            "occupancyBytes": 1081344,
+            "estimatedVisibleTerrainDrawCalls": 29,
+            "sourceCache": {
+              "pathColumns": 3630,
+              "pathLookupTiles": 1,
+              "pathModifiers": 3630,
+              "features": 0,
+              "neighborhoods": 12,
+              "levels": 12
+            },
+            "workerQueueLatencyMs": null,
+            "gpuUploadMs": null
+          }
+        ],
+        "frame": null,
+        "renderer": {
+          "drawCalls": 30,
+          "triangles": 45142,
+          "geometries": 26,
+          "textures": 0
+        },
+        "notes": "CPU timings are cumulative. Queued columns have not yet expanded into chunks. Geometry bytes estimate typed buffers, not driver allocations. First-render counts track CPU submissions, not GPU completion. Upload is deferred to render; GPU time is unavailable. Terrain generation runs on the main thread, without a worker queue."
+      },
+      "travelMeters": 19
+    },
+    {
+      "version": "phase-b",
+      "case": "excavation-and-object",
+      "mode": "polygonal",
+      "enteredColumns": 2,
+      "preparedOnEntry": 0,
+      "firstCoarseMs": 2622.5,
+      "firstDetailMs": 335.8999999985099,
+      "meanFrameMs": 16.735416666666666,
+      "p95FrameMs": 16.80000000000291,
+      "coverage": 0.6285714285714286,
+      "eligibleProbes": 35,
+      "missingProbes": 13,
+      "collisionReadyFraction": 1,
+      "probes": [
+        {
+          "frame": 0,
+          "eligible": 2,
+          "covered": 0,
+          "missing": 2,
+          "detailed": 0
+        },
+        {
+          "frame": 12,
+          "eligible": 2,
+          "covered": 0,
+          "missing": 2,
+          "detailed": 0
+        },
+        {
+          "frame": 24,
+          "eligible": 2,
+          "covered": 2,
+          "missing": 0,
+          "detailed": 0
+        },
+        {
+          "frame": 36,
+          "eligible": 2,
+          "covered": 2,
+          "missing": 0,
+          "detailed": 0
+        },
+        {
+          "frame": 48,
+          "eligible": 2,
+          "covered": 1,
+          "missing": 1,
+          "detailed": 1
+        },
+        {
+          "frame": 60,
+          "eligible": 2,
+          "covered": 1,
+          "missing": 1,
+          "detailed": 1
+        },
+        {
+          "frame": 72,
+          "eligible": 2,
+          "covered": 1,
+          "missing": 1,
+          "detailed": 1
+        },
+        {
+          "frame": 84,
+          "eligible": 2,
+          "covered": 1,
+          "missing": 1,
+          "detailed": 1
+        },
+        {
+          "frame": 96,
+          "eligible": 2,
+          "covered": 1,
+          "missing": 1,
+          "detailed": 1
+        },
+        {
+          "frame": 108,
+          "eligible": 2,
+          "covered": 1,
+          "missing": 1,
+          "detailed": 1
+        },
+        {
+          "frame": 120,
+          "eligible": 2,
+          "covered": 1,
+          "missing": 1,
+          "detailed": 1
+        },
+        {
+          "frame": 132,
+          "eligible": 2,
+          "covered": 1,
+          "missing": 1,
+          "detailed": 1
+        },
+        {
+          "frame": 144,
+          "eligible": 2,
+          "covered": 1,
+          "missing": 1,
+          "detailed": 1
+        },
+        {
+          "frame": 156,
+          "eligible": 2,
+          "covered": 2,
+          "missing": 0,
+          "detailed": 0
+        },
+        {
+          "frame": 168,
+          "eligible": 2,
+          "covered": 2,
+          "missing": 0,
+          "detailed": 0
+        },
+        {
+          "frame": 180,
+          "eligible": 1,
+          "covered": 1,
+          "missing": 0,
+          "detailed": 0
+        },
+        {
+          "frame": 192,
+          "eligible": 1,
+          "covered": 1,
+          "missing": 0,
+          "detailed": 0
+        },
+        {
+          "frame": 204,
+          "eligible": 1,
+          "covered": 1,
+          "missing": 0,
+          "detailed": 0
+        },
+        {
+          "frame": 216,
+          "eligible": 1,
+          "covered": 1,
+          "missing": 0,
+          "detailed": 1
+        },
+        {
+          "frame": 228,
+          "eligible": 1,
+          "covered": 1,
+          "missing": 0,
+          "detailed": 1
+        }
+      ],
+      "diagnostics": {
+        "sampledAt": 93789.90000000224,
+        "terrains": [
+          {
+            "id": "terrain",
+            "source": "procedural",
+            "representation": "polygonal",
+            "lod": {
+              "requests": 2,
+              "generated": 1,
+              "evictions": 0,
+              "cancelled": 0,
+              "coarseCpuMs": 510.59999999403954,
+              "installationMs": 7.100000001490116,
+              "bytes": {
+                "0": 2591808,
+                "1": 0,
+                "2": 709536
+              },
+              "firstGeometryMs": 2617.60000000149,
+              "started": 89757.80000000075,
+              "queue": 1,
+              "requestedRegions": 1,
+              "distanceCandidateRegions": 1,
+              "missingRequestedTiles": 0,
+              "triangles": 2384,
+              "drawCalls": 1,
+              "levels": {
+                "0": 20,
+                "1": 0,
+                "2": 1
+              },
+              "visibilityDistance": 512,
+              "predictive": true,
+              "refinementColumns": 4,
+              "tiles": 1,
+              "queueAgeMs": 1414.5,
+              "gpuUploadMs": null
+            },
+            "switch": {
+              "pending": false,
+              "completed": 0,
+              "total": 0
+            },
+            "renderDistanceMeters": 16,
+            "radiusChunks": 2,
+            "chunkMeters": 8,
+            "activeChunks": 20,
+            "drawableChunks": 19,
+            "visibleChunks": 7,
+            "requestedChunks": 23,
+            "queuedChunks": 2,
+            "queuedColumns": 8,
+            "generating": 1,
+            "awaitingInstall": 0,
+            "awaitingFirstRender": 4,
+            "awaitingGpuUpload": null,
+            "preparedReplacements": 0,
+            "evictedChunks": 0,
+            "cancelled": 0,
+            "generatedChunks": 20,
+            "generationCpuMs": 319.3000000305474,
+            "levelQueryCpuMs": 54.10000001266599,
+            "meshingCpuMs": 512.3999999910593,
+            "installationCpuMs": 4.699999991804361,
+            "maxUpdateMs": 9.100000001490116,
+            "switchMs": 0,
+            "occupancyReuseHits": 0,
+            "residentHits": 2,
+            "residentMisses": 23,
+            "triangles": 67160,
+            "estimatedGeometryBytes": 1533488,
+            "occupancyBytes": 655360,
+            "estimatedVisibleTerrainDrawCalls": 15,
+            "sourceCache": {
+              "pathColumns": 2542,
+              "pathLookupTiles": 1,
+              "pathModifiers": 2542,
+              "features": 0,
+              "neighborhoods": 34,
+              "levels": 8
+            },
+            "workerQueueLatencyMs": null,
+            "gpuUploadMs": null
+          }
+        ],
+        "frame": null,
+        "renderer": {
+          "drawCalls": 16,
+          "triangles": 28042,
+          "geometries": 16,
+          "textures": 0
+        },
+        "notes": "CPU timings are cumulative. Queued columns have not yet expanded into chunks. Geometry bytes estimate typed buffers, not driver allocations. First-render counts track CPU submissions, not GPU completion. Upload is deferred to render; GPU time is unavailable. Terrain generation runs on the main thread, without a worker queue."
+      },
+      "travelMeters": 19
+    },
+    {
+      "version": "phase-b",
+      "case": "rapid-direction-changes",
+      "mode": "voxel",
+      "enteredColumns": 16,
+      "preparedOnEntry": 16,
+      "firstCoarseMs": 40.80000000074506,
+      "firstDetailMs": 85.5,
+      "meanFrameMs": 23.957500000000014,
+      "p95FrameMs": 33.40000000000873,
+      "coverage": 0.9416666666666667,
+      "eligibleProbes": 360,
+      "missingProbes": 21,
+      "collisionReadyFraction": 1,
+      "probes": [
+        {
+          "frame": 0,
+          "eligible": 18,
+          "covered": 0,
+          "missing": 18,
+          "detailed": 0
+        },
+        {
+          "frame": 12,
+          "eligible": 18,
+          "covered": 15,
+          "missing": 3,
+          "detailed": 1
+        },
+        {
+          "frame": 24,
+          "eligible": 18,
+          "covered": 18,
+          "missing": 0,
+          "detailed": 1
+        },
+        {
+          "frame": 36,
+          "eligible": 18,
+          "covered": 18,
+          "missing": 0,
+          "detailed": 2
+        },
+        {
+          "frame": 48,
+          "eligible": 18,
+          "covered": 18,
+          "missing": 0,
+          "detailed": 2
+        },
+        {
+          "frame": 60,
+          "eligible": 18,
+          "covered": 18,
+          "missing": 0,
+          "detailed": 2
+        },
+        {
+          "frame": 72,
+          "eligible": 18,
+          "covered": 18,
+          "missing": 0,
+          "detailed": 2
+        },
+        {
+          "frame": 84,
+          "eligible": 18,
+          "covered": 18,
+          "missing": 0,
+          "detailed": 2
+        },
+        {
+          "frame": 96,
+          "eligible": 18,
+          "covered": 18,
+          "missing": 0,
+          "detailed": 2
+        },
+        {
+          "frame": 108,
+          "eligible": 18,
+          "covered": 18,
+          "missing": 0,
+          "detailed": 2
+        },
+        {
+          "frame": 120,
+          "eligible": 18,
+          "covered": 18,
+          "missing": 0,
+          "detailed": 4
+        },
+        {
+          "frame": 132,
+          "eligible": 18,
+          "covered": 18,
+          "missing": 0,
+          "detailed": 4
+        },
+        {
+          "frame": 144,
+          "eligible": 18,
+          "covered": 18,
+          "missing": 0,
+          "detailed": 4
+        },
+        {
+          "frame": 156,
+          "eligible": 18,
+          "covered": 18,
+          "missing": 0,
+          "detailed": 5
+        },
+        {
+          "frame": 168,
+          "eligible": 18,
+          "covered": 18,
+          "missing": 0,
+          "detailed": 5
+        },
+        {
+          "frame": 180,
+          "eligible": 18,
+          "covered": 18,
+          "missing": 0,
+          "detailed": 3
+        },
+        {
+          "frame": 192,
+          "eligible": 18,
+          "covered": 18,
+          "missing": 0,
+          "detailed": 3
+        },
+        {
+          "frame": 204,
+          "eligible": 18,
+          "covered": 18,
+          "missing": 0,
+          "detailed": 2
+        },
+        {
+          "frame": 216,
+          "eligible": 18,
+          "covered": 18,
+          "missing": 0,
+          "detailed": 3
+        },
+        {
+          "frame": 228,
+          "eligible": 18,
+          "covered": 18,
+          "missing": 0,
+          "detailed": 4
+        }
+      ],
+      "diagnostics": {
+        "sampledAt": 99562.20000000298,
+        "terrains": [
+          {
+            "id": "terrain",
+            "source": "procedural",
+            "representation": "voxel",
+            "lod": {
+              "requests": 73,
+              "generated": 73,
+              "evictions": 0,
+              "cancelled": 0,
+              "coarseCpuMs": 225.6999999769032,
+              "installationMs": 27.000000026077032,
+              "bytes": {
+                "0": 16186984,
+                "1": 1245184,
+                "2": 3161600
+              },
+              "firstGeometryMs": 31.600000001490116,
+              "started": 93803.80000000075,
+              "queue": 0,
+              "requestedRegions": 69,
+              "distanceCandidateRegions": 69,
+              "missingRequestedTiles": 0,
+              "triangles": 55808,
+              "drawCalls": 112,
+              "levels": {
+                "0": 80,
+                "1": 4,
+                "2": 65
+              },
+              "visibilityDistance": 512,
+              "predictive": true,
+              "refinementColumns": 0,
+              "tiles": 69,
+              "queueAgeMs": 0,
+              "gpuUploadMs": null
+            },
+            "switch": {
+              "pending": false,
+              "completed": 0,
+              "total": 0
+            },
+            "renderDistanceMeters": 16,
+            "radiusChunks": 2,
+            "chunkMeters": 8,
+            "activeChunks": 80,
+            "drawableChunks": 80,
+            "visibleChunks": 13,
+            "requestedChunks": 105,
+            "queuedChunks": 0,
+            "queuedColumns": 23,
+            "generating": 1,
+            "awaitingInstall": 0,
+            "awaitingFirstRender": 24,
+            "awaitingGpuUpload": null,
+            "preparedReplacements": 0,
+            "evictedChunks": 0,
+            "cancelled": 7,
+            "generatedChunks": 80,
+            "generationCpuMs": 205.80000004544854,
+            "levelQueryCpuMs": 67.29999999701977,
+            "meshingCpuMs": 398.399999961257,
+            "installationCpuMs": 18.00000001862645,
+            "maxUpdateMs": 5.5,
+            "switchMs": 0,
+            "occupancyReuseHits": 0,
+            "residentHits": 294,
+            "residentMisses": 105,
+            "triangles": 178494,
+            "estimatedGeometryBytes": 12494580,
+            "occupancyBytes": 2621440,
+            "estimatedVisibleTerrainDrawCalls": 18,
+            "sourceCache": {
+              "pathColumns": 0,
+              "pathLookupTiles": 0,
+              "pathModifiers": 0,
+              "features": 0,
+              "neighborhoods": 44,
+              "levels": 39
+            },
+            "workerQueueLatencyMs": null,
+            "gpuUploadMs": null
+          }
+        ],
+        "frame": null,
+        "renderer": {
+          "drawCalls": 87,
+          "triangles": 70340,
+          "geometries": 99,
+          "textures": 0
+        },
+        "notes": "CPU timings are cumulative. Queued columns have not yet expanded into chunks. Geometry bytes estimate typed buffers, not driver allocations. First-render counts track CPU submissions, not GPU completion. Upload is deferred to render; GPU time is unavailable. Terrain generation runs on the main thread, without a worker queue."
+      },
+      "travelMeters": 25.05114767830009
+    },
+    {
+      "version": "phase-b",
+      "case": "rapid-direction-changes",
+      "mode": "polygonal",
+      "enteredColumns": 16,
+      "preparedOnEntry": 15,
+      "firstCoarseMs": 68.90000000223517,
+      "firstDetailMs": 201.30000000074506,
+      "meanFrameMs": 24.304166666666667,
+      "p95FrameMs": 33.40000000000873,
+      "coverage": 0.9416666666666667,
+      "eligibleProbes": 360,
+      "missingProbes": 21,
+      "collisionReadyFraction": 1,
+      "probes": [
+        {
+          "frame": 0,
+          "eligible": 18,
+          "covered": 0,
+          "missing": 18,
+          "detailed": 0
+        },
+        {
+          "frame": 12,
+          "eligible": 18,
+          "covered": 15,
+          "missing": 3,
+          "detailed": 0
+        },
+        {
+          "frame": 24,
+          "eligible": 18,
+          "covered": 18,
+          "missing": 0,
+          "detailed": 1
+        },
+        {
+          "frame": 36,
+          "eligible": 18,
+          "covered": 18,
+          "missing": 0,
+          "detailed": 1
+        },
+        {
+          "frame": 48,
+          "eligible": 18,
+          "covered": 18,
+          "missing": 0,
+          "detailed": 1
+        },
+        {
+          "frame": 60,
+          "eligible": 18,
+          "covered": 18,
+          "missing": 0,
+          "detailed": 1
+        },
+        {
+          "frame": 72,
+          "eligible": 18,
+          "covered": 18,
+          "missing": 0,
+          "detailed": 1
+        },
+        {
+          "frame": 84,
+          "eligible": 18,
+          "covered": 18,
+          "missing": 0,
+          "detailed": 1
+        },
+        {
+          "frame": 96,
+          "eligible": 18,
+          "covered": 18,
+          "missing": 0,
+          "detailed": 1
+        },
+        {
+          "frame": 108,
+          "eligible": 18,
+          "covered": 18,
+          "missing": 0,
+          "detailed": 2
+        },
+        {
+          "frame": 120,
+          "eligible": 18,
+          "covered": 18,
+          "missing": 0,
+          "detailed": 2
+        },
+        {
+          "frame": 132,
+          "eligible": 18,
+          "covered": 18,
+          "missing": 0,
+          "detailed": 2
+        },
+        {
+          "frame": 144,
+          "eligible": 18,
+          "covered": 18,
+          "missing": 0,
+          "detailed": 2
+        },
+        {
+          "frame": 156,
+          "eligible": 18,
+          "covered": 18,
+          "missing": 0,
+          "detailed": 2
+        },
+        {
+          "frame": 168,
+          "eligible": 18,
+          "covered": 18,
+          "missing": 0,
+          "detailed": 2
+        },
+        {
+          "frame": 180,
+          "eligible": 18,
+          "covered": 18,
+          "missing": 0,
+          "detailed": 1
+        },
+        {
+          "frame": 192,
+          "eligible": 18,
+          "covered": 18,
+          "missing": 0,
+          "detailed": 1
+        },
+        {
+          "frame": 204,
+          "eligible": 18,
+          "covered": 18,
+          "missing": 0,
+          "detailed": 1
+        },
+        {
+          "frame": 216,
+          "eligible": 18,
+          "covered": 18,
+          "missing": 0,
+          "detailed": 1
+        },
+        {
+          "frame": 228,
+          "eligible": 18,
+          "covered": 18,
+          "missing": 0,
+          "detailed": 1
+        }
+      ],
+      "diagnostics": {
+        "sampledAt": 105427.40000000224,
+        "terrains": [
+          {
+            "id": "terrain",
+            "source": "procedural",
+            "representation": "polygonal",
+            "lod": {
+              "requests": 73,
+              "generated": 73,
+              "evictions": 0,
+              "cancelled": 0,
+              "coarseCpuMs": 278.8999999947846,
+              "installationMs": 31.400000024586916,
+              "bytes": {
+                "0": 3750712,
+                "1": 1245184,
+                "2": 3161600
+              },
+              "firstGeometryMs": 59.599999997764826,
+              "started": 99575.20000000298,
+              "queue": 0,
+              "requestedRegions": 69,
+              "distanceCandidateRegions": 69,
+              "missingRequestedTiles": 0,
+              "triangles": 56896,
+              "drawCalls": 112,
+              "levels": {
+                "0": 40,
+                "1": 4,
+                "2": 65
+              },
+              "visibilityDistance": 512,
+              "predictive": true,
+              "refinementColumns": 0,
+              "tiles": 69,
+              "queueAgeMs": 0,
+              "gpuUploadMs": null
+            },
+            "switch": {
+              "pending": false,
+              "completed": 0,
+              "total": 0
+            },
+            "renderDistanceMeters": 16,
+            "radiusChunks": 2,
+            "chunkMeters": 8,
+            "activeChunks": 40,
+            "drawableChunks": 40,
+            "visibleChunks": 6,
+            "requestedChunks": 53,
+            "queuedChunks": 0,
+            "queuedColumns": 25,
+            "generating": 1,
+            "awaitingInstall": 0,
+            "awaitingFirstRender": 12,
+            "awaitingGpuUpload": null,
+            "preparedReplacements": 0,
+            "evictedChunks": 0,
+            "cancelled": 1,
+            "generatedChunks": 40,
+            "generationCpuMs": 109.90000002086163,
+            "levelQueryCpuMs": 38.29999999701977,
+            "meshingCpuMs": 662.4000000283122,
+            "installationCpuMs": 6.600000001490116,
+            "maxUpdateMs": 8.399999998509884,
+            "switchMs": 0,
+            "occupancyReuseHits": 0,
+            "residentHits": 145,
+            "residentMisses": 53,
+            "triangles": 83538,
+            "estimatedGeometryBytes": 1938764,
+            "occupancyBytes": 1310720,
+            "estimatedVisibleTerrainDrawCalls": 7,
+            "sourceCache": {
+              "pathColumns": 0,
+              "pathLookupTiles": 0,
+              "pathModifiers": 0,
+              "features": 0,
+              "neighborhoods": 64,
+              "levels": 20
+            },
+            "workerQueueLatencyMs": null,
+            "gpuUploadMs": null
+          }
+        ],
+        "frame": null,
+        "renderer": {
+          "drawCalls": 76,
+          "triangles": 53062,
+          "geometries": 71,
+          "textures": 0
+        },
+        "notes": "CPU timings are cumulative. Queued columns have not yet expanded into chunks. Geometry bytes estimate typed buffers, not driver allocations. First-render counts track CPU submissions, not GPU completion. Upload is deferred to render; GPU time is unavailable. Terrain generation runs on the main thread, without a worker queue."
+      },
+      "travelMeters": 25.05114767830009
+    },
+    {
+      "version": "phase-b-reactive",
+      "case": "4km-procedural",
+      "mode": "voxel",
+      "enteredColumns": 3,
+      "preparedOnEntry": 3,
+      "firstCoarseMs": 38.5,
+      "firstDetailMs": 86.69999999925494,
+      "meanFrameMs": 25.902083333333334,
+      "p95FrameMs": 33.40000000000873,
+      "coverage": 0.9416666666666667,
+      "eligibleProbes": 360,
+      "missingProbes": 21,
+      "collisionReadyFraction": 1,
+      "probes": [
+        {
+          "frame": 0,
+          "eligible": 18,
+          "covered": 0,
+          "missing": 18,
+          "detailed": 0
+        },
+        {
+          "frame": 12,
+          "eligible": 18,
+          "covered": 15,
+          "missing": 3,
+          "detailed": 1
+        },
+        {
+          "frame": 24,
+          "eligible": 18,
+          "covered": 18,
+          "missing": 0,
+          "detailed": 1
+        },
+        {
+          "frame": 36,
+          "eligible": 18,
+          "covered": 18,
+          "missing": 0,
+          "detailed": 2
+        },
+        {
+          "frame": 48,
+          "eligible": 18,
+          "covered": 18,
+          "missing": 0,
+          "detailed": 2
+        },
+        {
+          "frame": 60,
+          "eligible": 18,
+          "covered": 18,
+          "missing": 0,
+          "detailed": 2
+        },
+        {
+          "frame": 72,
+          "eligible": 18,
+          "covered": 18,
+          "missing": 0,
+          "detailed": 2
+        },
+        {
+          "frame": 84,
+          "eligible": 18,
+          "covered": 18,
+          "missing": 0,
+          "detailed": 2
+        },
+        {
+          "frame": 96,
+          "eligible": 18,
+          "covered": 18,
+          "missing": 0,
+          "detailed": 2
+        },
+        {
+          "frame": 108,
+          "eligible": 18,
+          "covered": 18,
+          "missing": 0,
+          "detailed": 2
+        },
+        {
+          "frame": 120,
+          "eligible": 18,
+          "covered": 18,
+          "missing": 0,
+          "detailed": 2
+        },
+        {
+          "frame": 132,
+          "eligible": 18,
+          "covered": 18,
+          "missing": 0,
+          "detailed": 2
+        },
+        {
+          "frame": 144,
+          "eligible": 18,
+          "covered": 18,
+          "missing": 0,
+          "detailed": 2
+        },
+        {
+          "frame": 156,
+          "eligible": 18,
+          "covered": 18,
+          "missing": 0,
+          "detailed": 2
+        },
+        {
+          "frame": 168,
+          "eligible": 18,
+          "covered": 18,
+          "missing": 0,
+          "detailed": 2
+        },
+        {
+          "frame": 180,
+          "eligible": 18,
+          "covered": 18,
+          "missing": 0,
+          "detailed": 2
+        },
+        {
+          "frame": 192,
+          "eligible": 18,
+          "covered": 18,
+          "missing": 0,
+          "detailed": 2
+        },
+        {
+          "frame": 204,
+          "eligible": 18,
+          "covered": 18,
+          "missing": 0,
+          "detailed": 2
+        },
+        {
+          "frame": 216,
+          "eligible": 18,
+          "covered": 18,
+          "missing": 0,
+          "detailed": 2
+        },
+        {
+          "frame": 228,
+          "eligible": 18,
+          "covered": 18,
+          "missing": 0,
+          "detailed": 2
+        }
+      ],
+      "diagnostics": {
+        "sampledAt": 111689.70000000298,
+        "terrains": [
+          {
+            "id": "terrain",
+            "source": "procedural",
+            "representation": "voxel",
+            "lod": {
+              "requests": 73,
+              "generated": 73,
+              "evictions": 0,
+              "cancelled": 0,
+              "coarseCpuMs": 247.80000001192093,
+              "installationMs": 31.00000001862645,
+              "bytes": {
+                "0": 14334464,
+                "1": 1245184,
+                "2": 3161600
+              },
+              "firstGeometryMs": 28.600000001490116,
+              "started": 105456.60000000149,
+              "queue": 0,
+              "requestedRegions": 69,
+              "distanceCandidateRegions": 69,
+              "missingRequestedTiles": 0,
+              "triangles": 55744,
+              "drawCalls": 112,
+              "levels": {
+                "0": 72,
+                "1": 4,
+                "2": 65
+              },
+              "visibilityDistance": 512,
+              "predictive": false,
+              "refinementColumns": 0,
+              "tiles": 69,
+              "queueAgeMs": 0,
+              "gpuUploadMs": null
+            },
+            "switch": {
+              "pending": false,
+              "completed": 0,
+              "total": 0
+            },
+            "renderDistanceMeters": 16,
+            "radiusChunks": 2,
+            "chunkMeters": 8,
+            "activeChunks": 72,
+            "drawableChunks": 72,
+            "visibleChunks": 24,
+            "requestedChunks": 74,
+            "queuedChunks": 1,
+            "queuedColumns": 4,
+            "generating": 1,
+            "awaitingInstall": 0,
+            "awaitingFirstRender": 19,
+            "awaitingGpuUpload": null,
+            "preparedReplacements": 0,
+            "evictedChunks": 0,
+            "cancelled": 0,
+            "generatedChunks": 72,
+            "generationCpuMs": 211.90000000596046,
+            "levelQueryCpuMs": 72.59999998286366,
+            "meshingCpuMs": 447.8000000528991,
+            "installationCpuMs": 20.00000000372529,
+            "maxUpdateMs": 5.300000000745058,
+            "switchMs": 0,
+            "occupancyReuseHits": 0,
+            "residentHits": 89,
+            "residentMisses": 74,
+            "triangles": 157568,
+            "estimatedGeometryBytes": 11029760,
+            "occupancyBytes": 2359296,
+            "estimatedVisibleTerrainDrawCalls": 28,
+            "sourceCache": {
+              "pathColumns": 0,
+              "pathLookupTiles": 0,
+              "pathModifiers": 0,
+              "features": 0,
+              "neighborhoods": 27,
+              "levels": 36
+            },
+            "workerQueueLatencyMs": null,
+            "gpuUploadMs": null
+          }
+        ],
+        "frame": null,
+        "renderer": {
+          "drawCalls": 97,
+          "triangles": 93470,
+          "geometries": 96,
+          "textures": 0
+        },
+        "notes": "CPU timings are cumulative. Queued columns have not yet expanded into chunks. Geometry bytes estimate typed buffers, not driver allocations. First-render counts track CPU submissions, not GPU completion. Upload is deferred to render; GPU time is unavailable. Terrain generation runs on the main thread, without a worker queue."
+      },
+      "travelMeters": 25.999999999999858
+    },
+    {
+      "version": "phase-b-reactive",
+      "case": "4km-procedural",
+      "mode": "polygonal",
+      "enteredColumns": 3,
+      "preparedOnEntry": 2,
+      "firstCoarseMs": 42.600000001490116,
+      "firstDetailMs": 267,
+      "meanFrameMs": 23.124166666666618,
+      "p95FrameMs": 33.40000000000873,
+      "coverage": 0.9666666666666667,
+      "eligibleProbes": 360,
+      "missingProbes": 12,
+      "collisionReadyFraction": 1,
+      "probes": [
+        {
+          "frame": 0,
+          "eligible": 18,
+          "covered": 9,
+          "missing": 9,
+          "detailed": 0
+        },
+        {
+          "frame": 12,
+          "eligible": 18,
+          "covered": 15,
+          "missing": 3,
+          "detailed": 0
+        },
+        {
+          "frame": 24,
+          "eligible": 18,
+          "covered": 18,
+          "missing": 0,
+          "detailed": 1
+        },
+        {
+          "frame": 36,
+          "eligible": 18,
+          "covered": 18,
+          "missing": 0,
+          "detailed": 1
+        },
+        {
+          "frame": 48,
+          "eligible": 18,
+          "covered": 18,
+          "missing": 0,
+          "detailed": 1
+        },
+        {
+          "frame": 60,
+          "eligible": 18,
+          "covered": 18,
+          "missing": 0,
+          "detailed": 1
+        },
+        {
+          "frame": 72,
+          "eligible": 18,
+          "covered": 18,
+          "missing": 0,
+          "detailed": 2
+        },
+        {
+          "frame": 84,
+          "eligible": 18,
+          "covered": 18,
+          "missing": 0,
+          "detailed": 2
+        },
+        {
+          "frame": 96,
+          "eligible": 18,
+          "covered": 18,
+          "missing": 0,
+          "detailed": 2
+        },
+        {
+          "frame": 108,
+          "eligible": 18,
+          "covered": 18,
+          "missing": 0,
+          "detailed": 2
+        },
+        {
+          "frame": 120,
+          "eligible": 18,
+          "covered": 18,
+          "missing": 0,
+          "detailed": 2
+        },
+        {
+          "frame": 132,
+          "eligible": 18,
+          "covered": 18,
+          "missing": 0,
+          "detailed": 2
+        },
+        {
+          "frame": 144,
+          "eligible": 18,
+          "covered": 18,
+          "missing": 0,
+          "detailed": 2
+        },
+        {
+          "frame": 156,
+          "eligible": 18,
+          "covered": 18,
+          "missing": 0,
+          "detailed": 1
+        },
+        {
+          "frame": 168,
+          "eligible": 18,
+          "covered": 18,
+          "missing": 0,
+          "detailed": 2
+        },
+        {
+          "frame": 180,
+          "eligible": 18,
+          "covered": 18,
+          "missing": 0,
+          "detailed": 1
+        },
+        {
+          "frame": 192,
+          "eligible": 18,
+          "covered": 18,
+          "missing": 0,
+          "detailed": 0
+        },
+        {
+          "frame": 204,
+          "eligible": 18,
+          "covered": 18,
+          "missing": 0,
+          "detailed": 1
+        },
+        {
+          "frame": 216,
+          "eligible": 18,
+          "covered": 18,
+          "missing": 0,
+          "detailed": 1
+        },
+        {
+          "frame": 228,
+          "eligible": 18,
+          "covered": 18,
+          "missing": 0,
+          "detailed": 2
+        }
+      ],
+      "diagnostics": {
+        "sampledAt": 117274.20000000298,
+        "terrains": [
+          {
+            "id": "terrain",
+            "source": "procedural",
+            "representation": "polygonal",
+            "lod": {
+              "requests": 73,
+              "generated": 73,
+              "evictions": 0,
+              "cancelled": 0,
+              "coarseCpuMs": 264.4000000022352,
+              "installationMs": 37.80000000074506,
+              "bytes": {
+                "0": 3842608,
+                "1": 1245184,
+                "2": 3161600
+              },
+              "firstGeometryMs": 31.900000002235174,
+              "started": 111702.80000000075,
+              "queue": 0,
+              "requestedRegions": 69,
+              "distanceCandidateRegions": 69,
+              "missingRequestedTiles": 0,
+              "triangles": 56768,
+              "drawCalls": 112,
+              "levels": {
+                "0": 40,
+                "1": 4,
+                "2": 65
+              },
+              "visibilityDistance": 512,
+              "predictive": false,
+              "refinementColumns": 0,
+              "tiles": 69,
+              "queueAgeMs": 0,
+              "gpuUploadMs": null
+            },
+            "switch": {
+              "pending": false,
+              "completed": 0,
+              "total": 0
+            },
+            "renderDistanceMeters": 16,
+            "radiusChunks": 2,
+            "chunkMeters": 8,
+            "activeChunks": 40,
+            "drawableChunks": 40,
+            "visibleChunks": 10,
+            "requestedChunks": 45,
+            "queuedChunks": 1,
+            "queuedColumns": 16,
+            "generating": 1,
+            "awaitingInstall": 0,
+            "awaitingFirstRender": 14,
+            "awaitingGpuUpload": null,
+            "preparedReplacements": 0,
+            "evictedChunks": 0,
+            "cancelled": 0,
+            "generatedChunks": 40,
+            "generationCpuMs": 154.3000000193715,
+            "levelQueryCpuMs": 40.89999998360872,
+            "meshingCpuMs": 615.1999999657273,
+            "installationCpuMs": 6.400000009685755,
+            "maxUpdateMs": 8.5,
+            "switchMs": 0,
+            "occupancyReuseHits": 0,
+            "residentHits": 26,
+            "residentMisses": 45,
+            "triangles": 87124,
+            "estimatedGeometryBytes": 2009144,
+            "occupancyBytes": 1310720,
+            "estimatedVisibleTerrainDrawCalls": 12,
+            "sourceCache": {
+              "pathColumns": 0,
+              "pathLookupTiles": 0,
+              "pathModifiers": 0,
+              "features": 0,
+              "neighborhoods": 64,
+              "levels": 21
+            },
+            "workerQueueLatencyMs": null,
+            "gpuUploadMs": null
+          }
+        ],
+        "frame": null,
+        "renderer": {
+          "drawCalls": 81,
+          "triangles": 61814,
+          "geometries": 69,
+          "textures": 0
+        },
+        "notes": "CPU timings are cumulative. Queued columns have not yet expanded into chunks. Geometry bytes estimate typed buffers, not driver allocations. First-render counts track CPU submissions, not GPU completion. Upload is deferred to render; GPU time is unavailable. Terrain generation runs on the main thread, without a worker queue."
+      },
+      "travelMeters": 25.999999999999858
+    },
+    {
+      "version": "phase-b-reactive",
+      "case": "rapid-direction-changes",
+      "mode": "voxel",
+      "enteredColumns": 16,
+      "preparedOnEntry": 16,
+      "firstCoarseMs": 35.5,
+      "firstDetailMs": 94.89999999850988,
+      "meanFrameMs": 26.31875,
+      "p95FrameMs": 33.40000000000873,
+      "coverage": 0.9666666666666667,
+      "eligibleProbes": 360,
+      "missingProbes": 12,
+      "collisionReadyFraction": 1,
+      "probes": [
+        {
+          "frame": 0,
+          "eligible": 18,
+          "covered": 9,
+          "missing": 9,
+          "detailed": 0
+        },
+        {
+          "frame": 12,
+          "eligible": 18,
+          "covered": 15,
+          "missing": 3,
+          "detailed": 1
+        },
+        {
+          "frame": 24,
+          "eligible": 18,
+          "covered": 18,
+          "missing": 0,
+          "detailed": 1
+        },
+        {
+          "frame": 36,
+          "eligible": 18,
+          "covered": 18,
+          "missing": 0,
+          "detailed": 2
+        },
+        {
+          "frame": 48,
+          "eligible": 18,
+          "covered": 18,
+          "missing": 0,
+          "detailed": 2
+        },
+        {
+          "frame": 60,
+          "eligible": 18,
+          "covered": 18,
+          "missing": 0,
+          "detailed": 2
+        },
+        {
+          "frame": 72,
+          "eligible": 18,
+          "covered": 18,
+          "missing": 0,
+          "detailed": 2
+        },
+        {
+          "frame": 84,
+          "eligible": 18,
+          "covered": 18,
+          "missing": 0,
+          "detailed": 2
+        },
+        {
+          "frame": 96,
+          "eligible": 18,
+          "covered": 18,
+          "missing": 0,
+          "detailed": 2
+        },
+        {
+          "frame": 108,
+          "eligible": 18,
+          "covered": 18,
+          "missing": 0,
+          "detailed": 2
+        },
+        {
+          "frame": 120,
+          "eligible": 18,
+          "covered": 18,
+          "missing": 0,
+          "detailed": 2
+        },
+        {
+          "frame": 132,
+          "eligible": 18,
+          "covered": 18,
+          "missing": 0,
+          "detailed": 2
+        },
+        {
+          "frame": 144,
+          "eligible": 18,
+          "covered": 18,
+          "missing": 0,
+          "detailed": 3
+        },
+        {
+          "frame": 156,
+          "eligible": 18,
+          "covered": 18,
+          "missing": 0,
+          "detailed": 3
+        },
+        {
+          "frame": 168,
+          "eligible": 18,
+          "covered": 18,
+          "missing": 0,
+          "detailed": 4
+        },
+        {
+          "frame": 180,
+          "eligible": 18,
+          "covered": 18,
+          "missing": 0,
+          "detailed": 3
+        },
+        {
+          "frame": 192,
+          "eligible": 18,
+          "covered": 18,
+          "missing": 0,
+          "detailed": 3
+        },
+        {
+          "frame": 204,
+          "eligible": 18,
+          "covered": 18,
+          "missing": 0,
+          "detailed": 2
+        },
+        {
+          "frame": 216,
+          "eligible": 18,
+          "covered": 18,
+          "missing": 0,
+          "detailed": 2
+        },
+        {
+          "frame": 228,
+          "eligible": 18,
+          "covered": 18,
+          "missing": 0,
+          "detailed": 3
+        }
+      ],
+      "diagnostics": {
+        "sampledAt": 123621.90000000224,
+        "terrains": [
+          {
+            "id": "terrain",
+            "source": "procedural",
+            "representation": "voxel",
+            "lod": {
+              "requests": 73,
+              "generated": 73,
+              "evictions": 0,
+              "cancelled": 0,
+              "coarseCpuMs": 250.79999999329448,
+              "installationMs": 30.100000005215406,
+              "bytes": {
+                "0": 13747136,
+                "1": 1245184,
+                "2": 3161600
+              },
+              "firstGeometryMs": 27.600000001490116,
+              "started": 117290.5,
+              "queue": 0,
+              "requestedRegions": 69,
+              "distanceCandidateRegions": 69,
+              "missingRequestedTiles": 0,
+              "triangles": 56000,
+              "drawCalls": 112,
+              "levels": {
+                "0": 72,
+                "1": 4,
+                "2": 65
+              },
+              "visibilityDistance": 512,
+              "predictive": false,
+              "refinementColumns": 0,
+              "tiles": 69,
+              "queueAgeMs": 0,
+              "gpuUploadMs": null
+            },
+            "switch": {
+              "pending": false,
+              "completed": 0,
+              "total": 0
+            },
+            "renderDistanceMeters": 16,
+            "radiusChunks": 2,
+            "chunkMeters": 8,
+            "activeChunks": 72,
+            "drawableChunks": 72,
+            "visibleChunks": 14,
+            "requestedChunks": 84,
+            "queuedChunks": 0,
+            "queuedColumns": 17,
+            "generating": 1,
+            "awaitingInstall": 0,
+            "awaitingFirstRender": 25,
+            "awaitingGpuUpload": null,
+            "preparedReplacements": 0,
+            "evictedChunks": 0,
+            "cancelled": 4,
+            "generatedChunks": 72,
+            "generationCpuMs": 220.80000001564622,
+            "levelQueryCpuMs": 76.39999998360872,
+            "meshingCpuMs": 415.8999999538064,
+            "installationCpuMs": 17.799999997019768,
+            "maxUpdateMs": 7,
+            "switchMs": 0,
+            "occupancyReuseHits": 0,
+            "residentHits": 343,
+            "residentMisses": 84,
+            "triangles": 149840,
+            "estimatedGeometryBytes": 10488800,
+            "occupancyBytes": 2359296,
+            "estimatedVisibleTerrainDrawCalls": 17,
+            "sourceCache": {
+              "pathColumns": 0,
+              "pathLookupTiles": 0,
+              "pathModifiers": 0,
+              "features": 0,
+              "neighborhoods": 39,
+              "levels": 36
+            },
+            "workerQueueLatencyMs": null,
+            "gpuUploadMs": null
+          }
+        ],
+        "frame": null,
+        "renderer": {
+          "drawCalls": 86,
+          "triangles": 71292,
+          "geometries": 90,
+          "textures": 0
+        },
+        "notes": "CPU timings are cumulative. Queued columns have not yet expanded into chunks. Geometry bytes estimate typed buffers, not driver allocations. First-render counts track CPU submissions, not GPU completion. Upload is deferred to render; GPU time is unavailable. Terrain generation runs on the main thread, without a worker queue."
+      },
+      "travelMeters": 25.05114767830009
+    },
+    {
+      "version": "phase-b-reactive",
+      "case": "rapid-direction-changes",
+      "mode": "polygonal",
+      "enteredColumns": 16,
+      "preparedOnEntry": 15,
+      "firstCoarseMs": 76.69999999925494,
+      "firstDetailMs": 219.09999999776483,
+      "meanFrameMs": 23.957500000000014,
+      "p95FrameMs": 33.40000000000873,
+      "coverage": 0.9416666666666667,
+      "eligibleProbes": 360,
+      "missingProbes": 21,
+      "collisionReadyFraction": 1,
+      "probes": [
+        {
+          "frame": 0,
+          "eligible": 18,
+          "covered": 0,
+          "missing": 18,
+          "detailed": 0
+        },
+        {
+          "frame": 12,
+          "eligible": 18,
+          "covered": 15,
+          "missing": 3,
+          "detailed": 0
+        },
+        {
+          "frame": 24,
+          "eligible": 18,
+          "covered": 18,
+          "missing": 0,
+          "detailed": 1
+        },
+        {
+          "frame": 36,
+          "eligible": 18,
+          "covered": 18,
+          "missing": 0,
+          "detailed": 1
+        },
+        {
+          "frame": 48,
+          "eligible": 18,
+          "covered": 18,
+          "missing": 0,
+          "detailed": 1
+        },
+        {
+          "frame": 60,
+          "eligible": 18,
+          "covered": 18,
+          "missing": 0,
+          "detailed": 1
+        },
+        {
+          "frame": 72,
+          "eligible": 18,
+          "covered": 18,
+          "missing": 0,
+          "detailed": 2
+        },
+        {
+          "frame": 84,
+          "eligible": 18,
+          "covered": 18,
+          "missing": 0,
+          "detailed": 1
+        },
+        {
+          "frame": 96,
+          "eligible": 18,
+          "covered": 18,
+          "missing": 0,
+          "detailed": 1
+        },
+        {
+          "frame": 108,
+          "eligible": 18,
+          "covered": 18,
+          "missing": 0,
+          "detailed": 1
+        },
+        {
+          "frame": 120,
+          "eligible": 18,
+          "covered": 18,
+          "missing": 0,
+          "detailed": 2
+        },
+        {
+          "frame": 132,
+          "eligible": 18,
+          "covered": 18,
+          "missing": 0,
+          "detailed": 2
+        },
+        {
+          "frame": 144,
+          "eligible": 18,
+          "covered": 18,
+          "missing": 0,
+          "detailed": 2
+        },
+        {
+          "frame": 156,
+          "eligible": 18,
+          "covered": 18,
+          "missing": 0,
+          "detailed": 2
+        },
+        {
+          "frame": 168,
+          "eligible": 18,
+          "covered": 18,
+          "missing": 0,
+          "detailed": 2
+        },
+        {
+          "frame": 180,
+          "eligible": 18,
+          "covered": 18,
+          "missing": 0,
+          "detailed": 1
+        },
+        {
+          "frame": 192,
+          "eligible": 18,
+          "covered": 18,
+          "missing": 0,
+          "detailed": 2
+        },
+        {
+          "frame": 204,
+          "eligible": 18,
+          "covered": 18,
+          "missing": 0,
+          "detailed": 1
+        },
+        {
+          "frame": 216,
+          "eligible": 18,
+          "covered": 18,
+          "missing": 0,
+          "detailed": 1
+        },
+        {
+          "frame": 228,
+          "eligible": 18,
+          "covered": 18,
+          "missing": 0,
+          "detailed": 1
+        }
+      ],
+      "diagnostics": {
+        "sampledAt": 129418.20000000298,
+        "terrains": [
+          {
+            "id": "terrain",
+            "source": "procedural",
+            "representation": "polygonal",
+            "lod": {
+              "requests": 73,
+              "generated": 73,
+              "evictions": 0,
+              "cancelled": 0,
+              "coarseCpuMs": 250.49999999254942,
+              "installationMs": 34.39999997243285,
+              "bytes": {
+                "0": 3909880,
+                "1": 1245184,
+                "2": 3161600
+              },
+              "firstGeometryMs": 66.5,
+              "started": 123634.30000000075,
+              "queue": 0,
+              "requestedRegions": 69,
+              "distanceCandidateRegions": 69,
+              "missingRequestedTiles": 0,
+              "triangles": 56832,
+              "drawCalls": 112,
+              "levels": {
+                "0": 41,
+                "1": 4,
+                "2": 65
+              },
+              "visibilityDistance": 512,
+              "predictive": false,
+              "refinementColumns": 0,
+              "tiles": 69,
+              "queueAgeMs": 0,
+              "gpuUploadMs": null
+            },
+            "switch": {
+              "pending": false,
+              "completed": 0,
+              "total": 0
+            },
+            "renderDistanceMeters": 16,
+            "radiusChunks": 2,
+            "chunkMeters": 8,
+            "activeChunks": 41,
+            "drawableChunks": 41,
+            "visibleChunks": 7,
+            "requestedChunks": 51,
+            "queuedChunks": 0,
+            "queuedColumns": 22,
+            "generating": 1,
+            "awaitingInstall": 0,
+            "awaitingFirstRender": 13,
+            "awaitingGpuUpload": null,
+            "preparedReplacements": 0,
+            "evictedChunks": 0,
+            "cancelled": 1,
+            "generatedChunks": 41,
+            "generationCpuMs": 122.39999996870756,
+            "levelQueryCpuMs": 38.200000025331974,
+            "meshingCpuMs": 642.4999999254942,
+            "installationCpuMs": 6.499999988824129,
+            "maxUpdateMs": 9.400000002235174,
+            "switchMs": 0,
+            "occupancyReuseHits": 0,
+            "residentHits": 169,
+            "residentMisses": 51,
+            "triangles": 88162,
+            "estimatedGeometryBytes": 2037420,
+            "occupancyBytes": 1343488,
+            "estimatedVisibleTerrainDrawCalls": 8,
+            "sourceCache": {
+              "pathColumns": 0,
+              "pathLookupTiles": 0,
+              "pathModifiers": 0,
+              "features": 0,
+              "neighborhoods": 64,
+              "levels": 21
+            },
+            "workerQueueLatencyMs": null,
+            "gpuUploadMs": null
+          }
+        ],
+        "frame": null,
+        "renderer": {
+          "drawCalls": 77,
+          "triangles": 55290,
+          "geometries": 71,
+          "textures": 0
+        },
+        "notes": "CPU timings are cumulative. Queued columns have not yet expanded into chunks. Geometry bytes estimate typed buffers, not driver allocations. First-render counts track CPU submissions, not GPU completion. Upload is deferred to render; GPU time is unavailable. Terrain generation runs on the main thread, without a worker queue."
+      },
+      "travelMeters": 25.05114767830009
+    }
+  ],
+  "baselineRevision": "8cf57bdb87d77106b58314526e9237cc968943f5"
+}

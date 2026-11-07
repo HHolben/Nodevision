@@ -49,9 +49,9 @@ test('local height origin agrees with collision, serialization, and disposal',as
   assert.equal(await runtime.ready,true);assert.equal(colliders[0].containsPlayer,undefined);
   const height=runtime.generator.getSolidHeight(16,16);
   assert.equal(colliders[0].sampleGroundY(24,34),10-16+height*.25);
-  runtime.update(new THREE.Vector3(24,20,34));assert.equal(runtime.stats.generated,1);
-  assert.ok(root.children.length>0);assert.equal(root.children[0].position.y,-16+root.children[0].userData.proceduralChunk[1]*8);
+  for(let i=0;i<100&&!runtime.stats.generated;i++)runtime.update(new THREE.Vector3(24,20,34));assert.ok(runtime.stats.generated>0);
+  const detail=root.children.find(m=>m.userData.proceduralChunk);assert.ok(detail);assert.equal(detail.position.y,-16+detail.userData.proceduralChunk[1]*8);
   root.position.y=12;assert.deepEqual(runtime.serialize().position,[20,12,30]);
-  let disposed=false;root.children[0].geometry.addEventListener('dispose',()=>disposed=true);
+  let disposed=false;detail.geometry.addEventListener('dispose',()=>disposed=true);
   runtime.dispose();assert.equal(disposed,true);assert.equal(colliders.length,0);assert.equal(root.children.length,0);
 });

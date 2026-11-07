@@ -24,7 +24,7 @@ export function terrainDiagnostics(context = globalThis.window?.VRWorldContext) 
       for (const attribute of Object.values(g.attributes)) geometryBytes += attribute.array.byteLength;
     }
     return { id: r.definition.id, source: r.definition.terrainSource || 'procedural', representation: r.representation,
-      switch: r.representationProgress, renderDistanceMeters: r.renderDistance, radiusChunks: m.radius, chunkMeters: 8,
+      lod: r.lod?.snapshot() ?? null, switch: r.representationProgress, renderDistanceMeters: r.renderDistance, radiusChunks: m.radius, chunkMeters: 8,
       activeChunks: m.loaded.size, drawableChunks, visibleChunks,
       requestedChunks: m.stats.requestedChunks ?? null, queuedChunks: m.queue.filter(c => c[1] !== null).length,
       queuedColumns: m.queue.filter(c => c[1] === null).length, generating: m.pending || r.representationProgress?.pending ? 1 : 0,
@@ -46,6 +46,6 @@ export function terrainDiagnostics(context = globalThis.window?.VRWorldContext) 
 // Keep the existing overlay compact; the full snapshot remains available to benchmarks.
 export function terrainDiagnosticsText(snapshot) {
   if (!snapshot?.terrains.length) return '';
-  return snapshot.terrains.map(t => `\nTerrain ${t.id}: ${t.representation}, ${t.renderDistanceMeters} m\nChunks: ${t.activeChunks} active / ${t.visibleChunks} visible; queue ${t.queuedChunks} + ${t.queuedColumns} columns; working ${t.generating}\nTriangles: ${t.triangles}; buffers ≈ ${(t.estimatedGeometryBytes / 1048576).toFixed(1)} MiB; evicted ${t.evictedChunks}\nCPU totals: generate ${t.generationCpuMs.toFixed(0)} / mesh ${t.meshingCpuMs.toFixed(0)} / install ${t.installationCpuMs?.toFixed(0) ?? 'n/a'} ms`).join('') +
+  return snapshot.terrains.map(t => `\nLOD: ${t.lod ? `${t.lod.levels[1]} intermediate / ${t.lod.levels[2]} distant; ${t.lod.visibilityDistance} m; queue ${t.lod.queue}` : 'unavailable'}\nTerrain ${t.id}: ${t.representation}, ${t.renderDistanceMeters} m\nChunks: ${t.activeChunks} active / ${t.visibleChunks} visible; queue ${t.queuedChunks} + ${t.queuedColumns} columns; working ${t.generating}\nTriangles: ${t.triangles}; buffers ≈ ${(t.estimatedGeometryBytes / 1048576).toFixed(1)} MiB; evicted ${t.evictedChunks}\nCPU totals: generate ${t.generationCpuMs.toFixed(0)} / mesh ${t.meshingCpuMs.toFixed(0)} / install ${t.installationCpuMs?.toFixed(0) ?? 'n/a'} ms`).join('') +
     (snapshot.renderer ? `\nScene draw calls: ${snapshot.renderer.drawCalls}; GPU upload: unmeasured` : '');
 }

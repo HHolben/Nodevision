@@ -8,11 +8,13 @@ export function advanceProgressive(manager) {
     if(cell[1]!==null)return yield* m.build(cell);
     const [x,,z]=cell,query=yield* timedSteps(m.generator.getChunkLevelsSteps(x,z)),levels=query.value;
     m.stats.levelQueryMs=(m.stats.levelQueryMs||0)+query.cpuMs;
+    m.columnLevels.set(`${x},${z}`,levels);
     const dirty=[...m.loaded.values()].filter(e=>e.cell[0]===x&&e.cell[2]===z&&m.invalidated.has(chunkKey(e.cell))).map(e=>e.cell[1]);
     const cells=[...new Set([...levels,...dirty])].sort((a,b)=>b-a).map(y=>[x,y,z]).filter(c=>!m.loaded.has(chunkKey(c))||m.invalidated.has(chunkKey(c)));
     m.stats.requestedChunks+=cells.length;m.stats.residentMisses+=cells.length;m.stats.residentHits+=Math.max(0,levels.length-cells.length);m.queue.unshift(...cells);return null;
   }
-  while(performance.now()<deadline){
+  let steps=0;
+  while(performance.now()<deadline&&steps++<(m.options.maxSteps??Infinity)){
     if(!m.pending){const cell=m.queue.shift();if(!cell)break;m.pending={cell,iterator:task(cell)};}
     const result=m.pending.iterator.next();if(!result.done)continue;
     const {cell}=m.pending;m.pending=null;

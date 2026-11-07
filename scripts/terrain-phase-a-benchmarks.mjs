@@ -24,7 +24,7 @@ async function cases(){
 async function measure(create,item,version){
   const scene=new THREE.Scene(),camera=new THREE.PerspectiveCamera(60,4/3,.1,2000),colliders=[];
   const renderer=new THREE.WebGLRenderer();renderer.setSize(640,480);document.getElementById('editor').replaceChildren(renderer.domElement);
-  const start=performance.now(),root=create(THREE,structuredClone(item.definition),colliders),runtime=root.userData.terrainRuntime;scene.add(root);await runtime.ready;
+  const start=performance.now(),root=create(THREE,{...structuredClone(item.definition),streaming:{enabled:false}},colliders),runtime=root.userData.terrainRuntime;scene.add(root);await runtime.ready;
   runtime.setRenderDistance(8);const startupMs=performance.now()-start;
   const marker=new THREE.Mesh(new THREE.BoxGeometry(1,1,1),new THREE.MeshBasicMaterial({color:'orange'}));marker.position.copy(root.position).add(new THREE.Vector3(12,20,12));scene.add(marker);
   const applyEdits=runtime=>{if(item.edited){
@@ -61,7 +61,7 @@ async function measure(create,item,version){
   rows[0].maximumDistanceProbe=terrainDiagnostics(context);
   runtime.dispose();
   // Measure a fresh polygonal runtime as well as the initial voxel runtime.
-  const coldStart=performance.now(),coldRoot=create(THREE,{...structuredClone(item.definition),representation:'polygonal'},colliders),cold=coldRoot.userData.terrainRuntime;
+  const coldStart=performance.now(),coldRoot=create(THREE,{...structuredClone(item.definition),representation:'polygonal',streaming:{enabled:false}},colliders),cold=coldRoot.userData.terrainRuntime;
   scene.add(coldRoot);await cold.ready;cold.setRenderDistance(8);applyEdits(cold);
   const coldStartupMs=performance.now()-coldStart;point.copy(coldRoot.position).add(new THREE.Vector3(12,20,12));point.y=Math.max(point.y,(cold.sampleTerrainSource(point.x,point.z).elevation||0)+6);
   camera.position.copy(point).add(new THREE.Vector3(0,25,35));camera.lookAt(point);let coldFirst=null;

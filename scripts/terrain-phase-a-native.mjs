@@ -21,8 +21,8 @@ try{
  await wait(()=>document.querySelector('#sub-toolbar [aria-label="Terrain representation"]'),'Native toolbar control');
  const results=[];
  for(const value of ['polygonal','voxel','polygonal']){
-  const old=root.children.map(m=>m.geometry.uuid),mode=document.querySelector('#sub-toolbar [aria-label="Terrain representation"]');mode.value=value;mode.dispatchEvent(new Event('change',{bubbles:true}));
-  await wait(()=>!mode.disabled,'Native switch finishes');check(runtime.representation===value,'Native active renderer');check(root.children.every(m=>!old.includes(m.geometry.uuid)),'Native geometry replaced');
+  const old=root.children.filter(m=>m.geometry).map(m=>m.geometry.uuid),mode=document.querySelector('#sub-toolbar [aria-label="Terrain representation"]');mode.value=value;mode.dispatchEvent(new Event('change',{bubbles:true}));
+  await wait(()=>!mode.disabled,'Native switch finishes');check(runtime.representation===value,'Native active renderer');check(root.children.filter(m=>m.geometry).every(m=>!old.includes(m.geometry.uuid)),'Native geometry replaced');
   check(JSON.stringify(runtime.serialize().geographic)===source,'Native geographic source preserved');results.push(terrainDiagnostics(ctx));
  }
  check(terrainDiagnostics(ctx).frame?.samples>0,'Native render-loop frame diagnostics');
@@ -30,7 +30,7 @@ try{
  panel.cleanup();window.NodevisionState.currentMode='Virtual World Viewing';
  await setupPanel(panel,{filePath:'world.html',viewPermissions:{authoring:false}});check(await panel.worldReady,'Native Viewer reopen');ctx=window.VRWorldContext;root=ctx.objects.find(o=>o.userData.terrainRuntime);runtime=root.userData.terrainRuntime;
  await runtime.ready;check(runtime.representation==='polygonal','Native Viewer persisted mode');check(JSON.stringify(runtime.serialize().geographic)===source,'Native Viewer source preserved');
- await wait(()=>root.children.length>0,'Native Viewer renders persisted geometry');
+ await wait(()=>[...runtime.manager.loaded.values()].some(e=>e.mesh),'Native Viewer renders persisted geometry');
  await fetch('/test/results',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({native:results})});
  disableFpsOverlay({persist:false});panel.cleanup();document.getElementById('result').textContent='PASS: production GameView panel, actual render loop, inspector, View controls, save and Viewer reopen';
 }catch(error){document.getElementById('result').textContent='FAIL: '+error.stack;}

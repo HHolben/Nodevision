@@ -1,0 +1,129 @@
+{
+  "trace": "400 update calls: x=24 for 100, x=32 for 150, then +0.5 m/update for 150; z=32. Real terrain, no rendering; 512 cooperative work units per update with a 1000 ms emergency time ceiling isolates scheduling from machine speed. Production uses the normal 4 ms deadline.",
+  "rows": [
+    {
+      "predictive": false,
+      "readyBeforeEntry": 4,
+      "enteredColumns": 10,
+      "stats": {
+        "installationMs": 15.017802000000245,
+        "evicted": 37,
+        "requestedChunks": 57,
+        "residentHits": 33,
+        "residentMisses": 57,
+        "residentBytes": 2655976,
+        "peakLoaded": 30,
+        "maxUpdateMs": 12.945594000000028,
+        "cancelled": 0,
+        "loaded": 13,
+        "queued": 10,
+        "generated": 50,
+        "voxels": 361992,
+        "faces": 14671,
+        "generationMs": 85.90717800000766,
+        "meshingMs": 320.4104720000014,
+        "maxBuildMs": 29.078526000000238,
+        "prefetchColumns": 0,
+        "predictedCenter": [
+          13,
+          4
+        ],
+        "levelQueryMs": 35.797831000001764
+      },
+      "lod": {
+        "requests": 22,
+        "generated": 22,
+        "evictions": 0,
+        "cancelled": 0,
+        "coarseCpuMs": 126.0633829999999,
+        "installationMs": 22.556194000000033,
+        "bytes": {
+          "0": 2655976,
+          "1": 1867776,
+          "2": 486400
+        },
+        "firstGeometryMs": 26.343005000000005,
+        "started": 214.844047,
+        "queue": 0,
+        "requestedRegions": 16,
+        "distanceCandidateRegions": 16,
+        "missingRequestedTiles": 0,
+        "triangles": 30656,
+        "drawCalls": 27,
+        "levels": {
+          "0": 13,
+          "1": 6,
+          "2": 10
+        },
+        "visibilityDistance": 512,
+        "predictive": false,
+        "refinementColumns": 0,
+        "tiles": 16,
+        "queueAgeMs": 0,
+        "gpuUploadMs": null
+      }
+    },
+    {
+      "predictive": true,
+      "readyBeforeEntry": 10,
+      "enteredColumns": 10,
+      "stats": {
+        "installationMs": 14.30086199999846,
+        "evicted": 42,
+        "requestedChunks": 75,
+        "residentHits": 175,
+        "residentMisses": 75,
+        "residentBytes": 5095808,
+        "peakLoaded": 48,
+        "maxUpdateMs": 14.13804099999993,
+        "cancelled": 0,
+        "loaded": 26,
+        "queued": 21,
+        "generated": 68,
+        "voxels": 728764,
+        "faces": 27920,
+        "generationMs": 192.38026000001526,
+        "meshingMs": 426.9461460000356,
+        "maxBuildMs": 22.53114200000141,
+        "prefetchColumns": 12,
+        "predictedCenter": [
+          17,
+          4
+        ],
+        "levelQueryMs": 42.899168000008444
+      },
+      "lod": {
+        "requests": 22,
+        "generated": 22,
+        "evictions": 0,
+        "cancelled": 0,
+        "coarseCpuMs": 124.40952999999888,
+        "installationMs": 18.096504999999752,
+        "bytes": {
+          "0": 5095808,
+          "1": 1867776,
+          "2": 486400
+        },
+        "firstGeometryMs": 15.941109000000097,
+        "started": 885.363763,
+        "queue": 0,
+        "requestedRegions": 16,
+        "distanceCandidateRegions": 16,
+        "missingRequestedTiles": 0,
+        "triangles": 30208,
+        "drawCalls": 27,
+        "levels": {
+          "0": 26,
+          "1": 6,
+          "2": 10
+        },
+        "visibilityDistance": 512,
+        "predictive": true,
+        "refinementColumns": 0,
+        "tiles": 16,
+        "queueAgeMs": 0,
+        "gpuUploadMs": null
+      }
+    }
+  ]
+}

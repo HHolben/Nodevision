@@ -1,5 +1,6 @@
 // Nodevision/ApplicationSystem/public/MetaWorld/ProceduralVoxelWorld/VoxelWorldDefinition.mjs
 // This module validates trusted declarative voxel terrain settings before any runtime allocation.
+import { terrainStreaming } from '../TerrainLOD/Settings.mjs';
 import {validateMapSource} from '../TerrainMaps/Source.mjs';
 
 import { terrainRepresentation } from '../TerrainRepresentation/Representation.mjs';
@@ -31,6 +32,7 @@ export function validateVoxelWorld(def) {
   if (!Number.isInteger(radius) || radius < 1 || radius > 8) fail("loadRadius must be an integer from 1 to 8");
   if (def.voxelPattern || def.isVoxel || def.voxelPlacer) fail("authored voxel metadata is unsupported");
   terrainRepresentation(def.representation);
+  terrainStreaming(def.streaming);
   validateGeographic(def);
   validateMapSource(def);
   validateAuthoringTerrain(def);

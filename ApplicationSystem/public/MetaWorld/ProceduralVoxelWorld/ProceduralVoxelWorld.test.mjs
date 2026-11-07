@@ -50,11 +50,11 @@ test('residency unloads, reproduces geometry and releases resources',async()=>{
   const position=new THREE.Vector3(0,30,0);
   for(let i=0;i<36;i++) runtime.update(position);
   assert.ok(runtime.stats.loaded>0&&runtime.stats.loaded<=36);assert.equal(colliders.length,1); assert.ok(root.children.length<=36);
-  const geometry=root.children[0].geometry, original=Array.from(geometry.attributes.position.array), cell=root.children[0].userData.proceduralChunk;
+  const first=root.children.find(m=>m.userData.proceduralChunk),geometry=first.geometry,original=Array.from(geometry.attributes.position.array),cell=first.userData.proceduralChunk;
   let released=false;geometry.addEventListener('dispose',()=>released=true);
   position.x=200;runtime.update(position);assert.equal(released,true);
   position.x=0;for(let i=0;i<36;i++)runtime.update(position);
-  const restored=root.children.find(mesh=>C.chunkKey(mesh.userData.proceduralChunk)===C.chunkKey(cell));
+  const restored=root.children.find(mesh=>mesh.userData.proceduralChunk&&C.chunkKey(mesh.userData.proceduralChunk)===C.chunkKey(cell));
   assert.deepEqual(Array.from(restored.geometry.attributes.position.array),original);
   assert.deepEqual(runtime.serialize().generator,def.generator);
   runtime.dispose();runtime.dispose();assert.equal(colliders.length,0);assert.equal(root.children.length,0);assert.equal(runtime.stats.loaded,0);

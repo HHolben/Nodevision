@@ -10,7 +10,7 @@ import {createProceduralVoxelWorld} from '../ProceduralVoxelWorld/ProceduralVoxe
 import {voxelMaterialOptions} from '../ProceduralVoxelWorld/VoxelMaterialTestFixtures.mjs';
 import {createTerrainSurfaceMesh,createTerrainSurfaceDefinition,createTerrainSurfaceColliderRef} from '../../PanelInstances/ViewPanels/GameViewDependencies/TerrainTool/terrainSurfaceMesh.mjs';
 import {installTerrainRepresentation} from './Authoring.mjs';
-const definition={type:'procedural-voxel-world',id:'terrain',position:[0,0,0],size:[16,16,16],voxelSize:.25,generator:{id:'nodevision-terrain-v1',version:1,seed:42},chunks:{voxelsPerAxis:32,loadRadius:1},generation:{vegetation:false,water:false,caves:false}};
+const definition={streaming:{enabled:false},type:'procedural-voxel-world',id:'terrain',position:[0,0,0],size:[16,16,16],voxelSize:.25,generator:{id:'nodevision-terrain-v1',version:1,seed:42},chunks:{voxelsPerAxis:32,loadRadius:1},generation:{vegetation:false,water:false,caves:false}};
 function extract(cell,sample){const data=new Uint8Array(32768);for(let z=0;z<32;z++)for(let y=0;y<32;y++)for(let x=0;x<32;x++)data[voxelIndex(x,y,z)]=sample(x+cell[0]*32,y+cell[1]*32,z+cell[2]*32);return drainSteps(surfaceNetSteps(data,cell,sample));}
 test('surface net shares exact positions and normals at chunk seams and retains cavities and liquids',()=>{
   const sample=(x,y,z)=>y>=0&&y<8+Math.floor(x/8)&&z>=0&&z<64&&x>=0&&x<64?((y>2&&y<5&&z>12&&z<18)?0:1):0;

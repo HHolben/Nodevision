@@ -62,7 +62,7 @@ test('runtime material inspection, ground bounce and compact save use canonical 
   assert.equal(colliders[0].materialDefinition.id,'grass');assert.equal(colliders[0].MatterState,'solid');
   const ctx={api:{},movementState:{},bounceMaterialsByKey:new Map()};const bounce=installBounceMaterialAbility(ctx);
   bounce.refreshBounceMaterialCatalog(canonicalCatalog);assert.equal(bounce.bounceConfigForCollider(colliders[0]).restitution,.06);
-  assert.ok(root.children.length);for(const mesh of root.children){assert.strictEqual(mesh.material,runtime.materials);assert.ok(mesh.geometry.groups.length<=18);assert.equal(mesh.userData.physicsMaterialId,undefined);}
+  assert.ok(root.children.length);for(const mesh of root.children.filter(m=>m.isMesh)){assert.strictEqual(mesh.material,runtime.materials);assert.ok(mesh.geometry.groups.length<=18);assert.equal(mesh.userData.physicsMaterialId,undefined);}
   const saved=runtime.serialize();assert.deepEqual(saved.generator,def.generator);
   assert.equal(saved.type,'procedural-voxel-world');assert.ok(JSON.stringify(saved).length<600);
   for(const key of ['chunksData','materials','children','voxels','palette'])assert.equal(saved[key],undefined);
