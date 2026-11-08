@@ -1,0 +1,222 @@
+[
+  {
+    "size": [
+      50,
+      50
+    ],
+    "startupMs": 221.02603899999986,
+    "settled1000Ms": 7.755576000000019,
+    "columnChecks": 0,
+    "lod": {
+      "requests": 2,
+      "generated": 2,
+      "evictions": 0,
+      "cancelled": 0,
+      "coarseCpuMs": 209.3161320000006,
+      "installationMs": 34.03166299999998,
+      "bytes": {
+        "0": 0,
+        "1": 201400,
+        "2": 0
+      },
+      "firstGeometryMs": 97.64624800000001,
+      "started": 1365.990463,
+      "queue": 0,
+      "maskPasses": 3,
+      "maskCpuMs": 0.2348629999999048,
+      "planningCpuMs": 8.41297899999995,
+      "requestedRegions": 1,
+      "distanceCandidateRegions": 1,
+      "missingRequestedTiles": 0,
+      "triangles": 2650,
+      "drawCalls": 1,
+      "levels": {
+        "0": 0,
+        "1": 1,
+        "2": 0
+      },
+      "visibilityDistance": 512,
+      "predictive": true,
+      "refinementColumns": 0,
+      "tiles": 1,
+      "queueAgeMs": 0,
+      "gpuUploadMs": null
+    }
+  },
+  {
+    "size": [
+      256,
+      256
+    ],
+    "startupMs": 747.3440280000002,
+    "settled1000Ms": 1.9009890000002088,
+    "columnChecks": 0,
+    "lod": {
+      "requests": 20,
+      "generated": 20,
+      "evictions": 0,
+      "cancelled": 0,
+      "coarseCpuMs": 718.5791460000075,
+      "installationMs": 84.40170899999907,
+      "bytes": {
+        "0": 0,
+        "1": 1245184,
+        "2": 583680
+      },
+      "firstGeometryMs": 48.3976090000001,
+      "started": 1643.117489,
+      "queue": 0,
+      "maskPasses": 21,
+      "maskCpuMs": 9.680528000000322,
+      "planningCpuMs": 1.9468819999999596,
+      "requestedRegions": 16,
+      "distanceCandidateRegions": 16,
+      "missingRequestedTiles": 0,
+      "triangles": 24064,
+      "drawCalls": 22,
+      "levels": {
+        "0": 0,
+        "1": 4,
+        "2": 12
+      },
+      "visibilityDistance": 512,
+      "predictive": true,
+      "refinementColumns": 0,
+      "tiles": 16,
+      "queueAgeMs": 0,
+      "gpuUploadMs": null
+    }
+  },
+  {
+    "size": [
+      1000,
+      2000
+    ],
+    "startupMs": 828.4345119999998,
+    "settled1000Ms": 0.9329569999999876,
+    "columnChecks": 0,
+    "lod": {
+      "requests": 68,
+      "generated": 68,
+      "evictions": 0,
+      "cancelled": 0,
+      "coarseCpuMs": 748.6960819999936,
+      "installationMs": 130.35014500000125,
+      "bytes": {
+        "0": 0,
+        "1": 1245184,
+        "2": 2918400
+      },
+      "firstGeometryMs": 16.572238000000198,
+      "started": 2403.265489,
+      "queue": 0,
+      "maskPasses": 69,
+      "maskCpuMs": 58.902176000000054,
+      "planningCpuMs": 1.7611830000000737,
+      "requestedRegions": 64,
+      "distanceCandidateRegions": 64,
+      "missingRequestedTiles": 0,
+      "triangles": 54784,
+      "drawCalls": 102,
+      "levels": {
+        "0": 0,
+        "1": 4,
+        "2": 60
+      },
+      "visibilityDistance": 512,
+      "predictive": true,
+      "refinementColumns": 0,
+      "tiles": 64,
+      "queueAgeMs": 0,
+      "gpuUploadMs": null
+    }
+  },
+  {
+    "size": [
+      2000,
+      2000
+    ],
+    "startupMs": 1065.0342740000006,
+    "settled1000Ms": 0.8369619999994029,
+    "columnChecks": 0,
+    "lod": {
+      "requests": 68,
+      "generated": 68,
+      "evictions": 0,
+      "cancelled": 0,
+      "coarseCpuMs": 973.743942999984,
+      "installationMs": 126.89698499999895,
+      "bytes": {
+        "0": 0,
+        "1": 1245184,
+        "2": 2918400
+      },
+      "firstGeometryMs": 29.183898999999656,
+      "started": 3235.965579,
+      "queue": 0,
+      "maskPasses": 69,
+      "maskCpuMs": 71.5556249999986,
+      "planningCpuMs": 0.35389600000007704,
+      "requestedRegions": 64,
+      "distanceCandidateRegions": 64,
+      "missingRequestedTiles": 0,
+      "triangles": 54784,
+      "drawCalls": 102,
+      "levels": {
+        "0": 0,
+        "1": 4,
+        "2": 60
+      },
+      "visibilityDistance": 512,
+      "predictive": true,
+      "refinementColumns": 0,
+      "tiles": 64,
+      "queueAgeMs": 0,
+      "gpuUploadMs": null
+    }
+  },
+  {
+    "size": [
+      4000,
+      4000
+    ],
+    "startupMs": 4256.467097000001,
+    "settled1000Ms": 1.1107489999994868,
+    "columnChecks": 0,
+    "lod": {
+      "requests": 68,
+      "generated": 68,
+      "evictions": 0,
+      "cancelled": 0,
+      "coarseCpuMs": 4198.984259999985,
+      "installationMs": 3082.883176000004,
+      "bytes": {
+        "0": 0,
+        "1": 1245184,
+        "2": 2918400
+      },
+      "firstGeometryMs": 4.969884999999522,
+      "started": 4305.465524,
+      "queue": 0,
+      "maskPasses": 69,
+      "maskCpuMs": 46.99298699999781,
+      "planningCpuMs": 0.46450000000004366,
+      "requestedRegions": 64,
+      "distanceCandidateRegions": 64,
+      "missingRequestedTiles": 0,
+      "triangles": 54784,
+      "drawCalls": 102,
+      "levels": {
+        "0": 0,
+        "1": 4,
+        "2": 60
+      },
+      "visibilityDistance": 512,
+      "predictive": true,
+      "refinementColumns": 0,
+      "tiles": 64,
+      "queueAgeMs": 0,
+      "gpuUploadMs": null
+    }
+  }
+]

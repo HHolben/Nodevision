@@ -1,12 +1,13 @@
 // Nodevision/ApplicationSystem/public/MetaWorld/Aegean/Regeneration.mjs
 // This module records bounded vegetation revision scopes so regeneration changes local plant seeds without modifying terrain, protected ground or authored objects.
+import {infiniteWorld} from '../ProceduralVoxelWorld/WorldExtent.mjs';
 import { AEGEAN_BIOMES } from './Biomes.mjs';
 export function validateVegetationRevisions(def) {
   if(def.vegetationRevisions===undefined)return;
   if(!def.environment||!Array.isArray(def.vegetationRevisions)||def.vegetationRevisions.length>64)throw Error('At most 64 Aegean vegetation regeneration scopes are supported.');
   for(const r of def.vegetationRevisions){
     if(!Number.isInteger(r.seed)||r.seed< -2147483648||r.seed>2147483647)throw Error('Invalid vegetation revision seed.');
-    if(!Array.isArray(r.bounds)||r.bounds.length!==4||!r.bounds.every(Number.isFinite)||r.bounds[0]<0||r.bounds[1]<0||r.bounds[2]>def.size[0]*4||r.bounds[3]>def.size[2]*4||r.bounds[0]>=r.bounds[2]||r.bounds[1]>=r.bounds[3])throw Error('Invalid vegetation regeneration bounds.');
+    if(!Array.isArray(r.bounds)||r.bounds.length!==4||!r.bounds.every(Number.isFinite)||!infiniteWorld(def)&&(r.bounds[0]<0||r.bounds[1]<0||r.bounds[2]>def.size[0]*4||r.bounds[3]>def.size[2]*4)||r.bounds[0]>=r.bounds[2]||r.bounds[1]>=r.bounds[3])throw Error('Invalid vegetation regeneration bounds.');
     if(r.biome!==null&&!AEGEAN_BIOMES.some(b=>b.id===r.biome))throw Error('Invalid vegetation biome scope.');
   }
 }

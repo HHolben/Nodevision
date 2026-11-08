@@ -1,5 +1,6 @@
 // Nodevision/ApplicationSystem/public/MetaWorld/ProceduralVoxelWorld/VoxelWorldDialog.mjs
 // This dialog collects a compact procedural terrain definition using the existing floating-panel component. Validation and cancellation happen before scene mutation, and the dialog closes when its owning world bridge changes.
+import {worldExtentDescription} from './WorldExtent.mjs';
 import {openMap,httpRanges} from '../TerrainMaps/Reader.mjs';
 import {mapReference} from '../TerrainMaps/Source.mjs';
 import { mountGeographicPanel } from '../Geographic/ImportPanel.mjs';
@@ -42,6 +43,9 @@ export function openVoxelWorldDialog(bridge = getActiveMetaWorldLayerBridge(), o
     input.value=values[key];fields[key]=input;row.append(input);form.append(row);return input;
   }
   const source=choice('terrainSource','Terrain source',[['procedural','Procedural'],['map','Custom Map'],['hybrid','Hybrid'],['geographic','Geographic']]);
+  const extent=choice('worldExtentMode','World Extent',[['finite','Finite'],['infinite','Infinite']]);
+  if(previous?.worldExtent?.mode==='infinite')extent.options[0].disabled=true;
+  const extentNote=document.createElement('p');extentNote.dataset.worldExtent='';form.append(extentNote);
   const mapFields=document.createElement('fieldset');mapFields.dataset.terrainMapSettings='';form.append(mapFields);
   field('mapPath','Terrain map (.nvmap, relative to world)','text',mapFields);
   field('detailStrength','Hybrid elevation detail (m)','number',mapFields).min=0;field('detailScale','Hybrid detail scale (m)','number',mapFields).min=.001;
@@ -51,13 +55,17 @@ export function openVoxelWorldDialog(bridge = getActiveMetaWorldLayerBridge(), o
   const mapNote=document.createElement('p');mapNote.textContent='Map heights and origin use meters local to this terrain object. Heights are clipped to the selected vertical bounds. Biomes and surface materials come from the map; seeded soil/rock remains below. Map terrain does not synthesize waterways or landform caves. Paths and constructions remain independent.';mapFields.append(mapNote);
   geographicPanel=mountGeographicPanel(form,values);
   const updateSource=()=>{
+    extent.parentElement.hidden=source.value!=='procedural';extent.disabled=source.value!=='procedural';
+    extentNote.textContent=worldExtentDescription({terrainSource:source.value,worldExtent:{mode:extent.value}});
     fields.seed.parentElement.firstChild.textContent=source.value==='geographic'?'Auxiliary seed (vegetation/detail)':'Seed';
     const geographic=source.value==='geographic',mapped=['map','hybrid'].includes(source.value);mapFields.hidden=!mapped;mapFields.disabled=!mapped;for(const key of ['detailStrength','detailScale']){fields[key].parentElement.hidden=source.value!=='hybrid';fields[key].disabled=source.value!=='hybrid';}geographicPanel.host.hidden=!geographic;geographicPanel.host.disabled=!geographic;
     for(const key of ['sizeX','sizeZ','maxHeight','minHeight','startingBiome','water','caves'])if(fields[key]){fields[key].parentElement.hidden=geographic;fields[key].disabled=geographic;}
     if(mapped){fields.startingBiome.value='auto';for(const key of ['startingBiome','water','caves'])if(fields[key]){fields[key].disabled=true;fields[key].parentElement.hidden=true;}}
+    if(source.value==='procedural'&&extent.value==='infinite')for(const key of ['sizeX','sizeZ']){fields[key].parentElement.hidden=true;fields[key].disabled=true;}
     biomeNote.hidden=geographic||mapped;preset.dispatchEvent(new Event('change'));
   };
-  source.onchange=updateSource;
+  source.onchange=()=>{if(source.value!=='procedural'&&previous?.worldExtent?.mode!=='infinite')extent.value='finite';updateSource();};
+  extent.onchange=updateSource;
   const preset=choice('startingBiome','Starting biome',STARTING_BIOMES);
   const biomeNote=document.createElement('p');biomeNote.textContent='Temperate and snowy starts apply around the placement center and blend into seeded biomes farther away. Aegean uses its coastal landscape and Mediterranean habitats throughout the world.';form.append(biomeNote);
   const aegean=document.createElement('fieldset');form.append(aegean);

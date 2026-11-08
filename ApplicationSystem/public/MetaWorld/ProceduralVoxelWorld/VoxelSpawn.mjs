@@ -5,7 +5,7 @@ export function findVoxelSpawn(generator,x,z,playerHeight){
   const [width,,depth]=generator.dimensions;
   function inspect(cx,cz){
     const mx=width<8?1:3,mz=depth<8?1:3;
-    cx=Math.max(mx,Math.min(width-1-mx,Math.floor(cx)));cz=Math.max(mz,Math.min(depth-1-mz,Math.floor(cz)));
+    cx=generator.dimensions.infinite?Math.floor(cx):Math.max(mx,Math.min(width-1-mx,Math.floor(cx)));cz=generator.dimensions.infinite?Math.floor(cz):Math.max(mz,Math.min(depth-1-mz,Math.floor(cz)));
     const y=generator.getSolidHeight(cx,cz);
     if(y<=0||y<generator.getWaterTop(cx,cz)||generator.getSlope(cx,cz)>.5)return null;
     for(let py=y;py<y+Math.ceil(playerHeight/.25);py++)for(let dx=-1;dx<=1;dx++)for(let dz=-1;dz<=1;dz++){

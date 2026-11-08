@@ -1,8 +1,10 @@
 // Nodevision/ApplicationSystem/public/MetaWorld/ProceduralVoxelWorld/TerrainSourceSummary.mjs
 // This module describes the authoritative terrain source for the existing world inspector. Geographic metadata is distinguished from optional procedural decoration settings without changing the saved definition or allocating terrain.
 
+import {infiniteWorld,worldExtentDescription} from './WorldExtent.mjs';
+
 export function terrainSourceSummary(def) {
-  const dimensions = `Size: ${def.size[0]} × ${def.size[2]} m. Elevation: ${def.heightLimits?.min ?? 0} to ${def.heightLimits?.max ?? def.size[1]} m. Voxels: ${def.voxelSize} m; chunks: ${def.chunks.voxelsPerAxis}³. Position: ${def.position.join(', ')}.`;
+  const dimensions = `${worldExtentDescription(def)} ${infiniteWorld(def)?'':`Size: ${def.size[0]} × ${def.size[2]} m.`} Elevation: ${def.heightLimits?.min ?? 0} to ${def.heightLimits?.max ?? def.size[1]} m. Voxels: ${def.voxelSize} m; chunks: ${def.chunks.voxelsPerAxis}³. Position: ${def.position.join(', ')}.`;
   if (def.terrainSource === 'geographic') {
     const g = def.geographic;
     return [

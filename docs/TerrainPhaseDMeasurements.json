@@ -1,0 +1,5845 @@
+{
+  "results": [
+    {
+      "size": [
+        50,
+        50
+      ],
+      "anchor": 20,
+      "mode": "voxel",
+      "distantTerrain": false,
+      "distantVegetation": false,
+      "startupMs": 410.39999999990687,
+      "firstCoarseMs": null,
+      "steps": 40,
+      "drained": true,
+      "phases": {
+        "settled": {
+          "updateMs": {
+            "mean": 0.06833333335040757,
+            "p95": 0.20000000018626451,
+            "max": 0.2999999998137355
+          },
+          "drawSubmitMs": {
+            "mean": 1.1416666666278616,
+            "p95": 1.3999999999068677,
+            "max": 28.899999999906868
+          },
+          "frameMs": {
+            "mean": 17.40166666666822,
+            "p95": 19.600000000093132,
+            "max": 56.5
+          },
+          "columnChecks": 0,
+          "lodMs": 0,
+          "vegetationMs": 0.8000000007450581,
+          "drawCalls": 9,
+          "triangles": 12758
+        },
+        "moving": {
+          "updateMs": {
+            "mean": 2.6716666666558013,
+            "p95": 13.100000000093132,
+            "max": 17.899999999906868
+          },
+          "drawSubmitMs": {
+            "mean": 0.39499999998758234,
+            "p95": 0.6000000000931323,
+            "max": 1.2000000001862645
+          },
+          "frameMs": {
+            "mean": 16.64833333333178,
+            "p95": 18.5,
+            "max": 23.100000000093132
+          },
+          "columnChecks": 0,
+          "lodMs": 0.3000000002793968,
+          "vegetationMs": 0.7000000006519258,
+          "drawCalls": 9,
+          "triangles": 12758
+        },
+        "backtracking": {
+          "updateMs": {
+            "mean": 2.1833333333178113,
+            "p95": 11.700000000186265,
+            "max": 16.399999999906868
+          },
+          "drawSubmitMs": {
+            "mean": 0.3866666666852931,
+            "p95": 0.6999999997206032,
+            "max": 0.7999999998137355
+          },
+          "frameMs": {
+            "mean": 17.116666666666667,
+            "p95": 22.5,
+            "max": 26.59999999962747
+          },
+          "columnChecks": 0,
+          "lodMs": 0.3000000002793968,
+          "vegetationMs": 0.6000000000931323,
+          "drawCalls": 18,
+          "triangles": 26030
+        }
+      },
+      "lod": {
+        "requests": 0,
+        "generated": 0,
+        "evictions": 0,
+        "cancelled": 0,
+        "coarseCpuMs": 0,
+        "installationMs": 0,
+        "bytes": {
+          "0": 6509992,
+          "1": 0,
+          "2": 0
+        },
+        "firstGeometryMs": null,
+        "started": 618,
+        "queue": 0,
+        "maskPasses": 0,
+        "maskCpuMs": 0,
+        "planningCpuMs": 0,
+        "triangles": 0,
+        "drawCalls": 0,
+        "levels": {
+          "0": 43,
+          "1": 0,
+          "2": 0
+        },
+        "visibilityDistance": 512,
+        "predictive": true,
+        "refinementColumns": 0,
+        "tiles": 0,
+        "queueAgeMs": 0,
+        "gpuUploadMs": null
+      },
+      "vegetation": {
+        "requests": 0,
+        "evictions": 0,
+        "cancelled": 0,
+        "cacheHits": 0,
+        "transitions": 0,
+        "generationMs": 0,
+        "installationMs": 0,
+        "bytes": 0,
+        "firstInstalledMs": null,
+        "started": 617.5,
+        "aheadRequests": 0,
+        "regions": 0,
+        "queue": 0,
+        "representedTrees": 0,
+        "levels": {
+          "0": 0,
+          "1": 0,
+          "2": 0
+        },
+        "proxyCells": 0,
+        "proxyBoxes": 0,
+        "triangles": 0,
+        "drawCalls": 0,
+        "queueAgeMs": 0,
+        "visibleCoverage": null,
+        "gpuUploadMs": null
+      },
+      "chunks": 43,
+      "geometry": 11
+    },
+    {
+      "size": [
+        50,
+        50
+      ],
+      "anchor": 20,
+      "mode": "voxel",
+      "distantTerrain": true,
+      "distantVegetation": false,
+      "startupMs": 602.2000000001863,
+      "firstCoarseMs": 47.200000000186265,
+      "steps": 140,
+      "drained": true,
+      "phases": {
+        "settled": {
+          "updateMs": {
+            "mean": 0.0933333333193635,
+            "p95": 0.20000000018626451,
+            "max": 0.2999999998137355
+          },
+          "drawSubmitMs": {
+            "mean": 0.6100000000248352,
+            "p95": 0.7000000001862645,
+            "max": 9.099999999627471
+          },
+          "frameMs": {
+            "mean": 17.18666666666201,
+            "p95": 17.100000000093132,
+            "max": 59.39999999990687
+          },
+          "columnChecks": 0,
+          "lodMs": 2,
+          "vegetationMs": 0.5,
+          "drawCalls": 10,
+          "triangles": 14832
+        },
+        "moving": {
+          "updateMs": {
+            "mean": 2.748333333316259,
+            "p95": 4.7000000001862645,
+            "max": 5.100000000093132
+          },
+          "drawSubmitMs": {
+            "mean": 0.3433333333193635,
+            "p95": 0.5,
+            "max": 1
+          },
+          "frameMs": {
+            "mean": 16.658333333333335,
+            "p95": 17,
+            "max": 17.100000000093132
+          },
+          "columnChecks": 588,
+          "lodMs": 3.3999999994412065,
+          "vegetationMs": 0.39999999944120646,
+          "drawCalls": 10,
+          "triangles": 14832
+        },
+        "backtracking": {
+          "updateMs": {
+            "mean": 3.8666666666511444,
+            "p95": 4.5,
+            "max": 4.7000000001862645
+          },
+          "drawSubmitMs": {
+            "mean": 0.3650000000139698,
+            "p95": 0.6000000000931323,
+            "max": 0.7999999998137355
+          },
+          "frameMs": {
+            "mean": 16.664999999998447,
+            "p95": 17,
+            "max": 17.200000000186265
+          },
+          "columnChecks": 833,
+          "lodMs": 5.399999999906868,
+          "vegetationMs": 0.39999999990686774,
+          "drawCalls": 19,
+          "triangles": 27784
+        }
+      },
+      "lod": {
+        "requests": 2,
+        "generated": 2,
+        "evictions": 0,
+        "cancelled": 0,
+        "coarseCpuMs": 54.899999998975545,
+        "installationMs": 6.899999999906868,
+        "bytes": {
+          "0": 7684960,
+          "1": 201400,
+          "2": 0
+        },
+        "firstGeometryMs": 45,
+        "started": 4615.799999999814,
+        "queue": 0,
+        "maskPasses": 71,
+        "maskCpuMs": 8.399999999441206,
+        "planningCpuMs": 1.1000000000931323,
+        "requestedRegions": 1,
+        "distanceCandidateRegions": 1,
+        "missingRequestedTiles": 0,
+        "triangles": 1754,
+        "drawCalls": 1,
+        "levels": {
+          "0": 50,
+          "1": 1,
+          "2": 0
+        },
+        "visibilityDistance": 512,
+        "predictive": true,
+        "refinementColumns": 0,
+        "tiles": 1,
+        "queueAgeMs": 0,
+        "gpuUploadMs": null
+      },
+      "vegetation": {
+        "requests": 0,
+        "evictions": 0,
+        "cancelled": 0,
+        "cacheHits": 0,
+        "transitions": 0,
+        "generationMs": 0,
+        "installationMs": 0,
+        "bytes": 0,
+        "firstInstalledMs": null,
+        "started": 4615.699999999721,
+        "aheadRequests": 0,
+        "regions": 0,
+        "queue": 0,
+        "representedTrees": 0,
+        "levels": {
+          "0": 0,
+          "1": 0,
+          "2": 0
+        },
+        "proxyCells": 0,
+        "proxyBoxes": 0,
+        "triangles": 0,
+        "drawCalls": 0,
+        "queueAgeMs": 0,
+        "visibleCoverage": null,
+        "gpuUploadMs": null
+      },
+      "chunks": 50,
+      "geometry": 12
+    },
+    {
+      "size": [
+        50,
+        50
+      ],
+      "anchor": 20,
+      "mode": "voxel",
+      "distantTerrain": false,
+      "distantVegetation": true,
+      "startupMs": 403.29999999981374,
+      "firstCoarseMs": null,
+      "steps": 60,
+      "drained": true,
+      "phases": {
+        "settled": {
+          "updateMs": {
+            "mean": 0.05833333332557231,
+            "p95": 0.20000000018626451,
+            "max": 0.20000000018626451
+          },
+          "drawSubmitMs": {
+            "mean": 1.62333333332402,
+            "p95": 1.8999999999068677,
+            "max": 33
+          },
+          "frameMs": {
+            "mean": 19.063333333330228,
+            "p95": 24.09999999962747,
+            "max": 107.60000000009313
+          },
+          "columnChecks": 0,
+          "lodMs": 0.19999999972060323,
+          "vegetationMs": 1.4999999995343387,
+          "drawCalls": 16,
+          "triangles": 18542
+        },
+        "moving": {
+          "updateMs": {
+            "mean": 2.5083333333178115,
+            "p95": 11,
+            "max": 11.800000000279397
+          },
+          "drawSubmitMs": {
+            "mean": 0.6316666666651145,
+            "p95": 1.2000000001862645,
+            "max": 1.5
+          },
+          "frameMs": {
+            "mean": 18.296666666663562,
+            "p95": 24,
+            "max": 39.39999999990687
+          },
+          "columnChecks": 0,
+          "lodMs": 0.10000000009313226,
+          "vegetationMs": 1.199999999254942,
+          "drawCalls": 16,
+          "triangles": 18542
+        },
+        "backtracking": {
+          "updateMs": {
+            "mean": 2.103333333328677,
+            "p95": 11.299999999813735,
+            "max": 14.5
+          },
+          "drawSubmitMs": {
+            "mean": 0.5966666666790843,
+            "p95": 1,
+            "max": 1.1000000000931323
+          },
+          "frameMs": {
+            "mean": 18.941666666666666,
+            "p95": 28.300000000279397,
+            "max": 31.200000000186265
+          },
+          "columnChecks": 0,
+          "lodMs": 0.19999999972060323,
+          "vegetationMs": 2.199999999254942,
+          "drawCalls": 25,
+          "triangles": 31814
+        }
+      },
+      "lod": {
+        "requests": 0,
+        "generated": 0,
+        "evictions": 0,
+        "cancelled": 0,
+        "coarseCpuMs": 0,
+        "installationMs": 0,
+        "bytes": {
+          "0": 6509992,
+          "1": 0,
+          "2": 0
+        },
+        "firstGeometryMs": null,
+        "started": 8253.5,
+        "queue": 0,
+        "maskPasses": 0,
+        "maskCpuMs": 0,
+        "planningCpuMs": 0,
+        "triangles": 0,
+        "drawCalls": 0,
+        "levels": {
+          "0": 43,
+          "1": 0,
+          "2": 0
+        },
+        "visibilityDistance": 512,
+        "predictive": true,
+        "refinementColumns": 0,
+        "tiles": 0,
+        "queueAgeMs": 0,
+        "gpuUploadMs": null
+      },
+      "vegetation": {
+        "requests": 8,
+        "evictions": 0,
+        "cancelled": 0,
+        "cacheHits": 16,
+        "transitions": 4,
+        "generationMs": 68.60000000149012,
+        "installationMs": 17.80000000121072,
+        "bytes": 106112,
+        "firstInstalledMs": 103.89999999990687,
+        "started": 8253.399999999907,
+        "aheadRequests": 0,
+        "lastRequestLatencyMs": 402.5,
+        "regions": 4,
+        "queue": 0,
+        "representedTrees": 6,
+        "levels": {
+          "0": 2,
+          "1": 6,
+          "2": 0
+        },
+        "proxyCells": 1319,
+        "proxyBoxes": 371,
+        "triangles": 4452,
+        "drawCalls": 8,
+        "queueAgeMs": 0,
+        "visibleCoverage": null,
+        "gpuUploadMs": null
+      },
+      "chunks": 43,
+      "geometry": 12
+    },
+    {
+      "size": [
+        50,
+        50
+      ],
+      "anchor": 20,
+      "mode": "voxel",
+      "distantTerrain": true,
+      "distantVegetation": true,
+      "startupMs": 536.7000000001863,
+      "firstCoarseMs": 13.800000000279397,
+      "steps": 120,
+      "drained": true,
+      "phases": {
+        "settled": {
+          "updateMs": {
+            "mean": 0.08000000001241764,
+            "p95": 0.20000000018626451,
+            "max": 0.20000000018626451
+          },
+          "drawSubmitMs": {
+            "mean": 1.3849999999937912,
+            "p95": 1.5,
+            "max": 36
+          },
+          "frameMs": {
+            "mean": 20.079999999996897,
+            "p95": 27,
+            "max": 106.3000000002794
+          },
+          "columnChecks": 0,
+          "lodMs": 2.1000000000931323,
+          "vegetationMs": 0.900000000372529,
+          "drawCalls": 17,
+          "triangles": 20616
+        },
+        "moving": {
+          "updateMs": {
+            "mean": 2.586666666700815,
+            "p95": 4.399999999906868,
+            "max": 4.400000000372529
+          },
+          "drawSubmitMs": {
+            "mean": 0.5183333333116025,
+            "p95": 0.8999999999068677,
+            "max": 1.2000000001862645
+          },
+          "frameMs": {
+            "mean": 17.535000000001553,
+            "p95": 21,
+            "max": 34.200000000186265
+          },
+          "columnChecks": 637,
+          "lodMs": 3.400000000372529,
+          "vegetationMs": 1.3999999999068677,
+          "drawCalls": 17,
+          "triangles": 20616
+        },
+        "backtracking": {
+          "updateMs": {
+            "mean": 3.835000000001552,
+            "p95": 4.600000000093132,
+            "max": 5.100000000093132
+          },
+          "drawSubmitMs": {
+            "mean": 0.5183333333659296,
+            "p95": 0.900000000372529,
+            "max": 1.2000000001862645
+          },
+          "frameMs": {
+            "mean": 19.651666666660457,
+            "p95": 26.200000000186265,
+            "max": 27.199999999720603
+          },
+          "columnChecks": 980,
+          "lodMs": 5.400000000372529,
+          "vegetationMs": 0.7000000006519258,
+          "drawCalls": 26,
+          "triangles": 33568
+        }
+      },
+      "lod": {
+        "requests": 2,
+        "generated": 2,
+        "evictions": 0,
+        "cancelled": 0,
+        "coarseCpuMs": 21.100000000093132,
+        "installationMs": 2.2999999998137355,
+        "bytes": {
+          "0": 8472368,
+          "1": 201400,
+          "2": 0
+        },
+        "firstGeometryMs": 10,
+        "started": 12039.299999999814,
+        "queue": 0,
+        "maskPasses": 75,
+        "maskCpuMs": 8.40000000083819,
+        "planningCpuMs": 0.599999999627471,
+        "requestedRegions": 1,
+        "distanceCandidateRegions": 1,
+        "missingRequestedTiles": 0,
+        "triangles": 1754,
+        "drawCalls": 1,
+        "levels": {
+          "0": 54,
+          "1": 1,
+          "2": 0
+        },
+        "visibilityDistance": 512,
+        "predictive": true,
+        "refinementColumns": 0,
+        "tiles": 1,
+        "queueAgeMs": 0,
+        "gpuUploadMs": null
+      },
+      "vegetation": {
+        "requests": 8,
+        "evictions": 0,
+        "cancelled": 0,
+        "cacheHits": 16,
+        "transitions": 4,
+        "generationMs": 43.40000000083819,
+        "installationMs": 8.700000001117587,
+        "bytes": 106112,
+        "firstInstalledMs": 38.10000000009313,
+        "started": 12039.299999999814,
+        "aheadRequests": 0,
+        "lastRequestLatencyMs": 197.3000000002794,
+        "regions": 4,
+        "queue": 0,
+        "representedTrees": 5,
+        "levels": {
+          "0": 3,
+          "1": 5,
+          "2": 0
+        },
+        "proxyCells": 1080,
+        "proxyBoxes": 296,
+        "triangles": 3552,
+        "drawCalls": 8,
+        "queueAgeMs": 0,
+        "visibleCoverage": null,
+        "gpuUploadMs": null
+      },
+      "chunks": 54,
+      "geometry": 13
+    },
+    {
+      "size": [
+        50,
+        50
+      ],
+      "anchor": 20,
+      "mode": "polygonal",
+      "distantTerrain": false,
+      "distantVegetation": false,
+      "startupMs": 1354.7999999998137,
+      "firstCoarseMs": null,
+      "steps": 310,
+      "drained": true,
+      "phases": {
+        "settled": {
+          "updateMs": {
+            "mean": 0.06333333333022892,
+            "p95": 0.19999999972060323,
+            "max": 0.19999999972060323
+          },
+          "drawSubmitMs": {
+            "mean": 0.45166666669150196,
+            "p95": 0.6000000000931323,
+            "max": 7.100000000093132
+          },
+          "frameMs": {
+            "mean": 16.868333333334885,
+            "p95": 21.5,
+            "max": 45
+          },
+          "columnChecks": 0,
+          "lodMs": 0,
+          "vegetationMs": 0.7999999993480742,
+          "drawCalls": 9,
+          "triangles": 12758
+        },
+        "moving": {
+          "updateMs": {
+            "mean": 2.759999999978269,
+            "p95": 6.5,
+            "max": 8.199999999720603
+          },
+          "drawSubmitMs": {
+            "mean": 0.23666666668529313,
+            "p95": 0.5,
+            "max": 0.6000000000931323
+          },
+          "frameMs": {
+            "mean": 16.66333333333023,
+            "p95": 16.899999999906868,
+            "max": 17
+          },
+          "columnChecks": 0,
+          "lodMs": 0,
+          "vegetationMs": 0.5000000004656613,
+          "drawCalls": 9,
+          "triangles": 12758
+        },
+        "backtracking": {
+          "updateMs": {
+            "mean": 4.231666666657353,
+            "p95": 8.100000000093132,
+            "max": 8.700000000186265
+          },
+          "drawSubmitMs": {
+            "mean": 0.21333333333798996,
+            "p95": 0.40000000037252903,
+            "max": 0.5
+          },
+          "frameMs": {
+            "mean": 16.688333333330228,
+            "p95": 16.90000000037253,
+            "max": 18.5
+          },
+          "columnChecks": 0,
+          "lodMs": 0,
+          "vegetationMs": 0.599999999627471,
+          "drawCalls": 14,
+          "triangles": 21022
+        }
+      },
+      "lod": {
+        "requests": 0,
+        "generated": 0,
+        "evictions": 0,
+        "cancelled": 0,
+        "coarseCpuMs": 0,
+        "installationMs": 0,
+        "bytes": {
+          "0": 1951040,
+          "1": 0,
+          "2": 0
+        },
+        "firstGeometryMs": null,
+        "started": 16015.599999999627,
+        "queue": 0,
+        "maskPasses": 0,
+        "maskCpuMs": 0,
+        "planningCpuMs": 0,
+        "triangles": 0,
+        "drawCalls": 0,
+        "levels": {
+          "0": 23,
+          "1": 0,
+          "2": 0
+        },
+        "visibilityDistance": 512,
+        "predictive": true,
+        "refinementColumns": 0,
+        "tiles": 0,
+        "queueAgeMs": 0,
+        "gpuUploadMs": null
+      },
+      "vegetation": {
+        "requests": 0,
+        "evictions": 0,
+        "cancelled": 0,
+        "cacheHits": 0,
+        "transitions": 0,
+        "generationMs": 0,
+        "installationMs": 0,
+        "bytes": 0,
+        "firstInstalledMs": null,
+        "started": 16015.5,
+        "aheadRequests": 0,
+        "regions": 0,
+        "queue": 0,
+        "representedTrees": 0,
+        "levels": {
+          "0": 0,
+          "1": 0,
+          "2": 0
+        },
+        "proxyCells": 0,
+        "proxyBoxes": 0,
+        "triangles": 0,
+        "drawCalls": 0,
+        "queueAgeMs": 0,
+        "visibleCoverage": null,
+        "gpuUploadMs": null
+      },
+      "chunks": 23,
+      "geometry": 8
+    },
+    {
+      "size": [
+        50,
+        50
+      ],
+      "anchor": 20,
+      "mode": "polygonal",
+      "distantTerrain": true,
+      "distantVegetation": false,
+      "startupMs": 1072.5,
+      "firstCoarseMs": 11.400000000372529,
+      "steps": 240,
+      "drained": true,
+      "phases": {
+        "settled": {
+          "updateMs": {
+            "mean": 0.08166666668839753,
+            "p95": 0.20000000018626451,
+            "max": 0.3000000002793968
+          },
+          "drawSubmitMs": {
+            "mean": 0.4649999999751647,
+            "p95": 0.5,
+            "max": 6.5
+          },
+          "frameMs": {
+            "mean": 16.766666666666666,
+            "p95": 16.90000000037253,
+            "max": 45.39999999990687
+          },
+          "columnChecks": 0,
+          "lodMs": 1.4000000008381903,
+          "vegetationMs": 0.9000000008381903,
+          "drawCalls": 10,
+          "triangles": 14832
+        },
+        "moving": {
+          "updateMs": {
+            "mean": 2.7949999999875823,
+            "p95": 6.899999999906868,
+            "max": 8.600000000093132
+          },
+          "drawSubmitMs": {
+            "mean": 0.2800000000357007,
+            "p95": 0.5,
+            "max": 0.8000000002793968
+          },
+          "frameMs": {
+            "mean": 16.666666666666668,
+            "p95": 16.90000000037253,
+            "max": 17
+          },
+          "columnChecks": 343,
+          "lodMs": 2.9999999995343387,
+          "vegetationMs": 0.40000000037252903,
+          "drawCalls": 10,
+          "triangles": 14832
+        },
+        "backtracking": {
+          "updateMs": {
+            "mean": 4.290000000037253,
+            "p95": 7.7000000001862645,
+            "max": 9.700000000186265
+          },
+          "drawSubmitMs": {
+            "mean": 0.3133333333224679,
+            "p95": 0.5,
+            "max": 1.1999999997206032
+          },
+          "frameMs": {
+            "mean": 16.93666666666201,
+            "p95": 22.399999999906868,
+            "max": 28.200000000186265
+          },
+          "columnChecks": 441,
+          "lodMs": 3.900000000372529,
+          "vegetationMs": 1,
+          "drawCalls": 15,
+          "triangles": 22968
+        }
+      },
+      "lod": {
+        "requests": 2,
+        "generated": 2,
+        "evictions": 0,
+        "cancelled": 0,
+        "coarseCpuMs": 20.700000000186265,
+        "installationMs": 2.1999999997206032,
+        "bytes": {
+          "0": 3116280,
+          "1": 201400,
+          "2": 0
+        },
+        "firstGeometryMs": 8.399999999906868,
+        "started": 20387.399999999907,
+        "queue": 0,
+        "maskPasses": 59,
+        "maskCpuMs": 6.200000001117587,
+        "planningCpuMs": 0.39999999990686774,
+        "requestedRegions": 1,
+        "distanceCandidateRegions": 1,
+        "missingRequestedTiles": 0,
+        "triangles": 1946,
+        "drawCalls": 1,
+        "levels": {
+          "0": 40,
+          "1": 1,
+          "2": 0
+        },
+        "visibilityDistance": 512,
+        "predictive": true,
+        "refinementColumns": 0,
+        "tiles": 1,
+        "queueAgeMs": 0,
+        "gpuUploadMs": null
+      },
+      "vegetation": {
+        "requests": 0,
+        "evictions": 0,
+        "cancelled": 0,
+        "cacheHits": 0,
+        "transitions": 0,
+        "generationMs": 0,
+        "installationMs": 0,
+        "bytes": 0,
+        "firstInstalledMs": null,
+        "started": 20387.399999999907,
+        "aheadRequests": 0,
+        "regions": 0,
+        "queue": 0,
+        "representedTrees": 0,
+        "levels": {
+          "0": 0,
+          "1": 0,
+          "2": 0
+        },
+        "proxyCells": 0,
+        "proxyBoxes": 0,
+        "triangles": 0,
+        "drawCalls": 0,
+        "queueAgeMs": 0,
+        "visibleCoverage": null,
+        "gpuUploadMs": null
+      },
+      "chunks": 40,
+      "geometry": 9
+    },
+    {
+      "size": [
+        50,
+        50
+      ],
+      "anchor": 20,
+      "mode": "polygonal",
+      "distantTerrain": false,
+      "distantVegetation": true,
+      "startupMs": 1104,
+      "firstCoarseMs": null,
+      "steps": 240,
+      "drained": true,
+      "phases": {
+        "settled": {
+          "updateMs": {
+            "mean": 0.06833333335040757,
+            "p95": 0.19999999972060323,
+            "max": 0.20000000018626451
+          },
+          "drawSubmitMs": {
+            "mean": 1.276666666652697,
+            "p95": 1.5,
+            "max": 25.5
+          },
+          "frameMs": {
+            "mean": 19.70999999999379,
+            "p95": 26.100000000093132,
+            "max": 80.10000000009313
+          },
+          "columnChecks": 0,
+          "lodMs": 0.20000000018626451,
+          "vegetationMs": 2.300000000745058,
+          "drawCalls": 16,
+          "triangles": 18542
+        },
+        "moving": {
+          "updateMs": {
+            "mean": 2.826666666683741,
+            "p95": 7.300000000279397,
+            "max": 8.100000000093132
+          },
+          "drawSubmitMs": {
+            "mean": 0.5599999999627471,
+            "p95": 1.2000000001862645,
+            "max": 2.5
+          },
+          "frameMs": {
+            "mean": 17.37833333333644,
+            "p95": 24.800000000279397,
+            "max": 29.200000000186265
+          },
+          "columnChecks": 0,
+          "lodMs": 0.20000000018626451,
+          "vegetationMs": 1.599999999627471,
+          "drawCalls": 16,
+          "triangles": 18542
+        },
+        "backtracking": {
+          "updateMs": {
+            "mean": 4.3066666666340705,
+            "p95": 7.7999999998137355,
+            "max": 9.700000000186265
+          },
+          "drawSubmitMs": {
+            "mean": 0.46333333337679505,
+            "p95": 0.900000000372529,
+            "max": 1.3999999999068677
+          },
+          "frameMs": {
+            "mean": 18.671666666663562,
+            "p95": 25.399999999906868,
+            "max": 31.5
+          },
+          "columnChecks": 0,
+          "lodMs": 0,
+          "vegetationMs": 1.799999998882413,
+          "drawCalls": 21,
+          "triangles": 26806
+        }
+      },
+      "lod": {
+        "requests": 0,
+        "generated": 0,
+        "evictions": 0,
+        "cancelled": 0,
+        "coarseCpuMs": 0,
+        "installationMs": 0,
+        "bytes": {
+          "0": 1951040,
+          "1": 0,
+          "2": 0
+        },
+        "firstGeometryMs": null,
+        "started": 24485.69999999972,
+        "queue": 0,
+        "maskPasses": 0,
+        "maskCpuMs": 0,
+        "planningCpuMs": 0,
+        "triangles": 0,
+        "drawCalls": 0,
+        "levels": {
+          "0": 23,
+          "1": 0,
+          "2": 0
+        },
+        "visibilityDistance": 512,
+        "predictive": true,
+        "refinementColumns": 0,
+        "tiles": 0,
+        "queueAgeMs": 0,
+        "gpuUploadMs": null
+      },
+      "vegetation": {
+        "requests": 8,
+        "evictions": 0,
+        "cancelled": 0,
+        "cacheHits": 16,
+        "transitions": 4,
+        "generationMs": 44.59999999962747,
+        "installationMs": 9.000000000465661,
+        "bytes": 106112,
+        "firstInstalledMs": 31.200000000186265,
+        "started": 24485.69999999972,
+        "aheadRequests": 0,
+        "lastRequestLatencyMs": 204.79999999981374,
+        "regions": 4,
+        "queue": 0,
+        "representedTrees": 7,
+        "levels": {
+          "0": 1,
+          "1": 7,
+          "2": 0
+        },
+        "proxyCells": 1352,
+        "proxyBoxes": 385,
+        "triangles": 4620,
+        "drawCalls": 8,
+        "queueAgeMs": 0,
+        "visibleCoverage": null,
+        "gpuUploadMs": null
+      },
+      "chunks": 23,
+      "geometry": 9
+    },
+    {
+      "size": [
+        50,
+        50
+      ],
+      "anchor": 20,
+      "mode": "polygonal",
+      "distantTerrain": true,
+      "distantVegetation": true,
+      "startupMs": 1041,
+      "firstCoarseMs": 20.199999999720603,
+      "steps": 220,
+      "drained": true,
+      "phases": {
+        "settled": {
+          "updateMs": {
+            "mean": 0.07166666667132328,
+            "p95": 0.20000000018626451,
+            "max": 0.3000000002793968
+          },
+          "drawSubmitMs": {
+            "mean": 1.1033333333209157,
+            "p95": 1.099999999627471,
+            "max": 25.699999999720603
+          },
+          "frameMs": {
+            "mean": 18.4,
+            "p95": 24.300000000279397,
+            "max": 84.5
+          },
+          "columnChecks": 0,
+          "lodMs": 1.1000000005587935,
+          "vegetationMs": 1.3999999999068677,
+          "drawCalls": 17,
+          "triangles": 20616
+        },
+        "moving": {
+          "updateMs": {
+            "mean": 2.8066666667116804,
+            "p95": 6.899999999906868,
+            "max": 8.100000000093132
+          },
+          "drawSubmitMs": {
+            "mean": 0.473333333292976,
+            "p95": 0.8000000002793968,
+            "max": 0.8999999999068677
+          },
+          "frameMs": {
+            "mean": 17.181666666672875,
+            "p95": 20.700000000186265,
+            "max": 30.100000000093132
+          },
+          "columnChecks": 441,
+          "lodMs": 2.200000000651926,
+          "vegetationMs": 1.2000000001862645,
+          "drawCalls": 17,
+          "triangles": 20616
+        },
+        "backtracking": {
+          "updateMs": {
+            "mean": 4.298333333331781,
+            "p95": 7.399999999906868,
+            "max": 8.399999999906868
+          },
+          "drawSubmitMs": {
+            "mean": 0.5050000000046566,
+            "p95": 0.8000000002793968,
+            "max": 1.2000000001862645
+          },
+          "frameMs": {
+            "mean": 20.578333333336438,
+            "p95": 26.200000000186265,
+            "max": 28.299999999813735
+          },
+          "columnChecks": 490,
+          "lodMs": 2.200000001117587,
+          "vegetationMs": 1.4999999995343387,
+          "drawCalls": 23,
+          "triangles": 30880
+        }
+      },
+      "lod": {
+        "requests": 2,
+        "generated": 2,
+        "evictions": 0,
+        "cancelled": 0,
+        "coarseCpuMs": 33.100000001024455,
+        "installationMs": 5.900000000372529,
+        "bytes": {
+          "0": 3337560,
+          "1": 201400,
+          "2": 0
+        },
+        "firstGeometryMs": 16.700000000186265,
+        "started": 28939.299999999814,
+        "queue": 0,
+        "maskPasses": 61,
+        "maskCpuMs": 5.500000001396984,
+        "planningCpuMs": 0.10000000009313226,
+        "requestedRegions": 1,
+        "distanceCandidateRegions": 1,
+        "missingRequestedTiles": 0,
+        "triangles": 1882,
+        "drawCalls": 1,
+        "levels": {
+          "0": 43,
+          "1": 1,
+          "2": 0
+        },
+        "visibilityDistance": 512,
+        "predictive": true,
+        "refinementColumns": 0,
+        "tiles": 1,
+        "queueAgeMs": 0,
+        "gpuUploadMs": null
+      },
+      "vegetation": {
+        "requests": 8,
+        "evictions": 0,
+        "cancelled": 0,
+        "cacheHits": 16,
+        "transitions": 4,
+        "generationMs": 44.59999999962747,
+        "installationMs": 9.299999999813735,
+        "bytes": 106112,
+        "firstInstalledMs": 49.299999999813735,
+        "started": 28939.299999999814,
+        "aheadRequests": 0,
+        "lastRequestLatencyMs": 226.59999999962747,
+        "regions": 4,
+        "queue": 0,
+        "representedTrees": 6,
+        "levels": {
+          "0": 2,
+          "1": 6,
+          "2": 0
+        },
+        "proxyCells": 1338,
+        "proxyBoxes": 378,
+        "triangles": 4536,
+        "drawCalls": 8,
+        "queueAgeMs": 0,
+        "visibleCoverage": null,
+        "gpuUploadMs": null
+      },
+      "chunks": 43,
+      "geometry": 11
+    },
+    {
+      "size": [
+        256,
+        256
+      ],
+      "anchor": 20,
+      "mode": "voxel",
+      "distantTerrain": false,
+      "distantVegetation": false,
+      "startupMs": 217.20000000018626,
+      "firstCoarseMs": null,
+      "steps": 40,
+      "drained": true,
+      "phases": {
+        "settled": {
+          "updateMs": {
+            "mean": 0.05333333332867672,
+            "p95": 0.19999999972060323,
+            "max": 0.20000000018626451
+          },
+          "drawSubmitMs": {
+            "mean": 0.4299999999968956,
+            "p95": 0.5,
+            "max": 6
+          },
+          "frameMs": {
+            "mean": 16.839999999998447,
+            "p95": 17,
+            "max": 42.60000000009313
+          },
+          "columnChecks": 0,
+          "lodMs": 0.09999999962747097,
+          "vegetationMs": 0.8999999999068677,
+          "drawCalls": 9,
+          "triangles": 12758
+        },
+        "moving": {
+          "updateMs": {
+            "mean": 2.2933333332883192,
+            "p95": 11.399999999906868,
+            "max": 12.299999999813735
+          },
+          "drawSubmitMs": {
+            "mean": 0.29000000006053595,
+            "p95": 0.5,
+            "max": 0.5
+          },
+          "frameMs": {
+            "mean": 16.668333333327123,
+            "p95": 17.300000000279397,
+            "max": 19.100000000093132
+          },
+          "columnChecks": 0,
+          "lodMs": 0.20000000018626451,
+          "vegetationMs": 0.8999999999068677,
+          "drawCalls": 9,
+          "triangles": 12758
+        },
+        "backtracking": {
+          "updateMs": {
+            "mean": 2.1566666666185483,
+            "p95": 12.299999999813735,
+            "max": 14
+          },
+          "drawSubmitMs": {
+            "mean": 0.2883333334000781,
+            "p95": 0.40000000037252903,
+            "max": 0.7000000001862645
+          },
+          "frameMs": {
+            "mean": 16.81000000000155,
+            "p95": 21.100000000093132,
+            "max": 22.700000000186265
+          },
+          "columnChecks": 0,
+          "lodMs": 0.19999999972060323,
+          "vegetationMs": 0.5999999991618097,
+          "drawCalls": 16,
+          "triangles": 24638
+        }
+      },
+      "lod": {
+        "requests": 0,
+        "generated": 0,
+        "evictions": 0,
+        "cancelled": 0,
+        "coarseCpuMs": 0,
+        "installationMs": 0,
+        "bytes": {
+          "0": 6404200,
+          "1": 0,
+          "2": 0
+        },
+        "firstGeometryMs": null,
+        "started": 33353.89999999991,
+        "queue": 0,
+        "maskPasses": 0,
+        "maskCpuMs": 0,
+        "planningCpuMs": 0,
+        "triangles": 0,
+        "drawCalls": 0,
+        "levels": {
+          "0": 43,
+          "1": 0,
+          "2": 0
+        },
+        "visibilityDistance": 512,
+        "predictive": true,
+        "refinementColumns": 0,
+        "tiles": 0,
+        "queueAgeMs": 0,
+        "gpuUploadMs": null
+      },
+      "vegetation": {
+        "requests": 0,
+        "evictions": 0,
+        "cancelled": 0,
+        "cacheHits": 0,
+        "transitions": 0,
+        "generationMs": 0,
+        "installationMs": 0,
+        "bytes": 0,
+        "firstInstalledMs": null,
+        "started": 33353.89999999991,
+        "aheadRequests": 0,
+        "regions": 0,
+        "queue": 0,
+        "representedTrees": 0,
+        "levels": {
+          "0": 0,
+          "1": 0,
+          "2": 0
+        },
+        "proxyCells": 0,
+        "proxyBoxes": 0,
+        "triangles": 0,
+        "drawCalls": 0,
+        "queueAgeMs": 0,
+        "visibleCoverage": null,
+        "gpuUploadMs": null
+      },
+      "chunks": 43,
+      "geometry": 11
+    },
+    {
+      "size": [
+        256,
+        256
+      ],
+      "anchor": 20,
+      "mode": "voxel",
+      "distantTerrain": true,
+      "distantVegetation": false,
+      "startupMs": 690.3999999999069,
+      "firstCoarseMs": 17.699999999720603,
+      "steps": 130,
+      "drained": true,
+      "phases": {
+        "settled": {
+          "updateMs": {
+            "mean": 0.050000000015522045,
+            "p95": 0.10000000009313226,
+            "max": 0.20000000018626451
+          },
+          "drawSubmitMs": {
+            "mean": 0.5566666666418314,
+            "p95": 0.8000000002793968,
+            "max": 9.100000000093132
+          },
+          "frameMs": {
+            "mean": 19.57666666666822,
+            "p95": 30.799999999813735,
+            "max": 85.89999999990687
+          },
+          "columnChecks": 0,
+          "lodMs": 0.8000000007450581,
+          "vegetationMs": 0.39999999990686774,
+          "drawCalls": 31,
+          "triangles": 36246
+        },
+        "moving": {
+          "updateMs": {
+            "mean": 2.610000000024835,
+            "p95": 4.800000000279397,
+            "max": 4.899999999906868
+          },
+          "drawSubmitMs": {
+            "mean": 0.3533333332976326,
+            "p95": 0.6000000000931323,
+            "max": 0.7000000001862645
+          },
+          "frameMs": {
+            "mean": 19.681666666672875,
+            "p95": 23.299999999813735,
+            "max": 27.699999999720603
+          },
+          "columnChecks": 14336,
+          "lodMs": 9.40000000083819,
+          "vegetationMs": 0.8999999999068677,
+          "drawCalls": 31,
+          "triangles": 36246
+        },
+        "backtracking": {
+          "updateMs": {
+            "mean": 3.873333333331781,
+            "p95": 4.899999999906868,
+            "max": 5.100000000093132
+          },
+          "drawSubmitMs": {
+            "mean": 0.4116666666620101,
+            "p95": 0.8999999999068677,
+            "max": 1.1000000000931323
+          },
+          "frameMs": {
+            "mean": 23.851666666660456,
+            "p95": 33.299999999813735,
+            "max": 37.799999999813735
+          },
+          "columnChecks": 18432,
+          "lodMs": 12.799999999813735,
+          "vegetationMs": 0.40000000037252903,
+          "drawCalls": 38,
+          "triangles": 47806
+        }
+      },
+      "lod": {
+        "requests": 20,
+        "generated": 20,
+        "evictions": 0,
+        "cancelled": 0,
+        "coarseCpuMs": 188.8999999994412,
+        "installationMs": 26.199999999720603,
+        "bytes": {
+          "0": 8366576,
+          "1": 1245184,
+          "2": 583680
+        },
+        "firstGeometryMs": 15.600000000093132,
+        "started": 36594.89999999991,
+        "queue": 0,
+        "maskPasses": 88,
+        "maskCpuMs": 39.09999999962747,
+        "planningCpuMs": 2,
+        "requestedRegions": 16,
+        "distanceCandidateRegions": 16,
+        "missingRequestedTiles": 0,
+        "triangles": 23168,
+        "drawCalls": 22,
+        "levels": {
+          "0": 54,
+          "1": 4,
+          "2": 12
+        },
+        "visibilityDistance": 512,
+        "predictive": true,
+        "refinementColumns": 0,
+        "tiles": 16,
+        "queueAgeMs": 0,
+        "gpuUploadMs": null
+      },
+      "vegetation": {
+        "requests": 0,
+        "evictions": 0,
+        "cancelled": 0,
+        "cacheHits": 0,
+        "transitions": 0,
+        "generationMs": 0,
+        "installationMs": 0,
+        "bytes": 0,
+        "firstInstalledMs": null,
+        "started": 36594.89999999991,
+        "aheadRequests": 0,
+        "regions": 0,
+        "queue": 0,
+        "representedTrees": 0,
+        "levels": {
+          "0": 0,
+          "1": 0,
+          "2": 0
+        },
+        "proxyCells": 0,
+        "proxyBoxes": 0,
+        "triangles": 0,
+        "drawCalls": 0,
+        "queueAgeMs": 0,
+        "visibleCoverage": null,
+        "gpuUploadMs": null
+      },
+      "chunks": 54,
+      "geometry": 27
+    },
+    {
+      "size": [
+        256,
+        256
+      ],
+      "anchor": 20,
+      "mode": "voxel",
+      "distantTerrain": false,
+      "distantVegetation": true,
+      "startupMs": 533.6000000000931,
+      "firstCoarseMs": null,
+      "steps": 200,
+      "drained": true,
+      "phases": {
+        "settled": {
+          "updateMs": {
+            "mean": 0.046666666655801235,
+            "p95": 0.10000000009313226,
+            "max": 0.19999999972060323
+          },
+          "drawSubmitMs": {
+            "mean": 1.425000000023283,
+            "p95": 1.5,
+            "max": 24.5
+          },
+          "frameMs": {
+            "mean": 44.09666666666356,
+            "p95": 51.1999999997206,
+            "max": 167
+          },
+          "columnChecks": 0,
+          "lodMs": 0,
+          "vegetationMs": 1.300000000745058,
+          "drawCalls": 75,
+          "triangles": 39314
+        },
+        "moving": {
+          "updateMs": {
+            "mean": 2.9600000000170743,
+            "p95": 11.399999999906868,
+            "max": 29.600000000093132
+          },
+          "drawSubmitMs": {
+            "mean": 0.8200000000108655,
+            "p95": 1.3999999999068677,
+            "max": 1.5
+          },
+          "frameMs": {
+            "mean": 45.93500000000155,
+            "p95": 63.60000000009313,
+            "max": 75.3000000002794
+          },
+          "columnChecks": 0,
+          "lodMs": 0.20000000018626451,
+          "vegetationMs": 16.899999999441206,
+          "drawCalls": 78,
+          "triangles": 39314
+        },
+        "backtracking": {
+          "updateMs": {
+            "mean": 3.2933333333116024,
+            "p95": 14.300000000279397,
+            "max": 17.799999999813735
+          },
+          "drawSubmitMs": {
+            "mean": 0.8350000000325963,
+            "p95": 1.3000000002793968,
+            "max": 2.900000000372529
+          },
+          "frameMs": {
+            "mean": 50.45499999999689,
+            "p95": 73.89999999990687,
+            "max": 78.79999999981374
+          },
+          "columnChecks": 0,
+          "lodMs": 0.10000000009313226,
+          "vegetationMs": 67.90000000083819,
+          "drawCalls": 88,
+          "triangles": 59270
+        }
+      },
+      "lod": {
+        "requests": 0,
+        "generated": 0,
+        "evictions": 0,
+        "cancelled": 0,
+        "coarseCpuMs": 0,
+        "installationMs": 0,
+        "bytes": {
+          "0": 6404200,
+          "1": 0,
+          "2": 0
+        },
+        "firstGeometryMs": null,
+        "started": 41076.19999999972,
+        "queue": 0,
+        "maskPasses": 0,
+        "maskCpuMs": 0,
+        "planningCpuMs": 0,
+        "triangles": 0,
+        "drawCalls": 0,
+        "levels": {
+          "0": 43,
+          "1": 0,
+          "2": 0
+        },
+        "visibilityDistance": 512,
+        "predictive": true,
+        "refinementColumns": 0,
+        "tiles": 0,
+        "queueAgeMs": 0,
+        "gpuUploadMs": null
+      },
+      "vegetation": {
+        "requests": 31,
+        "evictions": 0,
+        "cancelled": 1,
+        "cacheHits": 86,
+        "transitions": 6,
+        "generationMs": 307,
+        "installationMs": 49.5,
+        "bytes": 575296,
+        "firstInstalledMs": 42.8000000002794,
+        "started": 41076.19999999972,
+        "aheadRequests": 0,
+        "lastRequestLatencyMs": 2583.899999999907,
+        "regions": 24,
+        "queue": 0,
+        "representedTrees": 115,
+        "levels": {
+          "0": 2,
+          "1": 32,
+          "2": 83
+        },
+        "proxyCells": 8650,
+        "proxyBoxes": 2775,
+        "triangles": 33300,
+        "drawCalls": 73,
+        "queueAgeMs": 0,
+        "visibleCoverage": null,
+        "gpuUploadMs": null
+      },
+      "chunks": 43,
+      "geometry": 12
+    },
+    {
+      "size": [
+        256,
+        256
+      ],
+      "anchor": 20,
+      "mode": "voxel",
+      "distantTerrain": true,
+      "distantVegetation": true,
+      "startupMs": 1026.2999999998137,
+      "firstCoarseMs": 14,
+      "steps": 170,
+      "drained": true,
+      "phases": {
+        "settled": {
+          "updateMs": {
+            "mean": 0.051666666644935806,
+            "p95": 0.19999999972060323,
+            "max": 0.20000000018626451
+          },
+          "drawSubmitMs": {
+            "mean": 1.5200000000263876,
+            "p95": 1.7999999998137355,
+            "max": 26.200000000186265
+          },
+          "frameMs": {
+            "mean": 59.233333333333334,
+            "p95": 94.70000000018626,
+            "max": 179.60000000009313
+          },
+          "columnChecks": 0,
+          "lodMs": 0.7999999998137355,
+          "vegetationMs": 0.6000000000931323,
+          "drawCalls": 97,
+          "triangles": 62802
+        },
+        "moving": {
+          "updateMs": {
+            "mean": 2.8699999999875825,
+            "p95": 5.7999999998137355,
+            "max": 6.5
+          },
+          "drawSubmitMs": {
+            "mean": 0.9800000000201786,
+            "p95": 1.400000000372529,
+            "max": 4.2999999998137355
+          },
+          "frameMs": {
+            "mean": 57.61333333333023,
+            "p95": 67.5,
+            "max": 69.90000000037253
+          },
+          "columnChecks": 12288,
+          "lodMs": 8.59999999916181,
+          "vegetationMs": 12.699999999720603,
+          "drawCalls": 99,
+          "triangles": 62802
+        },
+        "backtracking": {
+          "updateMs": {
+            "mean": 4.005000000020178,
+            "p95": 6.399999999906868,
+            "max": 9.900000000372529
+          },
+          "drawSubmitMs": {
+            "mean": 1.0566666666651146,
+            "p95": 1.6000000000931323,
+            "max": 2
+          },
+          "frameMs": {
+            "mean": 64.80666666666511,
+            "p95": 78.70000000018626,
+            "max": 86.89999999990687
+          },
+          "columnChecks": 12288,
+          "lodMs": 8.200000000651926,
+          "vegetationMs": 70.5,
+          "drawCalls": 110,
+          "triangles": 82502
+        }
+      },
+      "lod": {
+        "requests": 20,
+        "generated": 20,
+        "evictions": 0,
+        "cancelled": 0,
+        "coarseCpuMs": 165.60000000009313,
+        "installationMs": 17.99999999953434,
+        "bytes": {
+          "0": 6660040,
+          "1": 1245184,
+          "2": 583680
+        },
+        "firstGeometryMs": 9.700000000186265,
+        "started": 50042.19999999972,
+        "queue": 0,
+        "maskPasses": 80,
+        "maskCpuMs": 35.700000000651926,
+        "planningCpuMs": 1.2000000001862645,
+        "requestedRegions": 16,
+        "distanceCandidateRegions": 16,
+        "missingRequestedTiles": 0,
+        "triangles": 23232,
+        "drawCalls": 22,
+        "levels": {
+          "0": 45,
+          "1": 4,
+          "2": 12
+        },
+        "visibilityDistance": 512,
+        "predictive": true,
+        "refinementColumns": 0,
+        "tiles": 16,
+        "queueAgeMs": 0,
+        "gpuUploadMs": null
+      },
+      "vegetation": {
+        "requests": 31,
+        "evictions": 0,
+        "cancelled": 1,
+        "cacheHits": 86,
+        "transitions": 6,
+        "generationMs": 267.59999999962747,
+        "installationMs": 41,
+        "bytes": 575296,
+        "firstInstalledMs": 43,
+        "started": 50042.09999999963,
+        "aheadRequests": 0,
+        "lastRequestLatencyMs": 3670.2999999998137,
+        "regions": 24,
+        "queue": 0,
+        "representedTrees": 115,
+        "levels": {
+          "0": 2,
+          "1": 32,
+          "2": 83
+        },
+        "proxyCells": 8650,
+        "proxyBoxes": 2775,
+        "triangles": 33300,
+        "drawCalls": 73,
+        "queueAgeMs": 0,
+        "visibleCoverage": null,
+        "gpuUploadMs": null
+      },
+      "chunks": 45,
+      "geometry": 28
+    },
+    {
+      "size": [
+        256,
+        256
+      ],
+      "anchor": 20,
+      "mode": "polygonal",
+      "distantTerrain": false,
+      "distantVegetation": false,
+      "startupMs": 1417.1000000000931,
+      "firstCoarseMs": null,
+      "steps": 320,
+      "drained": true,
+      "phases": {
+        "settled": {
+          "updateMs": {
+            "mean": 0.05999999999379118,
+            "p95": 0.10000000009313226,
+            "max": 0.20000000018626451
+          },
+          "drawSubmitMs": {
+            "mean": 0.47166666663251816,
+            "p95": 0.6000000000931323,
+            "max": 6.699999999720603
+          },
+          "frameMs": {
+            "mean": 16.818333333334884,
+            "p95": 17.200000000186265,
+            "max": 41.89999999990687
+          },
+          "columnChecks": 0,
+          "lodMs": 0.20000000018626451,
+          "vegetationMs": 0.6999999997206032,
+          "drawCalls": 9,
+          "triangles": 12758
+        },
+        "moving": {
+          "updateMs": {
+            "mean": 2.8200000000263876,
+            "p95": 5,
+            "max": 9.600000000093132
+          },
+          "drawSubmitMs": {
+            "mean": 0.2599999999705081,
+            "p95": 0.6000000000931323,
+            "max": 1.1000000000931323
+          },
+          "frameMs": {
+            "mean": 16.65166666666822,
+            "p95": 17,
+            "max": 17.100000000093132
+          },
+          "columnChecks": 0,
+          "lodMs": 0.20000000018626451,
+          "vegetationMs": 0.8000000002793968,
+          "drawCalls": 9,
+          "triangles": 12758
+        },
+        "backtracking": {
+          "updateMs": {
+            "mean": 4.103333333336438,
+            "p95": 5.100000000093132,
+            "max": 7.899999999906868
+          },
+          "drawSubmitMs": {
+            "mean": 0.1833333333255723,
+            "p95": 0.3000000002793968,
+            "max": 0.39999999990686774
+          },
+          "frameMs": {
+            "mean": 16.66166666666201,
+            "p95": 17,
+            "max": 17.09999999962747
+          },
+          "columnChecks": 0,
+          "lodMs": 0.10000000009313226,
+          "vegetationMs": 0.8000000002793968,
+          "drawCalls": 11,
+          "triangles": 17272
+        }
+      },
+      "lod": {
+        "requests": 0,
+        "generated": 0,
+        "evictions": 0,
+        "cancelled": 0,
+        "coarseCpuMs": 0,
+        "installationMs": 0,
+        "bytes": {
+          "0": 1584192,
+          "1": 0,
+          "2": 0
+        },
+        "firstGeometryMs": null,
+        "started": 61971.39999999991,
+        "queue": 0,
+        "maskPasses": 0,
+        "maskCpuMs": 0,
+        "planningCpuMs": 0,
+        "triangles": 0,
+        "drawCalls": 0,
+        "levels": {
+          "0": 19,
+          "1": 0,
+          "2": 0
+        },
+        "visibilityDistance": 512,
+        "predictive": true,
+        "refinementColumns": 0,
+        "tiles": 0,
+        "queueAgeMs": 0,
+        "gpuUploadMs": null
+      },
+      "vegetation": {
+        "requests": 0,
+        "evictions": 0,
+        "cancelled": 0,
+        "cacheHits": 0,
+        "transitions": 0,
+        "generationMs": 0,
+        "installationMs": 0,
+        "bytes": 0,
+        "firstInstalledMs": null,
+        "started": 61971.39999999991,
+        "aheadRequests": 0,
+        "regions": 0,
+        "queue": 0,
+        "representedTrees": 0,
+        "levels": {
+          "0": 0,
+          "1": 0,
+          "2": 0
+        },
+        "proxyCells": 0,
+        "proxyBoxes": 0,
+        "triangles": 0,
+        "drawCalls": 0,
+        "queueAgeMs": 0,
+        "visibleCoverage": null,
+        "gpuUploadMs": null
+      },
+      "chunks": 19,
+      "geometry": 7
+    },
+    {
+      "size": [
+        256,
+        256
+      ],
+      "anchor": 20,
+      "mode": "polygonal",
+      "distantTerrain": true,
+      "distantVegetation": false,
+      "startupMs": 1388.1000000000931,
+      "firstCoarseMs": 17.600000000093132,
+      "steps": 280,
+      "drained": true,
+      "phases": {
+        "settled": {
+          "updateMs": {
+            "mean": 0.06833333330384145,
+            "p95": 0.19999999972060323,
+            "max": 0.19999999972060323
+          },
+          "drawSubmitMs": {
+            "mean": 0.6850000000170743,
+            "p95": 1.3000000002793968,
+            "max": 9.699999999720603
+          },
+          "frameMs": {
+            "mean": 28.40999999999379,
+            "p95": 77.09999999962747,
+            "max": 106
+          },
+          "columnChecks": 0,
+          "lodMs": 1.4999999981373549,
+          "vegetationMs": 0.6000000005587935,
+          "drawCalls": 31,
+          "triangles": 36246
+        },
+        "moving": {
+          "updateMs": {
+            "mean": 2.7783333333519598,
+            "p95": 5,
+            "max": 7.7999999998137355
+          },
+          "drawSubmitMs": {
+            "mean": 0.36999999997206034,
+            "p95": 0.6000000000931323,
+            "max": 0.900000000372529
+          },
+          "frameMs": {
+            "mean": 23.803333333328677,
+            "p95": 31.699999999720603,
+            "max": 34.3000000002794
+          },
+          "columnChecks": 6144,
+          "lodMs": 5.400000000372529,
+          "vegetationMs": 0.7000000006519258,
+          "drawCalls": 31,
+          "triangles": 36246
+        },
+        "backtracking": {
+          "updateMs": {
+            "mean": 4.31333333333799,
+            "p95": 7.2999999998137355,
+            "max": 9.599999999627471
+          },
+          "drawSubmitMs": {
+            "mean": 0.49999999998447797,
+            "p95": 1,
+            "max": 1.5
+          },
+          "frameMs": {
+            "mean": 31.970000000003104,
+            "p95": 49.200000000186265,
+            "max": 85
+          },
+          "columnChecks": 8192,
+          "lodMs": 6.000000000931323,
+          "vegetationMs": 0.6000000000931323,
+          "drawCalls": 34,
+          "triangles": 42990
+        }
+      },
+      "lod": {
+        "requests": 20,
+        "generated": 20,
+        "evictions": 0,
+        "cancelled": 0,
+        "coarseCpuMs": 156.79999999981374,
+        "installationMs": 20.200000000651926,
+        "bytes": {
+          "0": 3076152,
+          "1": 1245184,
+          "2": 583680
+        },
+        "firstGeometryMs": 14.800000000279397,
+        "started": 66400.09999999963,
+        "queue": 0,
+        "maskPasses": 72,
+        "maskCpuMs": 31.300000000279397,
+        "planningCpuMs": 1.2999999998137355,
+        "requestedRegions": 16,
+        "distanceCandidateRegions": 16,
+        "missingRequestedTiles": 0,
+        "triangles": 23360,
+        "drawCalls": 22,
+        "levels": {
+          "0": 40,
+          "1": 4,
+          "2": 12
+        },
+        "visibilityDistance": 512,
+        "predictive": true,
+        "refinementColumns": 0,
+        "tiles": 16,
+        "queueAgeMs": 0,
+        "gpuUploadMs": null
+      },
+      "vegetation": {
+        "requests": 0,
+        "evictions": 0,
+        "cancelled": 0,
+        "cacheHits": 0,
+        "transitions": 0,
+        "generationMs": 0,
+        "installationMs": 0,
+        "bytes": 0,
+        "firstInstalledMs": null,
+        "started": 66400.09999999963,
+        "aheadRequests": 0,
+        "regions": 0,
+        "queue": 0,
+        "representedTrees": 0,
+        "levels": {
+          "0": 0,
+          "1": 0,
+          "2": 0
+        },
+        "proxyCells": 0,
+        "proxyBoxes": 0,
+        "triangles": 0,
+        "drawCalls": 0,
+        "queueAgeMs": 0,
+        "visibleCoverage": null,
+        "gpuUploadMs": null
+      },
+      "chunks": 40,
+      "geometry": 24
+    },
+    {
+      "size": [
+        256,
+        256
+      ],
+      "anchor": 20,
+      "mode": "polygonal",
+      "distantTerrain": false,
+      "distantVegetation": true,
+      "startupMs": 1488.8000000002794,
+      "firstCoarseMs": null,
+      "steps": 290,
+      "drained": true,
+      "phases": {
+        "settled": {
+          "updateMs": {
+            "mean": 0.04333333329608043,
+            "p95": 0.10000000009313226,
+            "max": 0.19999999972060323
+          },
+          "drawSubmitMs": {
+            "mean": 1.3716666666868453,
+            "p95": 1.400000000372529,
+            "max": 26.399999999906868
+          },
+          "frameMs": {
+            "mean": 44.05833333333333,
+            "p95": 49.700000000186265,
+            "max": 182.09999999962747
+          },
+          "columnChecks": 0,
+          "lodMs": 0,
+          "vegetationMs": 1.199999999254942,
+          "drawCalls": 75,
+          "triangles": 39314
+        },
+        "moving": {
+          "updateMs": {
+            "mean": 3.0933333333504076,
+            "p95": 7.600000000093132,
+            "max": 10.200000000186265
+          },
+          "drawSubmitMs": {
+            "mean": 0.7949999999953434,
+            "p95": 1.2000000001862645,
+            "max": 2
+          },
+          "frameMs": {
+            "mean": 47.43500000000155,
+            "p95": 60.10000000009313,
+            "max": 67.70000000018626
+          },
+          "columnChecks": 0,
+          "lodMs": 0,
+          "vegetationMs": 15.40000000083819,
+          "drawCalls": 76,
+          "triangles": 39314
+        },
+        "backtracking": {
+          "updateMs": {
+            "mean": 5.25333333335196,
+            "p95": 8,
+            "max": 10.600000000093132
+          },
+          "drawSubmitMs": {
+            "mean": 0.8716666666402791,
+            "p95": 1.6999999997206032,
+            "max": 3.2000000001862645
+          },
+          "frameMs": {
+            "mean": 57.50833333333333,
+            "p95": 73.90000000037253,
+            "max": 93
+          },
+          "columnChecks": 0,
+          "lodMs": 0,
+          "vegetationMs": 67.30000000074506,
+          "drawCalls": 84,
+          "triangles": 51034
+        }
+      },
+      "lod": {
+        "requests": 0,
+        "generated": 0,
+        "evictions": 0,
+        "cancelled": 0,
+        "coarseCpuMs": 0,
+        "installationMs": 0,
+        "bytes": {
+          "0": 1818720,
+          "1": 0,
+          "2": 0
+        },
+        "firstGeometryMs": null,
+        "started": 72843,
+        "queue": 0,
+        "maskPasses": 0,
+        "maskCpuMs": 0,
+        "planningCpuMs": 0,
+        "triangles": 0,
+        "drawCalls": 0,
+        "levels": {
+          "0": 22,
+          "1": 0,
+          "2": 0
+        },
+        "visibilityDistance": 512,
+        "predictive": true,
+        "refinementColumns": 0,
+        "tiles": 0,
+        "queueAgeMs": 0,
+        "gpuUploadMs": null
+      },
+      "vegetation": {
+        "requests": 31,
+        "evictions": 0,
+        "cancelled": 1,
+        "cacheHits": 86,
+        "transitions": 5,
+        "generationMs": 292.60000000102445,
+        "installationMs": 43.799999999348074,
+        "bytes": 514048,
+        "firstInstalledMs": 34,
+        "started": 72842.8999999999,
+        "aheadRequests": 0,
+        "lastRequestLatencyMs": 1725.7999999998137,
+        "regions": 24,
+        "queue": 1,
+        "representedTrees": 116,
+        "levels": {
+          "0": 1,
+          "1": 27,
+          "2": 89
+        },
+        "proxyCells": 7726,
+        "proxyBoxes": 2520,
+        "triangles": 30240,
+        "drawCalls": 73,
+        "queueAgeMs": 3405,
+        "visibleCoverage": null,
+        "gpuUploadMs": null
+      },
+      "chunks": 22,
+      "geometry": 9
+    },
+    {
+      "size": [
+        256,
+        256
+      ],
+      "anchor": 20,
+      "mode": "polygonal",
+      "distantTerrain": true,
+      "distantVegetation": true,
+      "startupMs": 1597.7000000001863,
+      "firstCoarseMs": 14.399999999906868,
+      "steps": 270,
+      "drained": true,
+      "phases": {
+        "settled": {
+          "updateMs": {
+            "mean": 0.04833333333178113,
+            "p95": 0.10000000009313226,
+            "max": 0.20000000018626451
+          },
+          "drawSubmitMs": {
+            "mean": 1.7533333333209158,
+            "p95": 3.1000000000931323,
+            "max": 31.299999999813735
+          },
+          "frameMs": {
+            "mean": 57.80333333332867,
+            "p95": 67.8000000002794,
+            "max": 192.39999999990687
+          },
+          "columnChecks": 0,
+          "lodMs": 0.7000000006519258,
+          "vegetationMs": 0.4999999995343387,
+          "drawCalls": 97,
+          "triangles": 62802
+        },
+        "moving": {
+          "updateMs": {
+            "mean": 3.0699999999798213,
+            "p95": 7.699999999720603,
+            "max": 8
+          },
+          "drawSubmitMs": {
+            "mean": 0.9516666666371748,
+            "p95": 1.5,
+            "max": 2.7999999998137355
+          },
+          "frameMs": {
+            "mean": 59.55833333333333,
+            "p95": 74,
+            "max": 90.70000000018626
+          },
+          "columnChecks": 6144,
+          "lodMs": 3.799999999348074,
+          "vegetationMs": 12.199999999254942,
+          "drawCalls": 98,
+          "triangles": 62802
+        },
+        "backtracking": {
+          "updateMs": {
+            "mean": 4.016666666651145,
+            "p95": 8,
+            "max": 9.799999999813735
+          },
+          "drawSubmitMs": {
+            "mean": 1.0233333333473031,
+            "p95": 1.7000000001862645,
+            "max": 2.6000000000931323
+          },
+          "frameMs": {
+            "mean": 64.35,
+            "p95": 80.29999999981374,
+            "max": 86.29999999981374
+          },
+          "columnChecks": 10240,
+          "lodMs": 7.199999999720603,
+          "vegetationMs": 65.09999999962747,
+          "drawCalls": 106,
+          "triangles": 74330
+        }
+      },
+      "lod": {
+        "requests": 20,
+        "generated": 20,
+        "evictions": 0,
+        "cancelled": 0,
+        "coarseCpuMs": 182.79999999841675,
+        "installationMs": 22.200000000651926,
+        "bytes": {
+          "0": 3132296,
+          "1": 1245184,
+          "2": 583680
+        },
+        "firstGeometryMs": 10.300000000279397,
+        "started": 83274.69999999972,
+        "queue": 0,
+        "maskPasses": 74,
+        "maskCpuMs": 29.49999999953434,
+        "planningCpuMs": 1.099999999627471,
+        "requestedRegions": 16,
+        "distanceCandidateRegions": 16,
+        "missingRequestedTiles": 0,
+        "triangles": 23296,
+        "drawCalls": 22,
+        "levels": {
+          "0": 40,
+          "1": 4,
+          "2": 12
+        },
+        "visibilityDistance": 512,
+        "predictive": true,
+        "refinementColumns": 0,
+        "tiles": 16,
+        "queueAgeMs": 0,
+        "gpuUploadMs": null
+      },
+      "vegetation": {
+        "requests": 31,
+        "evictions": 0,
+        "cancelled": 1,
+        "cacheHits": 86,
+        "transitions": 5,
+        "generationMs": 286.5,
+        "installationMs": 36.799999999348074,
+        "bytes": 514048,
+        "firstInstalledMs": 47.3000000002794,
+        "started": 83274.69999999972,
+        "aheadRequests": 0,
+        "lastRequestLatencyMs": 1867.1999999997206,
+        "regions": 24,
+        "queue": 1,
+        "representedTrees": 115,
+        "levels": {
+          "0": 2,
+          "1": 26,
+          "2": 89
+        },
+        "proxyCells": 7717,
+        "proxyBoxes": 2515,
+        "triangles": 30180,
+        "drawCalls": 73,
+        "queueAgeMs": 3804.0999999996275,
+        "visibleCoverage": null,
+        "gpuUploadMs": null
+      },
+      "chunks": 40,
+      "geometry": 25
+    },
+    {
+      "size": [
+        1000,
+        2000
+      ],
+      "anchor": 20,
+      "mode": "voxel",
+      "distantTerrain": false,
+      "distantVegetation": false,
+      "startupMs": 287,
+      "firstCoarseMs": null,
+      "steps": 40,
+      "drained": true,
+      "phases": {
+        "settled": {
+          "updateMs": {
+            "mean": 0.05499999998913457,
+            "p95": 0.10000000009313226,
+            "max": 0.20000000018626451
+          },
+          "drawSubmitMs": {
+            "mean": 0.45333333338300386,
+            "p95": 0.5,
+            "max": 6.5
+          },
+          "frameMs": {
+            "mean": 16.921666666663562,
+            "p95": 17.100000000093132,
+            "max": 44.799999999813735
+          },
+          "columnChecks": 0,
+          "lodMs": 0.2999999998137355,
+          "vegetationMs": 0.5999999991618097,
+          "drawCalls": 9,
+          "triangles": 12758
+        },
+        "moving": {
+          "updateMs": {
+            "mean": 2.7316666666806366,
+            "p95": 13.700000000186265,
+            "max": 15.899999999906868
+          },
+          "drawSubmitMs": {
+            "mean": 0.313333333345751,
+            "p95": 0.5,
+            "max": 0.6000000000931323
+          },
+          "frameMs": {
+            "mean": 16.66166666666977,
+            "p95": 19.700000000186265,
+            "max": 21.299999999813735
+          },
+          "columnChecks": 0,
+          "lodMs": 0.09999999962747097,
+          "vegetationMs": 0.8000000007450581,
+          "drawCalls": 9,
+          "triangles": 12758
+        },
+        "backtracking": {
+          "updateMs": {
+            "mean": 2.8966666666558014,
+            "p95": 17.59999999962747,
+            "max": 20.100000000093132
+          },
+          "drawSubmitMs": {
+            "mean": 0.35166666666045787,
+            "p95": 0.6000000000931323,
+            "max": 0.8000000002793968
+          },
+          "frameMs": {
+            "mean": 17.756666666665115,
+            "p95": 28,
+            "max": 34.90000000037253
+          },
+          "columnChecks": 0,
+          "lodMs": 0.10000000009313226,
+          "vegetationMs": 0.7000000006519258,
+          "drawCalls": 16,
+          "triangles": 24638
+        }
+      },
+      "lod": {
+        "requests": 0,
+        "generated": 0,
+        "evictions": 0,
+        "cancelled": 0,
+        "coarseCpuMs": 0,
+        "installationMs": 0,
+        "bytes": {
+          "0": 6404200,
+          "1": 0,
+          "2": 0
+        },
+        "firstGeometryMs": null,
+        "started": 95778,
+        "queue": 0,
+        "maskPasses": 0,
+        "maskCpuMs": 0,
+        "planningCpuMs": 0,
+        "triangles": 0,
+        "drawCalls": 0,
+        "levels": {
+          "0": 43,
+          "1": 0,
+          "2": 0
+        },
+        "visibilityDistance": 512,
+        "predictive": true,
+        "refinementColumns": 0,
+        "tiles": 0,
+        "queueAgeMs": 0,
+        "gpuUploadMs": null
+      },
+      "vegetation": {
+        "requests": 0,
+        "evictions": 0,
+        "cancelled": 0,
+        "cacheHits": 0,
+        "transitions": 0,
+        "generationMs": 0,
+        "installationMs": 0,
+        "bytes": 0,
+        "firstInstalledMs": null,
+        "started": 95778,
+        "aheadRequests": 0,
+        "regions": 0,
+        "queue": 0,
+        "representedTrees": 0,
+        "levels": {
+          "0": 0,
+          "1": 0,
+          "2": 0
+        },
+        "proxyCells": 0,
+        "proxyBoxes": 0,
+        "triangles": 0,
+        "drawCalls": 0,
+        "queueAgeMs": 0,
+        "visibleCoverage": null,
+        "gpuUploadMs": null
+      },
+      "chunks": 43,
+      "geometry": 11
+    },
+    {
+      "size": [
+        1000,
+        2000
+      ],
+      "anchor": 20,
+      "mode": "voxel",
+      "distantTerrain": true,
+      "distantVegetation": false,
+      "startupMs": 1069.7000000001863,
+      "firstCoarseMs": 25.600000000093132,
+      "steps": 180,
+      "drained": true,
+      "phases": {
+        "settled": {
+          "updateMs": {
+            "mean": 0.058333333333333334,
+            "p95": 0.10000000009313226,
+            "max": 0.20000000018626451
+          },
+          "drawSubmitMs": {
+            "mean": 0.9133333333379899,
+            "p95": 1.3000000002793968,
+            "max": 12
+          },
+          "frameMs": {
+            "mean": 28.681666666665116,
+            "p95": 33.5,
+            "max": 92.10000000009313
+          },
+          "columnChecks": 0,
+          "lodMs": 0.8999999994412065,
+          "vegetationMs": 0.6999999992549419,
+          "drawCalls": 111,
+          "triangles": 66966
+        },
+        "moving": {
+          "updateMs": {
+            "mean": 2.961666666669771,
+            "p95": 6.699999999720603,
+            "max": 8.5
+          },
+          "drawSubmitMs": {
+            "mean": 0.7050000000434617,
+            "p95": 1.3000000002793968,
+            "max": 1.400000000372529
+          },
+          "frameMs": {
+            "mean": 33.74333333332712,
+            "p95": 42.700000000186265,
+            "max": 48.5
+          },
+          "columnChecks": 45760,
+          "lodMs": 24.40000000083819,
+          "vegetationMs": 0.3000000002793968,
+          "drawCalls": 111,
+          "triangles": 66966
+        },
+        "backtracking": {
+          "updateMs": {
+            "mean": 4.694999999964299,
+            "p95": 6.800000000279397,
+            "max": 7.7000000001862645
+          },
+          "drawSubmitMs": {
+            "mean": 0.738333333353512,
+            "p95": 1.1000000000931323,
+            "max": 1.5
+          },
+          "frameMs": {
+            "mean": 36.7700000000031,
+            "p95": 49.89999999990687,
+            "max": 53.200000000186265
+          },
+          "columnChecks": 68992,
+          "lodMs": 44.09999999869615,
+          "vegetationMs": 0.599999999627471,
+          "drawCalls": 121,
+          "triangles": 79230
+        }
+      },
+      "lod": {
+        "requests": 73,
+        "generated": 73,
+        "evictions": 4,
+        "cancelled": 0,
+        "coarseCpuMs": 317.89999999757856,
+        "installationMs": 43.200000000651926,
+        "bytes": {
+          "0": 7357984,
+          "1": 1245184,
+          "2": 2967040
+        },
+        "firstGeometryMs": 23.100000000093132,
+        "started": 99148.69999999972,
+        "queue": 0,
+        "maskPasses": 119,
+        "maskCpuMs": 116.20000000111759,
+        "planningCpuMs": 4.999999999534339,
+        "requestedRegions": 65,
+        "distanceCandidateRegions": 65,
+        "missingRequestedTiles": 0,
+        "triangles": 54592,
+        "drawCalls": 103,
+        "levels": {
+          "0": 48,
+          "1": 4,
+          "2": 61
+        },
+        "visibilityDistance": 512,
+        "predictive": true,
+        "refinementColumns": 0,
+        "tiles": 65,
+        "queueAgeMs": 0,
+        "gpuUploadMs": null
+      },
+      "vegetation": {
+        "requests": 0,
+        "evictions": 0,
+        "cancelled": 0,
+        "cacheHits": 0,
+        "transitions": 0,
+        "generationMs": 0,
+        "installationMs": 0,
+        "bytes": 0,
+        "firstInstalledMs": null,
+        "started": 99148.59999999963,
+        "aheadRequests": 0,
+        "regions": 0,
+        "queue": 0,
+        "representedTrees": 0,
+        "levels": {
+          "0": 0,
+          "1": 0,
+          "2": 0
+        },
+        "proxyCells": 0,
+        "proxyBoxes": 0,
+        "triangles": 0,
+        "drawCalls": 0,
+        "queueAgeMs": 0,
+        "visibleCoverage": null,
+        "gpuUploadMs": null
+      },
+      "chunks": 48,
+      "geometry": 76
+    },
+    {
+      "size": [
+        1000,
+        2000
+      ],
+      "anchor": 20,
+      "mode": "voxel",
+      "distantTerrain": false,
+      "distantVegetation": true,
+      "startupMs": 587.2999999998137,
+      "firstCoarseMs": null,
+      "steps": 200,
+      "drained": true,
+      "phases": {
+        "settled": {
+          "updateMs": {
+            "mean": 0.035000000001552206,
+            "p95": 0.10000000009313226,
+            "max": 0.20000000018626451
+          },
+          "drawSubmitMs": {
+            "mean": 1.3683333333348855,
+            "p95": 1.3000000002793968,
+            "max": 30.5
+          },
+          "frameMs": {
+            "mean": 44.49166666666667,
+            "p95": 59.200000000186265,
+            "max": 180.60000000009313
+          },
+          "columnChecks": 0,
+          "lodMs": 0.2999999998137355,
+          "vegetationMs": 0.5,
+          "drawCalls": 75,
+          "triangles": 39314
+        },
+        "moving": {
+          "updateMs": {
+            "mean": 3.214999999982926,
+            "p95": 15.199999999720603,
+            "max": 26.699999999720603
+          },
+          "drawSubmitMs": {
+            "mean": 1.0833333333876605,
+            "p95": 2,
+            "max": 4.5
+          },
+          "frameMs": {
+            "mean": 48.753333333336435,
+            "p95": 81.60000000009313,
+            "max": 86.1999999997206
+          },
+          "columnChecks": 0,
+          "lodMs": 0.10000000009313226,
+          "vegetationMs": 15.400000000372529,
+          "drawCalls": 78,
+          "triangles": 39314
+        },
+        "backtracking": {
+          "updateMs": {
+            "mean": 3.373333333331781,
+            "p95": 13.900000000372529,
+            "max": 18.899999999906868
+          },
+          "drawSubmitMs": {
+            "mean": 0.9399999999596427,
+            "p95": 2.099999999627471,
+            "max": 2.6999999997206032
+          },
+          "frameMs": {
+            "mean": 52.725,
+            "p95": 72.3000000002794,
+            "max": 78.79999999981374
+          },
+          "columnChecks": 0,
+          "lodMs": 0.20000000018626451,
+          "vegetationMs": 72.20000000065193,
+          "drawCalls": 88,
+          "triangles": 59270
+        }
+      },
+      "lod": {
+        "requests": 0,
+        "generated": 0,
+        "evictions": 0,
+        "cancelled": 0,
+        "coarseCpuMs": 0,
+        "installationMs": 0,
+        "bytes": {
+          "0": 6404200,
+          "1": 0,
+          "2": 0
+        },
+        "firstGeometryMs": null,
+        "started": 106174.19999999972,
+        "queue": 0,
+        "maskPasses": 0,
+        "maskCpuMs": 0,
+        "planningCpuMs": 0,
+        "triangles": 0,
+        "drawCalls": 0,
+        "levels": {
+          "0": 43,
+          "1": 0,
+          "2": 0
+        },
+        "visibilityDistance": 512,
+        "predictive": true,
+        "refinementColumns": 0,
+        "tiles": 0,
+        "queueAgeMs": 0,
+        "gpuUploadMs": null
+      },
+      "vegetation": {
+        "requests": 31,
+        "evictions": 0,
+        "cancelled": 1,
+        "cacheHits": 86,
+        "transitions": 6,
+        "generationMs": 300.79999999841675,
+        "installationMs": 41.89999999944121,
+        "bytes": 575296,
+        "firstInstalledMs": 39.60000000009313,
+        "started": 106174.19999999972,
+        "aheadRequests": 0,
+        "lastRequestLatencyMs": 3048.5,
+        "regions": 24,
+        "queue": 0,
+        "representedTrees": 115,
+        "levels": {
+          "0": 2,
+          "1": 32,
+          "2": 83
+        },
+        "proxyCells": 8650,
+        "proxyBoxes": 2775,
+        "triangles": 33300,
+        "drawCalls": 73,
+        "queueAgeMs": 0,
+        "visibleCoverage": null,
+        "gpuUploadMs": null
+      },
+      "chunks": 43,
+      "geometry": 12
+    },
+    {
+      "size": [
+        1000,
+        2000
+      ],
+      "anchor": 20,
+      "mode": "voxel",
+      "distantTerrain": true,
+      "distantVegetation": true,
+      "startupMs": 1335.7999999998137,
+      "firstCoarseMs": 15.5,
+      "steps": 190,
+      "drained": true,
+      "phases": {
+        "settled": {
+          "updateMs": {
+            "mean": 0.06166666665424903,
+            "p95": 0.19999999972060323,
+            "max": 0.19999999972060323
+          },
+          "drawSubmitMs": {
+            "mean": 1.9400000000217308,
+            "p95": 2.6000000000931323,
+            "max": 28.700000000186265
+          },
+          "frameMs": {
+            "mean": 67.10833333333333,
+            "p95": 79.39999999990687,
+            "max": 195.60000000009313
+          },
+          "columnChecks": 0,
+          "lodMs": 1.5000000004656613,
+          "vegetationMs": 0.599999999627471,
+          "drawCalls": 177,
+          "triangles": 93522
+        },
+        "moving": {
+          "updateMs": {
+            "mean": 3.250000000007761,
+            "p95": 6.7999999998137355,
+            "max": 9.200000000186265
+          },
+          "drawSubmitMs": {
+            "mean": 1.3299999999580905,
+            "p95": 2,
+            "max": 2.1999999997206032
+          },
+          "frameMs": {
+            "mean": 68.81333333333023,
+            "p95": 80.5,
+            "max": 87
+          },
+          "columnChecks": 45760,
+          "lodMs": 23.99999999953434,
+          "vegetationMs": 11.400000000372529,
+          "drawCalls": 180,
+          "triangles": 93522
+        },
+        "backtracking": {
+          "updateMs": {
+            "mean": 4.709999999978269,
+            "p95": 9.100000000093132,
+            "max": 12.200000000186265
+          },
+          "drawSubmitMs": {
+            "mean": 1.4366666666697712,
+            "p95": 2.2000000001862645,
+            "max": 2.5
+          },
+          "frameMs": {
+            "mean": 76.875,
+            "p95": 90.79999999981374,
+            "max": 94.10000000009313
+          },
+          "columnChecks": 65088,
+          "lodMs": 51,
+          "vegetationMs": 72.69999999925494,
+          "drawCalls": 193,
+          "triangles": 113862
+        }
+      },
+      "lod": {
+        "requests": 73,
+        "generated": 73,
+        "evictions": 4,
+        "cancelled": 0,
+        "coarseCpuMs": 337.999999998603,
+        "installationMs": 45.39999999757856,
+        "bytes": {
+          "0": 6660040,
+          "1": 1245184,
+          "2": 2967040
+        },
+        "firstGeometryMs": 11.300000000279397,
+        "started": 115522.59999999963,
+        "queue": 0,
+        "maskPasses": 115,
+        "maskCpuMs": 120.3000000002794,
+        "planningCpuMs": 4.399999999906868,
+        "requestedRegions": 65,
+        "distanceCandidateRegions": 65,
+        "missingRequestedTiles": 0,
+        "triangles": 54592,
+        "drawCalls": 103,
+        "levels": {
+          "0": 45,
+          "1": 4,
+          "2": 61
+        },
+        "visibilityDistance": 512,
+        "predictive": true,
+        "refinementColumns": 0,
+        "tiles": 65,
+        "queueAgeMs": 0,
+        "gpuUploadMs": null
+      },
+      "vegetation": {
+        "requests": 31,
+        "evictions": 0,
+        "cancelled": 1,
+        "cacheHits": 86,
+        "transitions": 6,
+        "generationMs": 285.0999999991618,
+        "installationMs": 38.89999999944121,
+        "bytes": 575296,
+        "firstInstalledMs": 37.5,
+        "started": 115522.59999999963,
+        "aheadRequests": 0,
+        "lastRequestLatencyMs": 4452.600000000093,
+        "regions": 24,
+        "queue": 0,
+        "representedTrees": 115,
+        "levels": {
+          "0": 2,
+          "1": 32,
+          "2": 83
+        },
+        "proxyCells": 8650,
+        "proxyBoxes": 2775,
+        "triangles": 33300,
+        "drawCalls": 73,
+        "queueAgeMs": 0,
+        "visibleCoverage": null,
+        "gpuUploadMs": null
+      },
+      "chunks": 45,
+      "geometry": 77
+    },
+    {
+      "size": [
+        1000,
+        2000
+      ],
+      "anchor": 20,
+      "mode": "polygonal",
+      "distantTerrain": false,
+      "distantVegetation": false,
+      "startupMs": 1248.5,
+      "firstCoarseMs": null,
+      "steps": 280,
+      "drained": true,
+      "phases": {
+        "settled": {
+          "updateMs": {
+            "mean": 0.04833333333178113,
+            "p95": 0.10000000009313226,
+            "max": 0.20000000018626451
+          },
+          "drawSubmitMs": {
+            "mean": 0.4933333333581686,
+            "p95": 0.6000000000931323,
+            "max": 5.600000000093132
+          },
+          "frameMs": {
+            "mean": 16.928333333336436,
+            "p95": 17.100000000093132,
+            "max": 43.799999999813735
+          },
+          "columnChecks": 0,
+          "lodMs": 0.19999999972060323,
+          "vegetationMs": 1,
+          "drawCalls": 9,
+          "triangles": 12758
+        },
+        "moving": {
+          "updateMs": {
+            "mean": 2.865000000021731,
+            "p95": 5.100000000093132,
+            "max": 10
+          },
+          "drawSubmitMs": {
+            "mean": 0.26000000002483525,
+            "p95": 0.5,
+            "max": 0.5
+          },
+          "frameMs": {
+            "mean": 16.658333333333335,
+            "p95": 17.100000000093132,
+            "max": 17.399999999906868
+          },
+          "columnChecks": 0,
+          "lodMs": 0.09999999962747097,
+          "vegetationMs": 1.2000000006519258,
+          "drawCalls": 9,
+          "triangles": 12758
+        },
+        "backtracking": {
+          "updateMs": {
+            "mean": 4.110000000017075,
+            "p95": 4.5,
+            "max": 9.399999999906868
+          },
+          "drawSubmitMs": {
+            "mean": 0.20666666661854832,
+            "p95": 0.39999999990686774,
+            "max": 0.5
+          },
+          "frameMs": {
+            "mean": 16.660000000001553,
+            "p95": 17,
+            "max": 17
+          },
+          "columnChecks": 0,
+          "lodMs": 0.20000000018626451,
+          "vegetationMs": 0.8000000002793968,
+          "drawCalls": 11,
+          "triangles": 17272
+        }
+      },
+      "lod": {
+        "requests": 0,
+        "generated": 0,
+        "evictions": 0,
+        "cancelled": 0,
+        "coarseCpuMs": 0,
+        "installationMs": 0,
+        "bytes": {
+          "0": 1584192,
+          "1": 0,
+          "2": 0
+        },
+        "firstGeometryMs": null,
+        "started": 129630.3999999999,
+        "queue": 0,
+        "maskPasses": 0,
+        "maskCpuMs": 0,
+        "planningCpuMs": 0,
+        "triangles": 0,
+        "drawCalls": 0,
+        "levels": {
+          "0": 19,
+          "1": 0,
+          "2": 0
+        },
+        "visibilityDistance": 512,
+        "predictive": true,
+        "refinementColumns": 0,
+        "tiles": 0,
+        "queueAgeMs": 0,
+        "gpuUploadMs": null
+      },
+      "vegetation": {
+        "requests": 0,
+        "evictions": 0,
+        "cancelled": 0,
+        "cacheHits": 0,
+        "transitions": 0,
+        "generationMs": 0,
+        "installationMs": 0,
+        "bytes": 0,
+        "firstInstalledMs": null,
+        "started": 129630.3999999999,
+        "aheadRequests": 0,
+        "regions": 0,
+        "queue": 0,
+        "representedTrees": 0,
+        "levels": {
+          "0": 0,
+          "1": 0,
+          "2": 0
+        },
+        "proxyCells": 0,
+        "proxyBoxes": 0,
+        "triangles": 0,
+        "drawCalls": 0,
+        "queueAgeMs": 0,
+        "visibleCoverage": null,
+        "gpuUploadMs": null
+      },
+      "chunks": 19,
+      "geometry": 7
+    },
+    {
+      "size": [
+        1000,
+        2000
+      ],
+      "anchor": 20,
+      "mode": "polygonal",
+      "distantTerrain": true,
+      "distantVegetation": false,
+      "startupMs": 1584.5,
+      "firstCoarseMs": 19.800000000279397,
+      "steps": 280,
+      "drained": true,
+      "phases": {
+        "settled": {
+          "updateMs": {
+            "mean": 0.04500000000310441,
+            "p95": 0.10000000009313226,
+            "max": 0.20000000018626451
+          },
+          "drawSubmitMs": {
+            "mean": 0.91166666666201,
+            "p95": 1.2999999998137355,
+            "max": 10.400000000372529
+          },
+          "frameMs": {
+            "mean": 28.27666666666822,
+            "p95": 35.200000000186265,
+            "max": 95.90000000037253
+          },
+          "columnChecks": 0,
+          "lodMs": 1.1000000000931323,
+          "vegetationMs": 0.6000000000931323,
+          "drawCalls": 111,
+          "triangles": 66966
+        },
+        "moving": {
+          "updateMs": {
+            "mean": 2.955000000004657,
+            "p95": 7.100000000093132,
+            "max": 8.299999999813735
+          },
+          "drawSubmitMs": {
+            "mean": 0.6900000000062089,
+            "p95": 1.1000000000931323,
+            "max": 1.3000000002793968
+          },
+          "frameMs": {
+            "mean": 32.67333333333178,
+            "p95": 39.60000000009313,
+            "max": 43.200000000186265
+          },
+          "columnChecks": 24960,
+          "lodMs": 16.50000000046566,
+          "vegetationMs": 0.8000000002793968,
+          "drawCalls": 111,
+          "triangles": 66966
+        },
+        "backtracking": {
+          "updateMs": {
+            "mean": 4.921666666655801,
+            "p95": 8.200000000186265,
+            "max": 11.200000000186265
+          },
+          "drawSubmitMs": {
+            "mean": 0.8433333333814517,
+            "p95": 1.2999999998137355,
+            "max": 1.3000000002793968
+          },
+          "frameMs": {
+            "mean": 45.11166666666977,
+            "p95": 67.79999999981374,
+            "max": 129.60000000009313
+          },
+          "columnChecks": 51712,
+          "lodMs": 42.09999999962747,
+          "vegetationMs": 0.39999999944120646,
+          "drawCalls": 119,
+          "triangles": 74350
+        }
+      },
+      "lod": {
+        "requests": 73,
+        "generated": 73,
+        "evictions": 4,
+        "cancelled": 0,
+        "coarseCpuMs": 322.9999999990687,
+        "installationMs": 44.09999999962747,
+        "bytes": {
+          "0": 3076152,
+          "1": 1245184,
+          "2": 2967040
+        },
+        "firstGeometryMs": 17.199999999720603,
+        "started": 133898,
+        "queue": 0,
+        "maskPasses": 117,
+        "maskCpuMs": 112.90000000130385,
+        "planningCpuMs": 4.2000000001862645,
+        "requestedRegions": 65,
+        "distanceCandidateRegions": 65,
+        "missingRequestedTiles": 0,
+        "triangles": 54720,
+        "drawCalls": 103,
+        "levels": {
+          "0": 40,
+          "1": 4,
+          "2": 61
+        },
+        "visibilityDistance": 512,
+        "predictive": true,
+        "refinementColumns": 0,
+        "tiles": 65,
+        "queueAgeMs": 0,
+        "gpuUploadMs": null
+      },
+      "vegetation": {
+        "requests": 0,
+        "evictions": 0,
+        "cancelled": 0,
+        "cacheHits": 0,
+        "transitions": 0,
+        "generationMs": 0,
+        "installationMs": 0,
+        "bytes": 0,
+        "firstInstalledMs": null,
+        "started": 133898,
+        "aheadRequests": 0,
+        "regions": 0,
+        "queue": 0,
+        "representedTrees": 0,
+        "levels": {
+          "0": 0,
+          "1": 0,
+          "2": 0
+        },
+        "proxyCells": 0,
+        "proxyBoxes": 0,
+        "triangles": 0,
+        "drawCalls": 0,
+        "queueAgeMs": 0,
+        "visibleCoverage": null,
+        "gpuUploadMs": null
+      },
+      "chunks": 40,
+      "geometry": 73
+    },
+    {
+      "size": [
+        1000,
+        2000
+      ],
+      "anchor": 20,
+      "mode": "polygonal",
+      "distantTerrain": false,
+      "distantVegetation": true,
+      "startupMs": 1316.2000000001863,
+      "firstCoarseMs": null,
+      "steps": 260,
+      "drained": true,
+      "phases": {
+        "settled": {
+          "updateMs": {
+            "mean": 0.04000000001396984,
+            "p95": 0.10000000009313226,
+            "max": 0.10000000009313226
+          },
+          "drawSubmitMs": {
+            "mean": 1.4516666666138918,
+            "p95": 2,
+            "max": 24.5
+          },
+          "frameMs": {
+            "mean": 46.5,
+            "p95": 55.59999999962747,
+            "max": 156.10000000009313
+          },
+          "columnChecks": 0,
+          "lodMs": 0.10000000009313226,
+          "vegetationMs": 0.900000000372529,
+          "drawCalls": 75,
+          "triangles": 39314
+        },
+        "moving": {
+          "updateMs": {
+            "mean": 2.9066666666418315,
+            "p95": 6.5,
+            "max": 9
+          },
+          "drawSubmitMs": {
+            "mean": 0.7866666666852932,
+            "p95": 1.3999999999068677,
+            "max": 1.8000000002793968
+          },
+          "frameMs": {
+            "mean": 46.88166666667288,
+            "p95": 61.39999999990687,
+            "max": 74.70000000018626
+          },
+          "columnChecks": 0,
+          "lodMs": 0,
+          "vegetationMs": 13.699999999254942,
+          "drawCalls": 76,
+          "triangles": 39314
+        },
+        "backtracking": {
+          "updateMs": {
+            "mean": 5.196666666663562,
+            "p95": 7.399999999906868,
+            "max": 9.099999999627471
+          },
+          "drawSubmitMs": {
+            "mean": 0.7000000000232831,
+            "p95": 1.1000000000931323,
+            "max": 1.3999999999068677
+          },
+          "frameMs": {
+            "mean": 53.27166666666356,
+            "p95": 70.5,
+            "max": 84.70000000018626
+          },
+          "columnChecks": 0,
+          "lodMs": 0.20000000018626451,
+          "vegetationMs": 68.10000000009313,
+          "drawCalls": 84,
+          "triangles": 54262
+        }
+      },
+      "lod": {
+        "requests": 0,
+        "generated": 0,
+        "evictions": 0,
+        "cancelled": 0,
+        "coarseCpuMs": 0,
+        "installationMs": 0,
+        "bytes": {
+          "0": 1818720,
+          "1": 0,
+          "2": 0
+        },
+        "firstGeometryMs": null,
+        "started": 141850.09999999963,
+        "queue": 0,
+        "maskPasses": 0,
+        "maskCpuMs": 0,
+        "planningCpuMs": 0,
+        "triangles": 0,
+        "drawCalls": 0,
+        "levels": {
+          "0": 22,
+          "1": 0,
+          "2": 0
+        },
+        "visibilityDistance": 512,
+        "predictive": true,
+        "refinementColumns": 0,
+        "tiles": 0,
+        "queueAgeMs": 0,
+        "gpuUploadMs": null
+      },
+      "vegetation": {
+        "requests": 31,
+        "evictions": 0,
+        "cancelled": 1,
+        "cacheHits": 86,
+        "transitions": 6,
+        "generationMs": 264.40000000037253,
+        "installationMs": 35.299999999813735,
+        "bytes": 575296,
+        "firstInstalledMs": 28.200000000186265,
+        "started": 141850.09999999963,
+        "aheadRequests": 0,
+        "lastRequestLatencyMs": 2878,
+        "regions": 24,
+        "queue": 0,
+        "representedTrees": 116,
+        "levels": {
+          "0": 1,
+          "1": 33,
+          "2": 83
+        },
+        "proxyCells": 8683,
+        "proxyBoxes": 2789,
+        "triangles": 33468,
+        "drawCalls": 73,
+        "queueAgeMs": 0,
+        "visibleCoverage": null,
+        "gpuUploadMs": null
+      },
+      "chunks": 22,
+      "geometry": 9
+    },
+    {
+      "size": [
+        1000,
+        2000
+      ],
+      "anchor": 20,
+      "mode": "polygonal",
+      "distantTerrain": true,
+      "distantVegetation": true,
+      "startupMs": 1920.3999999999069,
+      "firstCoarseMs": 17.800000000279397,
+      "steps": 280,
+      "drained": true,
+      "phases": {
+        "settled": {
+          "updateMs": {
+            "mean": 0.075,
+            "p95": 0.10000000009313226,
+            "max": 1.5
+          },
+          "drawSubmitMs": {
+            "mean": 1.9683333333426465,
+            "p95": 2.7999999998137355,
+            "max": 31.5
+          },
+          "frameMs": {
+            "mean": 66.95500000000466,
+            "p95": 74.39999999990687,
+            "max": 186.5
+          },
+          "columnChecks": 4096,
+          "lodMs": 2.0999999991618097,
+          "vegetationMs": 0.6000000000931323,
+          "drawCalls": 177,
+          "triangles": 93522
+        },
+        "moving": {
+          "updateMs": {
+            "mean": 3.288333333291424,
+            "p95": 8.099999999627471,
+            "max": 10.699999999720603
+          },
+          "drawSubmitMs": {
+            "mean": 1.300000000007761,
+            "p95": 2.1000000000931323,
+            "max": 2.3000000002793968
+          },
+          "frameMs": {
+            "mean": 68.21166666666977,
+            "p95": 82,
+            "max": 100.10000000009313
+          },
+          "columnChecks": 24960,
+          "lodMs": 17.399999998044223,
+          "vegetationMs": 11.499999998603016,
+          "drawCalls": 179,
+          "triangles": 93522
+        },
+        "backtracking": {
+          "updateMs": {
+            "mean": 4.535000000001552,
+            "p95": 9.399999999906868,
+            "max": 14.299999999813735
+          },
+          "drawSubmitMs": {
+            "mean": 1.3050000000046567,
+            "p95": 2.1000000000931323,
+            "max": 3.1000000000931323
+          },
+          "frameMs": {
+            "mean": 70.78333333333333,
+            "p95": 87.70000000018626,
+            "max": 111.10000000009313
+          },
+          "columnChecks": 52160,
+          "lodMs": 37.39999999944121,
+          "vegetationMs": 70.8000000002794,
+          "drawCalls": 191,
+          "triangles": 108918
+        }
+      },
+      "lod": {
+        "requests": 73,
+        "generated": 73,
+        "evictions": 4,
+        "cancelled": 0,
+        "coarseCpuMs": 356.20000000158325,
+        "installationMs": 52.70000000204891,
+        "bytes": {
+          "0": 3132296,
+          "1": 1245184,
+          "2": 2967040
+        },
+        "firstGeometryMs": 12.100000000093132,
+        "started": 151969.8999999999,
+        "queue": 0,
+        "maskPasses": 122,
+        "maskCpuMs": 132.89999999850988,
+        "planningCpuMs": 4.199999999254942,
+        "requestedRegions": 65,
+        "distanceCandidateRegions": 65,
+        "missingRequestedTiles": 0,
+        "triangles": 54656,
+        "drawCalls": 103,
+        "levels": {
+          "0": 40,
+          "1": 4,
+          "2": 61
+        },
+        "visibilityDistance": 512,
+        "predictive": true,
+        "refinementColumns": 0,
+        "tiles": 65,
+        "queueAgeMs": 0,
+        "gpuUploadMs": null
+      },
+      "vegetation": {
+        "requests": 31,
+        "evictions": 0,
+        "cancelled": 1,
+        "cacheHits": 86,
+        "transitions": 6,
+        "generationMs": 291.50000000046566,
+        "installationMs": 40.200000000186265,
+        "bytes": 575296,
+        "firstInstalledMs": 54.60000000009313,
+        "started": 151969.8999999999,
+        "aheadRequests": 0,
+        "lastRequestLatencyMs": 3975.600000000093,
+        "regions": 24,
+        "queue": 0,
+        "representedTrees": 115,
+        "levels": {
+          "0": 2,
+          "1": 32,
+          "2": 83
+        },
+        "proxyCells": 8674,
+        "proxyBoxes": 2784,
+        "triangles": 33408,
+        "drawCalls": 73,
+        "queueAgeMs": 0,
+        "visibleCoverage": null,
+        "gpuUploadMs": null
+      },
+      "chunks": 40,
+      "geometry": 74
+    },
+    {
+      "size": [
+        2000,
+        2000
+      ],
+      "anchor": 20,
+      "mode": "voxel",
+      "distantTerrain": false,
+      "distantVegetation": false,
+      "startupMs": 240.10000000009313,
+      "firstCoarseMs": null,
+      "steps": 40,
+      "drained": true,
+      "phases": {
+        "settled": {
+          "updateMs": {
+            "mean": 0.06000000004035731,
+            "p95": 0.20000000018626451,
+            "max": 0.3000000002793968
+          },
+          "drawSubmitMs": {
+            "mean": 0.49333333333488555,
+            "p95": 0.599999999627471,
+            "max": 6.800000000279397
+          },
+          "frameMs": {
+            "mean": 17,
+            "p95": 17.199999999720603,
+            "max": 46.89999999990687
+          },
+          "columnChecks": 0,
+          "lodMs": 0.10000000009313226,
+          "vegetationMs": 1.5000000013969839,
+          "drawCalls": 9,
+          "triangles": 12758
+        },
+        "moving": {
+          "updateMs": {
+            "mean": 2.6700000000108655,
+            "p95": 13.700000000186265,
+            "max": 13.800000000279397
+          },
+          "drawSubmitMs": {
+            "mean": 0.3149999999674037,
+            "p95": 0.5,
+            "max": 0.6000000000931323
+          },
+          "frameMs": {
+            "mean": 16.66333333333023,
+            "p95": 19,
+            "max": 20.5
+          },
+          "columnChecks": 0,
+          "lodMs": 0,
+          "vegetationMs": 1.6000000010244548,
+          "drawCalls": 9,
+          "triangles": 12758
+        },
+        "backtracking": {
+          "updateMs": {
+            "mean": 2.274999999992239,
+            "p95": 13.199999999720603,
+            "max": 14.599999999627471
+          },
+          "drawSubmitMs": {
+            "mean": 0.2950000000031044,
+            "p95": 0.5,
+            "max": 0.6000000000931323
+          },
+          "frameMs": {
+            "mean": 16.779999999996896,
+            "p95": 21.799999999813735,
+            "max": 22.59999999962747
+          },
+          "columnChecks": 0,
+          "lodMs": 0.20000000018626451,
+          "vegetationMs": 1.0000000009313226,
+          "drawCalls": 16,
+          "triangles": 24638
+        }
+      },
+      "lod": {
+        "requests": 0,
+        "generated": 0,
+        "evictions": 0,
+        "cancelled": 0,
+        "coarseCpuMs": 0,
+        "installationMs": 0,
+        "bytes": {
+          "0": 6404200,
+          "1": 0,
+          "2": 0
+        },
+        "firstGeometryMs": null,
+        "started": 166250.8999999999,
+        "queue": 0,
+        "maskPasses": 0,
+        "maskCpuMs": 0,
+        "planningCpuMs": 0,
+        "triangles": 0,
+        "drawCalls": 0,
+        "levels": {
+          "0": 43,
+          "1": 0,
+          "2": 0
+        },
+        "visibilityDistance": 512,
+        "predictive": true,
+        "refinementColumns": 0,
+        "tiles": 0,
+        "queueAgeMs": 0,
+        "gpuUploadMs": null
+      },
+      "vegetation": {
+        "requests": 0,
+        "evictions": 0,
+        "cancelled": 0,
+        "cacheHits": 0,
+        "transitions": 0,
+        "generationMs": 0,
+        "installationMs": 0,
+        "bytes": 0,
+        "firstInstalledMs": null,
+        "started": 166250.8999999999,
+        "aheadRequests": 0,
+        "regions": 0,
+        "queue": 0,
+        "representedTrees": 0,
+        "levels": {
+          "0": 0,
+          "1": 0,
+          "2": 0
+        },
+        "proxyCells": 0,
+        "proxyBoxes": 0,
+        "triangles": 0,
+        "drawCalls": 0,
+        "queueAgeMs": 0,
+        "visibleCoverage": null,
+        "gpuUploadMs": null
+      },
+      "chunks": 43,
+      "geometry": 11
+    },
+    {
+      "size": [
+        2000,
+        2000
+      ],
+      "anchor": 20,
+      "mode": "voxel",
+      "distantTerrain": true,
+      "distantVegetation": false,
+      "startupMs": 978.6999999997206,
+      "firstCoarseMs": 13.299999999813735,
+      "steps": 170,
+      "drained": true,
+      "phases": {
+        "settled": {
+          "updateMs": {
+            "mean": 0.06333333333022892,
+            "p95": 0.19999999972060323,
+            "max": 0.20000000018626451
+          },
+          "drawSubmitMs": {
+            "mean": 1.0983333333240202,
+            "p95": 1.7000000001862645,
+            "max": 14.700000000186265
+          },
+          "frameMs": {
+            "mean": 30.148333333339544,
+            "p95": 49.89999999990687,
+            "max": 86.20000000018626
+          },
+          "columnChecks": 0,
+          "lodMs": 0.7999999998137355,
+          "vegetationMs": 0.8000000002793968,
+          "drawCalls": 111,
+          "triangles": 66966
+        },
+        "moving": {
+          "updateMs": {
+            "mean": 2.8683333333504075,
+            "p95": 6.100000000093132,
+            "max": 6.699999999720603
+          },
+          "drawSubmitMs": {
+            "mean": 0.6366666666309659,
+            "p95": 1,
+            "max": 1.099999999627471
+          },
+          "frameMs": {
+            "mean": 30.193333333334884,
+            "p95": 41.60000000009313,
+            "max": 53.200000000186265
+          },
+          "columnChecks": 41600,
+          "lodMs": 19.200000000651926,
+          "vegetationMs": 0.8000000007450581,
+          "drawCalls": 111,
+          "triangles": 66966
+        },
+        "backtracking": {
+          "updateMs": {
+            "mean": 4.5416666666356225,
+            "p95": 7.899999999906868,
+            "max": 8.100000000093132
+          },
+          "drawSubmitMs": {
+            "mean": 0.6700000000108655,
+            "p95": 0.900000000372529,
+            "max": 1.3000000002793968
+          },
+          "frameMs": {
+            "mean": 32.246666666663565,
+            "p95": 38.3000000002794,
+            "max": 38.89999999990687
+          },
+          "columnChecks": 73600,
+          "lodMs": 40.3000000002794,
+          "vegetationMs": 0.5999999986961484,
+          "drawCalls": 121,
+          "triangles": 79230
+        }
+      },
+      "lod": {
+        "requests": 73,
+        "generated": 73,
+        "evictions": 4,
+        "cancelled": 0,
+        "coarseCpuMs": 284.2000000011176,
+        "installationMs": 41.499999997671694,
+        "bytes": {
+          "0": 7357984,
+          "1": 1245184,
+          "2": 2967040
+        },
+        "firstGeometryMs": 10.199999999720603,
+        "started": 169520,
+        "queue": 0,
+        "maskPasses": 119,
+        "maskCpuMs": 102.80000000121072,
+        "planningCpuMs": 3,
+        "requestedRegions": 65,
+        "distanceCandidateRegions": 65,
+        "missingRequestedTiles": 0,
+        "triangles": 54592,
+        "drawCalls": 103,
+        "levels": {
+          "0": 48,
+          "1": 4,
+          "2": 61
+        },
+        "visibilityDistance": 512,
+        "predictive": true,
+        "refinementColumns": 0,
+        "tiles": 65,
+        "queueAgeMs": 0,
+        "gpuUploadMs": null
+      },
+      "vegetation": {
+        "requests": 0,
+        "evictions": 0,
+        "cancelled": 0,
+        "cacheHits": 0,
+        "transitions": 0,
+        "generationMs": 0,
+        "installationMs": 0,
+        "bytes": 0,
+        "firstInstalledMs": null,
+        "started": 169519.8999999999,
+        "aheadRequests": 0,
+        "regions": 0,
+        "queue": 0,
+        "representedTrees": 0,
+        "levels": {
+          "0": 0,
+          "1": 0,
+          "2": 0
+        },
+        "proxyCells": 0,
+        "proxyBoxes": 0,
+        "triangles": 0,
+        "drawCalls": 0,
+        "queueAgeMs": 0,
+        "visibleCoverage": null,
+        "gpuUploadMs": null
+      },
+      "chunks": 48,
+      "geometry": 76
+    },
+    {
+      "size": [
+        2000,
+        2000
+      ],
+      "anchor": 20,
+      "mode": "voxel",
+      "distantTerrain": false,
+      "distantVegetation": true,
+      "startupMs": 457.20000000018626,
+      "firstCoarseMs": null,
+      "steps": 160,
+      "drained": true,
+      "phases": {
+        "settled": {
+          "updateMs": {
+            "mean": 0.04499999999534339,
+            "p95": 0.10000000009313226,
+            "max": 0.20000000018626451
+          },
+          "drawSubmitMs": {
+            "mean": 1.4933333333581686,
+            "p95": 2.599999999627471,
+            "max": 27.299999999813735
+          },
+          "frameMs": {
+            "mean": 40.76166666666201,
+            "p95": 46.299999999813735,
+            "max": 141.1999999997206
+          },
+          "columnChecks": 0,
+          "lodMs": 0.10000000009313226,
+          "vegetationMs": 0.7000000001862645,
+          "drawCalls": 75,
+          "triangles": 39314
+        },
+        "moving": {
+          "updateMs": {
+            "mean": 2.8099999999860303,
+            "p95": 16.5,
+            "max": 19.59999999962747
+          },
+          "drawSubmitMs": {
+            "mean": 0.8549999999736125,
+            "p95": 1.3000000002793968,
+            "max": 2.5
+          },
+          "frameMs": {
+            "mean": 43.06000000000155,
+            "p95": 61.59999999962747,
+            "max": 65.29999999981374
+          },
+          "columnChecks": 0,
+          "lodMs": 0,
+          "vegetationMs": 23.49999999953434,
+          "drawCalls": 78,
+          "triangles": 39314
+        },
+        "backtracking": {
+          "updateMs": {
+            "mean": 3.145000000003104,
+            "p95": 12.300000000279397,
+            "max": 13.199999999720603
+          },
+          "drawSubmitMs": {
+            "mean": 0.8366666667163372,
+            "p95": 1.3999999999068677,
+            "max": 2.1000000000931323
+          },
+          "frameMs": {
+            "mean": 46.29500000000311,
+            "p95": 64.5,
+            "max": 66.10000000009313
+          },
+          "columnChecks": 0,
+          "lodMs": 0.19999999972060323,
+          "vegetationMs": 67.10000000102445,
+          "drawCalls": 88,
+          "triangles": 59270
+        }
+      },
+      "lod": {
+        "requests": 0,
+        "generated": 0,
+        "evictions": 0,
+        "cancelled": 0,
+        "coarseCpuMs": 0,
+        "installationMs": 0,
+        "bytes": {
+          "0": 6404200,
+          "1": 0,
+          "2": 0
+        },
+        "firstGeometryMs": null,
+        "started": 176057,
+        "queue": 0,
+        "maskPasses": 0,
+        "maskCpuMs": 0,
+        "planningCpuMs": 0,
+        "triangles": 0,
+        "drawCalls": 0,
+        "levels": {
+          "0": 43,
+          "1": 0,
+          "2": 0
+        },
+        "visibilityDistance": 512,
+        "predictive": true,
+        "refinementColumns": 0,
+        "tiles": 0,
+        "queueAgeMs": 0,
+        "gpuUploadMs": null
+      },
+      "vegetation": {
+        "requests": 31,
+        "evictions": 0,
+        "cancelled": 1,
+        "cacheHits": 86,
+        "transitions": 6,
+        "generationMs": 256,
+        "installationMs": 35.000000001862645,
+        "bytes": 575296,
+        "firstInstalledMs": 37.5,
+        "started": 176057,
+        "aheadRequests": 0,
+        "lastRequestLatencyMs": 2503.600000000093,
+        "regions": 24,
+        "queue": 0,
+        "representedTrees": 115,
+        "levels": {
+          "0": 2,
+          "1": 32,
+          "2": 83
+        },
+        "proxyCells": 8650,
+        "proxyBoxes": 2775,
+        "triangles": 33300,
+        "drawCalls": 73,
+        "queueAgeMs": 0,
+        "visibleCoverage": null,
+        "gpuUploadMs": null
+      },
+      "chunks": 43,
+      "geometry": 12
+    },
+    {
+      "size": [
+        2000,
+        2000
+      ],
+      "anchor": 20,
+      "mode": "voxel",
+      "distantTerrain": true,
+      "distantVegetation": true,
+      "startupMs": 1297.7000000001863,
+      "firstCoarseMs": 22.399999999906868,
+      "steps": 180,
+      "drained": true,
+      "phases": {
+        "settled": {
+          "updateMs": {
+            "mean": 0.06333333335351199,
+            "p95": 0.10000000009313226,
+            "max": 0.20000000018626451
+          },
+          "drawSubmitMs": {
+            "mean": 1.8033333332898716,
+            "p95": 2,
+            "max": 25.699999999720603
+          },
+          "frameMs": {
+            "mean": 62.463333333330226,
+            "p95": 85.10000000009313,
+            "max": 219.60000000009313
+          },
+          "columnChecks": 0,
+          "lodMs": 0.8000000002793968,
+          "vegetationMs": 0.2999999998137355,
+          "drawCalls": 177,
+          "triangles": 93522
+        },
+        "moving": {
+          "updateMs": {
+            "mean": 3.1316666666495925,
+            "p95": 6.699999999720603,
+            "max": 9.299999999813735
+          },
+          "drawSubmitMs": {
+            "mean": 1.25,
+            "p95": 1.8999999999068677,
+            "max": 2.5
+          },
+          "frameMs": {
+            "mean": 62.61333333333023,
+            "p95": 70.1999999997206,
+            "max": 79
+          },
+          "columnChecks": 41600,
+          "lodMs": 22.699999999720603,
+          "vegetationMs": 11.199999999720603,
+          "drawCalls": 180,
+          "triangles": 93522
+        },
+        "backtracking": {
+          "updateMs": {
+            "mean": 4.449999999961195,
+            "p95": 9.099999999627471,
+            "max": 9.699999999720603
+          },
+          "drawSubmitMs": {
+            "mean": 1.2666666666666666,
+            "p95": 1.8000000002793968,
+            "max": 2.1999999997206032
+          },
+          "frameMs": {
+            "mean": 68.94333333333489,
+            "p95": 81.20000000018626,
+            "max": 98.89999999990687
+          },
+          "columnChecks": 61056,
+          "lodMs": 43.89999999944121,
+          "vegetationMs": 63.59999999962747,
+          "drawCalls": 193,
+          "triangles": 113862
+        }
+      },
+      "lod": {
+        "requests": 73,
+        "generated": 73,
+        "evictions": 4,
+        "cancelled": 0,
+        "coarseCpuMs": 310.0999999977648,
+        "installationMs": 43.799999999813735,
+        "bytes": {
+          "0": 6660040,
+          "1": 1245184,
+          "2": 2967040
+        },
+        "firstGeometryMs": 18.199999999720603,
+        "started": 184324.3999999999,
+        "queue": 0,
+        "maskPasses": 118,
+        "maskCpuMs": 121.00000000186265,
+        "planningCpuMs": 4.399999999906868,
+        "requestedRegions": 65,
+        "distanceCandidateRegions": 65,
+        "missingRequestedTiles": 0,
+        "triangles": 54592,
+        "drawCalls": 103,
+        "levels": {
+          "0": 45,
+          "1": 4,
+          "2": 61
+        },
+        "visibilityDistance": 512,
+        "predictive": true,
+        "refinementColumns": 0,
+        "tiles": 65,
+        "queueAgeMs": 0,
+        "gpuUploadMs": null
+      },
+      "vegetation": {
+        "requests": 31,
+        "evictions": 0,
+        "cancelled": 1,
+        "cacheHits": 86,
+        "transitions": 6,
+        "generationMs": 278.5999999977648,
+        "installationMs": 37.1999999997206,
+        "bytes": 575296,
+        "firstInstalledMs": 55.89999999990687,
+        "started": 184324.3999999999,
+        "aheadRequests": 0,
+        "lastRequestLatencyMs": 3617.0999999996275,
+        "regions": 24,
+        "queue": 0,
+        "representedTrees": 115,
+        "levels": {
+          "0": 2,
+          "1": 32,
+          "2": 83
+        },
+        "proxyCells": 8650,
+        "proxyBoxes": 2775,
+        "triangles": 33300,
+        "drawCalls": 73,
+        "queueAgeMs": 0,
+        "visibleCoverage": null,
+        "gpuUploadMs": null
+      },
+      "chunks": 45,
+      "geometry": 77
+    },
+    {
+      "size": [
+        2000,
+        2000
+      ],
+      "anchor": 20,
+      "mode": "polygonal",
+      "distantTerrain": false,
+      "distantVegetation": false,
+      "startupMs": 1187.8999999999069,
+      "firstCoarseMs": null,
+      "steps": 280,
+      "drained": true,
+      "phases": {
+        "settled": {
+          "updateMs": {
+            "mean": 0.08000000002793968,
+            "p95": 0.20000000018626451,
+            "max": 0.20000000018626451
+          },
+          "drawSubmitMs": {
+            "mean": 0.524999999984478,
+            "p95": 0.6999999997206032,
+            "max": 6.5
+          },
+          "frameMs": {
+            "mean": 17.005000000004657,
+            "p95": 17.200000000186265,
+            "max": 49.10000000009313
+          },
+          "columnChecks": 0,
+          "lodMs": 0.10000000009313226,
+          "vegetationMs": 1.200000001117587,
+          "drawCalls": 9,
+          "triangles": 12758
+        },
+        "moving": {
+          "updateMs": {
+            "mean": 2.9133333333069458,
+            "p95": 4.599999999627471,
+            "max": 10.5
+          },
+          "drawSubmitMs": {
+            "mean": 0.24833333333178112,
+            "p95": 0.5,
+            "max": 0.6000000000931323
+          },
+          "frameMs": {
+            "mean": 16.664999999998447,
+            "p95": 17.09999999962747,
+            "max": 17.399999999906868
+          },
+          "columnChecks": 0,
+          "lodMs": 0.3000000002793968,
+          "vegetationMs": 0.599999999627471,
+          "drawCalls": 9,
+          "triangles": 12758
+        },
+        "backtracking": {
+          "updateMs": {
+            "mean": 4.171666666663563,
+            "p95": 6.2999999998137355,
+            "max": 10.399999999906868
+          },
+          "drawSubmitMs": {
+            "mean": 0.18666666665424902,
+            "p95": 0.3000000002793968,
+            "max": 0.39999999990686774
+          },
+          "frameMs": {
+            "mean": 16.658333333333335,
+            "p95": 17.100000000093132,
+            "max": 17.399999999906868
+          },
+          "columnChecks": 0,
+          "lodMs": 0,
+          "vegetationMs": 1.0000000004656613,
+          "drawCalls": 11,
+          "triangles": 17272
+        }
+      },
+      "lod": {
+        "requests": 0,
+        "generated": 0,
+        "evictions": 0,
+        "cancelled": 0,
+        "coarseCpuMs": 0,
+        "installationMs": 0,
+        "bytes": {
+          "0": 1492000,
+          "1": 0,
+          "2": 0
+        },
+        "firstGeometryMs": null,
+        "started": 197267.8999999999,
+        "queue": 0,
+        "maskPasses": 0,
+        "maskCpuMs": 0,
+        "planningCpuMs": 0,
+        "triangles": 0,
+        "drawCalls": 0,
+        "levels": {
+          "0": 18,
+          "1": 0,
+          "2": 0
+        },
+        "visibilityDistance": 512,
+        "predictive": true,
+        "refinementColumns": 0,
+        "tiles": 0,
+        "queueAgeMs": 0,
+        "gpuUploadMs": null
+      },
+      "vegetation": {
+        "requests": 0,
+        "evictions": 0,
+        "cancelled": 0,
+        "cacheHits": 0,
+        "transitions": 0,
+        "generationMs": 0,
+        "installationMs": 0,
+        "bytes": 0,
+        "firstInstalledMs": null,
+        "started": 197267.8999999999,
+        "aheadRequests": 0,
+        "regions": 0,
+        "queue": 0,
+        "representedTrees": 0,
+        "levels": {
+          "0": 0,
+          "1": 0,
+          "2": 0
+        },
+        "proxyCells": 0,
+        "proxyBoxes": 0,
+        "triangles": 0,
+        "drawCalls": 0,
+        "queueAgeMs": 0,
+        "visibleCoverage": null,
+        "gpuUploadMs": null
+      },
+      "chunks": 18,
+      "geometry": 7
+    },
+    {
+      "size": [
+        2000,
+        2000
+      ],
+      "anchor": 20,
+      "mode": "polygonal",
+      "distantTerrain": true,
+      "distantVegetation": false,
+      "startupMs": 1501.7000000001863,
+      "firstCoarseMs": 13.400000000372529,
+      "steps": 260,
+      "drained": true,
+      "phases": {
+        "settled": {
+          "updateMs": {
+            "mean": 0.08166666669615855,
+            "p95": 0.19999999972060323,
+            "max": 1.5
+          },
+          "drawSubmitMs": {
+            "mean": 0.8716666666635623,
+            "p95": 1.8999999999068677,
+            "max": 9.5
+          },
+          "frameMs": {
+            "mean": 27.57333333333178,
+            "p95": 40,
+            "max": 84.39999999990687
+          },
+          "columnChecks": 4096,
+          "lodMs": 2.1000000005587935,
+          "vegetationMs": 0.2999999993480742,
+          "drawCalls": 111,
+          "triangles": 66966
+        },
+        "moving": {
+          "updateMs": {
+            "mean": 2.998333333331781,
+            "p95": 7.100000000093132,
+            "max": 7.899999999906868
+          },
+          "drawSubmitMs": {
+            "mean": 0.6549999999891346,
+            "p95": 0.8999999999068677,
+            "max": 1.6000000000931323
+          },
+          "frameMs": {
+            "mean": 28.206666666665114,
+            "p95": 32.60000000009313,
+            "max": 34.6999999997206
+          },
+          "columnChecks": 24960,
+          "lodMs": 17.00000000046566,
+          "vegetationMs": 0.3000000002793968,
+          "drawCalls": 111,
+          "triangles": 66966
+        },
+        "backtracking": {
+          "updateMs": {
+            "mean": 4.8916666666744275,
+            "p95": 8.899999999906868,
+            "max": 9.899999999906868
+          },
+          "drawSubmitMs": {
+            "mean": 0.6233333333240201,
+            "p95": 0.900000000372529,
+            "max": 1
+          },
+          "frameMs": {
+            "mean": 31.245000000003106,
+            "p95": 35.6999999997206,
+            "max": 37.40000000037253
+          },
+          "columnChecks": 60800,
+          "lodMs": 46.1999999997206,
+          "vegetationMs": 0.7000000001862645,
+          "drawCalls": 119,
+          "triangles": 74286
+        }
+      },
+      "lod": {
+        "requests": 73,
+        "generated": 73,
+        "evictions": 4,
+        "cancelled": 0,
+        "coarseCpuMs": 297.89999999990687,
+        "installationMs": 41.90000000176951,
+        "bytes": {
+          "0": 3168344,
+          "1": 1245184,
+          "2": 2967040
+        },
+        "firstGeometryMs": 10.600000000093132,
+        "started": 201478.2999999998,
+        "queue": 0,
+        "maskPasses": 118,
+        "maskCpuMs": 115.20000000111759,
+        "planningCpuMs": 3.3999999994412065,
+        "requestedRegions": 65,
+        "distanceCandidateRegions": 65,
+        "missingRequestedTiles": 0,
+        "triangles": 54656,
+        "drawCalls": 103,
+        "levels": {
+          "0": 41,
+          "1": 4,
+          "2": 61
+        },
+        "visibilityDistance": 512,
+        "predictive": true,
+        "refinementColumns": 0,
+        "tiles": 65,
+        "queueAgeMs": 0,
+        "gpuUploadMs": null
+      },
+      "vegetation": {
+        "requests": 0,
+        "evictions": 0,
+        "cancelled": 0,
+        "cacheHits": 0,
+        "transitions": 0,
+        "generationMs": 0,
+        "installationMs": 0,
+        "bytes": 0,
+        "firstInstalledMs": null,
+        "started": 201478.2999999998,
+        "aheadRequests": 0,
+        "regions": 0,
+        "queue": 0,
+        "representedTrees": 0,
+        "levels": {
+          "0": 0,
+          "1": 0,
+          "2": 0
+        },
+        "proxyCells": 0,
+        "proxyBoxes": 0,
+        "triangles": 0,
+        "drawCalls": 0,
+        "queueAgeMs": 0,
+        "visibleCoverage": null,
+        "gpuUploadMs": null
+      },
+      "chunks": 41,
+      "geometry": 73
+    },
+    {
+      "size": [
+        2000,
+        2000
+      ],
+      "anchor": 20,
+      "mode": "polygonal",
+      "distantTerrain": false,
+      "distantVegetation": true,
+      "startupMs": 1332.2000000001863,
+      "firstCoarseMs": null,
+      "steps": 260,
+      "drained": true,
+      "phases": {
+        "settled": {
+          "updateMs": {
+            "mean": 0.04500000001086543,
+            "p95": 0.10000000009313226,
+            "max": 0.10000000009313226
+          },
+          "drawSubmitMs": {
+            "mean": 1.374999999968956,
+            "p95": 1.5,
+            "max": 24.09999999962747
+          },
+          "frameMs": {
+            "mean": 40.30333333332867,
+            "p95": 43.799999999813735,
+            "max": 137.39999999990687
+          },
+          "columnChecks": 0,
+          "lodMs": 0.3000000002793968,
+          "vegetationMs": 0.9999999995343387,
+          "drawCalls": 75,
+          "triangles": 39314
+        },
+        "moving": {
+          "updateMs": {
+            "mean": 2.838333333345751,
+            "p95": 5.900000000372529,
+            "max": 6.2000000001862645
+          },
+          "drawSubmitMs": {
+            "mean": 0.7166666667054717,
+            "p95": 1.2000000001862645,
+            "max": 1.3000000002793968
+          },
+          "frameMs": {
+            "mean": 41.891666666666666,
+            "p95": 48.3000000002794,
+            "max": 50
+          },
+          "columnChecks": 0,
+          "lodMs": 0.10000000009313226,
+          "vegetationMs": 13.000000000931323,
+          "drawCalls": 76,
+          "triangles": 39314
+        },
+        "backtracking": {
+          "updateMs": {
+            "mean": 5.279999999981373,
+            "p95": 8.899999999906868,
+            "max": 9.300000000279397
+          },
+          "drawSubmitMs": {
+            "mean": 0.6916666666589056,
+            "p95": 1.1000000000931323,
+            "max": 1.3000000002793968
+          },
+          "frameMs": {
+            "mean": 49.36833333333489,
+            "p95": 59.89999999990687,
+            "max": 60.39999999990687
+          },
+          "columnChecks": 0,
+          "lodMs": 0.20000000018626451,
+          "vegetationMs": 63.09999999962747,
+          "drawCalls": 84,
+          "triangles": 54262
+        }
+      },
+      "lod": {
+        "requests": 0,
+        "generated": 0,
+        "evictions": 0,
+        "cancelled": 0,
+        "coarseCpuMs": 0,
+        "installationMs": 0,
+        "bytes": {
+          "0": 1910912,
+          "1": 0,
+          "2": 0
+        },
+        "firstGeometryMs": null,
+        "started": 208204.7999999998,
+        "queue": 0,
+        "maskPasses": 0,
+        "maskCpuMs": 0,
+        "planningCpuMs": 0,
+        "triangles": 0,
+        "drawCalls": 0,
+        "levels": {
+          "0": 23,
+          "1": 0,
+          "2": 0
+        },
+        "visibilityDistance": 512,
+        "predictive": true,
+        "refinementColumns": 0,
+        "tiles": 0,
+        "queueAgeMs": 0,
+        "gpuUploadMs": null
+      },
+      "vegetation": {
+        "requests": 31,
+        "evictions": 0,
+        "cancelled": 1,
+        "cacheHits": 86,
+        "transitions": 6,
+        "generationMs": 272.40000000037253,
+        "installationMs": 45.799999999813735,
+        "bytes": 575296,
+        "firstInstalledMs": 31.5,
+        "started": 208204.7999999998,
+        "aheadRequests": 0,
+        "lastRequestLatencyMs": 2532,
+        "regions": 24,
+        "queue": 0,
+        "representedTrees": 116,
+        "levels": {
+          "0": 1,
+          "1": 33,
+          "2": 83
+        },
+        "proxyCells": 8683,
+        "proxyBoxes": 2789,
+        "triangles": 33468,
+        "drawCalls": 73,
+        "queueAgeMs": 0,
+        "visibleCoverage": null,
+        "gpuUploadMs": null
+      },
+      "chunks": 23,
+      "geometry": 9
+    },
+    {
+      "size": [
+        2000,
+        2000
+      ],
+      "anchor": 20,
+      "mode": "polygonal",
+      "distantTerrain": true,
+      "distantVegetation": true,
+      "startupMs": 1701.6000000000931,
+      "firstCoarseMs": 14.200000000186265,
+      "steps": 270,
+      "drained": true,
+      "phases": {
+        "settled": {
+          "updateMs": {
+            "mean": 0.05666666667287548,
+            "p95": 0.19999999972060323,
+            "max": 0.20000000018626451
+          },
+          "drawSubmitMs": {
+            "mean": 1.801666666660458,
+            "p95": 2.7000000001862645,
+            "max": 24.100000000093132
+          },
+          "frameMs": {
+            "mean": 61.76999999999534,
+            "p95": 71.3000000002794,
+            "max": 190.5
+          },
+          "columnChecks": 0,
+          "lodMs": 0.7999999998137355,
+          "vegetationMs": 0.5,
+          "drawCalls": 177,
+          "triangles": 93522
+        },
+        "moving": {
+          "updateMs": {
+            "mean": 3.261666666646488,
+            "p95": 8.5,
+            "max": 9.299999999813735
+          },
+          "drawSubmitMs": {
+            "mean": 1.1899999999984479,
+            "p95": 2,
+            "max": 2.5
+          },
+          "frameMs": {
+            "mean": 70.01833333333488,
+            "p95": 110.20000000018626,
+            "max": 237.5
+          },
+          "columnChecks": 33216,
+          "lodMs": 20.499999999068677,
+          "vegetationMs": 11.699999999720603,
+          "drawCalls": 179,
+          "triangles": 93522
+        },
+        "backtracking": {
+          "updateMs": {
+            "mean": 4.571666666686846,
+            "p95": 9.200000000186265,
+            "max": 10.399999999906868
+          },
+          "drawSubmitMs": {
+            "mean": 1.2433333332960805,
+            "p95": 1.7999999998137355,
+            "max": 2.2999999998137355
+          },
+          "frameMs": {
+            "mean": 68.46499999999845,
+            "p95": 76.60000000009313,
+            "max": 82.60000000009313
+          },
+          "columnChecks": 47936,
+          "lodMs": 35.40000000176951,
+          "vegetationMs": 66.99999999953434,
+          "drawCalls": 191,
+          "triangles": 109360
+        }
+      },
+      "lod": {
+        "requests": 73,
+        "generated": 73,
+        "evictions": 4,
+        "cancelled": 0,
+        "coarseCpuMs": 289.19999999925494,
+        "installationMs": 37.90000000083819,
+        "bytes": {
+          "0": 3179776,
+          "1": 1245184,
+          "2": 2967040
+        },
+        "firstGeometryMs": 9.800000000279397,
+        "started": 217433.19999999972,
+        "queue": 0,
+        "maskPasses": 117,
+        "maskCpuMs": 112.70000000298023,
+        "planningCpuMs": 2.8999999999068677,
+        "requestedRegions": 65,
+        "distanceCandidateRegions": 65,
+        "missingRequestedTiles": 0,
+        "triangles": 54656,
+        "drawCalls": 103,
+        "levels": {
+          "0": 41,
+          "1": 4,
+          "2": 61
+        },
+        "visibilityDistance": 512,
+        "predictive": true,
+        "refinementColumns": 0,
+        "tiles": 65,
+        "queueAgeMs": 0,
+        "gpuUploadMs": null
+      },
+      "vegetation": {
+        "requests": 31,
+        "evictions": 0,
+        "cancelled": 1,
+        "cacheHits": 86,
+        "transitions": 6,
+        "generationMs": 255.4999999976717,
+        "installationMs": 37.69999999925494,
+        "bytes": 575296,
+        "firstInstalledMs": 40.8000000002794,
+        "started": 217433.19999999972,
+        "aheadRequests": 0,
+        "lastRequestLatencyMs": 3601.5,
+        "regions": 24,
+        "queue": 0,
+        "representedTrees": 115,
+        "levels": {
+          "0": 2,
+          "1": 32,
+          "2": 83
+        },
+        "proxyCells": 8650,
+        "proxyBoxes": 2775,
+        "triangles": 33300,
+        "drawCalls": 73,
+        "queueAgeMs": 0,
+        "visibleCoverage": null,
+        "gpuUploadMs": null
+      },
+      "chunks": 41,
+      "geometry": 75
+    },
+    {
+      "size": [
+        4000,
+        4000
+      ],
+      "anchor": 20,
+      "mode": "voxel",
+      "distantTerrain": false,
+      "distantVegetation": false,
+      "startupMs": 240.79999999981374,
+      "firstCoarseMs": null,
+      "steps": 40,
+      "drained": true,
+      "phases": {
+        "settled": {
+          "updateMs": {
+            "mean": 0.05166666666821887,
+            "p95": 0.10000000009313226,
+            "max": 0.39999999990686774
+          },
+          "drawSubmitMs": {
+            "mean": 0.5033333333286767,
+            "p95": 0.7000000001862645,
+            "max": 5.100000000093132
+          },
+          "frameMs": {
+            "mean": 16.908333333333335,
+            "p95": 17.300000000279397,
+            "max": 43.60000000009313
+          },
+          "columnChecks": 0,
+          "lodMs": 0.3000000002793968,
+          "vegetationMs": 0.2999999998137355,
+          "drawCalls": 9,
+          "triangles": 12758
+        },
+        "moving": {
+          "updateMs": {
+            "mean": 2.6433333333116025,
+            "p95": 12.5,
+            "max": 17.800000000279397
+          },
+          "drawSubmitMs": {
+            "mean": 0.3666666666821887,
+            "p95": 0.6000000000931323,
+            "max": 0.6999999997206032
+          },
+          "frameMs": {
+            "mean": 16.666666666666668,
+            "p95": 18.200000000186265,
+            "max": 23
+          },
+          "columnChecks": 0,
+          "lodMs": 0.3000000002793968,
+          "vegetationMs": 0.3000000002793968,
+          "drawCalls": 9,
+          "triangles": 12758
+        },
+        "backtracking": {
+          "updateMs": {
+            "mean": 2.63833333333799,
+            "p95": 14.799999999813735,
+            "max": 18.600000000093132
+          },
+          "drawSubmitMs": {
+            "mean": 0.35666666661078733,
+            "p95": 0.5,
+            "max": 0.8000000002793968
+          },
+          "frameMs": {
+            "mean": 17.006666666672874,
+            "p95": 22.800000000279397,
+            "max": 29.100000000093132
+          },
+          "columnChecks": 0,
+          "lodMs": 0.20000000018626451,
+          "vegetationMs": 1.799999998882413,
+          "drawCalls": 16,
+          "triangles": 24638
+        }
+      },
+      "lod": {
+        "requests": 0,
+        "generated": 0,
+        "evictions": 0,
+        "cancelled": 0,
+        "coarseCpuMs": 0,
+        "installationMs": 0,
+        "bytes": {
+          "0": 6404200,
+          "1": 0,
+          "2": 0
+        },
+        "firstGeometryMs": null,
+        "started": 231152.69999999972,
+        "queue": 0,
+        "maskPasses": 0,
+        "maskCpuMs": 0,
+        "planningCpuMs": 0,
+        "triangles": 0,
+        "drawCalls": 0,
+        "levels": {
+          "0": 43,
+          "1": 0,
+          "2": 0
+        },
+        "visibilityDistance": 512,
+        "predictive": true,
+        "refinementColumns": 0,
+        "tiles": 0,
+        "queueAgeMs": 0,
+        "gpuUploadMs": null
+      },
+      "vegetation": {
+        "requests": 0,
+        "evictions": 0,
+        "cancelled": 0,
+        "cacheHits": 0,
+        "transitions": 0,
+        "generationMs": 0,
+        "installationMs": 0,
+        "bytes": 0,
+        "firstInstalledMs": null,
+        "started": 231152.69999999972,
+        "aheadRequests": 0,
+        "regions": 0,
+        "queue": 0,
+        "representedTrees": 0,
+        "levels": {
+          "0": 0,
+          "1": 0,
+          "2": 0
+        },
+        "proxyCells": 0,
+        "proxyBoxes": 0,
+        "triangles": 0,
+        "drawCalls": 0,
+        "queueAgeMs": 0,
+        "visibleCoverage": null,
+        "gpuUploadMs": null
+      },
+      "chunks": 43,
+      "geometry": 11
+    },
+    {
+      "size": [
+        4000,
+        4000
+      ],
+      "anchor": 20,
+      "mode": "voxel",
+      "distantTerrain": true,
+      "distantVegetation": false,
+      "startupMs": 969.7000000001863,
+      "firstCoarseMs": 12.700000000186265,
+      "steps": 160,
+      "drained": true,
+      "phases": {
+        "settled": {
+          "updateMs": {
+            "mean": 0.046666666648040214,
+            "p95": 0.10000000009313226,
+            "max": 0.10000000009313226
+          },
+          "drawSubmitMs": {
+            "mean": 0.8566666666573535,
+            "p95": 1.1000000000931323,
+            "max": 9.699999999720603
+          },
+          "frameMs": {
+            "mean": 26.368333333327126,
+            "p95": 31.899999999906868,
+            "max": 89
+          },
+          "columnChecks": 0,
+          "lodMs": 1.0999999991618097,
+          "vegetationMs": 0.599999999627471,
+          "drawCalls": 111,
+          "triangles": 66966
+        },
+        "moving": {
+          "updateMs": {
+            "mean": 2.9516666666371747,
+            "p95": 6.600000000093132,
+            "max": 10.799999999813735
+          },
+          "drawSubmitMs": {
+            "mean": 0.626666666714785,
+            "p95": 1,
+            "max": 1.1000000000931323
+          },
+          "frameMs": {
+            "mean": 27.080000000004656,
+            "p95": 32.8000000002794,
+            "max": 35.799999999813735
+          },
+          "columnChecks": 45760,
+          "lodMs": 27.299999999813735,
+          "vegetationMs": 0.7999999998137355,
+          "drawCalls": 111,
+          "triangles": 66966
+        },
+        "backtracking": {
+          "updateMs": {
+            "mean": 4.571666666686846,
+            "p95": 7.800000000279397,
+            "max": 8.600000000093132
+          },
+          "drawSubmitMs": {
+            "mean": 0.6433333333271245,
+            "p95": 0.8999999999068677,
+            "max": 1.1000000000931323
+          },
+          "frameMs": {
+            "mean": 31.821666666671323,
+            "p95": 35.799999999813735,
+            "max": 48.799999999813735
+          },
+          "columnChecks": 77568,
+          "lodMs": 48.6999999997206,
+          "vegetationMs": 0.8000000002793968,
+          "drawCalls": 121,
+          "triangles": 79230
+        }
+      },
+      "lod": {
+        "requests": 73,
+        "generated": 73,
+        "evictions": 4,
+        "cancelled": 0,
+        "coarseCpuMs": 289.6999999997206,
+        "installationMs": 42.39999999990687,
+        "bytes": {
+          "0": 7357984,
+          "1": 1245184,
+          "2": 2967040
+        },
+        "firstGeometryMs": 9.800000000279397,
+        "started": 234430.59999999963,
+        "queue": 0,
+        "maskPasses": 121,
+        "maskCpuMs": 126.00000000186265,
+        "planningCpuMs": 2.4999999995343387,
+        "requestedRegions": 65,
+        "distanceCandidateRegions": 65,
+        "missingRequestedTiles": 0,
+        "triangles": 54592,
+        "drawCalls": 103,
+        "levels": {
+          "0": 48,
+          "1": 4,
+          "2": 61
+        },
+        "visibilityDistance": 512,
+        "predictive": true,
+        "refinementColumns": 0,
+        "tiles": 65,
+        "queueAgeMs": 0,
+        "gpuUploadMs": null
+      },
+      "vegetation": {
+        "requests": 0,
+        "evictions": 0,
+        "cancelled": 0,
+        "cacheHits": 0,
+        "transitions": 0,
+        "generationMs": 0,
+        "installationMs": 0,
+        "bytes": 0,
+        "firstInstalledMs": null,
+        "started": 234430.59999999963,
+        "aheadRequests": 0,
+        "regions": 0,
+        "queue": 0,
+        "representedTrees": 0,
+        "levels": {
+          "0": 0,
+          "1": 0,
+          "2": 0
+        },
+        "proxyCells": 0,
+        "proxyBoxes": 0,
+        "triangles": 0,
+        "drawCalls": 0,
+        "queueAgeMs": 0,
+        "visibleCoverage": null,
+        "gpuUploadMs": null
+      },
+      "chunks": 48,
+      "geometry": 76
+    },
+    {
+      "size": [
+        4000,
+        4000
+      ],
+      "anchor": 20,
+      "mode": "voxel",
+      "distantTerrain": false,
+      "distantVegetation": true,
+      "startupMs": 455,
+      "firstCoarseMs": null,
+      "steps": 160,
+      "drained": true,
+      "phases": {
+        "settled": {
+          "updateMs": {
+            "mean": 0.034999999986030164,
+            "p95": 0.10000000009313226,
+            "max": 0.20000000018626451
+          },
+          "drawSubmitMs": {
+            "mean": 1.2933333333116024,
+            "p95": 1.8999999999068677,
+            "max": 25.299999999813735
+          },
+          "frameMs": {
+            "mean": 39.68499999999379,
+            "p95": 43.5,
+            "max": 128
+          },
+          "columnChecks": 0,
+          "lodMs": 0,
+          "vegetationMs": 0.7999999998137355,
+          "drawCalls": 75,
+          "triangles": 39314
+        },
+        "moving": {
+          "updateMs": {
+            "mean": 2.3899999999906867,
+            "p95": 12.300000000279397,
+            "max": 13.600000000093132
+          },
+          "drawSubmitMs": {
+            "mean": 0.7600000000015522,
+            "p95": 1.1000000000931323,
+            "max": 1.3999999999068677
+          },
+          "frameMs": {
+            "mean": 41.46833333333488,
+            "p95": 53.10000000009313,
+            "max": 55.10000000009313
+          },
+          "columnChecks": 0,
+          "lodMs": 0.20000000018626451,
+          "vegetationMs": 12.899999999441206,
+          "drawCalls": 78,
+          "triangles": 39314
+        },
+        "backtracking": {
+          "updateMs": {
+            "mean": 3.3083333333410945,
+            "p95": 14.700000000186265,
+            "max": 16.899999999906868
+          },
+          "drawSubmitMs": {
+            "mean": 0.8633333333302289,
+            "p95": 1.3000000002793968,
+            "max": 1.8999999999068677
+          },
+          "frameMs": {
+            "mean": 49.37333333333178,
+            "p95": 69.79999999981374,
+            "max": 72.60000000009313
+          },
+          "columnChecks": 0,
+          "lodMs": 0,
+          "vegetationMs": 66.60000000009313,
+          "drawCalls": 88,
+          "triangles": 56042
+        }
+      },
+      "lod": {
+        "requests": 0,
+        "generated": 0,
+        "evictions": 0,
+        "cancelled": 0,
+        "coarseCpuMs": 0,
+        "installationMs": 0,
+        "bytes": {
+          "0": 6404200,
+          "1": 0,
+          "2": 0
+        },
+        "firstGeometryMs": null,
+        "started": 240522.09999999963,
+        "queue": 0,
+        "maskPasses": 0,
+        "maskCpuMs": 0,
+        "planningCpuMs": 0,
+        "triangles": 0,
+        "drawCalls": 0,
+        "levels": {
+          "0": 43,
+          "1": 0,
+          "2": 0
+        },
+        "visibilityDistance": 512,
+        "predictive": true,
+        "refinementColumns": 0,
+        "tiles": 0,
+        "queueAgeMs": 0,
+        "gpuUploadMs": null
+      },
+      "vegetation": {
+        "requests": 31,
+        "evictions": 0,
+        "cancelled": 1,
+        "cacheHits": 86,
+        "transitions": 5,
+        "generationMs": 247,
+        "installationMs": 30.899999999441206,
+        "bytes": 514048,
+        "firstInstalledMs": 36.700000000186265,
+        "started": 240522.09999999963,
+        "aheadRequests": 0,
+        "lastRequestLatencyMs": 1481,
+        "regions": 24,
+        "queue": 1,
+        "representedTrees": 115,
+        "levels": {
+          "0": 2,
+          "1": 26,
+          "2": 89
+        },
+        "proxyCells": 7693,
+        "proxyBoxes": 2506,
+        "triangles": 30072,
+        "drawCalls": 73,
+        "queueAgeMs": 2924.2999999998137,
+        "visibleCoverage": null,
+        "gpuUploadMs": null
+      },
+      "chunks": 43,
+      "geometry": 12
+    },
+    {
+      "size": [
+        4000,
+        4000
+      ],
+      "anchor": 20,
+      "mode": "voxel",
+      "distantTerrain": true,
+      "distantVegetation": true,
+      "startupMs": 1198.6999999997206,
+      "firstCoarseMs": 30.199999999720603,
+      "steps": 170,
+      "drained": true,
+      "phases": {
+        "settled": {
+          "updateMs": {
+            "mean": 0.05333333331315468,
+            "p95": 0.10000000009313226,
+            "max": 0.20000000018626451
+          },
+          "drawSubmitMs": {
+            "mean": 1.8166666666278615,
+            "p95": 2.8999999999068677,
+            "max": 27.600000000093132
+          },
+          "frameMs": {
+            "mean": 60.720000000003104,
+            "p95": 63.5,
+            "max": 204
+          },
+          "columnChecks": 0,
+          "lodMs": 0.900000000372529,
+          "vegetationMs": 0.2999999998137355,
+          "drawCalls": 177,
+          "triangles": 93522
+        },
+        "moving": {
+          "updateMs": {
+            "mean": 3.25166666667598,
+            "p95": 7.099999999627471,
+            "max": 9.5
+          },
+          "drawSubmitMs": {
+            "mean": 1.2333333333333334,
+            "p95": 1.7999999998137355,
+            "max": 1.8999999999068677
+          },
+          "frameMs": {
+            "mean": 62.36333333333023,
+            "p95": 72.79999999981374,
+            "max": 75.5
+          },
+          "columnChecks": 45760,
+          "lodMs": 23.600000000093132,
+          "vegetationMs": 13.500000000931323,
+          "drawCalls": 180,
+          "triangles": 93522
+        },
+        "backtracking": {
+          "updateMs": {
+            "mean": 4.484999999993791,
+            "p95": 8.5,
+            "max": 9.200000000186265
+          },
+          "drawSubmitMs": {
+            "mean": 1.3233333333705863,
+            "p95": 1.8999999999068677,
+            "max": 2.3000000002793968
+          },
+          "frameMs": {
+            "mean": 74.76000000000155,
+            "p95": 96.6999999997206,
+            "max": 125.60000000009313
+          },
+          "columnChecks": 65088,
+          "lodMs": 41.99999999906868,
+          "vegetationMs": 67.70000000065193,
+          "drawCalls": 193,
+          "triangles": 113862
+        }
+      },
+      "lod": {
+        "requests": 73,
+        "generated": 73,
+        "evictions": 4,
+        "cancelled": 0,
+        "coarseCpuMs": 297.0999999982305,
+        "installationMs": 42.3000000002794,
+        "bytes": {
+          "0": 6660040,
+          "1": 1245184,
+          "2": 2967040
+        },
+        "firstGeometryMs": 26.199999999720603,
+        "started": 248811.8999999999,
+        "queue": 0,
+        "maskPasses": 116,
+        "maskCpuMs": 115.5,
+        "planningCpuMs": 3.2000000001862645,
+        "requestedRegions": 65,
+        "distanceCandidateRegions": 65,
+        "missingRequestedTiles": 0,
+        "triangles": 54592,
+        "drawCalls": 103,
+        "levels": {
+          "0": 45,
+          "1": 4,
+          "2": 61
+        },
+        "visibilityDistance": 512,
+        "predictive": true,
+        "refinementColumns": 0,
+        "tiles": 65,
+        "queueAgeMs": 0,
+        "gpuUploadMs": null
+      },
+      "vegetation": {
+        "requests": 31,
+        "evictions": 0,
+        "cancelled": 1,
+        "cacheHits": 86,
+        "transitions": 6,
+        "generationMs": 263.99999999813735,
+        "installationMs": 36.399999998975545,
+        "bytes": 575296,
+        "firstInstalledMs": 51.6999999997206,
+        "started": 248811.8999999999,
+        "aheadRequests": 0,
+        "lastRequestLatencyMs": 4061.9000000003725,
+        "regions": 24,
+        "queue": 0,
+        "representedTrees": 115,
+        "levels": {
+          "0": 2,
+          "1": 32,
+          "2": 83
+        },
+        "proxyCells": 8650,
+        "proxyBoxes": 2775,
+        "triangles": 33300,
+        "drawCalls": 73,
+        "queueAgeMs": 0,
+        "visibleCoverage": null,
+        "gpuUploadMs": null
+      },
+      "chunks": 45,
+      "geometry": 77
+    },
+    {
+      "size": [
+        4000,
+        4000
+      ],
+      "anchor": 20,
+      "mode": "polygonal",
+      "distantTerrain": false,
+      "distantVegetation": false,
+      "startupMs": 1107.7999999998137,
+      "firstCoarseMs": null,
+      "steps": 260,
+      "drained": true,
+      "phases": {
+        "settled": {
+          "updateMs": {
+            "mean": 0.06166666665424903,
+            "p95": 0.19999999972060323,
+            "max": 0.2999999998137355
+          },
+          "drawSubmitMs": {
+            "mean": 0.4650000000372529,
+            "p95": 0.6000000000931323,
+            "max": 5.2000000001862645
+          },
+          "frameMs": {
+            "mean": 16.910000000001553,
+            "p95": 17.100000000093132,
+            "max": 47.09999999962747
+          },
+          "columnChecks": 0,
+          "lodMs": 0.10000000009313226,
+          "vegetationMs": 0.7000000001862645,
+          "drawCalls": 9,
+          "triangles": 12758
+        },
+        "moving": {
+          "updateMs": {
+            "mean": 2.7683333333193634,
+            "p95": 4.2000000001862645,
+            "max": 8.199999999720603
+          },
+          "drawSubmitMs": {
+            "mean": 0.23333333336437742,
+            "p95": 0.5,
+            "max": 0.6000000000931323
+          },
+          "frameMs": {
+            "mean": 16.660000000001553,
+            "p95": 17,
+            "max": 17.100000000093132
+          },
+          "columnChecks": 0,
+          "lodMs": 0.10000000009313226,
+          "vegetationMs": 0.2999999998137355,
+          "drawCalls": 9,
+          "triangles": 12758
+        },
+        "backtracking": {
+          "updateMs": {
+            "mean": 4.1049999999891345,
+            "p95": 5.2999999998137355,
+            "max": 8.899999999906868
+          },
+          "drawSubmitMs": {
+            "mean": 0.1599999999937912,
+            "p95": 0.3000000002793968,
+            "max": 0.3000000002793968
+          },
+          "frameMs": {
+            "mean": 16.660000000001553,
+            "p95": 17,
+            "max": 17.100000000093132
+          },
+          "columnChecks": 0,
+          "lodMs": 0.19999999972060323,
+          "vegetationMs": 0.39999999990686774,
+          "drawCalls": 11,
+          "triangles": 17272
+        }
+      },
+      "lod": {
+        "requests": 0,
+        "generated": 0,
+        "evictions": 0,
+        "cancelled": 0,
+        "coarseCpuMs": 0,
+        "installationMs": 0,
+        "bytes": {
+          "0": 1584192,
+          "1": 0,
+          "2": 0
+        },
+        "firstGeometryMs": null,
+        "started": 261884.5,
+        "queue": 0,
+        "maskPasses": 0,
+        "maskCpuMs": 0,
+        "planningCpuMs": 0,
+        "triangles": 0,
+        "drawCalls": 0,
+        "levels": {
+          "0": 19,
+          "1": 0,
+          "2": 0
+        },
+        "visibilityDistance": 512,
+        "predictive": true,
+        "refinementColumns": 0,
+        "tiles": 0,
+        "queueAgeMs": 0,
+        "gpuUploadMs": null
+      },
+      "vegetation": {
+        "requests": 0,
+        "evictions": 0,
+        "cancelled": 0,
+        "cacheHits": 0,
+        "transitions": 0,
+        "generationMs": 0,
+        "installationMs": 0,
+        "bytes": 0,
+        "firstInstalledMs": null,
+        "started": 261884.5,
+        "aheadRequests": 0,
+        "regions": 0,
+        "queue": 0,
+        "representedTrees": 0,
+        "levels": {
+          "0": 0,
+          "1": 0,
+          "2": 0
+        },
+        "proxyCells": 0,
+        "proxyBoxes": 0,
+        "triangles": 0,
+        "drawCalls": 0,
+        "queueAgeMs": 0,
+        "visibleCoverage": null,
+        "gpuUploadMs": null
+      },
+      "chunks": 19,
+      "geometry": 7
+    },
+    {
+      "size": [
+        4000,
+        4000
+      ],
+      "anchor": 20,
+      "mode": "polygonal",
+      "distantTerrain": true,
+      "distantVegetation": false,
+      "startupMs": 1508.2999999998137,
+      "firstCoarseMs": 19.200000000186265,
+      "steps": 270,
+      "drained": true,
+      "phases": {
+        "settled": {
+          "updateMs": {
+            "mean": 0.05666666666511446,
+            "p95": 0.10000000009313226,
+            "max": 0.2999999998137355
+          },
+          "drawSubmitMs": {
+            "mean": 0.8966666666635622,
+            "p95": 1.1000000000931323,
+            "max": 11.100000000093132
+          },
+          "frameMs": {
+            "mean": 28.26000000000155,
+            "p95": 45.799999999813735,
+            "max": 83.60000000009313
+          },
+          "columnChecks": 0,
+          "lodMs": 1.1000000005587935,
+          "vegetationMs": 0.8000000002793968,
+          "drawCalls": 111,
+          "triangles": 66966
+        },
+        "moving": {
+          "updateMs": {
+            "mean": 3.0683333333116023,
+            "p95": 6.800000000279397,
+            "max": 8
+          },
+          "drawSubmitMs": {
+            "mean": 0.6383333333302289,
+            "p95": 0.900000000372529,
+            "max": 1.1000000000931323
+          },
+          "frameMs": {
+            "mean": 28.793333333334886,
+            "p95": 36.60000000009313,
+            "max": 40.39999999990687
+          },
+          "columnChecks": 29056,
+          "lodMs": 20.799999998882413,
+          "vegetationMs": 0.3000000002793968,
+          "drawCalls": 111,
+          "triangles": 66966
+        },
+        "backtracking": {
+          "updateMs": {
+            "mean": 4.983333333302289,
+            "p95": 8.200000000186265,
+            "max": 9.700000000186265
+          },
+          "drawSubmitMs": {
+            "mean": 0.7033333333441988,
+            "p95": 1,
+            "max": 1.2999999998137355
+          },
+          "frameMs": {
+            "mean": 34.03999999999845,
+            "p95": 44.09999999962747,
+            "max": 44.3000000002794
+          },
+          "columnChecks": 56320,
+          "lodMs": 41.09999999823049,
+          "vegetationMs": 0.7999999988824129,
+          "drawCalls": 119,
+          "triangles": 74286
+        }
+      },
+      "lod": {
+        "requests": 73,
+        "generated": 73,
+        "evictions": 4,
+        "cancelled": 0,
+        "coarseCpuMs": 293.89999999897555,
+        "installationMs": 41.299999999813735,
+        "bytes": {
+          "0": 3168344,
+          "1": 1245184,
+          "2": 2967040
+        },
+        "firstGeometryMs": 16.600000000093132,
+        "started": 266008.7999999998,
+        "queue": 0,
+        "maskPasses": 120,
+        "maskCpuMs": 119.59999999916181,
+        "planningCpuMs": 3,
+        "requestedRegions": 65,
+        "distanceCandidateRegions": 65,
+        "missingRequestedTiles": 0,
+        "triangles": 54656,
+        "drawCalls": 103,
+        "levels": {
+          "0": 41,
+          "1": 4,
+          "2": 61
+        },
+        "visibilityDistance": 512,
+        "predictive": true,
+        "refinementColumns": 0,
+        "tiles": 65,
+        "queueAgeMs": 0,
+        "gpuUploadMs": null
+      },
+      "vegetation": {
+        "requests": 0,
+        "evictions": 0,
+        "cancelled": 0,
+        "cacheHits": 0,
+        "transitions": 0,
+        "generationMs": 0,
+        "installationMs": 0,
+        "bytes": 0,
+        "firstInstalledMs": null,
+        "started": 266008.7999999998,
+        "aheadRequests": 0,
+        "regions": 0,
+        "queue": 0,
+        "representedTrees": 0,
+        "levels": {
+          "0": 0,
+          "1": 0,
+          "2": 0
+        },
+        "proxyCells": 0,
+        "proxyBoxes": 0,
+        "triangles": 0,
+        "drawCalls": 0,
+        "queueAgeMs": 0,
+        "visibleCoverage": null,
+        "gpuUploadMs": null
+      },
+      "chunks": 41,
+      "geometry": 73
+    },
+    {
+      "size": [
+        4000,
+        4000
+      ],
+      "anchor": 20,
+      "mode": "polygonal",
+      "distantTerrain": false,
+      "distantVegetation": true,
+      "startupMs": 1337,
+      "firstCoarseMs": null,
+      "steps": 260,
+      "drained": true,
+      "phases": {
+        "settled": {
+          "updateMs": {
+            "mean": 0.025,
+            "p95": 0.10000000009313226,
+            "max": 0.10000000009313226
+          },
+          "drawSubmitMs": {
+            "mean": 1.2716666666946064,
+            "p95": 1.3999999999068677,
+            "max": 25
+          },
+          "frameMs": {
+            "mean": 40.791666666666664,
+            "p95": 43.700000000186265,
+            "max": 161.29999999981374
+          },
+          "columnChecks": 0,
+          "lodMs": 0,
+          "vegetationMs": 0.7999999998137355,
+          "drawCalls": 75,
+          "triangles": 39314
+        },
+        "moving": {
+          "updateMs": {
+            "mean": 2.908333333333333,
+            "p95": 7.2000000001862645,
+            "max": 7.800000000279397
+          },
+          "drawSubmitMs": {
+            "mean": 0.7300000000046566,
+            "p95": 1.1000000000931323,
+            "max": 1.1000000000931323
+          },
+          "frameMs": {
+            "mean": 42.42666666666046,
+            "p95": 50.60000000009313,
+            "max": 52.5
+          },
+          "columnChecks": 0,
+          "lodMs": 0.10000000009313226,
+          "vegetationMs": 12.399999999906868,
+          "drawCalls": 76,
+          "triangles": 39314
+        },
+        "backtracking": {
+          "updateMs": {
+            "mean": 5.178333333305393,
+            "p95": 7.899999999906868,
+            "max": 9.399999999906868
+          },
+          "drawSubmitMs": {
+            "mean": 0.7299999999736125,
+            "p95": 1.1000000000931323,
+            "max": 1.2000000001862645
+          },
+          "frameMs": {
+            "mean": 48.46500000000621,
+            "p95": 55.8000000002794,
+            "max": 56.8000000002794
+          },
+          "columnChecks": 0,
+          "lodMs": 0.20000000018626451,
+          "vegetationMs": 64.99999999953434,
+          "drawCalls": 84,
+          "triangles": 51034
+        }
+      },
+      "lod": {
+        "requests": 0,
+        "generated": 0,
+        "evictions": 0,
+        "cancelled": 0,
+        "coarseCpuMs": 0,
+        "installationMs": 0,
+        "bytes": {
+          "0": 1910912,
+          "1": 0,
+          "2": 0
+        },
+        "firstGeometryMs": null,
+        "started": 272987,
+        "queue": 0,
+        "maskPasses": 0,
+        "maskCpuMs": 0,
+        "planningCpuMs": 0,
+        "triangles": 0,
+        "drawCalls": 0,
+        "levels": {
+          "0": 23,
+          "1": 0,
+          "2": 0
+        },
+        "visibilityDistance": 512,
+        "predictive": true,
+        "refinementColumns": 0,
+        "tiles": 0,
+        "queueAgeMs": 0,
+        "gpuUploadMs": null
+      },
+      "vegetation": {
+        "requests": 31,
+        "evictions": 0,
+        "cancelled": 1,
+        "cacheHits": 86,
+        "transitions": 5,
+        "generationMs": 275.10000000102445,
+        "installationMs": 35.1999999997206,
+        "bytes": 514048,
+        "firstInstalledMs": 29,
+        "started": 272987,
+        "aheadRequests": 0,
+        "lastRequestLatencyMs": 1470.6999999997206,
+        "regions": 24,
+        "queue": 1,
+        "representedTrees": 116,
+        "levels": {
+          "0": 1,
+          "1": 27,
+          "2": 89
+        },
+        "proxyCells": 7726,
+        "proxyBoxes": 2520,
+        "triangles": 30240,
+        "drawCalls": 73,
+        "queueAgeMs": 2867.2999999998137,
+        "visibleCoverage": null,
+        "gpuUploadMs": null
+      },
+      "chunks": 23,
+      "geometry": 9
+    },
+    {
+      "size": [
+        4000,
+        4000
+      ],
+      "anchor": 20,
+      "mode": "polygonal",
+      "distantTerrain": true,
+      "distantVegetation": true,
+      "startupMs": 1735.1000000000931,
+      "firstCoarseMs": 15.300000000279397,
+      "steps": 270,
+      "drained": true,
+      "phases": {
+        "settled": {
+          "updateMs": {
+            "mean": 0.049999999984477954,
+            "p95": 0.10000000009313226,
+            "max": 0.10000000009313226
+          },
+          "drawSubmitMs": {
+            "mean": 1.71166666666201,
+            "p95": 2,
+            "max": 25.899999999906868
+          },
+          "frameMs": {
+            "mean": 60.418333333334886,
+            "p95": 63.6999999997206,
+            "max": 190.5
+          },
+          "columnChecks": 0,
+          "lodMs": 1.199999999254942,
+          "vegetationMs": 0.8000000002793968,
+          "drawCalls": 177,
+          "triangles": 93522
+        },
+        "moving": {
+          "updateMs": {
+            "mean": 3.1583333333410946,
+            "p95": 7.100000000093132,
+            "max": 8.600000000093132
+          },
+          "drawSubmitMs": {
+            "mean": 1.1066666666651144,
+            "p95": 1.6000000000931323,
+            "max": 1.8000000002793968
+          },
+          "frameMs": {
+            "mean": 61.67333333333954,
+            "p95": 68,
+            "max": 81
+          },
+          "columnChecks": 29120,
+          "lodMs": 16.5,
+          "vegetationMs": 11.899999999906868,
+          "drawCalls": 179,
+          "triangles": 93522
+        },
+        "backtracking": {
+          "updateMs": {
+            "mean": 4.471666666632518,
+            "p95": 8.399999999906868,
+            "max": 9.600000000093132
+          },
+          "drawSubmitMs": {
+            "mean": 1.288333333369034,
+            "p95": 1.900000000372529,
+            "max": 2
+          },
+          "frameMs": {
+            "mean": 68.275,
+            "p95": 75.8000000002794,
+            "max": 82.29999999981374
+          },
+          "columnChecks": 47936,
+          "lodMs": 33.59999999962747,
+          "vegetationMs": 66.70000000018626,
+          "drawCalls": 191,
+          "triangles": 109360
+        }
+      },
+      "lod": {
+        "requests": 73,
+        "generated": 73,
+        "evictions": 4,
+        "cancelled": 0,
+        "coarseCpuMs": 306.4000000008382,
+        "installationMs": 58.100000001024455,
+        "bytes": {
+          "0": 3179776,
+          "1": 1245184,
+          "2": 2967040
+        },
+        "firstGeometryMs": 11.200000000186265,
+        "started": 282228.2999999998,
+        "queue": 0,
+        "maskPasses": 120,
+        "maskCpuMs": 119.79999999888241,
+        "planningCpuMs": 2,
+        "requestedRegions": 65,
+        "distanceCandidateRegions": 65,
+        "missingRequestedTiles": 0,
+        "triangles": 54656,
+        "drawCalls": 103,
+        "levels": {
+          "0": 41,
+          "1": 4,
+          "2": 61
+        },
+        "visibilityDistance": 512,
+        "predictive": true,
+        "refinementColumns": 0,
+        "tiles": 65,
+        "queueAgeMs": 0,
+        "gpuUploadMs": null
+      },
+      "vegetation": {
+        "requests": 31,
+        "evictions": 0,
+        "cancelled": 1,
+        "cacheHits": 86,
+        "transitions": 6,
+        "generationMs": 258.499999998603,
+        "installationMs": 37.799999999813735,
+        "bytes": 575296,
+        "firstInstalledMs": 38,
+        "started": 282228.2999999998,
+        "aheadRequests": 0,
+        "lastRequestLatencyMs": 3611,
+        "regions": 24,
+        "queue": 0,
+        "representedTrees": 115,
+        "levels": {
+          "0": 2,
+          "1": 32,
+          "2": 83
+        },
+        "proxyCells": 8650,
+        "proxyBoxes": 2775,
+        "triangles": 33300,
+        "drawCalls": 73,
+        "queueAgeMs": 0,
+        "visibleCoverage": null,
+        "gpuUploadMs": null
+      },
+      "chunks": 41,
+      "geometry": 75
+    }
+  ],
+  "platform": "Headless Chromium SwiftShader, 640x480. GPU execution and GC pauses not measured; draw submission is not GPU execution time."
+}

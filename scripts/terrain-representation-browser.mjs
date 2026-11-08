@@ -32,7 +32,7 @@ try{
   for(let i=0;i<200&&!stlMesh.userData.objectFileExtension;i++)await new Promise(r=>setTimeout(r,20));check(stlMesh.userData.objectFileExtension==='stl','native STL loader ready');
   const root=context.objects.find(o=>o.userData.terrainRuntime&&o.userData.nvType==='procedural-voxel-world'),runtime=root.userData.terrainRuntime;await runtime.ready;
   camera.position.set(8,24,28);camera.lookAt(8,0,8);const cameraState=[...camera.position.toArray(),...camera.quaternion.toArray()],environment=JSON.stringify(movementState.environment);
-  for(let i=0;i<35;i++)runtime.update(new THREE.Vector3(8,12,8));
+  const deadline=performance.now()+30000;while(!runtime.manager.loaded.size&&performance.now()<deadline){runtime.update(new THREE.Vector3(8,12,8));await new Promise(requestAnimationFrame);}
   check(runtime.manager.loaded.size>0&&root.children.length>0,'terrain chunks actually rendered');
   const imports=context.objects.filter(o=>o.userData.modelRuntime||o===stlMesh),identities=imports.map(o=>{const geometry=[];o.traverse(c=>{if(c.geometry)geometry.push(c.geometry.uuid);});return {object:o,position:o.position.toArray(),geometry};}),readCounts=JSON.stringify([...reads]),colliderCount=context.colliders.length;
   const renderer=new THREE.WebGLRenderer();renderer.setSize(640,480);panel.append(renderer.domElement);scene.add(new THREE.HemisphereLight(0xffffff,0x999999,3));

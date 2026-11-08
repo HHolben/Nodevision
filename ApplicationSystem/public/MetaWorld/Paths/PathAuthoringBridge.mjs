@@ -1,5 +1,6 @@
 // Nodevision/ApplicationSystem/public/MetaWorld/Paths/PathAuthoringBridge.mjs
 // This module installs path editing on the existing world layer/history bridge and synchronizes derived terrain constraints after edits, deletion, regeneration, and history restoration.
+import {terrainPointCovered} from '../ProceduralVoxelWorld/TerrainCoverage.mjs';
 import {pathSurface} from './PathSurface.mjs';
 import { worldAuthoringAllowed } from '../WorldAuthoringPermissions.mjs';
 import { validatePath } from './PathDefinition.mjs';
@@ -11,10 +12,11 @@ export function installPathAuthoring(bridge,{THREE,scene,objects,colliders,layer
     for(const o of objects) {
       const r=o.userData?.proceduralVoxelRuntime;if(!r)continue;
       const vx=Math.floor((x-o.position.x)/.25),vz=Math.floor((z-o.position.z)/.25),base=r.generator.base;
-      if(vx>=0&&vz>=0&&vx<base.dimensions[0]&&vz<base.dimensions[2]) {
+      if(base.dimensions.infinite||vx>=0&&vz>=0&&vx<base.dimensions[0]&&vz<base.dimensions[2]) {
         if(r.map){if(!r.map.reader||![0,.5].every(dx=>[0,.5].every(dz=>r.mapSampleReady([x+dx,0,z+dz])))){r.requestMapPoint(x,z);return NaN;}if(r.definition.terrainMap.outside!=='procedural'&&!r.map.reader.covers(x-o.position.x,z-o.position.z))return NaN;}
+        if(!terrainPointCovered(r,x,z))return NaN;
         const tx=(x-o.position.x)/.25-vx,tz=(z-o.position.z)/.25-vz;
-        const h=(dx,dz)=>base.getTerrainHeight(Math.min(base.dimensions[0]-1,vx+dx),Math.min(base.dimensions[2]-1,vz+dz));
+        const h=(dx,dz)=>base.getTerrainHeight(base.dimensions.infinite?vx+dx:Math.min(base.dimensions[0]-1,vx+dx),base.dimensions.infinite?vz+dz:Math.min(base.dimensions[2]-1,vz+dz));
         return o.position.y+(r.definition.heightLimits?.min||0)+((h(0,0)*(1-tx)+h(1,0)*tx)*(1-tz)+(h(0,1)*(1-tx)+h(1,1)*tx)*tz)*.25;
       }
     }

@@ -7,8 +7,9 @@ export function terrainStreaming(value = {}) {
     if (!Number.isFinite(n) || n < min || n > max) throw Error(`${key} must be between ${min} and ${max}.`);
     return n;
   };
-  for (const key of ['enabled', 'predictive']) if (value[key] !== undefined && typeof value[key] !== 'boolean') throw Error(`${key} must be a boolean.`);
+  for (const key of ['enabled', 'predictive', 'vegetationEnabled']) if (value[key] !== undefined && typeof value[key] !== 'boolean') throw Error(`${key} must be a boolean.`);
   return { enabled: value.enabled ?? true, predictive: value.predictive ?? true,
     visibilityDistance: number('visibilityDistance', 512, 64, 2048),
+    vegetationEnabled: value.vegetationEnabled ?? true, vegetationDistance: number('vegetationDistance', 160, 32, 512),
     coarseBudgetMiB: number('coarseBudgetMiB', 32, 4, 64) };
 }

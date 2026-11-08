@@ -26,7 +26,9 @@ test('authored additions and removals survive polygonal geometry and return to v
   const session=createSessionLayer({changed:cells=>r.invalidateSession(cells)});r.bindSession(session,p=>p);
   const material={materialId:'stone',rgba:[180,190,200,255],solid:true,customColor:true};
   session.batch([{at:[16,80,16],value:material},{at:[16,1,16],value:null}]);
-  for(let i=0;i<50;i++)r.update(new THREE.Vector3(4,25,4));
+  const deadline=performance.now()+10000;
+  while(!r.manager.loaded.get('0,2,0')?.mesh&&performance.now()<deadline){r.update(new THREE.Vector3(4,25,4));await new Promise(resolve=>setTimeout(resolve,0));}
+  assert.ok(r.manager.loaded.get('0,2,0')?.mesh,'authored block chunk finishes progressive installation');
   const value=r.generator.getVoxel(16,80,16);assert.ok(value>0);
   for(const mode of ['polygonal','voxel','polygonal']){
     await r.setRepresentation(mode);assert.equal(r.generator.getVoxel(16,80,16),value);assert.equal(r.generator.getVoxel(16,1,16),0);assert.equal(session.count,2);

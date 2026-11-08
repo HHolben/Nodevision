@@ -1,12 +1,13 @@
 // Nodevision/ApplicationSystem/public/MetaWorld/Aegean/ProtectedRegions.mjs
 // This module preserves bounded terrain recipes beneath authored content and excludes procedural vegetation without baking world-sized voxel snapshots.
+import {infiniteWorld} from '../ProceduralVoxelWorld/WorldExtent.mjs';
 import { createCoastalField } from './CoastalField.mjs';
 import { validateAegean } from './AegeanDefinition.mjs';
 export function validateProtectedRegions(def) {
   const regions=def.protectedRegions;if(regions===undefined)return;
   if(!def.environment||!Array.isArray(regions)||regions.length>256)throw Error('Aegean protection requires at most 256 regions.');
   for(const r of regions){
-    if(typeof r.id!=='string'||!Array.isArray(r.min)||!Array.isArray(r.max)||r.min.length!==2||r.max.length!==2||![...r.min,...r.max].every(Number.isInteger)||r.min.some((v,i)=>v<0||r.max[i]<=v||r.max[i]>def.size[i===0?0:2]*4))throw Error('Invalid protected terrain region.');
+    if(typeof r.id!=='string'||!Array.isArray(r.min)||!Array.isArray(r.max)||r.min.length!==2||r.max.length!==2||![...r.min,...r.max].every(Number.isInteger)||r.min.some((v,i)=>r.max[i]<=v||!infiniteWorld(def)&&(v<0||r.max[i]>def.size[i===0?0:2]*4)))throw Error('Invalid protected terrain region.');
     if(!Number.isInteger(r.seed)||r.seed< -2147483648||r.seed>2147483647)throw Error('Invalid protection seed.');
     if(!r.environment)throw Error('Protected terrain requires its original environment definition.');
     validateAegean({...def,environment:r.environment});
@@ -31,8 +32,8 @@ export function preserveAuthoredGround(THREE,current,next,objects) {
   for(const object of objects){
     if(object.userData?.proceduralVoxelRuntime||object.userData?.pathRuntime)continue;
     object.updateMatrixWorld(true);const bounds=new THREE.Box3().setFromObject(object);if(bounds.isEmpty())continue;
-    const min=[bounds.min.x,bounds.min.z].map((v,i)=>Math.max(0,Math.floor((v-current.position[i===0?0:2]-2)*4)));
-    const max=[bounds.max.x,bounds.max.z].map((v,i)=>Math.min(current.size[i===0?0:2]*4,Math.ceil((v-current.position[i===0?0:2]+2)*4)));
+    const min=[bounds.min.x,bounds.min.z].map((v,i)=>(infiniteWorld(current)?Math.floor((v-current.position[i===0?0:2]-2)*4):Math.max(0,Math.floor((v-current.position[i===0?0:2]-2)*4))));
+    const max=[bounds.max.x,bounds.max.z].map((v,i)=>(infiniteWorld(current)?Math.ceil((v-current.position[i===0?0:2]+2)*4):Math.min(current.size[i===0?0:2]*4,Math.ceil((v-current.position[i===0?0:2]+2)*4))));
     if(min.some((v,i)=>v>=max[i]))continue;
     if(regions.some(r=>r.min.every((v,i)=>v<=min[i]&&r.max[i]>=max[i])))continue;
     regions.push({id:'authored:'+String(object.userData.metaWorldLayerId||object.uuid),min,max,seed:current.generator.seed,environment:structuredClone(current.environment),generation:structuredClone(current.generation||{})});

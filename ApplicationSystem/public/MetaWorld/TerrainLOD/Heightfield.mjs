@@ -1,15 +1,16 @@
 // Nodevision/ApplicationSystem/public/MetaWorld/TerrainLOD/Heightfield.mjs
 // This resumable builder samples the existing metre-space source and composed surface without creating voxel volumes. Eight-metre sections permit independent handoff to detailed columns, with downward skirts covering resolution mismatches.
+import {infiniteWorld} from '../ProceduralVoxelWorld/WorldExtent.mjs';
 import {coarseCoverage} from './Coverage.mjs';
 import { WATER_VOXEL } from '../ProceduralVoxelWorld/VoxelMaterialIds.mjs';
 export function* heightfieldSteps(generator, definition, tx, tz, level, modified = () => false, refineCoverage = true) {
   const coverage=coarseCoverage(definition),step=level===1?2:8, sections=[], floor=definition.heightLimits?.min||0;
-  const width=definition.size[0],depth=definition.size[2], cache=new Map();
+  const infinite=infiniteWorld(definition),width=infinite?(tx+1)*64:definition.size[0],depth=infinite?(tz+1)*64:definition.size[2], cache=new Map();
   function sample(x,z) {
     const key=`${x},${z}`;if(cache.has(key))return cache.get(key);
     // Sample the final interior cell on the outer boundary; never extend the footprint.
-    const px=Math.min(width-.125,x),pz=Math.min(depth-.125,z);
-    if(x<0||z<0||x>width||z>depth)return null;
+    const px=infinite?x:Math.min(width-.125,x),pz=infinite?z:Math.min(depth-.125,z);
+    if(!infinite&&(x<0||z<0||x>width||z>depth))return null;
     let source=generator.terrainSampler.sample(px,pz);
     if(!source.covered&&!source.pending&&definition.terrainMap?.outside==='procedural')source={covered:true,elevation:floor+generator.getTerrainHeight(Math.floor(px/.25),Math.floor(pz/.25))*.25};
     if(!source.covered||source.pending||!Number.isFinite(source.elevation))return null;
@@ -23,7 +24,7 @@ export function* heightfieldSteps(generator, definition, tx, tz, level, modified
     const result={height:h,material,water:water>h?water:null,waterMaterial:water>h?generator.getRenderVoxel(vx,Math.floor((water-floor)/.25)-1,vz)||WATER_VOXEL:WATER_VOXEL};cache.set(key,result);return result;
   }
   function vertex(x,z,s,water=false) {
-    const a=sample(Math.max(0,x-.25),z),b=sample(Math.min(width,x+.25),z),c=sample(x,Math.max(0,z-.25)),d=sample(x,Math.min(depth,z+.25));
+    const a=sample(infinite?x-.25:Math.max(0,x-.25),z),b=sample(infinite?x+.25:Math.min(width,x+.25),z),c=sample(x,infinite?z-.25:Math.max(0,z-.25)),d=sample(x,infinite?z+.25:Math.min(depth,z+.25));
     const nx=water?0:(a?.height??s.height)-(b?.height??s.height),nz=water?0:(c?.height??s.height)-(d?.height??s.height),length=Math.hypot(nx,.5,nz);
     return {p:[x,water?s.water:s.height,z],n:water?[0,1,0]:[nx/length,.5/length,nz/length]};
   }

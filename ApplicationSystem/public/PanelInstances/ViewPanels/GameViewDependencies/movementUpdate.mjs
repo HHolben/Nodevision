@@ -1,6 +1,7 @@
 // Nodevision/ApplicationSystem/public/PanelInstances/ViewPanels/GameViewDependencies/movementUpdate.mjs
 // This file composes browser-side Game View movement from focused ability modules. It installs movement, attack, inspection, craft, construction, command, and interaction abilities into a shared context so the update loop remains transparent and maintainable.
 
+import {installRaycastingTeleporterAbility} from './Abilities/MovementAbilities/RaycastingTeleporterAbility.mjs';
 import {installSessionVoxelToolAbility} from './Abilities/CraftAbilities/SessionVoxelToolAbility.mjs';
 import { createMovementContext } from "./Abilities/movementContext.mjs";
 import { installBreakTargetAbility } from "./Abilities/AttackAbilities/BreakTargetAbility.mjs";
@@ -97,6 +98,7 @@ const ABILITY_INSTALLERS = [
   installVoxelToolActionsAbility,
   installVoxelWorldToolAbility,
   installSessionVoxelToolAbility,
+  installRaycastingTeleporterAbility,
   installPlacedMeshFactoryAbility,
   installInventoryPlacementAbility
 ];

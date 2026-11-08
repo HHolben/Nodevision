@@ -53,7 +53,7 @@ export function createAegeanPlacement(base,def) {
     if(species.id==='DryGrass'&&c.season!=='summer')species=AEGEAN_SPECIES.SpringGrass;
     const form=species.growthForms[Math.min(species.growthForms.length-1,Math.floor(hash(7,0,local)*species.growthForms.length))];
     const p=plantParameters(species,local,form),r=Math.ceil(p.crownRadius*1.4+Math.abs(p.lean)),y=e.height;
-    if(x-r<0||z-r<0||x+r>=base.dimensions[0]||z+r>=base.dimensions[2]||y+p.height>=base.dimensions[1])return null;
+    if((!base.dimensions.infinite&&(x-r<0||z-r<0||x+r>=base.dimensions[0]||z+r>=base.dimensions[2]))||y+p.height>=base.dimensions[1])return null;
     return {id:`aegean:${rx},${rz}`,species:species.id,seed:local,origin:[x,y,z],parameters:p,
       min:[x-r,y,z-r],max:[x+r+1,y+p.height,z+r+1],sample:(vx,vy,vz)=>samplePlant(species,local,p,vx-x,vy-y,vz-z)};
   }};

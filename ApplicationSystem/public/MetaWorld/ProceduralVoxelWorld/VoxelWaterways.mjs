@@ -6,7 +6,7 @@ export function createWaterways(rawHeight,dimensions,seed){
   const cache=new Map(),columns=new Array(4096);
   function region(rx,rz){
     const key=`${rx},${rz}`;if(cache.has(key))return cache.get(key);
-    const minX=rx*REGION+24,minZ=rz*REGION+24,maxX=Math.min(dimensions[0]-24,(rx+1)*REGION-24),maxZ=Math.min(dimensions[2]-24,(rz+1)*REGION-24);
+    const minX=rx*REGION+24,minZ=rz*REGION+24,maxX=(dimensions.infinite?(rx+1)*REGION-24:Math.min(dimensions[0]-24,(rx+1)*REGION-24)),maxZ=(dimensions.infinite?(rz+1)*REGION-24:Math.min(dimensions[2]-24,(rz+1)*REGION-24));
     const segments=[],ponds=[];
     if(maxX>minX&&maxZ>minZ&&hash(rx,rz,seed^98113)>.35){
       let x=Math.floor(minX+(maxX-minX)*hash(rx,rz,seed^773)),z=Math.floor(minZ+(maxZ-minZ)*hash(rx,rz,seed^991));
@@ -52,7 +52,7 @@ export function createWaterways(rawHeight,dimensions,seed){
     return result??(bankTop===null?null:{bed:Infinity,top:0,kind:'bank',bankTop});
   }
   function sample(x,z){
-    if(x<0||z<0||x>=dimensions[0]||z>=dimensions[2])return null;
+    if(!dimensions.infinite&&(x<0||z<0||x>=dimensions[0]||z>=dimensions[2]))return null;
     const key=(x&127)+((z&31)<<7),old=columns[key];if(old?.x===x&&old.z===z)return old.value;
     const value=calculate(x,z);columns[key]={x,z,value};return value;
   }

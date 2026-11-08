@@ -9,7 +9,7 @@ export function createLandforms(rawHeight, dimensions, seed) {
     if (regions.has(key)) return regions.get(key);
     const x = rx * 512 + 256, z = rz * 512 + 256, height = rawHeight(x,z);
     let result = null;
-    if (x > 180 && z > 180 && x + 180 < dimensions[0] && z + 180 < dimensions[2] && height > 110 && hash(rx,rz,seed^55271) > .25) {
+    if ((dimensions.infinite || x > 180 && z > 180 && x + 180 < dimensions[0] && z + 180 < dimensions[2]) && height > 110 && hash(rx,rz,seed^55271) > .25) {
       const choice = hash(rx,rz,seed^91139), kind = choice < .34 ? 'ravine' : choice < .7 ? 'canyon' : 'cliff';
       const depth = kind === 'ravine' ? 48 : kind === 'canyon' ? 80 : 56;
       const width=kind==='ravine'?10:kind==='canyon'?46:70;

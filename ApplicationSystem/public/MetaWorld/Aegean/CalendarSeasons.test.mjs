@@ -59,7 +59,10 @@ test('runtime marks resident chunks stale once, keeps roots/materials and saves 
   astro.clock.jumpTo(Date.parse('2026-12-01T12:00:00Z'));assert.equal(r.updateCalendar(astro),true);
   const dirty=r.manager.invalidated.size;assert.ok(dirty>0);assert.equal(r.updateCalendar(astro),false);assert.equal(r.manager.invalidated.size,dirty);
   assert.deepEqual(root.children,oldMeshes);assert.equal(r.materials,materials);assert.deepEqual(r.serialize(),saved);
-  r.update(position);assert.equal(r.seasonState.season,'winter');assert.equal(r.stats.generated,count+1);
+  // Budgeted generation may need several updates to replace an invalidated chunk.
+  const deadline=performance.now()+10000;
+  do{r.update(position);}while(r.stats.generated===count&&performance.now()<deadline);
+  assert.equal(r.seasonState.season,'winter');assert.ok(r.stats.generated>count,'season rebuild completes within the bounded wait');
   r.dispose();assert.equal(r.updateCalendar(astro),false);assert.equal(colliders.length,0);
 });
 

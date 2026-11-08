@@ -25,7 +25,7 @@ export function createTreePlacement(base,seed){
     const slope=base.getSlope(x,z);if(slope>P[species.toLowerCase()+'Slope'])return null;
     if(y<(base.getWaterTop?.(x,z)??TERRAIN_V1.waterLevelVoxelY+1)||![1,2,12,MOSS_VOXEL].includes(base.getVoxel(x,y-1,z)))return null;
     const [parametersFor,sample]=shapes[species],parameters=parametersFor(treeSeed),r=species==='Pine'?12:Math.ceil(parameters.crownRadius*1.34);
-    if(x-r<0||z-r<0||x+r>=base.dimensions[0]||z+r>=base.dimensions[2]||y+parameters.height>base.dimensions[1])return null;
+    if((!base.dimensions.infinite&&(x-r<0||z-r<0||x+r>=base.dimensions[0]||z+r>=base.dimensions[2]))||y+parameters.height>base.dimensions[1])return null;
     const tree={id:`${species.toLowerCase()}:${rx},${rz}`,species,seed:treeSeed,origin:[x,y,z],parameters,
       min:[x-r,y,z-r],max:[x+r+1,y+parameters.height,z+r+1],sample:(vx,vy,vz)=>sample(vx-x,vy-y,vz-z,treeSeed,parameters)};
     return addPineNeedleBed(applyTreeVariant(tree,base),base);

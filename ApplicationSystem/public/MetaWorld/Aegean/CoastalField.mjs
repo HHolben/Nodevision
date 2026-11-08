@@ -23,7 +23,7 @@ export function createCoastalField(def,dimensions) {
   }
   function sample(x,z) {
     const key=x+z*dimensions[0],cached=cache.get(key);if(cached?.x===x&&cached.z===z)return cached.value;
-    if(x<0||z<0||x>=dimensions[0]||z>=dimensions[2])return {height:0,sea,waterTop:0,slope:0,weights:[],surface:'PaleLimestone'};
+    if(!dimensions.infinite&&(x<0||z<0||x>=dimensions[0]||z>=dimensions[2]))return {height:0,sea,waterTop:0,slope:0,weights:[],surface:'PaleLimestone'};
     const r=raw(x,z),moisture=n(x,z,160,781),exposure=n(x,z,240,131);
     const slope=Math.max(Math.abs(raw(x+2,z).height-raw(x-2,z).height),Math.abs(raw(x,z+2).height-raw(x,z-2).height))/4;
     const stream=r.inland>.15&&Math.abs(n(x,z,180,739)-.5)<.018;

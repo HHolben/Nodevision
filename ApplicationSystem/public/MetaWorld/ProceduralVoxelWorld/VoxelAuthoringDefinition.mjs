@@ -1,5 +1,6 @@
 // Nodevision/ApplicationSystem/public/MetaWorld/ProceduralVoxelWorld/VoxelAuthoringDefinition.mjs
 // This module translates user-facing terrain dimensions and seeds into the existing compact V1 procedural definition. It validates authoring extensions before runtime allocation while leaving older Sandbox definitions unchanged.
+import {validateWorldExtent,validateExtentTransition} from './WorldExtent.mjs';
 import {usesMap,validateMapSource} from '../TerrainMaps/Source.mjs';
 import { validateStartingBiome } from './VoxelStartingBiome.mjs';
 import { AEGEAN_DEFAULTS, validateAegean } from '../Aegean/AegeanDefinition.mjs';
@@ -16,6 +17,7 @@ export function terrainSeed(value) {
   return hash | 0;
 }
 export function validateAuthoringTerrain(def) {
+  validateWorldExtent(def);
   validateMapSource(def);
   validateAegean(def);
   validateStartingBiome(def);
@@ -35,7 +37,7 @@ export function validateAuthoringTerrain(def) {
   if (def.biomeSource !== undefined && def.biomeSource !== 'nodevision-biomes-v1') throw Error('Unsupported terrain biome source.');
 }
 export function voxelWorldForm(def = null) {
-  return { mapPath:def?.terrainMap?.path||'',detailStrength:def?.terrainMap?.detailStrength??0,detailScale:def?.terrainMap?.detailScale??16,mapOutside:def?.terrainMap?.outside||'empty', terrainSource:def?.terrainSource??'procedural', geographic:def?.geographic??null, startingBiome:def?.startingBiome || (def?.environment?.id === 'aegean' ? 'aegean' : 'auto'), environmentPreset:def?.environment?.id || 'legacy', ...AEGEAN_DEFAULTS, ...def?.environment, name: def?.name || 'Voxel World', seed: def ? String(def.generator.seed) : String(crypto.getRandomValues(new Int32Array(1))[0]),
+  return { worldExtentMode:def?.worldExtent?.mode||'finite', mapPath:def?.terrainMap?.path||'',detailStrength:def?.terrainMap?.detailStrength??0,detailScale:def?.terrainMap?.detailScale??16,mapOutside:def?.terrainMap?.outside||'empty', terrainSource:def?.terrainSource??'procedural', geographic:def?.geographic??null, startingBiome:def?.startingBiome || (def?.environment?.id === 'aegean' ? 'aegean' : 'auto'), environmentPreset:def?.environment?.id || 'legacy', ...AEGEAN_DEFAULTS, ...def?.environment, name: def?.name || 'Voxel World', seed: def ? String(def.generator.seed) : String(crypto.getRandomValues(new Int32Array(1))[0]),
     sizeX: def?.size[0] ?? 256, sizeZ: def?.size[2] ?? 256,
     minHeight: def ? (def.heightLimits?.min ?? 0) : -16, maxHeight: def?.heightLimits?.max ?? def?.size[1] ?? 64,
     voxelSize: .25, chunkSize: 32, loadRadius: def?.chunks?.loadRadius ?? 2, vegetation: def?.generation?.vegetation !== false,
@@ -74,6 +76,9 @@ export function definitionFromVoxelForm(values, previous = null) {
     if(!previous)def.position=[-def.size[0]/2,0,-def.size[2]/2];
   }else delete def.geographic;
   if(usesMap(def)){def.terrainMap={...previous?.terrainMap,version:1,path:String(values.mapPath||'').trim(),detailStrength:values.detailStrength===undefined?0:number('detailStrength'),detailScale:values.detailScale===undefined?16:number('detailScale'),outside:values.mapOutside||'empty'};delete def.environment;delete def.startingBiome;}else delete def.terrainMap;
+  const mode=values.worldExtentMode??previous?.worldExtent?.mode??'finite';
+  if(mode!=='finite'||previous?.worldExtent)def.worldExtent={mode};
   validateAuthoringTerrain(def);
+  if(previous)validateExtentTransition(previous,def);
   return def;
 }

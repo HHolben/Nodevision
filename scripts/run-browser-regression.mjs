@@ -38,7 +38,9 @@ try {
   await send('Page.navigate', { url: process.argv[2] }, sessionId);
   await send('Page.bringToFront', {}, sessionId);
   await loaded;
+  const teleporterInput=process.env.NODEVISION_NATIVE_TELEPORTER==='1' ? (await import('./teleporter-chromium-input.mjs')).runTeleporterInput(send,sessionId) : Promise.resolve();
   const result = await send('Runtime.evaluate', { awaitPromise: true, returnByValue: true, expression: `new Promise(resolve => { const poll = () => { const text = document.querySelector('#result')?.textContent; if (text && (text.startsWith('FAIL:') || text.startsWith(${JSON.stringify(expectedResult)}))) resolve(text); else setTimeout(poll, 50); }; poll(); })` }, sessionId);
+  await teleporterInput;
   const report = result.result?.value || JSON.stringify(result);
   if(report.startsWith('PASS:')&&process.env.NODEVISION_NATIVE_PATHS==='1')await (await import('./paths-chromium-input.mjs')).runPathNativeChecks(send,sessionId);
   if(report.startsWith('PASS:')&&process.env.NODEVISION_NATIVE_TERRAIN_MAPS==='1')await (await import('./terrain-map-native-input.mjs')).runMapNativeChecks(send,sessionId);

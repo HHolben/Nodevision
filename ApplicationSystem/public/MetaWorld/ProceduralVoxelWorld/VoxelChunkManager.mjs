@@ -1,15 +1,16 @@
 // Nodevision/ApplicationSystem/public/MetaWorld/ProceduralVoxelWorld/VoxelChunkManager.mjs
 // This module bounds chunk residency and synchronous work while exposing cumulative and resident generation measurements.
 
+import {RevisionMap,RevisionSet} from '../TerrainLOD/ResidencyVersion.mjs';
 import { planColumns } from '../TerrainLOD/PredictiveColumns.mjs';
 import {ChunkRegionIndex} from './ChunkRegionIndex.mjs';
 import { advanceProgressive,cancelProgressive } from './ProgressiveChunks.mjs';
-import { CHUNK_SIZE, chunkKey, voxelToChunk } from "./VoxelCoordinates.mjs";
+import { horizontalRange, CHUNK_SIZE, chunkKey, voxelToChunk } from "./VoxelCoordinates.mjs";
 export class VoxelChunkManager {
   constructor(generator, radius, build, release, options=null) {
     Object.assign(this, { generator, radius, build, release, options });
-    this.columnLevels = new Map(); this.streaming = false; this.predictive = false;
-    this.loaded = new ChunkRegionIndex(); this.invalidated = new Set(); this.queue = []; this.center = "";
+    this.columnLevels = new RevisionMap(); this.streaming = false; this.predictive = false;
+    this.loaded = new ChunkRegionIndex(); this.invalidated = new RevisionSet(); this.queue = []; this.center = "";
     this.stats = { installationMs:0,evicted:0,requestedChunks:0,residentHits:0,residentMisses:0, residentBytes:0,peakLoaded:0,maxUpdateMs:0,cancelled:0, loaded: 0, queued: 0, generated: 0, voxels: 0, faces: 0, generationMs: 0, meshingMs: 0, maxBuildMs: 0 };
   }
   update(voxel) {
@@ -19,8 +20,9 @@ export class VoxelChunkManager {
       cancelProgressive(this);this.center = center;
       const wanted = [];
       const [width,,depth] = this.generator.dimensions;
-      for (let z = Math.max(0, cz-this.radius); z <= Math.min(Math.ceil(depth/CHUNK_SIZE)-1, cz+this.radius); z++) {
-        for (let x = Math.max(0, cx-this.radius); x <= Math.min(Math.ceil(width/CHUNK_SIZE)-1, cx+this.radius); x++) {
+      const [minX,maxX]=horizontalRange(cx,this.radius,Math.ceil(width/CHUNK_SIZE),this.generator.dimensions.infinite),[minZ,maxZ]=horizontalRange(cz,this.radius,Math.ceil(depth/CHUNK_SIZE),this.generator.dimensions.infinite);
+      for (let z=minZ;z<=maxZ;z++) {
+        for (let x=minX;x<=maxX;x++) {
           wanted.push([x,null,z]);
         }
       }
@@ -30,6 +32,7 @@ export class VoxelChunkManager {
           this.stats.residentBytes-=entry.residentBytes??0;this.stats.voxels -= entry.solidVoxels; this.stats.faces -= entry.faceCount;
         }
       }
+      for(const key of this.columnLevels.keys()){const [x,z]=key.split(',').map(Number);if(Math.max(Math.abs(x-cx),Math.abs(z-cz))>this.radius+3)this.columnLevels.delete(key);}
       this.queue = wanted
         .sort((a,b) => (a[0]-cx)**2+(a[2]-cz)**2 - ((b[0]-cx)**2+(b[2]-cz)**2));
     }
@@ -86,6 +89,11 @@ export class VoxelChunkManager {
       this.invalidated.add(key);
     }
     this.queue.length=0;this.center='';this.stats.loaded=this.loaded.size;
+  }
+  invalidateAll() {
+    cancelProgressive(this);this.columnLevels.clear();
+    for(const key of this.loaded.keys())this.invalidated.add(key);
+    this.queue.length=0;this.center='';
   }
   dispose() {
     cancelProgressive(this);

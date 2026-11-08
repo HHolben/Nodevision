@@ -1,5 +1,7 @@
 // Nodevision/ApplicationSystem/public/MetaWorld/SessionVoxels/Authoring.mjs
 // Binds transient cell opinions to native terrain/construction runtimes and the shared history controls.
+import {terrainPointCovered} from '../ProceduralVoxelWorld/TerrainCoverage.mjs';
+import {containsVoxel} from '../ProceduralVoxelWorld/VoxelCoordinates.mjs';
 import {worldSession,closeWorldSession} from './WorldSession.mjs';
 import {worldAuthoringAllowed} from '../WorldAuthoringPermissions.mjs';
 import {strokePoints,voxel} from './SessionLayer.mjs';
@@ -14,9 +16,9 @@ export function installSessionAuthoring(bridge,{objects,filePath}){
  const point=p=>p.map((v,i)=>(ensureOrigin()?.[i]||0)+(v+.5)*.25),cell=p=>p.map((v,i)=>Math.floor((v-(ensureOrigin()?.[i]||0))/.25+1e-8));
  const local=(r,p)=>point(p).map((v,i)=>Math.floor((v-r.sessionOrigin()[i])/.25));
  const valid=r=>ensureOrigin()&&r.sessionOrigin().every((n,i)=>Math.abs((n-owner.origin[i])/.25-Math.round((n-owner.origin[i])/.25))<1e-6);
- const contains=p=>terrain().some(r=>valid(r)&&(!r.mapSampleReady||r.mapSampleReady(point(p)))&&local(r,p).every((n,i)=>n>=0&&n<r.generator.dimensions[i]));
+ const contains=p=>terrain().some(r=>valid(r)&&(!r.mapSampleReady||r.mapSampleReady(point(p)))&&containsVoxel(local(r,p),r.generator.dimensions)&&terrainPointCovered(r,point(p)[0],point(p)[2]));
  function persistent(p){const world=point(p);for(const r of constructions()){const value=r.sampleVoxel(world);if(value)return value;}
-  for(const r of terrain()){const at=local(r,p);if(valid(r)&&at.every((n,i)=>n>=0&&n<r.generator.dimensions[i])){const value=r.getPersistentMaterial(...at);if(value)return value;}}return null;}
+  for(const r of terrain()){const at=local(r,p);if(valid(r)&&containsVoxel(at,r.generator.dimensions)){const value=r.getPersistentMaterial(...at);if(value)return value;}}return null;}
  function changed(points){for(const p of points)pending.set(p.join(','),p);if(context.panel)context.panel.dataset.temporaryVoxelEdits=String(session.count);context.inventory?.setTemporaryVoxelStatus?.(session.count,settings,constructionEdit?{count:constructionEdit.layer.count}:null);}
  const settings=owner.settings||(owner.settings={tool:'add',brush:{size:1,shape:'box',symmetry:[],axis:'free',plane:0},material:{materialId:'stone',rgba:[145,145,145,255],solid:true,customColor:true}});
  function sync(){if(detached)return;const current=[...terrain(),...constructions()];for(const r of current){const stamp=r.sessionOrigin?.().join(',')||r.root.position.toArray().join(',');if(bindings.get(r)===stamp)continue;bindings.set(r,stamp);
@@ -24,7 +26,7 @@ export function installSessionAuthoring(bridge,{objects,filePath}){
    else{r.bindSession({session:composed,toCell:cell});r.updateSession([...composed.entries()].map(e=>point(e.at)));}
   }for(const r of bindings.keys())if(!current.includes(r))bindings.delete(r);
  }
- function flush(){sync();if(!pending.size)return;const points=[...pending.values()];pending.clear();for(const r of terrain()){if(!valid(r))continue;const cells=points.map(p=>local(r,p)).filter(p=>p.every((n,i)=>n>=-1&&n<=r.generator.dimensions[i]));if(cells.length)r.invalidateSession(cells);}for(const r of constructions())r.updateSession(points.map(point));bridge.refreshPathTerrainSupport?.();}
+ function flush(){sync();if(!pending.size)return;const points=[...pending.values()];pending.clear();for(const r of terrain()){if(!valid(r))continue;const cells=points.map(p=>local(r,p)).filter(p=>p.every((n,i)=>i!==1&&r.generator.dimensions.infinite||n>=-1&&n<=r.generator.dimensions[i]));if(cells.length)r.invalidateSession(cells);}for(const r of constructions())r.updateSession(points.map(point));bridge.refreshPathTerrainSupport?.();}
  const allowed=()=>{if(detached||!worldAuthoringAllowed(context.movementState)||context.movementState?.playerMode!=='creative')throw Error('Voxel tools require an editable world in Build mode');};
  function validateMaterial(value){const v=voxel(value);for(const r of terrain())r.sessionMaterial(v);return v;}
  const api={session,settings,point,cell,contains,persistent,sync,flush,composed,

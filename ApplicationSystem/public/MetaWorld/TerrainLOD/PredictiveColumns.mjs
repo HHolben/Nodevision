@@ -12,7 +12,7 @@ export function planColumns(m, cx, cz) {
   m.motion = { x: cx, z: cz, time: previous&&cx===previous.x&&cz===previous.z?previous.time:now, vx, vz };
   const lead = m.predictive ? [Math.round(vx), Math.round(vz)] : [0, 0];
   const wanted = new Map(), width = Math.ceil(m.generator.dimensions[0] / 32), depth = Math.ceil(m.generator.dimensions[2] / 32);
-  const add = (x,z) => { if(x>=0&&z>=0&&x<width&&z<depth)wanted.set(`${x},${z}`,[x,null,z]); };
+  const add = (x,z) => { if(m.generator.dimensions.infinite||x>=0&&z>=0&&x<width&&z<depth)wanted.set(`${x},${z}`,[x,null,z]); };
   for(let z=cz-m.radius;z<=cz+m.radius;z++)for(let x=cx-m.radius;x<=cx+m.radius;x++)add(x,z);
   for(let t=1;t<=4;t++)for(let z=-1;z<=1;z++)for(let x=-1;x<=1;x++)add(cx+Math.round(lead[0]*t/4)+x,cz+Math.round(lead[1]*t/4)+z);
   for(const [x,z] of m.refinementColumns || [])add(x,z);

@@ -57,7 +57,7 @@ export function createPathTerrainField(base, definition) {
   }
   function pathSupport(path,wx,wz){
     const x=Math.floor((wx-origin[0])/.25),z=Math.floor((wz-origin[2])/.25);
-    if(x<0||z<0||x>=base.dimensions[0]||z>=base.dimensions[2])return null;
+    if(!base.dimensions.infinite&&(x<0||z<0||x>=base.dimensions[0]||z>=base.dimensions[2]))return null;
     const op=pathColumn(path,x,z,origin,upstream),final=op?.supported?getVoxel(x,op.floor,z):0;return op?.supported&&final!==0&&!isLiquidVoxel(final)?{height:origin[1]+op.top*.25,origin:origin.slice()}:null;
   }
   function generateChunk(cx,cy,cz) {

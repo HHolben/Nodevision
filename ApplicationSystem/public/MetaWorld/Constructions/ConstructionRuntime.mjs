@@ -7,7 +7,7 @@ import {validateConstruction,resolveReference,reference,constructionBounds,scene
 export function createConstruction(THREE,input,worldPath,colliders){
  const source=structuredClone(input),root=new THREE.Group(),abort=new AbortController();let def=null,asset=null,view=null,layers=[],model=null,display=null,sessionBinding=null,previewVolumes=null,editGeometry=null,geometryLocalBounds=null,selected=false,enabled=false,disposed=false;
  Object.assign(root.userData,{nvType:'construction',metaWorldLayerId:source.id,preserveLocalTransform:true});
- const outline=new THREE.Mesh(new THREE.BoxGeometry(1,1,1),new THREE.MeshBasicMaterial({color:0xe5a133,wireframe:true,depthTest:false}));outline.visible=false;root.add(outline);
+ const outline=new THREE.Mesh(new THREE.BoxGeometry(1,1,1),new THREE.MeshBasicMaterial({color:0xe5a133,wireframe:true,depthTest:false}));outline.userData.isEditorHelper=true;outline.visible=false;root.add(outline);
  root.position.fromArray(source.position||[0,0,0]);root.visible=source.visible!==false;
  const effective=()=>{if(!def)return null;return {...def,terrainVolumes:previewVolumes||def.terrainVolumes,position:root.position.toArray().map((n,i)=>Math.round((n-def.gridOrigin[i])/SIZE))};};
  function refresh(){if(!def)return;const d=effective();root.name=d.name;root.position.fromArray(d.position.map((n,i)=>d.gridOrigin[i]+n*SIZE));root.rotation.set(0,0,0);root.scale.set(1,1,1);

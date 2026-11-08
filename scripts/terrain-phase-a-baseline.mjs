@@ -11,7 +11,7 @@ export async function prepareTerrainBaseline(directory, cwd, revision = baseline
     const content = await new Promise((resolve,reject) => {
       const child=spawn('git',['show',`${revision}:ApplicationSystem/public/MetaWorld/${name}`],{cwd});
       let output='',error='';child.stdout.on('data',data=>output+=data);child.stderr.on('data',data=>error+=data);
-      child.on('error',reject);child.on('exit',code=>code===0?resolve(output):reject(Error(error)));
+      child.on('error',reject);child.on('close',code=>code===0&&output.length?resolve(output):reject(Error(error||'Empty baseline module: '+name)));
     });
     const destination=path.join(directory,'MetaWorld',name);await fs.mkdir(path.dirname(destination),{recursive:true});await fs.writeFile(destination,content);
   }
