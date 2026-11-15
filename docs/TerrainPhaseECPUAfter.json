@@ -1,0 +1,367 @@
+{
+  "meshes": [
+    {
+      "cell": [
+        0,
+        0,
+        0
+      ],
+      "generationMs": 7.153893999999923,
+      "meshingMs": [
+        52.114417,
+        71.15966000000003,
+        47.14665100000002,
+        32.376031999999896
+      ],
+      "haloQueries": 6536,
+      "vertices": 1089,
+      "triangles": 2048,
+      "hash": "55ab148f9ec4f57ad10ce48e930c38c06a3810eb67383ea4843cbbde24f3bd1d"
+    },
+    {
+      "cell": [
+        0,
+        4,
+        0
+      ],
+      "generationMs": 22.769485999999915,
+      "meshingMs": [
+        51.15343500000017,
+        40.972680999999966,
+        25.14072199999987,
+        20.422976000000062
+      ],
+      "haloQueries": 6536,
+      "vertices": 564,
+      "triangles": 1114,
+      "hash": "5aa9d99a68d268100dfd3ee8f7130a227da1da3f9833dcda74e3d0d6b3c86e70"
+    },
+    {
+      "cell": [
+        4,
+        0,
+        4
+      ],
+      "generationMs": 1.732590000000073,
+      "meshingMs": [
+        31.519148000000087,
+        22.314357999999856,
+        28.218014999999923,
+        21.978633000000173
+      ],
+      "haloQueries": 6536,
+      "vertices": 1089,
+      "triangles": 2048,
+      "hash": "ec714d2bb7069da19eef36517d4ffd76229a1e76bebd59e49ca4eb9044242564"
+    },
+    {
+      "cell": [
+        4,
+        4,
+        4
+      ],
+      "generationMs": 1.5467389999998886,
+      "meshingMs": [
+        38.044092999999975,
+        25.39743999999996,
+        11.457451999999876,
+        10.007600000000139
+      ],
+      "haloQueries": 6536,
+      "vertices": 0,
+      "triangles": 0,
+      "hash": "de6d9d06078fd6318b5cc97142bdbdbaa2d88f5899e9712c6f327f5073161a06"
+    },
+    {
+      "cell": [
+        -4,
+        0,
+        -4
+      ],
+      "generationMs": 7.161006000000043,
+      "meshingMs": [
+        30.851951999999983,
+        30.637126999999964,
+        42.77560300000005,
+        28.544590999999855
+      ],
+      "haloQueries": 6536,
+      "vertices": 1089,
+      "triangles": 2048,
+      "hash": "0fab3abd69a87b35a6c6d0796200992b608882e5c33b48407fe219de0a9dbb8c"
+    },
+    {
+      "cell": [
+        -4,
+        4,
+        -4
+      ],
+      "generationMs": 29.192966999999953,
+      "meshingMs": [
+        99.4007509999999,
+        21.78792899999985,
+        23.05169899999987,
+        22.356860000000097
+      ],
+      "haloQueries": 6536,
+      "vertices": 1986,
+      "triangles": 3970,
+      "hash": "ea894d9ddd8de99196b7f679bba105162ed1fb46ae4d5b6dcb800492e135e487"
+    },
+    {
+      "cell": [
+        50,
+        0,
+        50
+      ],
+      "generationMs": 1.574918999999909,
+      "meshingMs": [
+        41.466102999999976,
+        19.50387599999999,
+        19.235345000000052,
+        21.15295900000001
+      ],
+      "haloQueries": 6536,
+      "vertices": 1089,
+      "triangles": 2048,
+      "hash": "736c79cf27093e7750b90e5380ce8a3ca1ce667e4040fc2efee11dbc5c2092aa"
+    },
+    {
+      "cell": [
+        50,
+        2,
+        50
+      ],
+      "generationMs": 15.102922999999919,
+      "meshingMs": [
+        77.57576599999993,
+        35.719601999999895,
+        52.36861499999986,
+        20.59083200000032
+      ],
+      "haloQueries": 6536,
+      "vertices": 1283,
+      "triangles": 2416,
+      "hash": "ec7cff81983119dcfee5d2e12b121a01b05255995ac7e0466049861e3288e905"
+    }
+  ],
+  "route": [
+    {
+      "x": 32,
+      "ms": 953.8378299999999,
+      "steps": 200,
+      "generated": 25,
+      "generationMs": 238.60540199998195,
+      "meshingMs": 538.2058980000161,
+      "loaded": 25,
+      "bytes": 2268784,
+      "cache": {
+        "hits": 0,
+        "misses": 25,
+        "builds": 25,
+        "evictions": 0,
+        "invalidations": 0,
+        "reasons": {},
+        "entries": 25,
+        "bytes": 2269648,
+        "maxBytes": 33554432,
+        "maxEntries": 128,
+        "revision": 0,
+        "gpuBytes": 0
+      }
+    },
+    {
+      "x": 64,
+      "ms": 714.4623150000002,
+      "steps": 155,
+      "generated": 29,
+      "generationMs": 170.7934419999915,
+      "meshingMs": 427.05361399992125,
+      "loaded": 29,
+      "bytes": 2394216,
+      "cache": {
+        "hits": 0,
+        "misses": 54,
+        "builds": 54,
+        "evictions": 0,
+        "invalidations": 0,
+        "reasons": {},
+        "entries": 54,
+        "bytes": 4664728,
+        "maxBytes": 33554432,
+        "maxEntries": 128,
+        "revision": 0,
+        "gpuBytes": 0
+      }
+    },
+    {
+      "x": 96,
+      "ms": 881.3642199999995,
+      "steps": 192,
+      "generated": 31,
+      "generationMs": 259.8942209999959,
+      "meshingMs": 504.0766429999544,
+      "loaded": 31,
+      "bytes": 2507784,
+      "cache": {
+        "hits": 0,
+        "misses": 85,
+        "builds": 85,
+        "evictions": 0,
+        "invalidations": 0,
+        "reasons": {},
+        "entries": 85,
+        "bytes": 7173472,
+        "maxBytes": 33554432,
+        "maxEntries": 128,
+        "revision": 0,
+        "gpuBytes": 0
+      }
+    },
+    {
+      "x": 64,
+      "ms": 3.452331000000413,
+      "steps": 29,
+      "generated": 29,
+      "generationMs": 0,
+      "meshingMs": 0,
+      "loaded": 29,
+      "bytes": 2395080,
+      "cache": {
+        "hits": 29,
+        "misses": 85,
+        "builds": 85,
+        "evictions": 0,
+        "invalidations": 0,
+        "reasons": {},
+        "entries": 85,
+        "bytes": 7173472,
+        "maxBytes": 33554432,
+        "maxEntries": 128,
+        "revision": 0,
+        "gpuBytes": 0
+      }
+    },
+    {
+      "x": 32,
+      "ms": 4.84994099999949,
+      "steps": 25,
+      "generated": 25,
+      "generationMs": 0,
+      "meshingMs": 0,
+      "loaded": 25,
+      "bytes": 2269648,
+      "cache": {
+        "hits": 54,
+        "misses": 85,
+        "builds": 85,
+        "evictions": 0,
+        "invalidations": 0,
+        "reasons": {},
+        "entries": 85,
+        "bytes": 7173472,
+        "maxBytes": 33554432,
+        "maxEntries": 128,
+        "revision": 0,
+        "gpuBytes": 0
+      }
+    },
+    {
+      "x": 64,
+      "ms": 7.829330999999911,
+      "steps": 29,
+      "generated": 29,
+      "generationMs": 0,
+      "meshingMs": 0,
+      "loaded": 29,
+      "bytes": 2395080,
+      "cache": {
+        "hits": 83,
+        "misses": 85,
+        "builds": 85,
+        "evictions": 0,
+        "invalidations": 0,
+        "reasons": {},
+        "entries": 85,
+        "bytes": 7173472,
+        "maxBytes": 33554432,
+        "maxEntries": 128,
+        "revision": 0,
+        "gpuBytes": 0
+      }
+    },
+    {
+      "x": 96,
+      "ms": 6.759038999999575,
+      "steps": 31,
+      "generated": 31,
+      "generationMs": 0,
+      "meshingMs": 0,
+      "loaded": 31,
+      "bytes": 2508744,
+      "cache": {
+        "hits": 114,
+        "misses": 85,
+        "builds": 85,
+        "evictions": 0,
+        "invalidations": 0,
+        "reasons": {},
+        "entries": 85,
+        "bytes": 7173472,
+        "maxBytes": 33554432,
+        "maxEntries": 128,
+        "revision": 0,
+        "gpuBytes": 0
+      }
+    },
+    {
+      "x": 64,
+      "ms": 5.343225999999959,
+      "steps": 29,
+      "generated": 29,
+      "generationMs": 0,
+      "meshingMs": 0,
+      "loaded": 29,
+      "bytes": 2395080,
+      "cache": {
+        "hits": 143,
+        "misses": 85,
+        "builds": 85,
+        "evictions": 0,
+        "invalidations": 0,
+        "reasons": {},
+        "entries": 85,
+        "bytes": 7173472,
+        "maxBytes": 33554432,
+        "maxEntries": 128,
+        "revision": 0,
+        "gpuBytes": 0
+      }
+    },
+    {
+      "x": 32,
+      "ms": 6.367707000000337,
+      "steps": 25,
+      "generated": 25,
+      "generationMs": 0,
+      "meshingMs": 0,
+      "loaded": 25,
+      "bytes": 2269648,
+      "cache": {
+        "hits": 168,
+        "misses": 85,
+        "builds": 85,
+        "evictions": 0,
+        "invalidations": 0,
+        "reasons": {},
+        "entries": 85,
+        "bytes": 7173472,
+        "maxBytes": 33554432,
+        "maxEntries": 128,
+        "revision": 0,
+        "gpuBytes": 0
+      }
+    }
+  ],
+  "gpuMs": null
+}

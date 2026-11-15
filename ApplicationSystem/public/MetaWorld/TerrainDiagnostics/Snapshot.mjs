@@ -1,5 +1,6 @@
 // Nodevision/ApplicationSystem/public/MetaWorld/TerrainDiagnostics/Snapshot.mjs
 // This module samples existing terrain managers and renderer counters on demand for the FPS overlay and machine-readable benchmarks. Geometry storage is estimated from typed arrays, while CPU durations and renderer counters remain explicitly distinguished from unavailable GPU timings.
+import {distantSubmission} from './SceneSubmission.mjs';
 export function terrainDiagnostics(context = globalThis.window?.VRWorldContext) {
   if (!context) return null;
   const renderer = context.renderer || context.panel?._vrRenderer;
@@ -24,7 +25,7 @@ export function terrainDiagnostics(context = globalThis.window?.VRWorldContext) 
       for (const attribute of Object.values(g.attributes)) geometryBytes += attribute.array.byteLength;
     }
     return { extent: r.definition.worldExtent?.mode || 'finite', id: r.definition.id, source: r.definition.terrainSource || 'procedural', representation: r.representation,
-      vegetation: r.vegetation?.snapshot() ?? null, lod: r.lod?.snapshot() ?? null, switch: r.representationProgress, renderDistanceMeters: r.renderDistance, radiusChunks: m.radius, chunkMeters: 8,
+      distantSubmission:distantSubmission(root,frustum),meshCache:r.meshCache?.snapshot()??null,disposalCpuMs:m.stats.disposalMs??null,vegetation: r.vegetation?.snapshot() ?? null, lod: r.lod?.snapshot() ?? null, switch: r.representationProgress, renderDistanceMeters: r.renderDistance, radiusChunks: m.radius, chunkMeters: 8,
       activeChunks: m.loaded.size, drawableChunks, visibleChunks,
       requestedChunks: m.stats.requestedChunks ?? null, queuedChunks: m.queue.filter(c => c[1] !== null).length,
       queuedColumns: m.queue.filter(c => c[1] === null).length, generating: m.pending || r.representationProgress?.pending ? 1 : 0,
@@ -37,15 +38,16 @@ export function terrainDiagnostics(context = globalThis.window?.VRWorldContext) 
       triangles, estimatedGeometryBytes: geometryBytes, occupancyBytes, estimatedVisibleTerrainDrawCalls: terrainDrawCalls,
       sourceCache: r.generator.cacheStats?.() || {}, workerQueueLatencyMs: null, gpuUploadMs: null };
   });
-  return { sampledAt: performance.now(), terrains, frame: context.terrainFrameStats || null,
+  return { sampledAt: performance.now(), terrains, frame: context.terrainFrameStats || null, renderTiming: context.terrainRenderStats || null,
     renderer: renderer ? { drawCalls: renderer.info.render.calls, triangles: renderer.info.render.triangles,
       geometries: renderer.info.memory.geometries, textures: renderer.info.memory.textures } : null,
-    notes: 'CPU timings are cumulative. Queued columns have not yet expanded into chunks. Geometry bytes estimate typed buffers, not driver allocations. First-render counts track CPU submissions, not GPU completion. Upload is deferred to render; GPU time is unavailable. Terrain generation runs on the main thread, without a worker queue.' };
+    notes: 'CPU timings are cumulative. Queued columns have not yet expanded into chunks. Geometry bytes estimate typed buffers, not driver allocations. First-render counts track CPU submissions, not GPU completion. Upload is deferred to render; GPU elapsed time is asynchronous and null when unsupported or invalid; CPU submission is not GPU execution. Terrain generation runs on the main thread, without a worker queue.' };
 }
 
 // Keep the existing overlay compact; the full snapshot remains available to benchmarks.
 export function terrainDiagnosticsText(snapshot) {
   if (!snapshot?.terrains.length) return '';
-  return snapshot.terrains.map(t => `\nVegetation: ${t.vegetation ? `${t.vegetation.representedTrees} proxy identities; ${t.vegetation.regions} regions; queue ${t.vegetation.queue}` : 'unavailable'}\nLOD: ${t.lod ? `${t.lod.levels[1]} intermediate / ${t.lod.levels[2]} distant; ${t.lod.visibilityDistance} m; queue ${t.lod.queue}` : 'unavailable'}\nLOD CPU totals: plan ${t.lod?.planningCpuMs?.toFixed(0) ?? 'n/a'} / masks ${t.lod?.maskCpuMs?.toFixed(0) ?? 'n/a'} ms; ${t.lod?.maskPasses ?? 'n/a'} ownership updates\nTerrain ${t.id} (${t.extent}): ${t.representation}, ${t.renderDistanceMeters} m\nChunks: ${t.activeChunks} active / ${t.visibleChunks} visible; queue ${t.queuedChunks} + ${t.queuedColumns} columns; working ${t.generating}\nTriangles: ${t.triangles}; buffers ≈ ${(t.estimatedGeometryBytes / 1048576).toFixed(1)} MiB; evicted ${t.evictedChunks}\nCPU totals: generate ${t.generationCpuMs.toFixed(0)} / mesh ${t.meshingCpuMs.toFixed(0)} / install ${t.installationCpuMs?.toFixed(0) ?? 'n/a'} ms`).join('') +
+  return snapshot.terrains.map(t => `\nVegetation: ${t.vegetation ? `${t.vegetation.representedTrees} proxy identities; ${t.vegetation.regions} regions; queue ${t.vegetation.queue}` : 'unavailable'}\nLOD: ${t.lod ? `${t.lod.levels[1]} intermediate / ${t.lod.levels[2]} distant; ${t.lod.visibilityDistance} m; queue ${t.lod.queue}` : 'unavailable'}\nLOD CPU totals: plan ${t.lod?.planningCpuMs?.toFixed(0) ?? 'n/a'} / masks ${t.lod?.maskCpuMs?.toFixed(0) ?? 'n/a'} ms; ${t.lod?.maskPasses ?? 'n/a'} ownership updates\nTerrain ${t.id} (${t.extent}): ${t.representation}, ${t.renderDistanceMeters} m\nMesh cache: ${t.meshCache?.hits??0} hits / ${t.meshCache?.misses??0} misses; ${((t.meshCache?.bytes||0)/1048576).toFixed(1)} MiB CPU\nChunks: ${t.activeChunks} active / ${t.visibleChunks} visible; queue ${t.queuedChunks} + ${t.queuedColumns} columns; working ${t.generating}\nTriangles: ${t.triangles}; buffers ≈ ${(t.estimatedGeometryBytes / 1048576).toFixed(1)} MiB; evicted ${t.evictedChunks}\nCPU totals: generate ${t.generationCpuMs.toFixed(0)} / mesh ${t.meshingCpuMs.toFixed(0)} / install ${t.installationCpuMs?.toFixed(0) ?? 'n/a'} ms`).join('') +
+    (snapshot.renderTiming ? `\nCPU update / submit: ${snapshot.renderTiming.updateCpuMs.toFixed(2)} / ${snapshot.renderTiming.submissionCpuMs.toFixed(2)} ms; GPU: ${snapshot.renderTiming.gpu.elapsedMs?.toFixed(2) ?? 'n/a'} ms` : '') +
     (snapshot.renderer ? `\nScene draw calls: ${snapshot.renderer.drawCalls}; GPU upload: unmeasured` : '');
 }

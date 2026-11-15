@@ -1,0 +1,1412 @@
+{
+  "pairs": [
+    {
+      "scenario": "large",
+      "terrain": false,
+      "vegetation": false,
+      "trial": 0,
+      "coarseVertices": [
+        0,
+        0
+      ],
+      "coarseAttributeBytes": [
+        0,
+        0
+      ],
+      "preparationMs": [
+        790.0999999999767,
+        885.3000000000466
+      ],
+      "phases": {
+        "stationary": {
+          "beforeMs": 16.623333333333235,
+          "afterMs": 16.589166666666763,
+          "reductionPercent": 0.2055343894112993,
+          "beforeP95": 17.099999999976717,
+          "afterP95": 17.099999999976717,
+          "beforeDriverMs": 3.5219247196652725,
+          "afterDriverMs": 3.5690474225941404,
+          "beforeUpdateMs": 0.07958333333032594,
+          "afterUpdateMs": 0.07791666666453238,
+          "beforePrepareMs": 0.030000000002716357,
+          "afterPrepareMs": 0.011250000000776103,
+          "beforeDrawCalls": 9,
+          "afterDrawCalls": 9,
+          "beforeTriangles": 12758,
+          "afterTriangles": 12758
+        },
+        "walking": {
+          "beforeMs": 16.65,
+          "afterMs": 16.655000000000776,
+          "reductionPercent": -0.03003003003470006,
+          "beforeP95": 17,
+          "afterP95": 17,
+          "beforeDriverMs": 2.3793261932773104,
+          "afterDriverMs": 2.4377696554621853,
+          "beforeUpdateMs": 1.9225000000015522,
+          "afterUpdateMs": 1.9133333333360496,
+          "beforePrepareMs": 0.014166666665308488,
+          "afterPrepareMs": 0.0075000000011641536,
+          "beforeDrawCalls": 5.558333333333334,
+          "afterDrawCalls": 5.583333333333333,
+          "beforeTriangles": 7749.2,
+          "afterTriangles": 7805.083333333333
+        },
+        "running": {
+          "beforeMs": 16.66333333333314,
+          "afterMs": 16.66416666666725,
+          "reductionPercent": -0.005001000204707395,
+          "beforeP95": 17.099999999976717,
+          "afterP95": 17.199999999953434,
+          "beforeDriverMs": 0.21096753781512612,
+          "afterDriverMs": 0.18959955462184877,
+          "beforeUpdateMs": 4.319999999997283,
+          "afterUpdateMs": 4.312499999998059,
+          "beforePrepareMs": 0.00666666666608459,
+          "afterPrepareMs": 0.00583333333391541,
+          "beforeDrawCalls": 0.45,
+          "afterDrawCalls": 0.38333333333333336,
+          "beforeTriangles": 770.0833333333334,
+          "afterTriangles": 671.55
+        },
+        "backtracking": {
+          "beforeMs": 16.659166666666472,
+          "afterMs": 16.66083333333372,
+          "reductionPercent": -0.010004502029392626,
+          "beforeP95": 17.099999999976717,
+          "afterP95": 17.099999999976717,
+          "beforeDriverMs": 4.2971162100840345,
+          "afterDriverMs": 4.28370631092437,
+          "beforeUpdateMs": 2.6208333333294527,
+          "afterUpdateMs": 2.657500000001164,
+          "beforePrepareMs": 0.0033333333325572313,
+          "afterPrepareMs": 0.0033333333325572313,
+          "beforeDrawCalls": 11.508333333333333,
+          "afterDrawCalls": 11.2,
+          "beforeTriangles": 15848.9,
+          "afterTriangles": 15530.466666666667
+        }
+      }
+    },
+    {
+      "scenario": "large",
+      "terrain": false,
+      "vegetation": true,
+      "trial": 0,
+      "coarseVertices": [
+        0,
+        0
+      ],
+      "coarseAttributeBytes": [
+        0,
+        0
+      ],
+      "preparationMs": [
+        1187.2000000000698,
+        948.9000000000233
+      ],
+      "phases": {
+        "stationary": {
+          "beforeMs": 26.788750000000196,
+          "afterMs": 27.210833333333238,
+          "reductionPercent": -1.5755992098662297,
+          "beforeP95": 30.29999999993015,
+          "afterP95": 33.59999999997672,
+          "beforeDriverMs": 22.810635347280357,
+          "afterDriverMs": 23.235904894514764,
+          "beforeUpdateMs": 0.046249999996992606,
+          "afterUpdateMs": 0.05291666666938302,
+          "beforePrepareMs": 0.11625000000009701,
+          "afterPrepareMs": 0.12083333333236321,
+          "beforeDrawCalls": 66,
+          "afterDrawCalls": 66,
+          "beforeTriangles": 29150,
+          "afterTriangles": 29150
+        },
+        "walking": {
+          "beforeMs": 30.246666666666474,
+          "afterMs": 31.389166666666277,
+          "reductionPercent": -3.777275732862506,
+          "beforeP95": 38.5,
+          "afterP95": 39.300000000046566,
+          "beforeDriverMs": 23.493841151260508,
+          "afterDriverMs": 24.63493873728813,
+          "beforeUpdateMs": 2.4899999999984477,
+          "afterUpdateMs": 2.434999999994761,
+          "beforePrepareMs": 0.5941666666670548,
+          "afterPrepareMs": 0.645000000000194,
+          "beforeDrawCalls": 65.05833333333334,
+          "afterDrawCalls": 65.04166666666667,
+          "beforeTriangles": 25174.95,
+          "afterTriangles": 25145.733333333334
+        },
+        "running": {
+          "beforeMs": 31.118333333333915,
+          "afterMs": 32.42416666666589,
+          "reductionPercent": -4.196347276520651,
+          "beforeP95": 36.40000000002328,
+          "afterP95": 38.79999999993015,
+          "beforeDriverMs": 21.63283794957983,
+          "afterDriverMs": 22.617099310924363,
+          "beforeUpdateMs": 5.266666666668607,
+          "afterUpdateMs": 5.319166666661234,
+          "beforePrepareMs": 0.7666666666637563,
+          "afterPrepareMs": 0.8383333333418704,
+          "beforeDrawCalls": 51.766666666666666,
+          "afterDrawCalls": 51.49166666666667,
+          "beforeTriangles": 16739.15,
+          "afterTriangles": 16147.216666666667
+        },
+        "backtracking": {
+          "beforeMs": 42.31666666666667,
+          "afterMs": 44.270000000000195,
+          "reductionPercent": -4.6159905474600915,
+          "beforeP95": 49.90000000002328,
+          "afterP95": 58.699999999953434,
+          "beforeDriverMs": 34.97029068907565,
+          "afterDriverMs": 36.24503419491526,
+          "beforeUpdateMs": 2.541666666662786,
+          "afterUpdateMs": 2.8658333333325574,
+          "beforePrepareMs": 0.9416666666666667,
+          "afterPrepareMs": 1.0391666666604578,
+          "beforeDrawCalls": 74.23333333333333,
+          "afterDrawCalls": 74.39166666666667,
+          "beforeTriangles": 43283.65,
+          "afterTriangles": 43426.21666666667
+        }
+      }
+    },
+    {
+      "scenario": "large",
+      "terrain": true,
+      "vegetation": false,
+      "trial": 0,
+      "coarseVertices": [
+        109568,
+        18242
+      ],
+      "coarseAttributeBytes": [
+        4820992,
+        802648
+      ],
+      "preparationMs": [
+        1178.7000000000698,
+        1304.7000000000698
+      ],
+      "phases": {
+        "stationary": {
+          "beforeMs": 25.79708333333353,
+          "afterMs": 24.11791666666686,
+          "reductionPercent": 6.509133784504018,
+          "beforeP95": 32,
+          "afterP95": 27.199999999953434,
+          "beforeDriverMs": 21.896937651260508,
+          "afterDriverMs": 20.345303677824273,
+          "beforeUpdateMs": 0.05250000000281337,
+          "afterUpdateMs": 0.05208333333284827,
+          "beforePrepareMs": 0.005000000000291038,
+          "afterPrepareMs": 0.0037500000005820768,
+          "beforeDrawCalls": 73,
+          "afterDrawCalls": 73,
+          "beforeTriangles": 66966,
+          "afterTriangles": 66966
+        },
+        "walking": {
+          "beforeMs": 28.075,
+          "afterMs": 26.261666666665892,
+          "reductionPercent": 6.458889878304919,
+          "beforeP95": 34.40000000002328,
+          "afterP95": 32.800000000046566,
+          "beforeDriverMs": 21.781867680672285,
+          "afterDriverMs": 20.319284084033615,
+          "beforeUpdateMs": 2.1683333333300348,
+          "afterUpdateMs": 2.2341666666635622,
+          "beforePrepareMs": 0.004999999999805975,
+          "afterPrepareMs": 0.0016666666662786156,
+          "beforeDrawCalls": 69.99166666666666,
+          "afterDrawCalls": 70.11666666666666,
+          "beforeTriangles": 62224,
+          "afterTriangles": 62465.8
+        },
+        "running": {
+          "beforeMs": 29.897500000000583,
+          "afterMs": 29.5375,
+          "reductionPercent": 1.2041140563611497,
+          "beforeP95": 35.5,
+          "afterP95": 35.09999999997672,
+          "beforeDriverMs": 21.26096347899161,
+          "afterDriverMs": 20.654723117647055,
+          "beforeUpdateMs": 4.9875,
+          "afterUpdateMs": 5.059166666662592,
+          "beforePrepareMs": 0.0024999999994179236,
+          "afterPrepareMs": 0.004166666666666667,
+          "beforeDrawCalls": 68.55833333333334,
+          "afterDrawCalls": 69.00833333333334,
+          "beforeTriangles": 57380.316666666666,
+          "afterTriangles": 57993.61666666667
+        },
+        "backtracking": {
+          "beforeMs": 33.20749999999922,
+          "afterMs": 31.394166666667054,
+          "reductionPercent": 5.46061381715639,
+          "beforeP95": 39.5,
+          "afterP95": 38.800000000046566,
+          "beforeDriverMs": 25.498047781512607,
+          "afterDriverMs": 24.41291868067226,
+          "beforeUpdateMs": 3.785000000000582,
+          "afterUpdateMs": 3.1016666666682187,
+          "beforePrepareMs": 0.004166666666666667,
+          "afterPrepareMs": 0.002500000000388051,
+          "beforeDrawCalls": 91.85833333333333,
+          "afterDrawCalls": 92.05,
+          "beforeTriangles": 83378.08333333333,
+          "afterTriangles": 83474.78333333334
+        }
+      }
+    },
+    {
+      "scenario": "large",
+      "terrain": true,
+      "vegetation": false,
+      "trial": 1,
+      "coarseVertices": [
+        109568,
+        18242
+      ],
+      "coarseAttributeBytes": [
+        4820992,
+        802648
+      ],
+      "preparationMs": [
+        1374.0999999999767,
+        1317.5
+      ],
+      "phases": {
+        "stationary": {
+          "beforeMs": 26.39958333333343,
+          "afterMs": 23.967083333333235,
+          "reductionPercent": 9.214160577030018,
+          "beforeP95": 32.59999999997672,
+          "afterP95": 27.199999999953434,
+          "beforeDriverMs": 22.337609924369733,
+          "afterDriverMs": 20.16194728571429,
+          "beforeUpdateMs": 0.05416666666715173,
+          "afterUpdateMs": 0.0579166666638533,
+          "beforePrepareMs": 0.0037500000005820768,
+          "afterPrepareMs": 0.002500000000388051,
+          "beforeDrawCalls": 73,
+          "afterDrawCalls": 73,
+          "beforeTriangles": 66966,
+          "afterTriangles": 66966
+        },
+        "walking": {
+          "beforeMs": 27.920833333333334,
+          "afterMs": 26.780000000000776,
+          "reductionPercent": 4.0859573198002375,
+          "beforeP95": 37.5,
+          "afterP95": 34.5,
+          "beforeDriverMs": 21.84016591596639,
+          "afterDriverMs": 20.434496420168077,
+          "beforeUpdateMs": 2.1866666666649204,
+          "afterUpdateMs": 2.2633333333292587,
+          "beforePrepareMs": 0.0024999999994179236,
+          "afterPrepareMs": 0.0033333333344974865,
+          "beforeDrawCalls": 70.06666666666666,
+          "afterDrawCalls": 69.95833333333333,
+          "beforeTriangles": 62372.833333333336,
+          "afterTriangles": 62150.9
+        },
+        "running": {
+          "beforeMs": 30.527500000000387,
+          "afterMs": 29.070000000000196,
+          "reductionPercent": 4.774383752355005,
+          "beforeP95": 43,
+          "afterP95": 34.199999999953434,
+          "beforeDriverMs": 21.993660747899156,
+          "afterDriverMs": 20.364512840336136,
+          "beforeUpdateMs": 4.751666666665309,
+          "afterUpdateMs": 5.049166666670741,
+          "beforePrepareMs": 0.0008333333331393078,
+          "afterPrepareMs": 0.002500000000388051,
+          "beforeDrawCalls": 68.825,
+          "afterDrawCalls": 68.50833333333334,
+          "beforeTriangles": 57716.71666666667,
+          "afterTriangles": 57326.78333333333
+        },
+        "backtracking": {
+          "beforeMs": 32.75416666666667,
+          "afterMs": 32.98083333333391,
+          "reductionPercent": -0.6920239155341346,
+          "beforeP95": 42,
+          "afterP95": 42.699999999953434,
+          "beforeDriverMs": 25.458146635593206,
+          "afterDriverMs": 25.062350822033903,
+          "beforeUpdateMs": 3.306666666661234,
+          "afterUpdateMs": 3.8383333333341096,
+          "beforePrepareMs": 0.0033333333325572313,
+          "afterPrepareMs": 0.0016666666662786156,
+          "beforeDrawCalls": 91.96666666666667,
+          "afterDrawCalls": 90.13333333333334,
+          "beforeTriangles": 83464.43333333333,
+          "afterTriangles": 82908.9
+        }
+      }
+    },
+    {
+      "scenario": "large",
+      "terrain": true,
+      "vegetation": false,
+      "trial": 2,
+      "coarseVertices": [
+        109568,
+        18242
+      ],
+      "coarseAttributeBytes": [
+        4820992,
+        802648
+      ],
+      "preparationMs": [
+        1123.0999999999767,
+        1206.3000000000466
+      ],
+      "phases": {
+        "stationary": {
+          "beforeMs": 24.64333333333343,
+          "afterMs": 24.58166666666657,
+          "reductionPercent": 0.25023671040250717,
+          "beforeP95": 28.20000000006985,
+          "afterP95": 28.5,
+          "beforeDriverMs": 20.762549582278492,
+          "afterDriverMs": 20.728286382352945,
+          "beforeUpdateMs": 0.05249999999747767,
+          "afterUpdateMs": 0.04999999999902987,
+          "beforePrepareMs": 0.003333333333527359,
+          "afterPrepareMs": 0.004583333333236321,
+          "beforeDrawCalls": 73,
+          "afterDrawCalls": 73,
+          "beforeTriangles": 66966,
+          "afterTriangles": 66966
+        },
+        "walking": {
+          "beforeMs": 27.00083333333411,
+          "afterMs": 26.7,
+          "reductionPercent": 1.1141631431157206,
+          "beforeP95": 33,
+          "afterP95": 34,
+          "beforeDriverMs": 21.1379014789916,
+          "afterDriverMs": 20.82660744537816,
+          "beforeUpdateMs": 2.089999999999418,
+          "afterUpdateMs": 2.0916666666647266,
+          "beforePrepareMs": 0.004166666666666667,
+          "afterPrepareMs": 0.0016666666662786156,
+          "beforeDrawCalls": 70.10833333333333,
+          "afterDrawCalls": 70.11666666666666,
+          "beforeTriangles": 62449.13333333333,
+          "afterTriangles": 62467.416666666664
+        },
+        "running": {
+          "beforeMs": 29.170000000000194,
+          "afterMs": 29.02583333333314,
+          "reductionPercent": 0.4942292309463636,
+          "beforeP95": 32.800000000046566,
+          "afterP95": 33,
+          "beforeDriverMs": 20.840530840336132,
+          "afterDriverMs": 20.43694008403362,
+          "beforeUpdateMs": 4.591666666672487,
+          "afterUpdateMs": 4.802500000004269,
+          "beforePrepareMs": 0.0008333333331393078,
+          "afterPrepareMs": 0.0008333333331393078,
+          "beforeDrawCalls": 68.94166666666666,
+          "afterDrawCalls": 68.95,
+          "beforeTriangles": 57888.45,
+          "afterTriangles": 57895.38333333333
+        },
+        "backtracking": {
+          "beforeMs": 32.460833333333724,
+          "afterMs": 31.790000000000386,
+          "reductionPercent": 2.0665930737041927,
+          "beforeP95": 40.5,
+          "afterP95": 37.09999999997672,
+          "beforeDriverMs": 25.33007427966102,
+          "afterDriverMs": 24.781005201680667,
+          "beforeUpdateMs": 3.1008333333311993,
+          "afterUpdateMs": 2.9808333333348855,
+          "beforePrepareMs": 0.008333333335273588,
+          "afterPrepareMs": 0.0016666666662786156,
+          "beforeDrawCalls": 92.03333333333333,
+          "afterDrawCalls": 91.96666666666667,
+          "beforeTriangles": 83525.93333333333,
+          "afterTriangles": 83472.25
+        }
+      }
+    },
+    {
+      "scenario": "large",
+      "terrain": true,
+      "vegetation": true,
+      "trial": 0,
+      "coarseVertices": [
+        109568,
+        18242
+      ],
+      "coarseAttributeBytes": [
+        4820992,
+        802648
+      ],
+      "preparationMs": [
+        1442.5999999999767,
+        1654.8000000000466
+      ],
+      "phases": {
+        "stationary": {
+          "beforeMs": 47.07958333333324,
+          "afterMs": 46.411249999999804,
+          "reductionPercent": 1.419582090609206,
+          "beforeP95": 52.5,
+          "afterP95": 51.800000000046566,
+          "beforeDriverMs": 41.98826613733907,
+          "afterDriverMs": 41.21131252765959,
+          "beforeUpdateMs": 0.06208333333391541,
+          "afterUpdateMs": 0.0658333333330423,
+          "beforePrepareMs": 0.1337499999916569,
+          "afterPrepareMs": 0.17416666666977107,
+          "beforeDrawCalls": 130,
+          "afterDrawCalls": 130,
+          "beforeTriangles": 83358,
+          "afterTriangles": 83358
+        },
+        "walking": {
+          "beforeMs": 49.76749999999981,
+          "afterMs": 49.67583333333314,
+          "reductionPercent": 0.18418981597763118,
+          "beforeP95": 57.90000000002328,
+          "afterP95": 59.5,
+          "beforeDriverMs": 41.93671313445378,
+          "afterDriverMs": 41.81770392436974,
+          "beforeUpdateMs": 2.6950000000011642,
+          "afterUpdateMs": 2.655833333337796,
+          "beforePrepareMs": 0.6358333333288707,
+          "afterPrepareMs": 0.705833333330035,
+          "beforeDrawCalls": 129.15,
+          "afterDrawCalls": 129.19166666666666,
+          "beforeTriangles": 79165.18333333333,
+          "afterTriangles": 79183.13333333333
+        },
+        "running": {
+          "beforeMs": 51.7625,
+          "afterMs": 51.42666666666628,
+          "reductionPercent": 0.64879658697653,
+          "beforeP95": 58.60000000009313,
+          "afterP95": 58.29999999993015,
+          "beforeDriverMs": 40.54096683193278,
+          "afterDriverMs": 39.987688285714285,
+          "beforeUpdateMs": 6.201666666667249,
+          "afterUpdateMs": 6.254166666674427,
+          "beforePrepareMs": 0.7875000000106714,
+          "afterPrepareMs": 0.8291666666705472,
+          "beforeDrawCalls": 119.18333333333334,
+          "afterDrawCalls": 119.825,
+          "beforeTriangles": 72267.75,
+          "afterTriangles": 72765.21666666666
+        },
+        "backtracking": {
+          "beforeMs": 65.09749999999961,
+          "afterMs": 62.51500000000039,
+          "reductionPercent": 3.96712623372516,
+          "beforeP95": 79.40000000002328,
+          "afterP95": 69.89999999990687,
+          "beforeDriverMs": 55.35034931623934,
+          "afterDriverMs": 53.410328050420176,
+          "beforeUpdateMs": 3.4308333333339154,
+          "afterUpdateMs": 3.138333333330229,
+          "beforePrepareMs": 1.1033333333325572,
+          "afterPrepareMs": 1.0033333333354677,
+          "beforeDrawCalls": 148.75833333333333,
+          "afterDrawCalls": 148.11666666666667,
+          "beforeTriangles": 106213.76666666666,
+          "afterTriangles": 106977.41666666667
+        }
+      }
+    },
+    {
+      "scenario": "large",
+      "terrain": true,
+      "vegetation": true,
+      "trial": 1,
+      "coarseVertices": [
+        109568,
+        18242
+      ],
+      "coarseAttributeBytes": [
+        4820992,
+        802648
+      ],
+      "preparationMs": [
+        1428.0999999999767,
+        1510.0999999999767
+      ],
+      "phases": {
+        "stationary": {
+          "beforeMs": 46.54833333333324,
+          "afterMs": 45.88208333333314,
+          "reductionPercent": 1.4313079594688638,
+          "beforeP95": 51,
+          "afterP95": 49.699999999953434,
+          "beforeDriverMs": 41.64117633191491,
+          "afterDriverMs": 40.82879314042552,
+          "beforeUpdateMs": 0.06625000000058208,
+          "afterUpdateMs": 0.05916666666889796,
+          "beforePrepareMs": 0.14583333333284826,
+          "afterPrepareMs": 0.1420833333322662,
+          "beforeDrawCalls": 130,
+          "afterDrawCalls": 130,
+          "beforeTriangles": 83358,
+          "afterTriangles": 83358
+        },
+        "walking": {
+          "beforeMs": 50.36166666666686,
+          "afterMs": 49.60083333333314,
+          "reductionPercent": 1.5107389879876587,
+          "beforeP95": 59.300000000046566,
+          "afterP95": 59,
+          "beforeDriverMs": 42.32105585593223,
+          "afterDriverMs": 41.63698582352944,
+          "beforeUpdateMs": 2.758333333329453,
+          "afterUpdateMs": 2.7816666666680248,
+          "beforePrepareMs": 0.9416666666647264,
+          "afterPrepareMs": 0.7250000000009701,
+          "beforeDrawCalls": 129.29166666666666,
+          "afterDrawCalls": 129.4,
+          "beforeTriangles": 79390.6,
+          "afterTriangles": 79445.93333333333
+        },
+        "running": {
+          "beforeMs": 52.05166666666628,
+          "afterMs": 52.85,
+          "reductionPercent": -1.5337325093664589,
+          "beforeP95": 58.90000000002328,
+          "afterP95": 59.89999999990687,
+          "beforeDriverMs": 40.52180385714288,
+          "afterDriverMs": 41.24359003361342,
+          "beforeUpdateMs": 6.454166666665697,
+          "afterUpdateMs": 6.243333333331975,
+          "beforePrepareMs": 0.7816666666670548,
+          "afterPrepareMs": 0.9158333333315871,
+          "beforeDrawCalls": 119.05833333333334,
+          "afterDrawCalls": 119.35,
+          "beforeTriangles": 72305.05,
+          "afterTriangles": 72599.95
+        },
+        "backtracking": {
+          "beforeMs": 62.99999999999903,
+          "afterMs": 65.18333333333334,
+          "reductionPercent": -3.4656084656100594,
+          "beforeP95": 73.5999999998603,
+          "afterP95": 77.60000000009313,
+          "beforeDriverMs": 53.75523240336135,
+          "afterDriverMs": 55.57778039495799,
+          "beforeUpdateMs": 3.3591666666655025,
+          "afterUpdateMs": 3.2424999999988358,
+          "beforePrepareMs": 0.9724999999986418,
+          "afterPrepareMs": 1.1933333333329452,
+          "beforeDrawCalls": 150.50833333333333,
+          "afterDrawCalls": 148.96666666666667,
+          "beforeTriangles": 106630.11666666667,
+          "afterTriangles": 106395.83333333333
+        }
+      }
+    },
+    {
+      "scenario": "infinite",
+      "terrain": false,
+      "vegetation": false,
+      "trial": 0,
+      "coarseVertices": [
+        0,
+        0
+      ],
+      "coarseAttributeBytes": [
+        0,
+        0
+      ],
+      "preparationMs": [
+        794.8999999999069,
+        778.1000000000931
+      ],
+      "phases": {
+        "stationary": {
+          "beforeMs": 16.607916666666277,
+          "afterMs": 16.584166666665503,
+          "reductionPercent": 0.14300408941985143,
+          "beforeP95": 17.399999999906868,
+          "afterP95": 17.09999999962747,
+          "beforeDriverMs": 4.758462564853556,
+          "afterDriverMs": 3.9726148033472795,
+          "beforeUpdateMs": 0.07333333334536292,
+          "afterUpdateMs": 0.07749999999456729,
+          "beforePrepareMs": 0.012083333331005027,
+          "afterPrepareMs": 0.0074999999992238974,
+          "beforeDrawCalls": 9,
+          "afterDrawCalls": 9,
+          "beforeTriangles": 12758,
+          "afterTriangles": 12758
+        },
+        "walking": {
+          "beforeMs": 16.655833333331007,
+          "afterMs": 16.658333333333335,
+          "reductionPercent": -0.015009756355599535,
+          "beforeP95": 17.100000000093132,
+          "afterP95": 17.100000000093132,
+          "beforeDriverMs": 2.702338983193277,
+          "afterDriverMs": 2.586352512605043,
+          "beforeUpdateMs": 1.9741666666581295,
+          "afterUpdateMs": 1.907499999999224,
+          "beforePrepareMs": 0.0033333333364377418,
+          "afterPrepareMs": 0.005833333331005027,
+          "beforeDrawCalls": 5.566666666666666,
+          "afterDrawCalls": 5.541666666666667,
+          "beforeTriangles": 7767.466666666666,
+          "afterTriangles": 7712.666666666667
+        },
+        "running": {
+          "beforeMs": 16.66166666666589,
+          "afterMs": 16.665833333332557,
+          "reductionPercent": -0.025007502250673497,
+          "beforeP95": 17,
+          "afterP95": 17.299999999813735,
+          "beforeDriverMs": 0.1946165714285713,
+          "afterDriverMs": 0.18319639495798323,
+          "beforeUpdateMs": 4.399999999988358,
+          "afterUpdateMs": 4.444166666653473,
+          "beforePrepareMs": 0,
+          "afterPrepareMs": 0.004166666658905646,
+          "beforeDrawCalls": 0.4,
+          "afterDrawCalls": 0.36666666666666664,
+          "beforeTriangles": 696.1833333333333,
+          "afterTriangles": 646.9166666666666
+        },
+        "backtracking": {
+          "beforeMs": 16.657500000003104,
+          "afterMs": 17.791666666666668,
+          "reductionPercent": -6.808744809625411,
+          "beforeP95": 17.299999999813735,
+          "afterP95": 24.300000000279397,
+          "beforeDriverMs": 4.021673470588236,
+          "afterDriverMs": 6.387234605042018,
+          "beforeUpdateMs": 2.923333333339542,
+          "afterUpdateMs": 2.940833333320916,
+          "beforePrepareMs": 0.004166666666666667,
+          "afterPrepareMs": 0.005000000000776102,
+          "beforeDrawCalls": 9.2,
+          "afterDrawCalls": 9.508333333333333,
+          "beforeTriangles": 13108.266666666666,
+          "afterTriangles": 13781.666666666666
+        }
+      }
+    },
+    {
+      "scenario": "infinite",
+      "terrain": false,
+      "vegetation": true,
+      "trial": 0,
+      "coarseVertices": [
+        0,
+        0
+      ],
+      "coarseAttributeBytes": [
+        0,
+        0
+      ],
+      "preparationMs": [
+        2243.2999999998137,
+        1876.7999999998137
+      ],
+      "phases": {
+        "stationary": {
+          "beforeMs": 45.00500000000078,
+          "afterMs": 33.10291666666744,
+          "reductionPercent": 26.446135614560895,
+          "beforeP95": 82.39999999990687,
+          "afterP95": 41.09999999962747,
+          "beforeDriverMs": 39.5795580672269,
+          "afterDriverMs": 28.3079610376569,
+          "beforeUpdateMs": 0.05000000000388051,
+          "afterUpdateMs": 0.05999999999961195,
+          "beforePrepareMs": 0.4220833333073339,
+          "afterPrepareMs": 0.3879166666418314,
+          "beforeDrawCalls": 66,
+          "afterDrawCalls": 66,
+          "beforeTriangles": 29150,
+          "afterTriangles": 29150
+        },
+        "walking": {
+          "beforeMs": 47.73916666666822,
+          "afterMs": 42.39250000000077,
+          "reductionPercent": 11.199748634071828,
+          "beforeP95": 87.09999999962747,
+          "afterP95": 68.1999999997206,
+          "beforeDriverMs": 38.18729895798322,
+          "afterDriverMs": 33.38981547058823,
+          "beforeUpdateMs": 2.4850000000015524,
+          "afterUpdateMs": 2.509999999993791,
+          "beforePrepareMs": 2.0566666666573536,
+          "afterPrepareMs": 1.980000000000776,
+          "beforeDrawCalls": 62.55833333333333,
+          "afterDrawCalls": 62.608333333333334,
+          "beforeTriangles": 24158.433333333334,
+          "afterTriangles": 24256.216666666667
+        },
+        "running": {
+          "beforeMs": 40.60999999999767,
+          "afterMs": 36.770833333333336,
+          "reductionPercent": 9.453747024537195,
+          "beforeP95": 50.8000000002794,
+          "afterP95": 42.799999999813735,
+          "beforeDriverMs": 28.596405924369748,
+          "afterDriverMs": 25.37294490756303,
+          "beforeUpdateMs": 5.78583333332402,
+          "afterUpdateMs": 5.507500000018626,
+          "beforePrepareMs": 1.844166666661234,
+          "afterPrepareMs": 1.7816666666534728,
+          "beforeDrawCalls": 46.75,
+          "afterDrawCalls": 48.28333333333333,
+          "beforeTriangles": 13960.35,
+          "afterTriangles": 14702.083333333334
+        },
+        "backtracking": {
+          "beforeMs": 47.333333333333336,
+          "afterMs": 48.806666666665116,
+          "reductionPercent": -3.11267605633474,
+          "beforeP95": 60.5,
+          "afterP95": 61.10000000009313,
+          "beforeDriverMs": 37.00180178151261,
+          "afterDriverMs": 38.45440163865545,
+          "beforeUpdateMs": 4.194166666645712,
+          "afterUpdateMs": 3.850833333330229,
+          "beforePrepareMs": 1.7791666666627861,
+          "afterPrepareMs": 2.020000000003104,
+          "beforeDrawCalls": 67.04166666666667,
+          "afterDrawCalls": 70.30833333333334,
+          "beforeTriangles": 34820.666666666664,
+          "afterTriangles": 38212.916666666664
+        }
+      }
+    },
+    {
+      "scenario": "infinite",
+      "terrain": true,
+      "vegetation": false,
+      "trial": 0,
+      "coarseVertices": [
+        226048,
+        38113
+      ],
+      "coarseAttributeBytes": [
+        9946112,
+        1676972
+      ],
+      "preparationMs": [
+        1924.5,
+        2000.1999999997206
+      ],
+      "phases": {
+        "stationary": {
+          "beforeMs": 25.307499999999223,
+          "afterMs": 23.877916666667442,
+          "reductionPercent": 5.648852448214258,
+          "beforeP95": 33.90000000037253,
+          "afterP95": 30.899999999906868,
+          "beforeDriverMs": 21.19782780168776,
+          "afterDriverMs": 19.792773907563024,
+          "beforeUpdateMs": 0.052083333333333336,
+          "afterUpdateMs": 0.05833333333139308,
+          "beforePrepareMs": 0.007916666662398104,
+          "afterPrepareMs": 0.004583333333721384,
+          "beforeDrawCalls": 45,
+          "afterDrawCalls": 45,
+          "beforeTriangles": 49046,
+          "afterTriangles": 49046
+        },
+        "walking": {
+          "beforeMs": 24.90083333333411,
+          "afterMs": 23.616666666666667,
+          "reductionPercent": 5.157123255583418,
+          "beforeP95": 31.800000000279397,
+          "afterP95": 30.800000000279397,
+          "beforeDriverMs": 18.728636159663864,
+          "afterDriverMs": 17.55918543697479,
+          "beforeUpdateMs": 2.2500000000038805,
+          "afterUpdateMs": 2.3200000000031045,
+          "beforePrepareMs": 0.0033333333286767203,
+          "afterPrepareMs": 0.004999999996895591,
+          "beforeDrawCalls": 42.11666666666667,
+          "afterDrawCalls": 42.108333333333334,
+          "beforeTriangles": 44534.46666666667,
+          "afterTriangles": 44515.11666666667
+        },
+        "running": {
+          "beforeMs": 27.10166666666434,
+          "afterMs": 26.531666666665114,
+          "reductionPercent": 2.103191685625516,
+          "beforeP95": 33.39999999990687,
+          "afterP95": 31.899999999906868,
+          "beforeDriverMs": 18.069833722689072,
+          "afterDriverMs": 17.081875092436974,
+          "beforeUpdateMs": 5.28666666666201,
+          "afterUpdateMs": 5.668333333346527,
+          "beforePrepareMs": 0.0025000000023283064,
+          "afterPrepareMs": 0.004999999996895591,
+          "beforeDrawCalls": 40.71666666666667,
+          "afterDrawCalls": 40.86666666666667,
+          "beforeTriangles": 39715.05,
+          "afterTriangles": 39938.15
+        },
+        "backtracking": {
+          "beforeMs": 31.755000000000777,
+          "afterMs": 31.626666666668218,
+          "reductionPercent": 0.4041358316251187,
+          "beforeP95": 39.60000000009313,
+          "afterP95": 44.5,
+          "beforeDriverMs": 23.540391764705877,
+          "afterDriverMs": 23.472777873949575,
+          "beforeUpdateMs": 4.186666666673651,
+          "afterUpdateMs": 4.134166666671323,
+          "beforePrepareMs": 0.0033333333364377418,
+          "afterPrepareMs": 0.0025000000023283064,
+          "beforeDrawCalls": 62.78333333333333,
+          "afterDrawCalls": 61.35,
+          "beforeTriangles": 64762.4,
+          "afterTriangles": 64561.96666666667
+        }
+      }
+    },
+    {
+      "scenario": "infinite",
+      "terrain": true,
+      "vegetation": false,
+      "trial": 1,
+      "coarseVertices": [
+        226048,
+        38113
+      ],
+      "coarseAttributeBytes": [
+        9946112,
+        1676972
+      ],
+      "preparationMs": [
+        1648.5,
+        1896.1999999997206
+      ],
+      "phases": {
+        "stationary": {
+          "beforeMs": 21.69458333333411,
+          "afterMs": 22.075416666667056,
+          "reductionPercent": -1.7554305030039075,
+          "beforeP95": 25.800000000279397,
+          "afterP95": 26.399999999906868,
+          "beforeDriverMs": 17.884100130252094,
+          "afterDriverMs": 18.23147498312235,
+          "beforeUpdateMs": 0.055833333344586816,
+          "afterUpdateMs": 0.05666666667287548,
+          "beforePrepareMs": 0.0025000000023283064,
+          "afterPrepareMs": 0.007083333330228925,
+          "beforeDrawCalls": 45,
+          "afterDrawCalls": 45,
+          "beforeTriangles": 49046,
+          "afterTriangles": 49046
+        },
+        "walking": {
+          "beforeMs": 25.30166666666434,
+          "afterMs": 22.954166666666666,
+          "reductionPercent": 9.27804492456843,
+          "beforeP95": 35.6999999997206,
+          "afterP95": 28.700000000186265,
+          "beforeDriverMs": 19.087842882352945,
+          "afterDriverMs": 16.891768974789912,
+          "beforeUpdateMs": 2.2483333333356614,
+          "afterUpdateMs": 2.259166666682965,
+          "beforePrepareMs": 0.002499999994567285,
+          "afterPrepareMs": 0.011666666662010054,
+          "beforeDrawCalls": 42.1,
+          "afterDrawCalls": 42.1,
+          "beforeTriangles": 44511.4,
+          "afterTriangles": 44497.916666666664
+        },
+        "running": {
+          "beforeMs": 26.93666666666589,
+          "afterMs": 27.15166666666822,
+          "reductionPercent": -0.7981685435057617,
+          "beforeP95": 33,
+          "afterP95": 35.5,
+          "beforeDriverMs": 17.85155853781513,
+          "afterDriverMs": 17.515624142857142,
+          "beforeUpdateMs": 5.294999999999224,
+          "afterUpdateMs": 5.869166666676756,
+          "beforePrepareMs": 0.0025000000023283064,
+          "afterPrepareMs": 0.005833333331005027,
+          "beforeDrawCalls": 40.8,
+          "afterDrawCalls": 40.69166666666667,
+          "beforeTriangles": 39845.683333333334,
+          "afterTriangles": 39663.25
+        },
+        "backtracking": {
+          "beforeMs": 31.33833333333411,
+          "afterMs": 31.29916666666589,
+          "reductionPercent": 0.12498005637893161,
+          "beforeP95": 40,
+          "afterP95": 40.1999999997206,
+          "beforeDriverMs": 23.122735369747897,
+          "afterDriverMs": 22.59464957983193,
+          "beforeUpdateMs": 4.21416666667598,
+          "afterUpdateMs": 4.693333333346527,
+          "beforePrepareMs": 0.0033333333325572313,
+          "afterPrepareMs": 0.0033333333364377418,
+          "beforeDrawCalls": 61.24166666666667,
+          "afterDrawCalls": 62.94166666666667,
+          "beforeTriangles": 64458.98333333333,
+          "afterTriangles": 64886.85
+        }
+      }
+    },
+    {
+      "scenario": "infinite",
+      "terrain": true,
+      "vegetation": false,
+      "trial": 2,
+      "coarseVertices": [
+        226048,
+        38113
+      ],
+      "coarseAttributeBytes": [
+        9946112,
+        1676972
+      ],
+      "preparationMs": [
+        1616.9000000003725,
+        2049.8000000002794
+      ],
+      "phases": {
+        "stationary": {
+          "beforeMs": 24.76083333333372,
+          "afterMs": 28.887083333332946,
+          "reductionPercent": -16.664422979837077,
+          "beforeP95": 32.60000000009313,
+          "afterP95": 46.6999999997206,
+          "beforeDriverMs": 20.58652899578061,
+          "afterDriverMs": 24.22209487341772,
+          "beforeUpdateMs": 0.05666666664571191,
+          "afterUpdateMs": 0.0695833333224679,
+          "beforePrepareMs": 0.00791666666821887,
+          "afterPrepareMs": 0.006666666668994973,
+          "beforeDrawCalls": 45,
+          "afterDrawCalls": 45,
+          "beforeTriangles": 49046,
+          "afterTriangles": 49046
+        },
+        "walking": {
+          "beforeMs": 27.077500000002328,
+          "afterMs": 27.20083333333411,
+          "reductionPercent": -0.45548271934916507,
+          "beforeP95": 37.5,
+          "afterP95": 41,
+          "beforeDriverMs": 20.551424487394968,
+          "afterDriverMs": 20.754134694915237,
+          "beforeUpdateMs": 2.394999999983702,
+          "afterUpdateMs": 2.4358333333356614,
+          "beforePrepareMs": 0.005000000000776102,
+          "afterPrepareMs": 0.0033333333364377418,
+          "beforeDrawCalls": 42.075,
+          "afterDrawCalls": 42.11666666666667,
+          "beforeTriangles": 44471.11666666667,
+          "afterTriangles": 44547.416666666664
+        },
+        "running": {
+          "beforeMs": 29.48666666666977,
+          "afterMs": 28.234999999997672,
+          "reductionPercent": 4.244856432303745,
+          "beforeP95": 37,
+          "afterP95": 36.200000000186265,
+          "beforeDriverMs": 19.841056865546207,
+          "afterDriverMs": 18.651033722689075,
+          "beforeUpdateMs": 5.461666666642608,
+          "afterUpdateMs": 5.669166666668995,
+          "beforePrepareMs": 0.0033333333364377418,
+          "afterPrepareMs": 0.005833333334885537,
+          "beforeDrawCalls": 40.74166666666667,
+          "afterDrawCalls": 40.88333333333333,
+          "beforeTriangles": 39699.38333333333,
+          "afterTriangles": 39959.083333333336
+        },
+        "backtracking": {
+          "beforeMs": 33.26083333333178,
+          "afterMs": 36.055000000000774,
+          "reductionPercent": -8.400771678407914,
+          "beforeP95": 41.10000000009313,
+          "afterP95": 53.5,
+          "beforeDriverMs": 24.866245092436973,
+          "afterDriverMs": 27.250040630252094,
+          "beforeUpdateMs": 4.235000000005432,
+          "afterUpdateMs": 4.375833333306946,
+          "beforePrepareMs": 0.0024999999984477955,
+          "afterPrepareMs": 0.0049999999930150805,
+          "beforeDrawCalls": 61.19166666666667,
+          "afterDrawCalls": 61.425,
+          "beforeTriangles": 64404.85,
+          "afterTriangles": 64631.01666666667
+        }
+      }
+    },
+    {
+      "scenario": "infinite",
+      "terrain": true,
+      "vegetation": true,
+      "trial": 0,
+      "coarseVertices": [
+        226048,
+        38113
+      ],
+      "coarseAttributeBytes": [
+        9946112,
+        1676972
+      ],
+      "preparationMs": [
+        2655.9000000003725,
+        3106.899999999907
+      ],
+      "phases": {
+        "stationary": {
+          "beforeMs": 49.43833333333217,
+          "afterMs": 46.79541666666822,
+          "reductionPercent": 5.34588544651049,
+          "beforeP95": 72.10000000009313,
+          "afterP95": 59.6999999997206,
+          "beforeDriverMs": 43.68275708898305,
+          "afterDriverMs": 40.91938450627616,
+          "beforeUpdateMs": 0.06999999999340313,
+          "afterUpdateMs": 0.07666666667015913,
+          "beforePrepareMs": 0.36375000001086544,
+          "afterPrepareMs": 0.3962500000081491,
+          "beforeDrawCalls": 102,
+          "afterDrawCalls": 102,
+          "beforeTriangles": 65438,
+          "afterTriangles": 65438
+        },
+        "walking": {
+          "beforeMs": 57.8,
+          "afterMs": 51.355833333334886,
+          "reductionPercent": 11.149077277967322,
+          "beforeP95": 76.5,
+          "afterP95": 63.89999999990687,
+          "beforeDriverMs": 48.018874355932226,
+          "afterDriverMs": 41.3387611932773,
+          "beforeUpdateMs": 3.0099999999899105,
+          "afterUpdateMs": 3.3366666666581297,
+          "beforePrepareMs": 1.734999999962747,
+          "afterPrepareMs": 2.0033333333480794,
+          "beforeDrawCalls": 98.83333333333333,
+          "afterDrawCalls": 99.00833333333334,
+          "beforeTriangles": 60390.21666666667,
+          "afterTriangles": 60753.51666666667
+        },
+        "running": {
+          "beforeMs": 57.78083333333488,
+          "afterMs": 54.86083333333178,
+          "reductionPercent": 5.053578897275079,
+          "beforeP95": 72.5,
+          "afterP95": 68.89999999990687,
+          "beforeDriverMs": 44.12360079831934,
+          "afterDriverMs": 40.84075185714286,
+          "beforeUpdateMs": 7.260000000005433,
+          "afterUpdateMs": 7.314166666652697,
+          "beforePrepareMs": 1.5250000000116415,
+          "afterPrepareMs": 2.0141666666643383,
+          "beforeDrawCalls": 88.76666666666667,
+          "afterDrawCalls": 87.74166666666666,
+          "beforeTriangles": 53054.583333333336,
+          "afterTriangles": 53090.55
+        },
+        "backtracking": {
+          "beforeMs": 70.45666666666511,
+          "afterMs": 72.7991666666659,
+          "reductionPercent": -3.324738610021538,
+          "beforeP95": 89.5,
+          "afterP95": 92.10000000009313,
+          "beforeDriverMs": 57.089850218487406,
+          "afterDriverMs": 59.07869575630252,
+          "beforeUpdateMs": 6.360833333304617,
+          "afterUpdateMs": 5.893333333319363,
+          "beforePrepareMs": 1.6958333333527358,
+          "afterPrepareMs": 2.2583333333643774,
+          "beforeDrawCalls": 116.24166666666666,
+          "afterDrawCalls": 116.53333333333333,
+          "beforeTriangles": 85047.51666666666,
+          "afterTriangles": 85530.31666666667
+        }
+      }
+    },
+    {
+      "scenario": "infinite",
+      "terrain": true,
+      "vegetation": true,
+      "trial": 1,
+      "coarseVertices": [
+        226048,
+        38113
+      ],
+      "coarseAttributeBytes": [
+        9946112,
+        1676972
+      ],
+      "preparationMs": [
+        2867.899999999907,
+        2806.7999999998137
+      ],
+      "phases": {
+        "stationary": {
+          "beforeMs": 47.60083333333217,
+          "afterMs": 51.52958333333372,
+          "reductionPercent": -8.253531975984263,
+          "beforeP95": 56.799999999813735,
+          "afterP95": 64.10000000009313,
+          "beforeDriverMs": 41.777660652719675,
+          "afterDriverMs": 45.27291084518829,
+          "beforeUpdateMs": 0.0708333333216918,
+          "afterUpdateMs": 0.07458333333488554,
+          "beforePrepareMs": 0.35833333335079565,
+          "afterPrepareMs": 0.4141666666662786,
+          "beforeDrawCalls": 102,
+          "afterDrawCalls": 102,
+          "beforeTriangles": 65438,
+          "afterTriangles": 65438
+        },
+        "walking": {
+          "beforeMs": 63.30833333333333,
+          "afterMs": 57.55,
+          "reductionPercent": 9.095695669343161,
+          "beforeP95": 115.89999999990687,
+          "afterP95": 71.60000000009313,
+          "beforeDriverMs": 53.66937866101696,
+          "afterDriverMs": 47.045405924369746,
+          "beforeUpdateMs": 3.1258333333379897,
+          "afterUpdateMs": 3.1566666666573533,
+          "beforePrepareMs": 1.6450000000069849,
+          "afterPrepareMs": 2.2683333333659297,
+          "beforeDrawCalls": 98.98333333333333,
+          "afterDrawCalls": 98.875,
+          "beforeTriangles": 60728.833333333336,
+          "afterTriangles": 60501.01666666667
+        },
+        "running": {
+          "beforeMs": 57.17166666666356,
+          "afterMs": 56.494166666665116,
+          "reductionPercent": 1.1850275486082529,
+          "beforeP95": 78.5,
+          "afterP95": 69.5,
+          "beforeDriverMs": 43.901665260504195,
+          "afterDriverMs": 42.35055136974791,
+          "beforeUpdateMs": 7.1400000000023285,
+          "afterUpdateMs": 7.433333333317811,
+          "beforePrepareMs": 1.5075000000108654,
+          "afterPrepareMs": 1.9200000000108655,
+          "beforeDrawCalls": 88.33333333333333,
+          "afterDrawCalls": 88.4,
+          "beforeTriangles": 53366.316666666666,
+          "afterTriangles": 53004.15
+        },
+        "backtracking": {
+          "beforeMs": 68.37666666666821,
+          "afterMs": 72.04333333333489,
+          "reductionPercent": -5.362453078535445,
+          "beforeP95": 96.60000000009313,
+          "afterP95": 98.3000000002794,
+          "beforeDriverMs": 55.772794747899155,
+          "afterDriverMs": 57.94117754621848,
+          "beforeUpdateMs": 5.980833333350407,
+          "afterUpdateMs": 6.322500000009313,
+          "beforePrepareMs": 1.659999999993791,
+          "afterPrepareMs": 2.0624999999805973,
+          "beforeDrawCalls": 116.98333333333333,
+          "afterDrawCalls": 116.55,
+          "beforeTriangles": 86352.16666666667,
+          "afterTriangles": 83994.71666666666
+        }
+      }
+    },
+    {
+      "scenario": "large",
+      "terrain": true,
+      "vegetation": true,
+      "trial": 2,
+      "coarseVertices": [
+        109568,
+        18242
+      ],
+      "coarseAttributeBytes": [
+        4820992,
+        802648
+      ],
+      "preparationMs": [
+        1537,
+        2471.2999999998137
+      ],
+      "phases": {
+        "stationary": {
+          "beforeMs": 46.43374999999845,
+          "afterMs": 50.5470833333345,
+          "reductionPercent": -8.85849911613037,
+          "beforeP95": 51.39999999990687,
+          "afterP95": 72.70000000018626,
+          "beforeDriverMs": 41.52909512288139,
+          "afterDriverMs": 45.39316069327732,
+          "beforeUpdateMs": 0.06250000000388051,
+          "afterUpdateMs": 0.06874999999805974,
+          "beforePrepareMs": 0.11916666666899497,
+          "afterPrepareMs": 0.1541666666608459,
+          "beforeDrawCalls": 130,
+          "afterDrawCalls": 130,
+          "beforeTriangles": 83358,
+          "afterTriangles": 83358
+        },
+        "walking": {
+          "beforeMs": 57.666666666666664,
+          "afterMs": 80.94166666666666,
+          "reductionPercent": -40.36127167630057,
+          "beforeP95": 87.39999999990687,
+          "afterP95": 177.89999999990687,
+          "beforeDriverMs": 49.088335252100876,
+          "afterDriverMs": 71.26690452100839,
+          "beforeUpdateMs": 2.839999999990687,
+          "afterUpdateMs": 3.1650000000023284,
+          "beforePrepareMs": 0.669166666676756,
+          "afterPrepareMs": 1.041666666662786,
+          "beforeDrawCalls": 129.225,
+          "afterDrawCalls": 129.13333333333333,
+          "beforeTriangles": 79408.51666666666,
+          "afterTriangles": 79185.06666666667
+        },
+        "running": {
+          "beforeMs": 58.833333333333336,
+          "afterMs": 58.91000000000155,
+          "reductionPercent": -0.13031161473351371,
+          "beforeP95": 84.89999999990687,
+          "afterP95": 78.8000000002794,
+          "beforeDriverMs": 47.27688078151259,
+          "afterDriverMs": 46.74566586554623,
+          "beforeUpdateMs": 6.255833333311602,
+          "afterUpdateMs": 6.502499999975165,
+          "beforePrepareMs": 0.7691666667000391,
+          "afterPrepareMs": 0.8566666666806365,
+          "beforeDrawCalls": 120.00833333333334,
+          "afterDrawCalls": 120.10833333333333,
+          "beforeTriangles": 74063.71666666666,
+          "afterTriangles": 73118.56666666667
+        },
+        "backtracking": {
+          "beforeMs": 81.7625,
+          "afterMs": 91.22833333333256,
+          "reductionPercent": -11.577230800590188,
+          "beforeP95": 128.5,
+          "afterP95": 144.20000000018626,
+          "beforeDriverMs": 71.38524985714284,
+          "afterDriverMs": 80.88625261344538,
+          "beforeUpdateMs": 2.346666666675204,
+          "afterUpdateMs": 3.1525000000178505,
+          "beforePrepareMs": 1.1150000000178504,
+          "afterPrepareMs": 1.2875000000038805,
+          "beforeDrawCalls": 150.40833333333333,
+          "afterDrawCalls": 151.09166666666667,
+          "beforeTriangles": 108152.76666666666,
+          "afterTriangles": 106965.98333333334
+        }
+      }
+    },
+    {
+      "scenario": "infinite",
+      "terrain": true,
+      "vegetation": true,
+      "trial": 2,
+      "coarseVertices": [
+        226048,
+        38113
+      ],
+      "coarseAttributeBytes": [
+        9946112,
+        1676972
+      ],
+      "preparationMs": [
+        2610.899999999907,
+        2689.100000000093
+      ],
+      "phases": {
+        "stationary": {
+          "beforeMs": 52.66750000000078,
+          "afterMs": 43.36624999999961,
+          "reductionPercent": 17.660321830352743,
+          "beforeP95": 78.70000000018626,
+          "afterP95": 49.200000000186265,
+          "beforeDriverMs": 46.84995029411766,
+          "afterDriverMs": 38.303069991489366,
+          "beforeUpdateMs": 0.06749999998137354,
+          "afterUpdateMs": 0.06374999999146287,
+          "beforePrepareMs": 0.35291666668490507,
+          "afterPrepareMs": 0.32083333331975156,
+          "beforeDrawCalls": 102,
+          "afterDrawCalls": 102,
+          "beforeTriangles": 65438,
+          "afterTriangles": 65438
+        },
+        "walking": {
+          "beforeMs": 56.322500000001554,
+          "afterMs": 49.391666666666666,
+          "reductionPercent": 12.305620903430592,
+          "beforeP95": 73.79999999981374,
+          "afterP95": 61.299999999813735,
+          "beforeDriverMs": 46.889396260504206,
+          "afterDriverMs": 39.26147820338981,
+          "beforeUpdateMs": 3.0058333333426464,
+          "afterUpdateMs": 3.1183333333581684,
+          "beforePrepareMs": 1.5716666666596817,
+          "afterPrepareMs": 2.2258333333263485,
+          "beforeDrawCalls": 99.00833333333334,
+          "afterDrawCalls": 99.025,
+          "beforeTriangles": 60787.316666666666,
+          "afterTriangles": 60822.46666666667
+        },
+        "running": {
+          "beforeMs": 54.12333333333566,
+          "afterMs": 55.07333333333566,
+          "reductionPercent": -1.7552503541293785,
+          "beforeP95": 67.8000000002794,
+          "afterP95": 76.3000000002794,
+          "beforeDriverMs": 41.18973850420168,
+          "afterDriverMs": 41.476596436974795,
+          "beforeUpdateMs": 6.9283333333247965,
+          "afterUpdateMs": 7.118333333331005,
+          "beforePrepareMs": 1.4450000000263874,
+          "afterPrepareMs": 1.6900000000139699,
+          "beforeDrawCalls": 88.53333333333333,
+          "afterDrawCalls": 88.41666666666667,
+          "beforeTriangles": 53785.45,
+          "afterTriangles": 53651.683333333334
+        },
+        "backtracking": {
+          "beforeMs": 62.61583333333256,
+          "afterMs": 71.99166666666666,
+          "reductionPercent": -14.97358229414958,
+          "beforeP95": 74.79999999981374,
+          "afterP95": 98.20000000018626,
+          "beforeDriverMs": 50.977238487394985,
+          "afterDriverMs": 58.85197224369748,
+          "beforeUpdateMs": 5.126666666648816,
+          "afterUpdateMs": 5.860000000044238,
+          "beforePrepareMs": 1.5241666666969347,
+          "afterPrepareMs": 1.861666666654249,
+          "beforeDrawCalls": 120.39166666666667,
+          "afterDrawCalls": 119.96666666666667,
+          "beforeTriangles": 89313.2,
+          "afterTriangles": 89697.83333333333
+        }
+      }
+    }
+  ]
+}

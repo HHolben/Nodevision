@@ -5,6 +5,7 @@
     "nodevision": "nodevision-cli.js"
   },
   "scripts": {
+    "test:metaworld": "node scripts/test-metaworld.mjs",
     "start": "node start-servers.js",
     "desktop": "electron .",
     "portable": "node ApplicationSystem/scripts/build-portable-entry.mjs && pkg --no-bytecode --public --public-packages \"*\" ApplicationSystem/build/nodevision-cli.cjs --output nodevision",

@@ -1,0 +1,50 @@
+{
+  "environment": "Node worker_threads, not browser",
+  "workerCount": 1,
+  "maxOutstanding": 1,
+  "preparationMs": 26.929062999999985,
+  "startupMs": 38.56130200000001,
+  "inputBytes": 111376,
+  "rows": [
+    {
+      "syncMs": 32.453340000000026,
+      "roundTripMs": 85.495698,
+      "workerMs": 34.62777999999997
+    },
+    {
+      "syncMs": 30.60112399999997,
+      "roundTripMs": 33.746433999999965,
+      "workerMs": 32.94967100000002
+    },
+    {
+      "syncMs": 21.056984000000057,
+      "roundTripMs": 31.991807999999992,
+      "workerMs": 31.29347000000007
+    },
+    {
+      "syncMs": 18.274997999999982,
+      "roundTripMs": 34.140738000000056,
+      "workerMs": 32.805815999999936
+    },
+    {
+      "syncMs": 34.40594199999998,
+      "roundTripMs": 24.274554999999964,
+      "workerMs": 23.514609999999948
+    },
+    {
+      "syncMs": 32.94015000000002,
+      "roundTripMs": 16.50039400000003,
+      "workerMs": 15.723904999999945
+    },
+    {
+      "syncMs": 15.706532000000038,
+      "roundTripMs": 23.06111599999997,
+      "workerMs": 21.733075999999983
+    },
+    {
+      "syncMs": 12.640368999999964,
+      "roundTripMs": 20.972283999999945,
+      "workerMs": 20.006981999999994
+    }
+  ]
+}

@@ -1,6 +1,7 @@
 // Nodevision/ApplicationSystem/public/PanelInstances/ViewPanels/GameViewDependencies/renderLoop.mjs
 // This file runs the animation loop and renders each frame.
 
+import { createGpuTimer } from '../../../MetaWorld/TerrainDiagnostics/GpuTimer.mjs';
 import { createTerrainFrameSampler } from '../../../MetaWorld/TerrainDiagnostics/Frames.mjs';
 import { createVoxelEnvironmentLighting } from './voxelEnvironmentLighting.mjs';
 import { installWorldAstronomy } from './worldAstronomy.mjs';
@@ -8,7 +9,7 @@ import { installWorldWeather } from './worldWeather.mjs';
 
 export function startRenderLoop(renderer, scene, cameraOrResolver, update) {
   let running = true;
-  const sampleFrame = createTerrainFrameSampler();
+  const sampleFrame = createTerrainFrameSampler(), gpuTimer = createGpuTimer(renderer);
   const weather = installWorldWeather(scene);
   const astronomy = installWorldAstronomy(scene);
   let voxelLighting = null;
@@ -32,13 +33,20 @@ export function startRenderLoop(renderer, scene, cameraOrResolver, update) {
     const context = window.VRWorldContext;
     if (!voxelLighting && context?.THREE) voxelLighting = createVoxelEnvironmentLighting(context.THREE, scene);
     voxelLighting?.update(context);
-    if (activeCamera) renderer.render(scene, activeCamera);
+    const renderStart = measuring ? performance.now() : 0;
+    if(activeCamera)for(const root of context?.objects||[])if(root.visible)root.userData?.terrainRuntime?.vegetation?.prepareView?.(renderer.xr?.isPresenting?null:activeCamera);
+    const submitStart = measuring ? performance.now() : 0;
+    gpuTimer.begin(measuring && Boolean(activeCamera));
+    try { if (activeCamera) renderer.render(scene, activeCamera); } finally { gpuTimer.end(); }
+    if (measuring && context) context.terrainRenderStats = {updateCpuMs: renderStart-start, vegetationViewCpuMs: submitStart-renderStart, submissionCpuMs: performance.now()-submitStart, gpu: gpuTimer.snapshot()};
+    else if (context) context.terrainRenderStats = null;
     sampleFrame(context, start, measuring ? performance.now() - start : 0, measuring);
   }
   animate();
   return () => {
     if (!running) return;
     running = false;
+    gpuTimer.dispose();
     weather.dispose();
     astronomy.dispose();
     voxelLighting?.dispose();

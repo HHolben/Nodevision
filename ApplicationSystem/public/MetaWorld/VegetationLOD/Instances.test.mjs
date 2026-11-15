@@ -14,8 +14,8 @@ test('merged instances preserve bounds, counted cells and independent chunk hand
  assert.deepEqual(bounds.min.toArray(),[0,-3,-.5]);assert.deepEqual(bounds.max.toArray(),[1,-2.5,0]);
  assert.deepEqual(tile.mask(()=>false),{cells:4,boxes:2,ids:new Set(['tree'])});
  assert.deepEqual(tile.mask(key=>key==='a'),{cells:2,boxes:1,ids:new Set(['tree'])});
- mesh.getMatrixAt(0,matrix);assert.equal(matrix.determinant(),0);
- mesh.getMatrixAt(1,matrix);assert.ok(matrix.determinant()>0);
+ assert.equal(mesh.count,1,'hidden owners consume no submitted instances');
+ mesh.getMatrixAt(0,matrix);assert.ok(matrix.determinant()>0);assert.equal(matrix.elements[12],1.5,'remaining chunk keeps its anchor');
  assert.equal(tile.mask(()=>true).cells,0);assert.equal(mesh.visible,false);
  assert.equal(tile.mask(()=>false).cells,4);assert.equal(mesh.visible,true);
  mesh.getMatrixAt(0,matrix);assert.ok(matrix.determinant()>0);

@@ -45,7 +45,9 @@ test('meshing suppresses adjacent and cross-chunk internal faces',()=>{
   assert.equal(meshVoxelChunk(data,[0,0,0],(x,y,z)=>x===-1&&y===0&&z===0?1:0).faceCount,9);
 });
 test('residency unloads, reproduces geometry and releases resources',async()=>{
-  const colliders=[], root=createProceduralVoxelWorld(THREE,def,colliders,voxelMaterialOptions), runtime=root.userData.proceduralVoxelRuntime;
+  // This fixed-update assertion exercises the one-chunk scheduler. Distant streaming uses a wall-clock budget and is covered by TerrainLOD/Streaming.test.mjs.
+  const residencyDef={...def,streaming:{enabled:false,vegetationEnabled:false}};
+  const colliders=[], root=createProceduralVoxelWorld(THREE,residencyDef,colliders,voxelMaterialOptions), runtime=root.userData.proceduralVoxelRuntime;
   assert.equal(await runtime.ready,true);
   const position=new THREE.Vector3(0,30,0);
   for(let i=0;i<36;i++) runtime.update(position);

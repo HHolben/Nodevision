@@ -1,0 +1,129 @@
+{
+  "date": "2026-11-14",
+  "unitTests": {
+    "tests": 251,
+    "passed": 251,
+    "failed": 0
+  },
+  "integrationPassLines": {
+    "native": [
+      "PASS: production GameView panel, actual render loop, inspector, View controls, save and Viewer reopen",
+      "PASS: Phase C vegetation checks ["
+    ],
+    "extent": [
+      "PASS: native extent UI, undo/redo, negative streaming/collision/editing, linked excavation, paths and actual Editor save/Viewer reopen"
+    ],
+    "maps": [
+      "PASS: custom map range loading, elevation/biomes/materials/collision, local edits, source settings and HTML persistence; native GOX/STL/glTF/GLB independence, atomic terrain switching, camera/environment, View control, HTML save/reopen, legacy grid, undo/redo"
+    ],
+    "teleporter": [
+      "PASS: production inventory, trusted primary and controller input, geographic coarse and detailed voxel/polygonal travel, physics, cancellation, permissions, imported GOX/STL/glTF/GLB, constructions, cleanup and save/reopen"
+    ]
+  },
+  "nativeElectron": {
+    "version": "42.2.0",
+    "result": {
+      "features": {
+        "2d_canvas": "unavailable_software",
+        "direct_rendering_display_compositor": "disabled_off_ok",
+        "gpu_compositing": "disabled_software",
+        "multiple_raster_threads": "enabled_on",
+        "opengl": "unavailable_off",
+        "rasterization": "unavailable_off",
+        "raw_draw": "disabled_off_ok",
+        "skia_graphite": "disabled_off",
+        "trees_in_viz": "disabled_off",
+        "video_decode": "unavailable_off",
+        "video_encode": "disabled_software",
+        "vulkan": "disabled_off",
+        "webgl": "unavailable_off",
+        "webgpu": "unavailable_software",
+        "webgpu_on_vk_via_gl_interop": "disabled_off",
+        "webnn": "disabled_off"
+      },
+      "gpu": {
+        "auxAttributes": {
+          "amdSwitchable": false,
+          "canSupportThreadedTextureMailbox": false,
+          "glImplementationParts": "(gl=none,angle=none)",
+          "glResetNotificationStrategy": 0,
+          "hardwareSupportsVulkan": false,
+          "inProcessGpu": true,
+          "initializationTime": 0,
+          "isAsan": false,
+          "isClangCoverage": false,
+          "jpegDecodeAcceleratorSupported": false,
+          "optimus": false,
+          "passthroughCmdDecoder": false,
+          "sandboxed": false,
+          "skiaBackendType": "None",
+          "subpixelFontRendering": true,
+          "targetCpuBits": 64,
+          "visibilityCallbackCallCount": 0
+        },
+        "gpuDevice": [
+          {
+            "active": true,
+            "deviceId": 256,
+            "gpuPreference": 0,
+            "vendorId": 6966
+          }
+        ]
+      },
+      "webgl": null
+    },
+    "performanceVerified": false
+  },
+  "benchmark": {
+    "records": 88,
+    "pairs": 44,
+    "allSettledQueuesDrained": true,
+    "maximumCoverageChangedPixels": 0,
+    "maximumChangedColorPixels": 2
+  },
+  "notebookSha256": "75533dd604cbacc1de34bd42e1e3c5a5faeef5f4779b51c520a2e0c0edd81292",
+  "standards": {
+    "applicationModulesChecked": 23,
+    "headerAndLineLimitViolations": 0,
+    "diffCheck": "passed"
+  },
+  "finalSourceSha256": {
+    "ApplicationSystem/public/MetaWorld/Rendering/ColorBatches.mjs": "f7b54905942c252eba69ffbc67982f51a368bf6b76e7ff47b47701a293f830f6",
+    "ApplicationSystem/public/MetaWorld/Rendering/ColorBatches.test.mjs": "2f703be9cbc2e60773dfb133a3ef988573e3eff367e2948aa13aeaeea8cf0619",
+    "ApplicationSystem/public/MetaWorld/TerrainDiagnostics/GpuTimer.mjs": "e3acbdb6b8b5fa5b9716849a10703d92d22e0788d8620c682e4b076a0a204b9b",
+    "ApplicationSystem/public/MetaWorld/TerrainDiagnostics/GpuTimer.test.mjs": "0f5b522813d29d09e6810e80830b65a87388753287f694bd543e7e5f1620d3c6",
+    "ApplicationSystem/public/MetaWorld/TerrainDiagnostics/SceneSubmission.mjs": "727a8a252ee7a38c6926b35b8d8c5c6e137013a8ee3d6ff6be2f9e0a60421f40",
+    "ApplicationSystem/public/MetaWorld/TerrainRepresentation/CachedChunkBuilder.mjs": "c0bc6258c18903af58ac410ab4aaf994c45f7cb029033e4f00f23706582bfce5",
+    "ApplicationSystem/public/MetaWorld/TerrainRepresentation/MeshCache.mjs": "6cde759d4b1f159e26cd1339248369f0b930fc713374e6c54a76cbef4b5dd1d5",
+    "ApplicationSystem/public/MetaWorld/TerrainRepresentation/MeshCache.test.mjs": "07da124c968de28cedd838f185c194ee86639804b945298a5323510c1ff97dfe",
+    "ApplicationSystem/public/MetaWorld/TerrainRepresentation/SurfaceNetsCompatibility.test.mjs": "2a33009e4d377e675406726f2c259a0bc2c93aa452285e43f5ca4496289db3c0",
+    "ApplicationSystem/public/MetaWorld/VegetationLOD/FrustumInstances.mjs": "633fa761d9f15ecfca791e029b3eb68f11f91e85408681a141ea10d6fe94a278",
+    "ApplicationSystem/public/MetaWorld/VegetationLOD/FrustumInstances.test.mjs": "4f0577ae42cd79e741e8d3fc6055fa5c1bce3f855e89adc56a9ff8b9b58296bb",
+    "scripts/profile-terrain-e1-electron.cjs": "907903c2f8bbe7cd119604e78f0541a1fa7bcedf1ad341f5eed84a184a4bba63",
+    "scripts/profile-terrain-phase-e-worker.mjs": "f5e67726b3d0d320b14da89e30be183a320b24fa60ba72c13c67645aef75f3a4",
+    "scripts/profile-terrain-phase-e.mjs": "3bab9c2a8c70c69d6b18549837c6e235ebceaeb14b4796d435fc7a3b67324856",
+    "scripts/terrain-e1-compare.mjs": "65757273011a0c7a5f8061005cdf9bce75f6783eec2527749254d63d9e4f7ec9",
+    "scripts/terrain-e1-global-instances.mjs": "effc50ee1b8bf3a0fe21705b9dbf391e246a8741409672d9e7393b4454945a1f",
+    "scripts/terrain-e1-instance-isolate.mjs": "a617eb23226d9bbf0a229bc7e00169f5060aab2326869e5e174f5e4cbb54bd60",
+    "scripts/terrain-e1-isolate.mjs": "9cf2768479a51cd28d5455b3854c424b2f23eaf9470bc8eadbab65209389c3a1",
+    "scripts/terrain-e1-skirt-filter.mjs": "b6be0134f16d1957e434db077ff0582475083906f9760ffacf22e2c37a2f89b7",
+    "scripts/terrain-e1-skirts.mjs": "06bda8c370409eacba98390e28c8b77ecae0a4ed27bb009a5e12b1106f36e46e",
+    "scripts/terrain-phase-e-browser.mjs": "c38e08e8e0ba32beeb96d65078fc7d1146972c9feacf5ebf5cde90c84e7258a9",
+    "scripts/test-terrain-e1-compare.mjs": "7beac4d03fba30f0c93c739abc739ab6a1f960d9e9a2c6072762195bbe14ab2c",
+    "scripts/test-terrain-e1-isolate.mjs": "164ff58dfe005bde8a053a06d02d195200b68a74b12a44d792a9bc8be352f5d9",
+    "scripts/test-terrain-phase-e.mjs": "4da668717e58500083dff1a7e1ff15049e7d4f601fde941ec293e57acd820b0b",
+    "ApplicationSystem/public/MetaWorld/ProceduralVoxelWorld/FinishTerrainChunk.mjs": "6c6a9e88c9c124c52993212d30692ab2cf8d6b47c492f64ee10c61a2e7f8936a",
+    "ApplicationSystem/public/MetaWorld/ProceduralVoxelWorld/ProceduralVoxelWorldRuntime.mjs": "c52b2138096b34254e44b028296e8a484f39355eccc49544b26ee7d5a7c8e9c6",
+    "ApplicationSystem/public/MetaWorld/ProceduralVoxelWorld/VoxelChunkManager.mjs": "b52bfa6b86823ad682ef44378a709f3d3d31b4f01f24f35efef457692612bd83",
+    "ApplicationSystem/public/MetaWorld/TerrainDiagnostics/Frames.mjs": "ebb89997fb3dd3781087a726efb29dbd2e011fe33aaf98cff4f681384e9a4017",
+    "ApplicationSystem/public/MetaWorld/TerrainDiagnostics/Snapshot.mjs": "219fa1077136073f4693388078253d1748c01ce8c6c709d401c14d1a449ac634",
+    "ApplicationSystem/public/MetaWorld/TerrainLOD/TileMesh.mjs": "c0852e1c56281989e1e8d97174c3002f448381b8e6edfd4ed8313618d62c015b",
+    "ApplicationSystem/public/MetaWorld/TerrainRepresentation/SurfaceNets.mjs": "d1f9f50eaa30bde160b36736f589e5e9bfea6d25d81e55f41723ce99a2eccf79",
+    "ApplicationSystem/public/MetaWorld/TerrainRepresentation/SwitchSafety.test.mjs": "be53627f70792294e0e79a0b1cf2afbe3d47f93a11b7add6e019484a3b89af9f",
+    "ApplicationSystem/public/MetaWorld/VegetationLOD/Instances.mjs": "868ea9759ab314ddb0f9c9ab3f0add0295acd9750a5381c4990a8660689c9f22",
+    "ApplicationSystem/public/MetaWorld/VegetationLOD/Instances.test.mjs": "5c703f8ed7a27acc3229d2f79b1becd1b1fcc7ed62775ab6aa8c217ef5f83f9f",
+    "ApplicationSystem/public/MetaWorld/VegetationLOD/Runtime.mjs": "9c758459db46e673db48e696face0f056ff70880dd4262fb1aac45b728e6ebc2",
+    "ApplicationSystem/public/PanelInstances/ViewPanels/GameViewDependencies/renderLoop.mjs": "1391f905252129d1950787ec68a4304a85874a5bd5bd11406d50d1491c9c167d",
+    "scripts/vegetation-phase-c-native.mjs": "761a037602e4388ebf9681ba7d23986adef3f7c84d3caa4e10d8cb8c39b53ebc"
+  }
+}

@@ -52,7 +52,7 @@ export function createVegetationLOD(THREE,root,definition,generator,manager,mate
    const task=pending;task.iterator ||= build(task.request);const result=task.iterator.next();if(!result.done)continue;pending=null;
    if(task.revision!==revision)continue;
    // Bound prepared buffers before installation; incoming and outgoing data coexist for only this commit.
-   const old=tiles.get(task.request.key);if(stats.bytes-(old?.bytes||0)+result.value.cells.length*64>8*1048576){stats.error='Vegetation buffer budget reached';continue;}
+   const old=tiles.get(task.request.key);if(stats.bytes-(old?.bytes||0)+result.value.cells.length*76>8*1048576){stats.error='Vegetation buffer budget reached';continue;}
    const install=performance.now(),tile=vegetationInstances(THREE,result.value,geometry,materials(),definition.heightLimits?.min||0);
    if(old)stats.transitions++;release(task.request.key);tiles.set(task.request.key,tile);group.add(tile.group);stats.bytes+=tile.bytes;lastMask='';lastResidency=null;dirty.delete(task.request.key);
    stats.installationMs+=performance.now()-install;stats.lastRequestLatencyMs=performance.now()-task.request.requested;
@@ -64,8 +64,8 @@ export function createVegetationLOD(THREE,root,definition,generator,manager,mate
   sync();
  }
  function sync(){const version=manager.loaded.revision;if(Number.isFinite(version)&&version===lastResidency)return;lastResidency=version;const signature=[...manager.loaded].filter(([,e])=>e.mesh?.visible).map(([key])=>key).join(';');if(signature===lastMask&&[...tiles.values()].every(t=>t.visible))return;lastMask=signature;const ready=new Set(signature.split(';'));for(const t of tiles.values())t.visible=t.mask(key=>ready.has(key));}
- return {update,invalidate,sync,
+ return {update,invalidate,sync,prepareView(camera){camera?.updateWorldMatrix(true,false);for(const tile of tiles.values())tile.prepareView(camera);},
   states(){const states=new Map();for(const t of tiles.values())for(const f of t.data.identities){const old=states.get(f.id),coarse=t.visible?.ids.has(f.id);states.set(f.id,{...f,level:coarse?Math.min(old?.level>0?old.level:2,t.data.level):old?.level??0});}return [...states.values()];},
-  snapshot(){let cells=0,boxes=0,drawCalls=0;const ids=new Set(),levels={0:0,1:0,2:0};for(const t of tiles.values()){cells+=t.visible?.cells||0;boxes+=t.visible?.boxes||0;drawCalls+=t.drawCalls();for(const id of t.visible?.ids||[])ids.add(id);}for(const f of this.states())levels[f.level]++;return {...stats,regions:tiles.size,queue:queue.length+(pending?1:0),representedTrees:ids.size,levels,proxyCells:cells,proxyBoxes:boxes,triangles:boxes*12,drawCalls,queueAgeMs:pending?performance.now()-pending.request.requested:0,visibleCoverage:null,gpuUploadMs:null};},
+  snapshot(){const instanceCulling={scans:0,bufferRewrites:0,culled:0};for(const t of tiles.values()){const s=t.cullingSnapshot();for(const key of Object.keys(instanceCulling))instanceCulling[key]+=s[key];}let cells=0,boxes=0,drawCalls=0;const ids=new Set(),levels={0:0,1:0,2:0};for(const t of tiles.values()){cells+=t.visible?.cells||0;boxes+=t.visible?.boxes||0;drawCalls+=t.drawCalls();for(const id of t.visible?.ids||[])ids.add(id);}for(const f of this.states())levels[f.level]++;return {...stats,instanceCulling,regions:tiles.size,queue:queue.length+(pending?1:0),representedTrees:ids.size,levels,proxyCells:cells,proxyBoxes:boxes,triangles:boxes*12,drawCalls,queueAgeMs:pending?performance.now()-pending.request.requested:0,visibleCoverage:null,gpuUploadMs:null};},
   dispose(){disposed=true;pending=null;queue=[];for(const k of tiles.keys())release(k);geometry.dispose();group.removeFromParent();}};
 }

@@ -1,5 +1,6 @@
 // Nodevision/ApplicationSystem/public/MetaWorld/ProceduralVoxelWorld/ProceduralVoxelWorldRuntime.mjs
 // This module owns one logical terrain object, its streamed chunk resources, and its analytic movement collider.
+import {createMeshCache} from '../TerrainRepresentation/MeshCache.mjs';
 import { createVegetationLOD } from '../VegetationLOD/Runtime.mjs';
 import { finishTerrainChunk } from './FinishTerrainChunk.mjs';
 import { createTerrainLOD } from '../TerrainLOD/Runtime.mjs';
@@ -13,11 +14,10 @@ import {raycastCells} from '../SessionVoxels/Raycast.mjs';
 import {createSessionPalette} from '../SessionVoxels/SessionPalette.mjs';
 import {composeSession} from '../SessionVoxels/TerrainSession.mjs';
 import { terrainData } from '../TerrainRepresentation/TerrainData.mjs';
-import { surfaceNetSteps } from '../TerrainRepresentation/SurfaceNets.mjs';
+import {cachedChunkBuilder} from '../TerrainRepresentation/CachedChunkBuilder.mjs';
 import { chunkRepresentation } from '../TerrainRepresentation/ChunkRepresentation.mjs';
 import { meshTerrainCollision } from '../TerrainRepresentation/MeshCollision.mjs';
 import { GEO_BUDGETS as B } from '../Geographic/Budgets.mjs';
-import { timedSteps } from './ProgressiveTerrain.mjs';
 import { createCalendarSeasonBinding } from '../Aegean/CalendarSeasons.mjs';
 import { findVoxelSpawn } from "./VoxelSpawn.mjs";
 import { createFeatureCollision } from "./VoxelFeatureCollision.mjs";
@@ -25,7 +25,7 @@ import { validateVoxelWorld } from "./VoxelWorldDefinition.mjs";
 import { VOXEL_SIZE, chunkToVoxel, voxelToWorld, worldToVoxel } from "./VoxelCoordinates.mjs";
 import { createVoxelGenerator } from "./VoxelTerrainGenerator.mjs";
 import { meshGreedyVoxelChunk } from './VoxelGreedyMesher.mjs';
-import { meshVoxelChunk,meshVoxelChunkSteps } from "./VoxelChunkMesher.mjs";
+import { meshVoxelChunk } from "./VoxelChunkMesher.mjs";
 import { createVoxelMaterialPalette } from "./VoxelMaterialPalette.mjs";
 import { createVoxelLiquidVolume } from "./VoxelLiquidVolume.mjs";
 import { VoxelChunkManager } from "./VoxelChunkManager.mjs";
@@ -36,6 +36,7 @@ export function createProceduralVoxelWorld(THREE, source, colliders, materialOpt
   root.position.fromArray(definition.position);
   root.visible = definition.visible !== false && definition.hidden !== true;
   Object.assign(root.userData, { nvType: definition.type, metaWorldLayerId: definition.id, breakable: false });
+  const meshCache=createMeshCache();
   let sessionEdited=false;const sessionPalette=createSessionPalette(THREE);generator.setConstructionMaterialResolver(sessionPalette.material);
   let palette = null, resolvedPalette=null, disposed = false, lastPosition = null, activeAstronomy = null;
   const floorOffset = definition.heightLimits?.min || 0;
@@ -63,12 +64,7 @@ export function createProceduralVoxelWorld(THREE, source, colliders, materialOpt
   if (infiniteWorld(definition) || definition.boundaryMode === 'open' || !['procedural',undefined].includes(definition.terrainSource)) delete collider.containsPlayer;
   colliders.push(collider); root.userData.colliderRef = collider;
   const finishChunk=(...args)=>finishTerrainChunk(THREE,root,palette,floorOffset,definition,...args);
-  function* progressiveChunk(cell,mode=representation.active,hidden=false,cached=null){
-    const generated=cached?{value:cached,cpuMs:0}:yield* timedSteps(generator.generateChunkSteps(...cell));
-    const meshed=yield* timedSteps((mode==='polygonal'?surfaceNetSteps:meshVoxelChunkSteps)(generated.value,cell,generator.getRenderVoxel));
-    const entry=finishChunk(cell,meshed.value,generated.cpuMs,meshed.cpuMs,hidden);
-    return {...entry,data:generated.value,residentBytes:entry.residentBytes+generated.value.byteLength};
-  }
+  const progressiveChunk=cachedChunkBuilder(generator,meshCache,finishChunk,()=>representation.active);
   const progressive=infiniteWorld(definition)||definition.geographic?.version===2||!!map||terrainStreaming(definition.streaming).enabled;
   const manager = new VoxelChunkManager(generator,definition.chunks.loadRadius,cell=>{
     if(manager.options)return progressiveChunk(cell);
@@ -76,7 +72,8 @@ export function createProceduralVoxelWorld(THREE, source, colliders, materialOpt
     const result=(definition.environment?.id==='aegean'?meshGreedyVoxelChunk:meshVoxelChunk)(data,cell,generator.getRenderVoxel);
     const entry=finishChunk(cell,result,generated-start,performance.now()-generated);return {...entry,data,residentBytes:entry.residentBytes+data.byteLength};
   },releaseChunk,progressive||definition.representation==='polygonal'?{budgetMs:B.frameMs,maxChunks:B.residentChunks,maxBytes:B.residentBytes}:null);
-  function releaseChunk(entry){entry.mesh?.geometry.dispose();entry.mesh?.removeFromParent();}
+  manager.meshCache=meshCache;
+  function releaseChunk(entry){const start=performance.now();entry.mesh?.geometry.dispose();entry.mesh?.removeFromParent();if(manager)manager.stats.disposalMs=(manager.stats.disposalMs||0)+performance.now()-start;}
   const vegetation=createVegetationLOD(THREE,root,definition,generator,manager,()=>palette?.materials||[],map);
   const lod=createTerrainLOD(THREE,root,definition,generator,manager,()=>palette?.materials||[],map,bounds=>vegetation.invalidate(bounds));
   const representation=chunkRepresentation(definition,manager,progressiveChunk,releaseChunk);
@@ -88,7 +85,7 @@ export function createProceduralVoxelWorld(THREE, source, colliders, materialOpt
   const runtime = {
     seasonState:seasons.state,updateCalendar(astronomy){if(disposed)return false;activeAstronomy=astronomy;return seasons.update(astronomy);},
     geographicStatus: definition.terrainSource === 'geographic' ? geographicSourceStatus(definition.geographic) : null,
-    generator, manager, definition, stats: manager.stats,map,lod,vegetation,
+    generator, manager, meshCache, definition, stats: manager.stats,map,lod,vegetation,
     get mapRevision(){return mapRevision;},mapRevisionFor(bounds){if(!bounds)return mapRevision;return mapEvents.reduce((n,e)=>!e.bounds||e.bounds.minX<=bounds.maxX&&e.bounds.maxX>=bounds.minX&&e.bounds.minZ<=bounds.maxZ&&e.bounds.maxZ>=bounds.minZ?Math.max(n,e.revision):n,0);},
     sampleTerrainSource(x,z){const lx=x-root.position.x,lz=z-root.position.z,sample=generator.terrainSampler?.sample(lx,lz)||{covered:lx>=0&&lz>=0&&lx<definition.size[0]&&lz<definition.size[2],elevation:floorOffset+generator.base.getTerrainHeight(Math.floor(lx/.25),Math.floor(lz/.25))*.25,biome:generator.getBiome(Math.floor(lx/.25),Math.floor(lz/.25)),material:null};return {...sample,elevation:sample.elevation===null?null:sample.elevation+root.position.y};},
     requestMapPoint(x,z){if(!map||disposed)return;const lx=x-root.position.x,lz=z-root.position.z,key=`${Math.floor(lx)},${Math.floor(lz)}`;if(mapPointRequests.has(key))return;const work=runtime.prepareMapRegion({minX:lx-1,maxX:lx+1,minZ:lz-1,maxZ:lz+1}).catch(error=>{if(!disposed)runtime.mapError=error;}).finally(()=>mapPointRequests.delete(key));mapPointRequests.set(key,work);},
@@ -99,6 +96,7 @@ export function createProceduralVoxelWorld(THREE, source, colliders, materialOpt
     get representation(){return representation.active;},get representationProgress(){return representation.progress;},
     async setRepresentation(mode,beforeCommit){if(!await runtime.ready)throw Error(runtime.materialError?.message||runtime.mapError?.message||'Terrain assets are not ready.');if(disposed)return false;const result=await representation.setRepresentation(mode,beforeCommit);if(result)manager.options=progressive||lod.settings.enabled||mode==='polygonal'?{budgetMs:B.frameMs,maxChunks:B.residentChunks,maxBytes:B.residentBytes}:null;return result;},
     setPathConstraints(paths,bounds) {
+      meshCache.clear('paths');
       if(!bounds&&paths.length)bounds={minX:Math.min(...paths.map(p=>p.bounds.minX)),maxX:Math.max(...paths.map(p=>p.bounds.maxX)),minZ:Math.min(...paths.map(p=>p.bounds.minZ)),maxZ:Math.max(...paths.map(p=>p.bounds.maxZ))};
       lod.invalidate(bounds&&{minX:bounds.minX-root.position.x,maxX:bounds.maxX-root.position.x,minZ:bounds.minZ-root.position.z,maxZ:bounds.maxZ-root.position.z},'paths');
       representation.cancel();generator.setPathOrigin(root.position.toArray());
@@ -109,6 +107,7 @@ export function createProceduralVoxelWorld(THREE, source, colliders, materialOpt
       if(lastPosition)runtime.update(lastPosition);
     },
     setConstructions(entries,bounds=[]){
+      meshCache.clear('constructions');
       if(!bounds.length&&entries.length)bounds=entries.map(e=>e.extent||e.bounds);
       representation.cancel();generator.setConstructionOrigin(root.position.toArray());generator.setConstructions(entries);
       for(const b of bounds){lod.invalidate({minX:b.min[0]-root.position.x,maxX:b.max[0]-root.position.x,minZ:b.min[2]-root.position.z,maxZ:b.max[2]-root.position.z},`construction:${b.min.join(',')}`);const o=origin();manager.invalidateRegion({min:b.min.map((v,i)=>(v-o[i])/.25-1),max:b.max.map((v,i)=>(v-o[i])/.25+1)});}
@@ -159,7 +158,7 @@ export function createProceduralVoxelWorld(THREE, source, colliders, materialOpt
     },
     dispose() {
       if (disposed) return;
-      disposed = true; vegetation.dispose();lod.dispose();runtime.geographicStatus?.dispose(); map?.dispose();representation.dispose();generator.features.clear(); generator.clearColumns(); manager.dispose(); palette?.dispose();sessionPalette.dispose();
+      disposed = true; meshCache.dispose();vegetation.dispose();lod.dispose();runtime.geographicStatus?.dispose(); map?.dispose();representation.dispose();generator.features.clear(); generator.clearColumns(); manager.dispose(); palette?.dispose();sessionPalette.dispose();
       const index = colliders.indexOf(collider); if (index >= 0) colliders.splice(index,1);
       root.removeFromParent();
     }

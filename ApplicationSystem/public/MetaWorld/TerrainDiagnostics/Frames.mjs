@@ -9,7 +9,7 @@ export function createTerrainFrameSampler() {
     if (frames.length > 180) frames.shift(); if (cpu.length > 180) cpu.shift();
     if (++count % 15 || !context) return;
     const sorted = [...frames].sort((a,b) => a-b), mean = list => list.reduce((a,b) => a+b,0) / (list.length || 1);
-    context.terrainFrameStats = { samples: frames.length, averageMs: mean(frames), p95Ms: sorted[Math.floor(sorted.length * .95)] || 0,
+    context.terrainFrameStats = { samples: frames.length, averageMs: mean(frames), p95Ms: sorted[Math.floor(sorted.length * .95)] || 0, p99Ms: sorted[Math.floor(sorted.length * .99)] || 0, maxMs: sorted.at(-1) || 0,
       approximateFps: frames.length ? 1000 / mean(frames) : 0, averageCpuMs: mean(cpu) };
   };
 }

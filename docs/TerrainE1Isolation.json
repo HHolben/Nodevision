@@ -1,0 +1,885 @@
+{
+  "results": [
+    {
+      "trial": 0,
+      "variant": "neither",
+      "frame": {
+        "mean": 16.78333333333139,
+        "p95": 18,
+        "p99": 23.5999999998603
+      },
+      "update": {
+        "mean": 0.08083333332712452,
+        "p95": 0.19999999995343387,
+        "p99": 0.20000000018626451
+      },
+      "submit": {
+        "mean": 0.9841666666655026,
+        "p95": 1.6000000000931323,
+        "p99": 2
+      },
+      "gpu": {
+        "mean": 4.435347766666666,
+        "p95": 8.162707,
+        "p99": 12.137628
+      },
+      "calls": 9,
+      "triangles": 12758
+    },
+    {
+      "trial": 0,
+      "variant": "terrain",
+      "frame": {
+        "mean": 23.193333333327125,
+        "p95": 30.100000000093132,
+        "p99": 32.699999999953434
+      },
+      "update": {
+        "mean": 0.05083333333604969,
+        "p95": 0.10000000009313226,
+        "p99": 0.19999999995343387
+      },
+      "submit": {
+        "mean": 1.0125,
+        "p95": 1.5,
+        "p99": 1.6000000000931323
+      },
+      "gpu": {
+        "mean": 19.04715644166667,
+        "p95": 25.536246,
+        "p99": 26.679765
+      },
+      "calls": 64,
+      "triangles": 49046
+    },
+    {
+      "trial": 0,
+      "variant": "vegetation",
+      "frame": {
+        "mean": 39.20750000000116,
+        "p95": 43,
+        "p99": 43.799999999813735
+      },
+      "update": {
+        "mean": 0.04749999999961195,
+        "p95": 0.19999999995343387,
+        "p99": 0.20000000018626451
+      },
+      "submit": {
+        "mean": 1.344166666676756,
+        "p95": 2.0999999998603016,
+        "p99": 2.5
+      },
+      "gpu": {
+        "mean": 34.74762423333333,
+        "p95": 38.257879,
+        "p99": 39.20911
+      },
+      "calls": 74,
+      "triangles": 38066
+    },
+    {
+      "trial": 0,
+      "variant": "both",
+      "frame": {
+        "mean": 62.32666666666822,
+        "p95": 82.5,
+        "p99": 125.39999999990687
+      },
+      "update": {
+        "mean": 0.05750000000504466,
+        "p95": 0.10000000009313226,
+        "p99": 0.19999999995343387
+      },
+      "submit": {
+        "mean": 1.6058333333348855,
+        "p95": 2.6000000000931323,
+        "p99": 3.7000000001862645
+      },
+      "gpu": {
+        "mean": 56.49367211666667,
+        "p95": 75.756279,
+        "p99": 117.564891
+      },
+      "calls": 129,
+      "triangles": 74354
+    },
+    {
+      "trial": 0,
+      "variant": "basic",
+      "frame": {
+        "mean": 59.398333333333724,
+        "p95": 71.80000000004657,
+        "p99": 83.5999999998603
+      },
+      "update": {
+        "mean": 0.06666666668024845,
+        "p95": 0.19999999995343387,
+        "p99": 0.30000000004656613
+      },
+      "submit": {
+        "mean": 1.6641666666623982,
+        "p95": 2.300000000046566,
+        "p99": 3.5
+      },
+      "gpu": {
+        "mean": 54.03951214999999,
+        "p95": 67.612391,
+        "p99": 75.488166
+      },
+      "calls": 129,
+      "triangles": 74354
+    },
+    {
+      "trial": 0,
+      "variant": "halfResolution",
+      "frame": {
+        "mean": 57.32416666666201,
+        "p95": 89.60000000009313,
+        "p99": 102.10000000009313
+      },
+      "update": {
+        "mean": 0.0633333333360497,
+        "p95": 0.19999999995343387,
+        "p99": 0.20000000018626451
+      },
+      "submit": {
+        "mean": 1.614999999998448,
+        "p95": 2.5,
+        "p99": 3
+      },
+      "gpu": {
+        "mean": 53.01978129999999,
+        "p95": 85.614823,
+        "p99": 94.757834
+      },
+      "calls": 129,
+      "triangles": 74354
+    },
+    {
+      "trial": 0,
+      "variant": "noUpdate",
+      "frame": {
+        "mean": 62.58666666666783,
+        "p95": 77.30000000004657,
+        "p99": 87.69999999995343
+      },
+      "update": {
+        "mean": 0,
+        "p95": 0,
+        "p99": 0
+      },
+      "submit": {
+        "mean": 1.534999999993791,
+        "p95": 2.3999999999068677,
+        "p99": 3
+      },
+      "gpu": {
+        "mean": 57.459786499999986,
+        "p95": 71.400691,
+        "p99": 82.226778
+      },
+      "calls": 129,
+      "triangles": 74354
+    },
+    {
+      "trial": 1,
+      "variant": "noUpdate",
+      "frame": {
+        "mean": 62.206666666667054,
+        "p95": 83.89999999990687,
+        "p99": 96.29999999981374
+      },
+      "update": {
+        "mean": 0.0008333333341094354,
+        "p95": 0,
+        "p99": 0
+      },
+      "submit": {
+        "mean": 1.6658333333344975,
+        "p95": 3,
+        "p99": 4.400000000139698
+      },
+      "gpu": {
+        "mean": 56.738142175,
+        "p95": 78.027497,
+        "p99": 84.349756
+      },
+      "calls": 129,
+      "triangles": 74354
+    },
+    {
+      "trial": 1,
+      "variant": "halfResolution",
+      "frame": {
+        "mean": 52.31416666666628,
+        "p95": 62.200000000186265,
+        "p99": 71.5
+      },
+      "update": {
+        "mean": 0.04999999999611949,
+        "p95": 0.19999999995343387,
+        "p99": 0.19999999995343387
+      },
+      "submit": {
+        "mean": 1.5800000000104775,
+        "p95": 2.5,
+        "p99": 3.5
+      },
+      "gpu": {
+        "mean": 48.25549403333332,
+        "p95": 58.264625,
+        "p99": 66.631357
+      },
+      "calls": 129,
+      "triangles": 74354
+    },
+    {
+      "trial": 1,
+      "variant": "basic",
+      "frame": {
+        "mean": 58.95,
+        "p95": 80.5999999998603,
+        "p99": 93.4000000001397
+      },
+      "update": {
+        "mean": 0.062499999990298725,
+        "p95": 0.10000000009313226,
+        "p99": 0.19999999995343387
+      },
+      "submit": {
+        "mean": 1.615833333346139,
+        "p95": 2.5999999998603016,
+        "p99": 6.5
+      },
+      "gpu": {
+        "mean": 53.626531875000005,
+        "p95": 74.604363,
+        "p99": 87.200866
+      },
+      "calls": 129,
+      "triangles": 74354
+    },
+    {
+      "trial": 1,
+      "variant": "both",
+      "frame": {
+        "mean": 57.52416666666977,
+        "p95": 71.79999999981374,
+        "p99": 81.19999999995343
+      },
+      "update": {
+        "mean": 0.04916666665812954,
+        "p95": 0.10000000009313226,
+        "p99": 0.20000000018626451
+      },
+      "submit": {
+        "mean": 1.4750000000038805,
+        "p95": 2.3999999999068677,
+        "p99": 4.400000000139698
+      },
+      "gpu": {
+        "mean": 52.36224111666668,
+        "p95": 65.855799,
+        "p99": 74.416473
+      },
+      "calls": 129,
+      "triangles": 74354
+    },
+    {
+      "trial": 1,
+      "variant": "vegetation",
+      "frame": {
+        "mean": 44.805000000000774,
+        "p95": 60.5,
+        "p99": 72.5999999998603
+      },
+      "update": {
+        "mean": 0.055000000004656616,
+        "p95": 0.10000000009313226,
+        "p99": 0.19999999995343387
+      },
+      "submit": {
+        "mean": 1.2466666666674429,
+        "p95": 2.0999999998603016,
+        "p99": 2.800000000046566
+      },
+      "gpu": {
+        "mean": 39.98812054166667,
+        "p95": 53.530238,
+        "p99": 65.407918
+      },
+      "calls": 74,
+      "triangles": 38066
+    },
+    {
+      "trial": 1,
+      "variant": "terrain",
+      "frame": {
+        "mean": 22.606666666665113,
+        "p95": 27.300000000046566,
+        "p99": 36.700000000186265
+      },
+      "update": {
+        "mean": 0.043333333340706305,
+        "p95": 0.10000000009313226,
+        "p99": 0.19999999995343387
+      },
+      "submit": {
+        "mean": 0.862499999992239,
+        "p95": 1.1999999999534339,
+        "p99": 1.8000000000465661
+      },
+      "gpu": {
+        "mean": 18.62489778333333,
+        "p95": 22.57937,
+        "p99": 29.378512
+      },
+      "calls": 64,
+      "triangles": 49046
+    },
+    {
+      "trial": 1,
+      "variant": "neither",
+      "frame": {
+        "mean": 16.666666666664728,
+        "p95": 17.299999999813735,
+        "p99": 17.300000000046566
+      },
+      "update": {
+        "mean": 0.06000000000349246,
+        "p95": 0.19999999995343387,
+        "p99": 0.19999999995343387
+      },
+      "submit": {
+        "mean": 0.7816666666573534,
+        "p95": 1.0999999998603016,
+        "p99": 1.3999999999068677
+      },
+      "gpu": {
+        "mean": 3.754777449999999,
+        "p95": 5.782632,
+        "p99": 6.852751
+      },
+      "calls": 9,
+      "triangles": 12758
+    },
+    {
+      "trial": 2,
+      "variant": "neither",
+      "frame": {
+        "mean": 16.922500000001552,
+        "p95": 19.899999999906868,
+        "p99": 25.800000000046566
+      },
+      "update": {
+        "mean": 0.06749999999883585,
+        "p95": 0.19999999995343387,
+        "p99": 0.20000000018626451
+      },
+      "submit": {
+        "mean": 0.9008333333088862,
+        "p95": 1.8999999999068677,
+        "p99": 2.4000000001396984
+      },
+      "gpu": {
+        "mean": 5.887743466666664,
+        "p95": 12.129983,
+        "p99": 16.436071
+      },
+      "calls": 9,
+      "triangles": 12758
+    },
+    {
+      "trial": 2,
+      "variant": "terrain",
+      "frame": {
+        "mean": 22.787499999998058,
+        "p95": 28.799999999813735,
+        "p99": 32.0999999998603
+      },
+      "update": {
+        "mean": 0.04583333334303461,
+        "p95": 0.10000000009313226,
+        "p99": 0.10000000009313226
+      },
+      "submit": {
+        "mean": 0.8483333333259604,
+        "p95": 1.1999999999534339,
+        "p99": 1.8000000000465661
+      },
+      "gpu": {
+        "mean": 18.801732066666666,
+        "p95": 24.565936,
+        "p99": 28.312438
+      },
+      "calls": 64,
+      "triangles": 49046
+    },
+    {
+      "trial": 2,
+      "variant": "vegetation",
+      "frame": {
+        "mean": 41.039166666664336,
+        "p95": 51.699999999953434,
+        "p99": 64.30000000004657
+      },
+      "update": {
+        "mean": 0.05666666667287548,
+        "p95": 0.10000000009313226,
+        "p99": 0.20000000018626451
+      },
+      "submit": {
+        "mean": 1.2808333333407063,
+        "p95": 2.2000000001862645,
+        "p99": 2.800000000046566
+      },
+      "gpu": {
+        "mean": 36.306212025000015,
+        "p95": 45.948949,
+        "p99": 55.565156
+      },
+      "calls": 74,
+      "triangles": 38066
+    },
+    {
+      "trial": 2,
+      "variant": "both",
+      "frame": {
+        "mean": 67.65083333334186,
+        "p95": 107,
+        "p99": 262.09999999962747
+      },
+      "update": {
+        "mean": 0.054166666662786155,
+        "p95": 0.10000000009313226,
+        "p99": 0.20000000018626451
+      },
+      "submit": {
+        "mean": 1.6725000000093133,
+        "p95": 2.8000000002793968,
+        "p99": 4.7000000001862645
+      },
+      "gpu": {
+        "mean": 62.07158757500001,
+        "p95": 102.085322,
+        "p99": 236.883254
+      },
+      "calls": 129,
+      "triangles": 74354
+    },
+    {
+      "trial": 2,
+      "variant": "basic",
+      "frame": {
+        "mean": 57.28333333333333,
+        "p95": 80,
+        "p99": 98.20000000018626
+      },
+      "update": {
+        "mean": 0.058333333333333334,
+        "p95": 0.10000000009313226,
+        "p99": 0.20000000018626451
+      },
+      "submit": {
+        "mean": 1.6524999999906869,
+        "p95": 2.5,
+        "p99": 5.7999999998137355
+      },
+      "gpu": {
+        "mean": 51.975247666666654,
+        "p95": 72.850687,
+        "p99": 87.901114
+      },
+      "calls": 129,
+      "triangles": 74354
+    },
+    {
+      "trial": 2,
+      "variant": "halfResolution",
+      "frame": {
+        "mean": 49.55083333333799,
+        "p95": 57.5,
+        "p99": 59.89999999990687
+      },
+      "update": {
+        "mean": 0.048333333351183685,
+        "p95": 0.10000000009313226,
+        "p99": 0.20000000018626451
+      },
+      "submit": {
+        "mean": 1.480833333307722,
+        "p95": 2.2999999998137355,
+        "p99": 3
+      },
+      "gpu": {
+        "mean": 45.688228841666664,
+        "p95": 53.308835,
+        "p99": 55.032571
+      },
+      "calls": 129,
+      "triangles": 74354
+    },
+    {
+      "trial": 2,
+      "variant": "noUpdate",
+      "frame": {
+        "mean": 57.40833333333721,
+        "p95": 65.20000000018626,
+        "p99": 68
+      },
+      "update": {
+        "mean": 0,
+        "p95": 0,
+        "p99": 0
+      },
+      "submit": {
+        "mean": 1.5500000000116416,
+        "p95": 2.3999999999068677,
+        "p99": 4.900000000372529
+      },
+      "gpu": {
+        "mean": 52.38428513333334,
+        "p95": 59.666698,
+        "p99": 62.028973
+      },
+      "calls": 129,
+      "triangles": 74354
+    }
+  ],
+  "materials": [
+    {
+      "type": "MeshStandardMaterial",
+      "color": "3f8f46",
+      "map": false,
+      "transparent": false,
+      "roughness": 0.55,
+      "metalness": 0,
+      "side": 0
+    },
+    {
+      "type": "MeshStandardMaterial",
+      "color": "6b5137",
+      "map": false,
+      "transparent": false,
+      "roughness": 0.55,
+      "metalness": 0,
+      "side": 0
+    },
+    {
+      "type": "MeshStandardMaterial",
+      "color": "858583",
+      "map": false,
+      "transparent": false,
+      "roughness": 0.55,
+      "metalness": 0,
+      "side": 0
+    },
+    {
+      "type": "MeshStandardMaterial",
+      "color": "b8b59f",
+      "map": false,
+      "transparent": false,
+      "roughness": 0.55,
+      "metalness": 0,
+      "side": 0
+    },
+    {
+      "type": "MeshBasicMaterial",
+      "color": "2f83b7",
+      "map": false,
+      "transparent": true,
+      "side": 2
+    },
+    {
+      "type": "MeshStandardMaterial",
+      "color": "c49a64",
+      "map": false,
+      "transparent": false,
+      "roughness": 0.65,
+      "metalness": 0,
+      "side": 0
+    },
+    {
+      "type": "MeshStandardMaterial",
+      "color": "594434",
+      "map": false,
+      "transparent": false,
+      "roughness": 0.95,
+      "metalness": 0,
+      "side": 0
+    },
+    {
+      "type": "MeshStandardMaterial",
+      "color": "244d32",
+      "map": false,
+      "transparent": false,
+      "roughness": 0.85,
+      "metalness": 0,
+      "side": 0
+    },
+    {
+      "type": "MeshStandardMaterial",
+      "color": "c9aa5a",
+      "map": false,
+      "transparent": false,
+      "roughness": 0.55,
+      "metalness": 0,
+      "side": 0
+    },
+    {
+      "type": "MeshBasicMaterial",
+      "color": "6f5238",
+      "map": false,
+      "transparent": true,
+      "side": 2
+    },
+    {
+      "type": "MeshStandardMaterial",
+      "color": "bcb9a7",
+      "map": false,
+      "transparent": false,
+      "roughness": 0.9,
+      "metalness": 0,
+      "side": 0
+    },
+    {
+      "type": "MeshStandardMaterial",
+      "color": "e8eef2",
+      "map": false,
+      "transparent": false,
+      "roughness": 0.55,
+      "metalness": 0,
+      "side": 0
+    },
+    {
+      "type": "MeshStandardMaterial",
+      "color": "d6b785",
+      "map": false,
+      "transparent": false,
+      "roughness": 0.65,
+      "metalness": 0,
+      "side": 0
+    },
+    {
+      "type": "MeshStandardMaterial",
+      "color": "796858",
+      "map": false,
+      "transparent": false,
+      "roughness": 0.95,
+      "metalness": 0,
+      "side": 0
+    },
+    {
+      "type": "MeshStandardMaterial",
+      "color": "427c38",
+      "map": false,
+      "transparent": false,
+      "roughness": 0.85,
+      "metalness": 0,
+      "side": 0
+    },
+    {
+      "type": "MeshStandardMaterial",
+      "color": "ad7c49",
+      "map": false,
+      "transparent": false,
+      "roughness": 0.65,
+      "metalness": 0,
+      "side": 0
+    },
+    {
+      "type": "MeshStandardMaterial",
+      "color": "51402e",
+      "map": false,
+      "transparent": false,
+      "roughness": 0.95,
+      "metalness": 0,
+      "side": 0
+    },
+    {
+      "type": "MeshStandardMaterial",
+      "color": "2e6137",
+      "map": false,
+      "transparent": false,
+      "roughness": 0.85,
+      "metalness": 0,
+      "side": 0
+    },
+    {
+      "type": "MeshStandardMaterial",
+      "color": "cdb58c",
+      "map": false,
+      "transparent": false,
+      "roughness": 0.65,
+      "metalness": 0,
+      "side": 0
+    },
+    {
+      "type": "MeshStandardMaterial",
+      "color": "82786a",
+      "map": false,
+      "transparent": false,
+      "roughness": 0.95,
+      "metalness": 0,
+      "side": 0
+    },
+    {
+      "type": "MeshStandardMaterial",
+      "color": "31583d",
+      "map": false,
+      "transparent": false,
+      "roughness": 0.85,
+      "metalness": 0,
+      "side": 0
+    },
+    {
+      "type": "MeshStandardMaterial",
+      "color": "f7dfeb",
+      "map": false,
+      "transparent": false,
+      "roughness": 0.85,
+      "metalness": 0,
+      "side": 0
+    },
+    {
+      "type": "MeshStandardMaterial",
+      "color": "65813b",
+      "map": false,
+      "transparent": false,
+      "roughness": 0.85,
+      "metalness": 0,
+      "side": 0
+    },
+    {
+      "type": "MeshStandardMaterial",
+      "color": "f5c629",
+      "map": false,
+      "transparent": false,
+      "roughness": 0.85,
+      "metalness": 0,
+      "side": 0
+    },
+    {
+      "type": "MeshStandardMaterial",
+      "color": "4d3523",
+      "map": false,
+      "transparent": false,
+      "roughness": 0.85,
+      "metalness": 0,
+      "side": 0
+    },
+    {
+      "type": "MeshStandardMaterial",
+      "color": "587342",
+      "map": false,
+      "transparent": false,
+      "roughness": 0.55,
+      "metalness": 0,
+      "side": 0
+    },
+    {
+      "type": "MeshStandardMaterial",
+      "color": "8b613b",
+      "map": false,
+      "transparent": false,
+      "roughness": 0.95,
+      "metalness": 0,
+      "side": 0
+    },
+    {
+      "type": "MeshStandardMaterial",
+      "color": "ba8960",
+      "map": false,
+      "transparent": false,
+      "roughness": 0.65,
+      "metalness": 0,
+      "side": 0
+    },
+    {
+      "type": "MeshStandardMaterial",
+      "color": "67513d",
+      "map": false,
+      "transparent": false,
+      "roughness": 0.95,
+      "metalness": 0,
+      "side": 0
+    },
+    {
+      "type": "MeshStandardMaterial",
+      "color": "447638",
+      "map": false,
+      "transparent": false,
+      "roughness": 0.85,
+      "metalness": 0,
+      "side": 0
+    },
+    {
+      "type": "MeshStandardMaterial",
+      "color": "c89d78",
+      "map": false,
+      "transparent": false,
+      "roughness": 0.65,
+      "metalness": 0,
+      "side": 0
+    },
+    {
+      "type": "MeshStandardMaterial",
+      "color": "635846",
+      "map": false,
+      "transparent": false,
+      "roughness": 0.95,
+      "metalness": 0,
+      "side": 0
+    },
+    {
+      "type": "MeshStandardMaterial",
+      "color": "507940",
+      "map": false,
+      "transparent": false,
+      "roughness": 0.85,
+      "metalness": 0,
+      "side": 0
+    },
+    {
+      "type": "MeshStandardMaterial",
+      "color": "b77852",
+      "map": false,
+      "transparent": false,
+      "roughness": 0.65,
+      "metalness": 0,
+      "side": 0
+    },
+    {
+      "type": "MeshStandardMaterial",
+      "color": "65443b",
+      "map": false,
+      "transparent": false,
+      "roughness": 0.95,
+      "metalness": 0,
+      "side": 0
+    },
+    {
+      "type": "MeshStandardMaterial",
+      "color": "3f703e",
+      "map": false,
+      "transparent": false,
+      "roughness": 0.85,
+      "metalness": 0,
+      "side": 0
+    }
+  ],
+  "drained": true,
+  "complete": true,
+  "timer": {
+    "supported": true,
+    "elapsedMs": 53.714318,
+    "samples": 3779,
+    "pending": 1,
+    "discarded": 0
+  },
+  "layers": [
+    "Terrain distance detail",
+    "Vegetation distance detail"
+  ]
+}

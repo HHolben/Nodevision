@@ -1,0 +1,1495 @@
+{
+  "complete": true,
+  "results": [
+    {
+      "scenario": "large",
+      "trial": 0,
+      "terrain": false,
+      "vegetation": false,
+      "variant": "unshared",
+      "changedPixels": null,
+      "frameMs": {
+        "samples": 180,
+        "mean": 16.591111111113182,
+        "p95": 17.199999999720603,
+        "p99": 17.5,
+        "max": 27.699999999720603
+      },
+      "submitMs": {
+        "samples": 180,
+        "mean": 0.7555555555503816,
+        "p95": 1.1000000000931323,
+        "p99": 1.6000000000931323,
+        "max": 2
+      },
+      "driverMs": {
+        "samples": 179,
+        "mean": 3.722729016759775,
+        "p95": 4.681656,
+        "p99": 5.374324,
+        "max": 6.034368
+      },
+      "calls": 9,
+      "triangles": 12758
+    },
+    {
+      "scenario": "large",
+      "trial": 0,
+      "terrain": false,
+      "vegetation": false,
+      "variant": "shared",
+      "changedPixels": 0,
+      "frameMs": {
+        "samples": 180,
+        "mean": 16.59555555555659,
+        "p95": 17.399999999906868,
+        "p99": 19.699999999720603,
+        "max": 21.399999999906868
+      },
+      "submitMs": {
+        "samples": 180,
+        "mean": 0.7111111111214592,
+        "p95": 1,
+        "p99": 1.2000000001862645,
+        "max": 1.3000000002793968
+      },
+      "driverMs": {
+        "samples": 179,
+        "mean": 4.1139152849162,
+        "p95": 7.487849,
+        "p99": 11.235638,
+        "max": 11.6387
+      },
+      "calls": 9,
+      "triangles": 12758
+    },
+    {
+      "scenario": "large",
+      "trial": 0,
+      "terrain": false,
+      "vegetation": true,
+      "variant": "unshared",
+      "changedPixels": null,
+      "frameMs": {
+        "samples": 180,
+        "mean": 30.711111111111112,
+        "p95": 35.799999999813735,
+        "p99": 48.3000000002794,
+        "max": 70.79999999981374
+      },
+      "submitMs": {
+        "samples": 180,
+        "mean": 1.0900000000036218,
+        "p95": 2.099999999627471,
+        "p99": 2.8999999999068677,
+        "max": 2.900000000372529
+      },
+      "driverMs": {
+        "samples": 175,
+        "mean": 26.473304960000004,
+        "p95": 31.247142,
+        "p99": 41.386076,
+        "max": 63.291806
+      },
+      "calls": 66,
+      "triangles": 29150
+    },
+    {
+      "scenario": "large",
+      "trial": 0,
+      "terrain": false,
+      "vegetation": true,
+      "variant": "shared",
+      "changedPixels": 0,
+      "frameMs": {
+        "samples": 180,
+        "mean": 29.749444444443927,
+        "p95": 38.799999999813735,
+        "p99": 46.6999999997206,
+        "max": 51.5
+      },
+      "submitMs": {
+        "samples": 180,
+        "mean": 0.9444444444470315,
+        "p95": 1.5,
+        "p99": 1.8000000002793968,
+        "max": 3.7999999998137355
+      },
+      "driverMs": {
+        "samples": 177,
+        "mean": 25.711244751412448,
+        "p95": 34.92461,
+        "p99": 41.856045,
+        "max": 44.101928
+      },
+      "calls": 66,
+      "triangles": 29150
+    },
+    {
+      "scenario": "large",
+      "trial": 0,
+      "terrain": true,
+      "vegetation": false,
+      "variant": "unshared",
+      "changedPixels": null,
+      "frameMs": {
+        "samples": 180,
+        "mean": 26.342777777778814,
+        "p95": 34,
+        "p99": 43.6999999997206,
+        "max": 44.200000000186265
+      },
+      "submitMs": {
+        "samples": 180,
+        "mean": 0.787777777784504,
+        "p95": 1.1999999997206032,
+        "p99": 1.7000000001862645,
+        "max": 2.5
+      },
+      "driverMs": {
+        "samples": 177,
+        "mean": 22.491894237288136,
+        "p95": 29.861828,
+        "p99": 37.803473,
+        "max": 39.932258
+      },
+      "calls": 73,
+      "triangles": 66966
+    },
+    {
+      "scenario": "large",
+      "trial": 0,
+      "terrain": true,
+      "vegetation": false,
+      "variant": "shared",
+      "changedPixels": 0,
+      "frameMs": {
+        "samples": 180,
+        "mean": 29.290000000001037,
+        "p95": 39.5,
+        "p99": 44,
+        "max": 44.700000000186265
+      },
+      "submitMs": {
+        "samples": 180,
+        "mean": 0.8877777777353508,
+        "p95": 1.5,
+        "p99": 3.1999999997206032,
+        "max": 3.3999999999068677
+      },
+      "driverMs": {
+        "samples": 179,
+        "mean": 25.05655587150839,
+        "p95": 33.907759,
+        "p99": 38.78665,
+        "max": 39.100214
+      },
+      "calls": 73,
+      "triangles": 66966
+    },
+    {
+      "scenario": "large",
+      "trial": 0,
+      "terrain": true,
+      "vegetation": true,
+      "variant": "unshared",
+      "changedPixels": null,
+      "frameMs": {
+        "samples": 180,
+        "mean": 46.67277777777829,
+        "p95": 52.1999999997206,
+        "p99": 56.39999999990687,
+        "max": 57.60000000009313
+      },
+      "submitMs": {
+        "samples": 180,
+        "mean": 1.298888888887854,
+        "p95": 2,
+        "p99": 4.100000000093132,
+        "max": 4.5
+      },
+      "driverMs": {
+        "samples": 175,
+        "mean": 41.83015996571425,
+        "p95": 45.936118,
+        "p99": 51.819428,
+        "max": 52.087863
+      },
+      "calls": 130,
+      "triangles": 83358
+    },
+    {
+      "scenario": "large",
+      "trial": 0,
+      "terrain": true,
+      "vegetation": true,
+      "variant": "shared",
+      "changedPixels": 0,
+      "frameMs": {
+        "samples": 180,
+        "mean": 51.23388888888682,
+        "p95": 56.39999999990687,
+        "p99": 60.1999999997206,
+        "max": 64.89999999990687
+      },
+      "submitMs": {
+        "samples": 180,
+        "mean": 1.2922222222046307,
+        "p95": 1.8999999999068677,
+        "p99": 3.5,
+        "max": 4.2999999998137355
+      },
+      "driverMs": {
+        "samples": 174,
+        "mean": 46.01251521264366,
+        "p95": 50.762694,
+        "p99": 53.428934,
+        "max": 56.09133
+      },
+      "calls": 130,
+      "triangles": 83358
+    },
+    {
+      "scenario": "large",
+      "trial": 1,
+      "terrain": true,
+      "vegetation": true,
+      "variant": "shared",
+      "changedPixels": null,
+      "frameMs": {
+        "samples": 180,
+        "mean": 50.702777777777776,
+        "p95": 58.8000000002794,
+        "p99": 63.1999999997206,
+        "max": 63.89999999990687
+      },
+      "submitMs": {
+        "samples": 180,
+        "mean": 1.3999999999818908,
+        "p95": 2.1999999997206032,
+        "p99": 4.199999999720603,
+        "max": 4.2999999998137355
+      },
+      "driverMs": {
+        "samples": 178,
+        "mean": 45.718937191011236,
+        "p95": 52.067771,
+        "p99": 56.956862,
+        "max": 57.388158
+      },
+      "calls": 130,
+      "triangles": 83358
+    },
+    {
+      "scenario": "large",
+      "trial": 1,
+      "terrain": true,
+      "vegetation": true,
+      "variant": "unshared",
+      "changedPixels": 0,
+      "frameMs": {
+        "samples": 180,
+        "mean": 49.416111111110595,
+        "p95": 59.1999999997206,
+        "p99": 63.3000000002794,
+        "max": 63.39999999990687
+      },
+      "submitMs": {
+        "samples": 180,
+        "mean": 1.2466666666661492,
+        "p95": 1.7999999998137355,
+        "p99": 2.1000000000931323,
+        "max": 2.1999999997206032
+      },
+      "driverMs": {
+        "samples": 175,
+        "mean": 44.79429327428571,
+        "p95": 53.631896,
+        "p99": 58.99601,
+        "max": 59.43483
+      },
+      "calls": 130,
+      "triangles": 83358
+    },
+    {
+      "scenario": "large",
+      "trial": 1,
+      "terrain": true,
+      "vegetation": false,
+      "variant": "shared",
+      "changedPixels": null,
+      "frameMs": {
+        "samples": 180,
+        "mean": 24.892222222220152,
+        "p95": 29.200000000186265,
+        "p99": 34.6999999997206,
+        "max": 37.200000000186265
+      },
+      "submitMs": {
+        "samples": 180,
+        "mean": 0.7388888888604318,
+        "p95": 1.099999999627471,
+        "p99": 1.3000000002793968,
+        "max": 1.7999999998137355
+      },
+      "driverMs": {
+        "samples": 177,
+        "mean": 20.941081451977404,
+        "p95": 25.165272,
+        "p99": 30.797014,
+        "max": 31.288247
+      },
+      "calls": 73,
+      "triangles": 66966
+    },
+    {
+      "scenario": "large",
+      "trial": 1,
+      "terrain": true,
+      "vegetation": false,
+      "variant": "unshared",
+      "changedPixels": 0,
+      "frameMs": {
+        "samples": 180,
+        "mean": 25.087777777776743,
+        "p95": 27.799999999813735,
+        "p99": 47.60000000009313,
+        "max": 61.39999999990687
+      },
+      "submitMs": {
+        "samples": 180,
+        "mean": 0.7061111111090415,
+        "p95": 1,
+        "p99": 1.1000000000931323,
+        "max": 2
+      },
+      "driverMs": {
+        "samples": 176,
+        "mean": 21.307588471590904,
+        "p95": 24.24824,
+        "p99": 41.794434,
+        "max": 54.422148
+      },
+      "calls": 73,
+      "triangles": 66966
+    },
+    {
+      "scenario": "large",
+      "trial": 1,
+      "terrain": false,
+      "vegetation": true,
+      "variant": "shared",
+      "changedPixels": null,
+      "frameMs": {
+        "samples": 180,
+        "mean": 26.704999999999483,
+        "p95": 30.399999999906868,
+        "p99": 31.5,
+        "max": 32.40000000037253
+      },
+      "submitMs": {
+        "samples": 180,
+        "mean": 0.9277777777803647,
+        "p95": 1.2999999998137355,
+        "p99": 2.5,
+        "max": 2.599999999627471
+      },
+      "driverMs": {
+        "samples": 179,
+        "mean": 22.911132910614526,
+        "p95": 26.364288,
+        "p99": 27.796498,
+        "max": 27.905582
+      },
+      "calls": 66,
+      "triangles": 29150
+    },
+    {
+      "scenario": "large",
+      "trial": 1,
+      "terrain": false,
+      "vegetation": true,
+      "variant": "unshared",
+      "changedPixels": 0,
+      "frameMs": {
+        "samples": 180,
+        "mean": 26.59055555555452,
+        "p95": 29.300000000279397,
+        "p99": 31,
+        "max": 35.200000000186265
+      },
+      "submitMs": {
+        "samples": 180,
+        "mean": 0.8688888889013066,
+        "p95": 1.3000000002793968,
+        "p99": 1.6000000000931323,
+        "max": 1.6999999997206032
+      },
+      "driverMs": {
+        "samples": 178,
+        "mean": 22.79405045505618,
+        "p95": 25.449373,
+        "p99": 26.780939,
+        "max": 30.860201
+      },
+      "calls": 66,
+      "triangles": 29150
+    },
+    {
+      "scenario": "large",
+      "trial": 1,
+      "terrain": false,
+      "vegetation": false,
+      "variant": "shared",
+      "changedPixels": null,
+      "frameMs": {
+        "samples": 180,
+        "mean": 16.642222222220152,
+        "p95": 17,
+        "p99": 17.199999999720603,
+        "max": 17.200000000186265
+      },
+      "submitMs": {
+        "samples": 180,
+        "mean": 0.4911111111183547,
+        "p95": 0.7000000001862645,
+        "p99": 0.8999999999068677,
+        "max": 0.8999999999068677
+      },
+      "driverMs": {
+        "samples": 179,
+        "mean": 2.993445463687151,
+        "p95": 4.153912,
+        "p99": 4.694762,
+        "max": 5.329092
+      },
+      "calls": 9,
+      "triangles": 12758
+    },
+    {
+      "scenario": "large",
+      "trial": 1,
+      "terrain": false,
+      "vegetation": false,
+      "variant": "unshared",
+      "changedPixels": 0,
+      "frameMs": {
+        "samples": 180,
+        "mean": 16.608888888889407,
+        "p95": 17.100000000093132,
+        "p99": 18.300000000279397,
+        "max": 21.100000000093132
+      },
+      "submitMs": {
+        "samples": 180,
+        "mean": 0.5299999999994826,
+        "p95": 0.7000000001862645,
+        "p99": 0.8000000002793968,
+        "max": 0.8999999999068677
+      },
+      "driverMs": {
+        "samples": 179,
+        "mean": 3.4923300726256974,
+        "p95": 4.747785,
+        "p99": 10.515606,
+        "max": 15.053299
+      },
+      "calls": 9,
+      "triangles": 12758
+    },
+    {
+      "scenario": "large",
+      "trial": 2,
+      "terrain": false,
+      "vegetation": false,
+      "variant": "unshared",
+      "changedPixels": null,
+      "frameMs": {
+        "samples": 180,
+        "mean": 16.644444444444446,
+        "p95": 17.09999999962747,
+        "p99": 17.100000000093132,
+        "max": 17.200000000186265
+      },
+      "submitMs": {
+        "samples": 180,
+        "mean": 0.4777777777907128,
+        "p95": 0.7000000001862645,
+        "p99": 0.7999999998137355,
+        "max": 0.8999999999068677
+      },
+      "driverMs": {
+        "samples": 179,
+        "mean": 3.0010367877094977,
+        "p95": 4.212436,
+        "p99": 4.564837,
+        "max": 4.866087
+      },
+      "calls": 9,
+      "triangles": 12758
+    },
+    {
+      "scenario": "large",
+      "trial": 2,
+      "terrain": false,
+      "vegetation": false,
+      "variant": "shared",
+      "changedPixels": 0,
+      "frameMs": {
+        "samples": 180,
+        "mean": 16.612222222223256,
+        "p95": 17,
+        "p99": 17.200000000186265,
+        "max": 17.200000000186265
+      },
+      "submitMs": {
+        "samples": 180,
+        "mean": 0.524999999989652,
+        "p95": 0.7000000001862645,
+        "p99": 0.8999999999068677,
+        "max": 0.8999999999068677
+      },
+      "driverMs": {
+        "samples": 179,
+        "mean": 3.312825765363129,
+        "p95": 4.414477,
+        "p99": 5.5155,
+        "max": 6.437347
+      },
+      "calls": 9,
+      "triangles": 12758
+    },
+    {
+      "scenario": "large",
+      "trial": 2,
+      "terrain": false,
+      "vegetation": true,
+      "variant": "unshared",
+      "changedPixels": null,
+      "frameMs": {
+        "samples": 180,
+        "mean": 31.847777777778294,
+        "p95": 45.700000000186265,
+        "p99": 59.09999999962747,
+        "max": 65.09999999962747
+      },
+      "submitMs": {
+        "samples": 180,
+        "mean": 1.013333333358686,
+        "p95": 1.6000000000931323,
+        "p99": 2.8999999999068677,
+        "max": 3.6999999997206032
+      },
+      "driverMs": {
+        "samples": 179,
+        "mean": 27.546185139664793,
+        "p95": 40.002814,
+        "p99": 53.143577,
+        "max": 60.466983
+      },
+      "calls": 66,
+      "triangles": 29150
+    },
+    {
+      "scenario": "large",
+      "trial": 2,
+      "terrain": false,
+      "vegetation": true,
+      "variant": "shared",
+      "changedPixels": 0,
+      "frameMs": {
+        "samples": 180,
+        "mean": 43.65499999999948,
+        "p95": 72.60000000009313,
+        "p99": 100.10000000009313,
+        "max": 114.6999999997206
+      },
+      "submitMs": {
+        "samples": 180,
+        "mean": 1.12666666667598,
+        "p95": 2.1999999997206032,
+        "p99": 2.7999999998137355,
+        "max": 2.7999999998137355
+      },
+      "driverMs": {
+        "samples": 179,
+        "mean": 38.780219357541895,
+        "p95": 67.959948,
+        "p99": 95.215211,
+        "max": 108.562314
+      },
+      "calls": 66,
+      "triangles": 29150
+    },
+    {
+      "scenario": "large",
+      "trial": 2,
+      "terrain": true,
+      "vegetation": false,
+      "variant": "unshared",
+      "changedPixels": null,
+      "frameMs": {
+        "samples": 180,
+        "mean": 30.34055555555452,
+        "p95": 48,
+        "p99": 63.6999999997206,
+        "max": 70.8000000002794
+      },
+      "submitMs": {
+        "samples": 180,
+        "mean": 0.8227777777886432,
+        "p95": 1.7000000001862645,
+        "p99": 3.7999999998137355,
+        "max": 4.5
+      },
+      "driverMs": {
+        "samples": 178,
+        "mean": 26.148966691011225,
+        "p95": 40.624173,
+        "p99": 54.245385,
+        "max": 65.447687
+      },
+      "calls": 73,
+      "triangles": 66966
+    },
+    {
+      "scenario": "large",
+      "trial": 2,
+      "terrain": true,
+      "vegetation": false,
+      "variant": "shared",
+      "changedPixels": 0,
+      "frameMs": {
+        "samples": 180,
+        "mean": 25.466111111110592,
+        "p95": 29.799999999813735,
+        "p99": 48.40000000037253,
+        "max": 66.6999999997206
+      },
+      "submitMs": {
+        "samples": 180,
+        "mean": 0.7155555555441727,
+        "p95": 1.1000000000931323,
+        "p99": 1.3999999999068677,
+        "max": 1.5
+      },
+      "driverMs": {
+        "samples": 177,
+        "mean": 21.65448543502826,
+        "p95": 25.361759,
+        "p99": 44.151373,
+        "max": 60.512733
+      },
+      "calls": 73,
+      "triangles": 66966
+    },
+    {
+      "scenario": "large",
+      "trial": 2,
+      "terrain": true,
+      "vegetation": true,
+      "variant": "unshared",
+      "changedPixels": null,
+      "frameMs": {
+        "samples": 180,
+        "mean": 58.56888888889096,
+        "p95": 84.29999999981374,
+        "p99": 102.39999999990687,
+        "max": 123.60000000009313
+      },
+      "submitMs": {
+        "samples": 180,
+        "mean": 1.5027777777674298,
+        "p95": 2.599999999627471,
+        "p99": 3.1999999997206032,
+        "max": 3.8999999999068677
+      },
+      "driverMs": {
+        "samples": 179,
+        "mean": 53.245502765363156,
+        "p95": 78.817803,
+        "p99": 94.191219,
+        "max": 113.932953
+      },
+      "calls": 130,
+      "triangles": 83358
+    },
+    {
+      "scenario": "large",
+      "trial": 2,
+      "terrain": true,
+      "vegetation": true,
+      "variant": "shared",
+      "changedPixels": 0,
+      "frameMs": {
+        "samples": 180,
+        "mean": 52.29500000000052,
+        "p95": 70.29999999981374,
+        "p99": 84.60000000009313,
+        "max": 90.89999999990687
+      },
+      "submitMs": {
+        "samples": 180,
+        "mean": 1.3050000000046567,
+        "p95": 2.1000000000931323,
+        "p99": 3.1000000000931323,
+        "max": 4.2999999998137355
+      },
+      "driverMs": {
+        "samples": 178,
+        "mean": 47.4039849494382,
+        "p95": 64.772895,
+        "p99": 79.935235,
+        "max": 80.150233
+      },
+      "calls": 130,
+      "triangles": 83358
+    },
+    {
+      "scenario": "infinite",
+      "trial": 0,
+      "terrain": false,
+      "vegetation": false,
+      "variant": "unshared",
+      "changedPixels": null,
+      "frameMs": {
+        "samples": 180,
+        "mean": 16.58277777777726,
+        "p95": 17.5,
+        "p99": 18.5,
+        "max": 18.700000000186265
+      },
+      "submitMs": {
+        "samples": 180,
+        "mean": 1.2266666666423487,
+        "p95": 2.1999999997206032,
+        "p99": 3,
+        "max": 3
+      },
+      "driverMs": {
+        "samples": 179,
+        "mean": 4.274862525139666,
+        "p95": 7.030046,
+        "p99": 10.015238,
+        "max": 11.646044
+      },
+      "calls": 9,
+      "triangles": 12758
+    },
+    {
+      "scenario": "infinite",
+      "trial": 0,
+      "terrain": false,
+      "vegetation": false,
+      "variant": "shared",
+      "changedPixels": 0,
+      "frameMs": {
+        "samples": 180,
+        "mean": 16.59833333333178,
+        "p95": 17.5,
+        "p99": 17.899999999906868,
+        "max": 18
+      },
+      "submitMs": {
+        "samples": 180,
+        "mean": 1.0027777777881257,
+        "p95": 1.3999999999068677,
+        "p99": 1.6000000000931323,
+        "max": 1.8999999999068677
+      },
+      "driverMs": {
+        "samples": 179,
+        "mean": 3.5636675642458107,
+        "p95": 4.762235,
+        "p99": 6.403493,
+        "max": 6.413739
+      },
+      "calls": 9,
+      "triangles": 12758
+    },
+    {
+      "scenario": "infinite",
+      "trial": 0,
+      "terrain": false,
+      "vegetation": true,
+      "variant": "unshared",
+      "changedPixels": null,
+      "frameMs": {
+        "samples": 180,
+        "mean": 30.95611111111163,
+        "p95": 46,
+        "p99": 66.79999999981374,
+        "max": 69.60000000009313
+      },
+      "submitMs": {
+        "samples": 180,
+        "mean": 1.4166666666666667,
+        "p95": 2.1000000000931323,
+        "p99": 3.8000000002793968,
+        "max": 4.100000000093132
+      },
+      "driverMs": {
+        "samples": 179,
+        "mean": 26.024252581005584,
+        "p95": 37.06989,
+        "p99": 49.943738,
+        "max": 57.562901
+      },
+      "calls": 66,
+      "triangles": 29150
+    },
+    {
+      "scenario": "infinite",
+      "trial": 0,
+      "terrain": false,
+      "vegetation": true,
+      "variant": "shared",
+      "changedPixels": 0,
+      "frameMs": {
+        "samples": 180,
+        "mean": 34.56666666666667,
+        "p95": 50.89999999990687,
+        "p99": 86,
+        "max": 90.59999999962747
+      },
+      "submitMs": {
+        "samples": 180,
+        "mean": 1.6161111111131807,
+        "p95": 2.6000000000931323,
+        "p99": 4.800000000279397,
+        "max": 6.7999999998137355
+      },
+      "driverMs": {
+        "samples": 178,
+        "mean": 29.60510413483145,
+        "p95": 43.460226,
+        "p99": 75.483625,
+        "max": 85.940017
+      },
+      "calls": 66,
+      "triangles": 29150
+    },
+    {
+      "scenario": "infinite",
+      "trial": 0,
+      "terrain": true,
+      "vegetation": false,
+      "variant": "unshared",
+      "changedPixels": null,
+      "frameMs": {
+        "samples": 180,
+        "mean": 23.75611111111163,
+        "p95": 34.700000000186265,
+        "p99": 46,
+        "max": 54.1999999997206
+      },
+      "submitMs": {
+        "samples": 180,
+        "mean": 1.1211111111152503,
+        "p95": 1.7999999998137355,
+        "p99": 3.1999999997206032,
+        "max": 3.6000000000931323
+      },
+      "driverMs": {
+        "samples": 178,
+        "mean": 19.517507792134825,
+        "p95": 28.978398,
+        "p99": 39.336054,
+        "max": 47.562792
+      },
+      "calls": 45,
+      "triangles": 49046
+    },
+    {
+      "scenario": "infinite",
+      "trial": 0,
+      "terrain": true,
+      "vegetation": false,
+      "variant": "shared",
+      "changedPixels": 0,
+      "frameMs": {
+        "samples": 180,
+        "mean": 25.961111111111112,
+        "p95": 41.8000000002794,
+        "p99": 48.40000000037253,
+        "max": 55.5
+      },
+      "submitMs": {
+        "samples": 180,
+        "mean": 1.163333333319881,
+        "p95": 1.7999999998137355,
+        "p99": 2.3999999999068677,
+        "max": 2.3999999999068677
+      },
+      "driverMs": {
+        "samples": 179,
+        "mean": 21.494326290502798,
+        "p95": 35.900376,
+        "p99": 43.790261,
+        "max": 47.14849
+      },
+      "calls": 45,
+      "triangles": 49046
+    },
+    {
+      "scenario": "infinite",
+      "trial": 0,
+      "terrain": true,
+      "vegetation": true,
+      "variant": "unshared",
+      "changedPixels": null,
+      "frameMs": {
+        "samples": 180,
+        "mean": 47.60388888888993,
+        "p95": 62.5,
+        "p99": 118.5,
+        "max": 126.60000000009313
+      },
+      "submitMs": {
+        "samples": 180,
+        "mean": 1.8322222222160134,
+        "p95": 3.2999999998137355,
+        "p99": 4.600000000093132,
+        "max": 8.100000000093132
+      },
+      "driverMs": {
+        "samples": 178,
+        "mean": 42.537359904494394,
+        "p95": 57.469109,
+        "p99": 110.265352,
+        "max": 114.228411
+      },
+      "calls": 102,
+      "triangles": 65438
+    },
+    {
+      "scenario": "infinite",
+      "trial": 0,
+      "terrain": true,
+      "vegetation": true,
+      "variant": "shared",
+      "changedPixels": 0,
+      "frameMs": {
+        "samples": 180,
+        "mean": 42.97888888888734,
+        "p95": 49.799999999813735,
+        "p99": 58,
+        "max": 59.5
+      },
+      "submitMs": {
+        "samples": 180,
+        "mean": 1.7300000000124176,
+        "p95": 2.6999999997206032,
+        "p99": 5.100000000093132,
+        "max": 7.300000000279397
+      },
+      "driverMs": {
+        "samples": 178,
+        "mean": 38.03975538764044,
+        "p95": 43.911599,
+        "p99": 52.055932,
+        "max": 54.499245
+      },
+      "calls": 102,
+      "triangles": 65438
+    },
+    {
+      "scenario": "infinite",
+      "trial": 1,
+      "terrain": true,
+      "vegetation": true,
+      "variant": "shared",
+      "changedPixels": null,
+      "frameMs": {
+        "samples": 180,
+        "mean": 42.273333333331784,
+        "p95": 47.10000000009313,
+        "p99": 57.3000000002794,
+        "max": 62.5
+      },
+      "submitMs": {
+        "samples": 180,
+        "mean": 1.6683333333167765,
+        "p95": 2.7999999998137355,
+        "p99": 3.6000000000931323,
+        "max": 3.7000000001862645
+      },
+      "driverMs": {
+        "samples": 176,
+        "mean": 37.40568911931818,
+        "p95": 42.300177,
+        "p99": 50.92115,
+        "max": 55.082555
+      },
+      "calls": 102,
+      "triangles": 65438
+    },
+    {
+      "scenario": "infinite",
+      "trial": 1,
+      "terrain": true,
+      "vegetation": true,
+      "variant": "unshared",
+      "changedPixels": 0,
+      "frameMs": {
+        "samples": 180,
+        "mean": 45.70722222222119,
+        "p95": 57.200000000186265,
+        "p99": 65.6999999997206,
+        "max": 68.39999999990687
+      },
+      "submitMs": {
+        "samples": 180,
+        "mean": 1.7894444444449618,
+        "p95": 3.1999999997206032,
+        "p99": 5,
+        "max": 6.7000000001862645
+      },
+      "driverMs": {
+        "samples": 178,
+        "mean": 40.58519310112359,
+        "p95": 51.399588,
+        "p99": 58.430196,
+        "max": 64.324827
+      },
+      "calls": 102,
+      "triangles": 65438
+    },
+    {
+      "scenario": "infinite",
+      "trial": 1,
+      "terrain": true,
+      "vegetation": false,
+      "variant": "shared",
+      "changedPixels": null,
+      "frameMs": {
+        "samples": 180,
+        "mean": 22.391666666666666,
+        "p95": 26.100000000093132,
+        "p99": 29,
+        "max": 29.700000000186265
+      },
+      "submitMs": {
+        "samples": 180,
+        "mean": 1.1094444444480662,
+        "p95": 1.7000000001862645,
+        "p99": 2.1999999997206032,
+        "max": 3.3999999999068677
+      },
+      "driverMs": {
+        "samples": 178,
+        "mean": 18.31257589887641,
+        "p95": 21.260276,
+        "p99": 24.00879,
+        "max": 25.316288
+      },
+      "calls": 45,
+      "triangles": 49046
+    },
+    {
+      "scenario": "infinite",
+      "trial": 1,
+      "terrain": true,
+      "vegetation": false,
+      "variant": "unshared",
+      "changedPixels": 0,
+      "frameMs": {
+        "samples": 180,
+        "mean": 25.228888888889923,
+        "p95": 36.89999999990687,
+        "p99": 44.299999999813735,
+        "max": 55
+      },
+      "submitMs": {
+        "samples": 180,
+        "mean": 1.1144444444501358,
+        "p95": 1.7999999998137355,
+        "p99": 2.900000000372529,
+        "max": 3.3999999999068677
+      },
+      "driverMs": {
+        "samples": 178,
+        "mean": 20.936129342696628,
+        "p95": 31.764566,
+        "p99": 40.014584,
+        "max": 50.264335
+      },
+      "calls": 45,
+      "triangles": 49046
+    },
+    {
+      "scenario": "infinite",
+      "trial": 1,
+      "terrain": false,
+      "vegetation": true,
+      "variant": "shared",
+      "changedPixels": null,
+      "frameMs": {
+        "samples": 180,
+        "mean": 34.34388888888837,
+        "p95": 55.799999999813735,
+        "p99": 66,
+        "max": 67.89999999990687
+      },
+      "submitMs": {
+        "samples": 180,
+        "mean": 1.5644444444372008,
+        "p95": 2.7999999998137355,
+        "p99": 6.7999999998137355,
+        "max": 7.399999999906868
+      },
+      "driverMs": {
+        "samples": 178,
+        "mean": 29.500725651685386,
+        "p95": 49.282408,
+        "p99": 55.054601,
+        "max": 60.99027
+      },
+      "calls": 66,
+      "triangles": 29150
+    },
+    {
+      "scenario": "infinite",
+      "trial": 1,
+      "terrain": false,
+      "vegetation": true,
+      "variant": "unshared",
+      "changedPixels": 0,
+      "frameMs": {
+        "samples": 180,
+        "mean": 33.51222222222326,
+        "p95": 48.6999999997206,
+        "p99": 84.09999999962747,
+        "max": 91.5
+      },
+      "submitMs": {
+        "samples": 180,
+        "mean": 1.4227777777886432,
+        "p95": 2.2000000001862645,
+        "p99": 3.5,
+        "max": 4
+      },
+      "driverMs": {
+        "samples": 179,
+        "mean": 28.891770128491608,
+        "p95": 44.264179,
+        "p99": 70.522766,
+        "max": 83.436057
+      },
+      "calls": 66,
+      "triangles": 29150
+    },
+    {
+      "scenario": "infinite",
+      "trial": 1,
+      "terrain": false,
+      "vegetation": false,
+      "variant": "shared",
+      "changedPixels": null,
+      "frameMs": {
+        "samples": 180,
+        "mean": 16.632222222221188,
+        "p95": 17.300000000279397,
+        "p99": 18.100000000093132,
+        "max": 18.299999999813735
+      },
+      "submitMs": {
+        "samples": 180,
+        "mean": 1.162777777774156,
+        "p95": 2.099999999627471,
+        "p99": 2.599999999627471,
+        "max": 2.6000000000931323
+      },
+      "driverMs": {
+        "samples": 179,
+        "mean": 4.5905838100558665,
+        "p95": 7.074714,
+        "p99": 9.147283,
+        "max": 11.293967
+      },
+      "calls": 9,
+      "triangles": 12758
+    },
+    {
+      "scenario": "infinite",
+      "trial": 1,
+      "terrain": false,
+      "vegetation": false,
+      "variant": "unshared",
+      "changedPixels": 0,
+      "frameMs": {
+        "samples": 180,
+        "mean": 16.79055555555452,
+        "p95": 17.5,
+        "p99": 26.5,
+        "max": 29.299999999813735
+      },
+      "submitMs": {
+        "samples": 180,
+        "mean": 1.1800000000072437,
+        "p95": 2.2999999998137355,
+        "p99": 3.1000000000931323,
+        "max": 4.100000000093132
+      },
+      "driverMs": {
+        "samples": 179,
+        "mean": 4.552121759776536,
+        "p95": 8.913907,
+        "p99": 12.97277,
+        "max": 13.428552
+      },
+      "calls": 9,
+      "triangles": 12758
+    },
+    {
+      "scenario": "infinite",
+      "trial": 2,
+      "terrain": false,
+      "vegetation": false,
+      "variant": "unshared",
+      "changedPixels": null,
+      "frameMs": {
+        "samples": 180,
+        "mean": 16.63888888888889,
+        "p95": 17.100000000093132,
+        "p99": 17.300000000279397,
+        "max": 17.799999999813735
+      },
+      "submitMs": {
+        "samples": 180,
+        "mean": 0.8322222222522315,
+        "p95": 1.2999999998137355,
+        "p99": 1.5,
+        "max": 1.5
+      },
+      "driverMs": {
+        "samples": 179,
+        "mean": 3.3458488268156406,
+        "p95": 4.692993,
+        "p99": 5.536146,
+        "max": 5.936504
+      },
+      "calls": 9,
+      "triangles": 12758
+    },
+    {
+      "scenario": "infinite",
+      "trial": 2,
+      "terrain": false,
+      "vegetation": false,
+      "variant": "shared",
+      "changedPixels": 0,
+      "frameMs": {
+        "samples": 180,
+        "mean": 16.60333333333385,
+        "p95": 17.299999999813735,
+        "p99": 17.5,
+        "max": 17.600000000093132
+      },
+      "submitMs": {
+        "samples": 180,
+        "mean": 0.9838888888894063,
+        "p95": 1.3999999999068677,
+        "p99": 1.7000000001862645,
+        "max": 1.8999999999068677
+      },
+      "driverMs": {
+        "samples": 179,
+        "mean": 3.717017022346367,
+        "p95": 4.938105,
+        "p99": 6.695853,
+        "max": 9.071874
+      },
+      "calls": 9,
+      "triangles": 12758
+    },
+    {
+      "scenario": "infinite",
+      "trial": 2,
+      "terrain": false,
+      "vegetation": true,
+      "variant": "unshared",
+      "changedPixels": null,
+      "frameMs": {
+        "samples": 180,
+        "mean": 28.98611111111111,
+        "p95": 32.6999999997206,
+        "p99": 33.90000000037253,
+        "max": 34.200000000186265
+      },
+      "submitMs": {
+        "samples": 180,
+        "mean": 1.2927777777813996,
+        "p95": 1.7999999998137355,
+        "p99": 2.1000000000931323,
+        "max": 3.3999999999068677
+      },
+      "driverMs": {
+        "samples": 179,
+        "mean": 24.80867052513966,
+        "p95": 28.248168,
+        "p99": 29.167572,
+        "max": 29.681545
+      },
+      "calls": 66,
+      "triangles": 29150
+    },
+    {
+      "scenario": "infinite",
+      "trial": 2,
+      "terrain": false,
+      "vegetation": true,
+      "variant": "shared",
+      "changedPixels": 0,
+      "frameMs": {
+        "samples": 180,
+        "mean": 32.64000000000104,
+        "p95": 50.1999999997206,
+        "p99": 54,
+        "max": 54.8000000002794
+      },
+      "submitMs": {
+        "samples": 180,
+        "mean": 1.4555555555607296,
+        "p95": 2.3999999999068677,
+        "p99": 3.5,
+        "max": 3.6000000000931323
+      },
+      "driverMs": {
+        "samples": 179,
+        "mean": 27.972125217877103,
+        "p95": 44.625772,
+        "p99": 47.443583,
+        "max": 47.984258
+      },
+      "calls": 66,
+      "triangles": 29150
+    },
+    {
+      "scenario": "infinite",
+      "trial": 2,
+      "terrain": true,
+      "vegetation": false,
+      "variant": "unshared",
+      "changedPixels": null,
+      "frameMs": {
+        "samples": 180,
+        "mean": 26.909999999998966,
+        "p95": 40.5,
+        "p99": 47.3000000002794,
+        "max": 59.39999999990687
+      },
+      "submitMs": {
+        "samples": 180,
+        "mean": 1.1688888888883715,
+        "p95": 2,
+        "p99": 3.2999999998137355,
+        "max": 4.100000000093132
+      },
+      "driverMs": {
+        "samples": 178,
+        "mean": 22.424932443820225,
+        "p95": 35.58967,
+        "p99": 41.849083,
+        "max": 49.29502
+      },
+      "calls": 45,
+      "triangles": 49046
+    },
+    {
+      "scenario": "infinite",
+      "trial": 2,
+      "terrain": true,
+      "vegetation": false,
+      "variant": "shared",
+      "changedPixels": 0,
+      "frameMs": {
+        "samples": 180,
+        "mean": 22.832222222221187,
+        "p95": 26.899999999906868,
+        "p99": 31.200000000186265,
+        "max": 31.5
+      },
+      "submitMs": {
+        "samples": 180,
+        "mean": 1.0911111111287028,
+        "p95": 1.6000000000931323,
+        "p99": 1.8000000002793968,
+        "max": 1.8999999999068677
+      },
+      "driverMs": {
+        "samples": 177,
+        "mean": 18.616075881355933,
+        "p95": 22.28424,
+        "p99": 26.086135,
+        "max": 26.263431
+      },
+      "calls": 45,
+      "triangles": 49046
+    },
+    {
+      "scenario": "infinite",
+      "trial": 2,
+      "terrain": true,
+      "vegetation": true,
+      "variant": "unshared",
+      "changedPixels": null,
+      "frameMs": {
+        "samples": 180,
+        "mean": 46.767777777776224,
+        "p95": 51.89999999990687,
+        "p99": 56.10000000009313,
+        "max": 58.299999999813735
+      },
+      "submitMs": {
+        "samples": 180,
+        "mean": 1.7283333333312638,
+        "p95": 3,
+        "p99": 3.6000000000931323,
+        "max": 3.7999999998137355
+      },
+      "driverMs": {
+        "samples": 176,
+        "mean": 41.645519704545436,
+        "p95": 46.479251,
+        "p99": 49.843656,
+        "max": 50.966933
+      },
+      "calls": 102,
+      "triangles": 65438
+    },
+    {
+      "scenario": "infinite",
+      "trial": 2,
+      "terrain": true,
+      "vegetation": true,
+      "variant": "shared",
+      "changedPixels": 0,
+      "frameMs": {
+        "samples": 180,
+        "mean": 49.71666666666667,
+        "p95": 71.6999999997206,
+        "p99": 85.70000000018626,
+        "max": 93.59999999962747
+      },
+      "submitMs": {
+        "samples": 180,
+        "mean": 1.799444444454275,
+        "p95": 2.7999999998137355,
+        "p99": 3.3999999999068677,
+        "max": 3.6000000000931323
+      },
+      "driverMs": {
+        "samples": 177,
+        "mean": 44.48787288135594,
+        "p95": 63.282137,
+        "p99": 76.988841,
+        "max": 85.357172
+      },
+      "calls": 102,
+      "triangles": 65438
+    }
+  ],
+  "method": "One settled production runtime per world, no runtime updates during isolation; unchanged active triangle attribute stream verified exactly, same material objects and full tile bounds. Three order-reversed trials; all four layer combinations, 45 warmup and 180 measured frames each. Newly completed elapsed-query samples only; readbacks outside timings.",
+  "environment": "Chromium SwiftShader, 640x480, pixel ratio 1. Software driver elapsed, not hardware GPU timing."
+}

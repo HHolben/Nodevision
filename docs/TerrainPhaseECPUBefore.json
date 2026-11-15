@@ -1,0 +1,250 @@
+{
+  "meshes": [
+    {
+      "cell": [
+        0,
+        0,
+        0
+      ],
+      "generationMs": 7.901687999999922,
+      "meshingMs": [
+        98.67515199999991,
+        98.42569600000002,
+        98.752794,
+        110.72935199999995
+      ],
+      "haloQueries": 6536,
+      "vertices": 1089,
+      "triangles": 2048,
+      "hash": "55ab148f9ec4f57ad10ce48e930c38c06a3810eb67383ea4843cbbde24f3bd1d"
+    },
+    {
+      "cell": [
+        0,
+        4,
+        0
+      ],
+      "generationMs": 20.443259000000126,
+      "meshingMs": [
+        115.34270599999991,
+        186.552907,
+        123.39869799999997,
+        38.38400299999989
+      ],
+      "haloQueries": 6536,
+      "vertices": 564,
+      "triangles": 1114,
+      "hash": "5aa9d99a68d268100dfd3ee8f7130a227da1da3f9833dcda74e3d0d6b3c86e70"
+    },
+    {
+      "cell": [
+        4,
+        0,
+        4
+      ],
+      "generationMs": 8.243876999999884,
+      "meshingMs": [
+        53.39877799999999,
+        42.35347999999999,
+        44.48253700000009,
+        45.43660999999997
+      ],
+      "haloQueries": 6536,
+      "vertices": 1089,
+      "triangles": 2048,
+      "hash": "ec714d2bb7069da19eef36517d4ffd76229a1e76bebd59e49ca4eb9044242564"
+    },
+    {
+      "cell": [
+        4,
+        4,
+        4
+      ],
+      "generationMs": 1.1657209999998486,
+      "meshingMs": [
+        21.30630999999994,
+        11.478951999999936,
+        9.107766999999967,
+        10.13351200000011
+      ],
+      "haloQueries": 6536,
+      "vertices": 0,
+      "triangles": 0,
+      "hash": "de6d9d06078fd6318b5cc97142bdbdbaa2d88f5899e9712c6f327f5073161a06"
+    },
+    {
+      "cell": [
+        -4,
+        0,
+        -4
+      ],
+      "generationMs": 5.945896999999832,
+      "meshingMs": [
+        40.87952700000005,
+        30.579340000000002,
+        35.314752,
+        32.22394799999984
+      ],
+      "haloQueries": 6536,
+      "vertices": 1089,
+      "triangles": 2048,
+      "hash": "0fab3abd69a87b35a6c6d0796200992b608882e5c33b48407fe219de0a9dbb8c"
+    },
+    {
+      "cell": [
+        -4,
+        4,
+        -4
+      ],
+      "generationMs": 8.35899100000006,
+      "meshingMs": [
+        48.03610600000002,
+        41.822685999999976,
+        40.988562999999886,
+        35.037600999999995
+      ],
+      "haloQueries": 6536,
+      "vertices": 1986,
+      "triangles": 3970,
+      "hash": "ea894d9ddd8de99196b7f679bba105162ed1fb46ae4d5b6dcb800492e135e487"
+    },
+    {
+      "cell": [
+        50,
+        0,
+        50
+      ],
+      "generationMs": 2.5232959999998457,
+      "meshingMs": [
+        39.45910700000013,
+        33.79861700000038,
+        26.592965000000277,
+        24.128892000000178
+      ],
+      "haloQueries": 6536,
+      "vertices": 1089,
+      "triangles": 2048,
+      "hash": "736c79cf27093e7750b90e5380ce8a3ca1ce667e4040fc2efee11dbc5c2092aa"
+    },
+    {
+      "cell": [
+        50,
+        2,
+        50
+      ],
+      "generationMs": 2.270328999999947,
+      "meshingMs": [
+        28.856852000000345,
+        23.582876000000397,
+        25.199235000000044,
+        37.30515199999991
+      ],
+      "haloQueries": 6536,
+      "vertices": 1283,
+      "triangles": 2416,
+      "hash": "ec7cff81983119dcfee5d2e12b121a01b05255995ac7e0466049861e3288e905"
+    }
+  ],
+  "route": [
+    {
+      "x": 32,
+      "ms": 1331.777114,
+      "steps": 298,
+      "generated": 25,
+      "generationMs": 204.09774100000504,
+      "meshingMs": 951.0966789999984,
+      "loaded": 25,
+      "bytes": 2268784,
+      "cache": null
+    },
+    {
+      "x": 64,
+      "ms": 1021.0084200000006,
+      "steps": 234,
+      "generated": 29,
+      "generationMs": 152.82199899998886,
+      "meshingMs": 763.8181070001119,
+      "loaded": 29,
+      "bytes": 2394216,
+      "cache": null
+    },
+    {
+      "x": 96,
+      "ms": 1141.744721,
+      "steps": 261,
+      "generated": 31,
+      "generationMs": 190.3319609998698,
+      "meshingMs": 843.3252220000368,
+      "loaded": 31,
+      "bytes": 2507784,
+      "cache": null
+    },
+    {
+      "x": 64,
+      "ms": 1049.2080669999996,
+      "steps": 242,
+      "generated": 29,
+      "generationMs": 156.1152659999907,
+      "meshingMs": 813.8281890000235,
+      "loaded": 29,
+      "bytes": 2394216,
+      "cache": null
+    },
+    {
+      "x": 32,
+      "ms": 819.8453559999998,
+      "steps": 185,
+      "generated": 25,
+      "generationMs": 121.97089300002972,
+      "meshingMs": 640.4659530000845,
+      "loaded": 25,
+      "bytes": 2268784,
+      "cache": null
+    },
+    {
+      "x": 64,
+      "ms": 1070.49269,
+      "steps": 243,
+      "generated": 29,
+      "generationMs": 161.09645799992904,
+      "meshingMs": 829.0020050001076,
+      "loaded": 29,
+      "bytes": 2394216,
+      "cache": null
+    },
+    {
+      "x": 96,
+      "ms": 1021.7893690000001,
+      "steps": 239,
+      "generated": 31,
+      "generationMs": 165.20846600022378,
+      "meshingMs": 783.1847249999119,
+      "loaded": 31,
+      "bytes": 2507784,
+      "cache": null
+    },
+    {
+      "x": 64,
+      "ms": 1104.7554869999985,
+      "steps": 246,
+      "generated": 29,
+      "generationMs": 173.34520500000326,
+      "meshingMs": 850.1831660001862,
+      "loaded": 29,
+      "bytes": 2394216,
+      "cache": null
+    },
+    {
+      "x": 32,
+      "ms": 937.2642190000006,
+      "steps": 217,
+      "generated": 25,
+      "generationMs": 129.89706200008732,
+      "meshingMs": 742.6201139998411,
+      "loaded": 25,
+      "bytes": 2268784,
+      "cache": null
+    }
+  ],
+  "gpuMs": null
+}

@@ -30,6 +30,10 @@ try{
   check(JSON.stringify(runtime.serialize().geographic)===source,'Native geographic source preserved');results.push(terrainDiagnostics(ctx));
  }
  check(terrainDiagnostics(ctx).frame?.samples>0,'Native render-loop frame diagnostics');
+ const timing=terrainDiagnostics(ctx).renderTiming;
+ check(timing&&timing.updateCpuMs>=0&&timing.submissionCpuMs>=0,'Native update and renderer submission timings');
+ check(timing.gpu.elapsedMs===null||timing.gpu.elapsedMs>=0,'GPU query time is measured or explicitly unavailable');
+ check(timing.gpu.pending<=4,'Native GPU query queue remains bounded');
  check(await saveCurrentWorldFile({state:ctx.state,movementState:ctx.movementState,objects:ctx.objects,lights:ctx.lights}),'Native save');
  panel.cleanup();window.NodevisionState.currentMode='Virtual World Viewing';
  await setupPanel(panel,{filePath:'world.html',viewPermissions:{authoring:false}});check(await panel.worldReady,'Native Viewer reopen');ctx=window.VRWorldContext;root=ctx.objects.find(o=>o.userData.terrainRuntime);runtime=root.userData.terrainRuntime;

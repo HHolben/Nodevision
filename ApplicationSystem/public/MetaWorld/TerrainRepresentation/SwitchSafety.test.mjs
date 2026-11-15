@@ -36,5 +36,18 @@ test('authored additions and removals survive polygonal geometry and return to v
     assert.ok(hits.length&&hits[0].point.y>20,'authored block remains visible and pickable');
     assert.ok(Math.abs(colliders[0].sampleGroundY(4.125,4.125)-hits[0].point.y)<1e-6,'collision follows the rendered authored block');
   }
-  r.dispose();session.dispose();
+  const cached=r.meshCache.get([0,2,0],'polygonal');assert.ok(cached,'installed polygonal block is cached');
+  const hitsBefore=r.meshCache.snapshot().hits;
+  await r.setRepresentation('voxel');await r.setRepresentation('polygonal');
+  assert.ok(r.meshCache.snapshot().hits>hitsBefore,'unchanged representation return reuses compact geometry');
+  session.batch([{at:[16,80,16],value:null}]);
+  assert.equal(r.meshCache.get([0,2,0],'polygonal'),null,'session removal invalidates cached authored geometry');
+  await r.setRepresentation('voxel');await r.setRepresentation('polygonal');
+  assert.equal(r.generator.getVoxel(16,80,16),0);
+  const removedHits=[];root.raycast(new THREE.Raycaster(new THREE.Vector3(4.125,25,4.125),new THREE.Vector3(0,-1,0)),removedHits);
+  assert.ok(removedHits.every(hit=>hit.point.y<20),'returning to polygonal mode cannot restore the removed block');
+  r.setPathConstraints([]);assert.equal(r.meshCache.snapshot().entries,0,'path changes invalidate cached composition');
+  assert.ok(r.meshCache.snapshot().reasons.paths>0);
+  r.setConstructions([]);assert.ok(r.meshCache.snapshot().reasons.constructions>0);
+  r.dispose();session.dispose();assert.equal(r.meshCache.snapshot().bytes,0);
 });

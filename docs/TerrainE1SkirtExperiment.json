@@ -1,0 +1,495 @@
+{
+  "results": [
+    {
+      "trial": 0,
+      "variant": "original",
+      "frame": {
+        "mean": 45.734999999962746,
+        "p95": 54.5,
+        "p99": 81.19999999925494
+      },
+      "update": {
+        "mean": 0.03250000004967054,
+        "p95": 0.10000000149011612,
+        "p99": 0.10000000149011612
+      },
+      "submit": {
+        "mean": 1.1866666667163372,
+        "p95": 1.7000000029802322,
+        "p99": 2.300000000745058
+      },
+      "gpu": {
+        "mean": 41.91096485833334,
+        "p95": 50.121886,
+        "p99": 76.938108
+      },
+      "calls": 105,
+      "triangles": 74354
+    },
+    {
+      "trial": 0,
+      "variant": "pairedSkirts",
+      "frame": {
+        "mean": 37.43333333336438,
+        "p95": 48.5,
+        "p99": 53.30000000074506
+      },
+      "update": {
+        "mean": 0.029166666604578496,
+        "p95": 0.10000000149011612,
+        "p99": 0.10000000149011612
+      },
+      "submit": {
+        "mean": 1.1366666665921608,
+        "p95": 1.800000000745058,
+        "p99": 2.399999998509884
+      },
+      "gpu": {
+        "mean": 33.64234629999999,
+        "p95": 44.094086,
+        "p99": 48.407417
+      },
+      "calls": 105,
+      "triangles": 56286
+    },
+    {
+      "trial": 1,
+      "variant": "pairedSkirts",
+      "frame": {
+        "mean": 62.48666666671634,
+        "p95": 80.5,
+        "p99": 87.69999999925494
+      },
+      "update": {
+        "mean": 0.04999999993791183,
+        "p95": 0.10000000149011612,
+        "p99": 0.19999999925494194
+      },
+      "submit": {
+        "mean": 1.7041666666666666,
+        "p95": 2.5,
+        "p99": 3.899999998509884
+      },
+      "gpu": {
+        "mean": 57.422889675,
+        "p95": 76.614146,
+        "p99": 83.102531
+      },
+      "calls": 105,
+      "triangles": 56286
+    },
+    {
+      "trial": 1,
+      "variant": "original",
+      "frame": {
+        "mean": 54.19916666665425,
+        "p95": 58.69999999925494,
+        "p99": 71.90000000223517
+      },
+      "update": {
+        "mean": 0.05166666669150193,
+        "p95": 0.10000000149011612,
+        "p99": 0.20000000298023224
+      },
+      "submit": {
+        "mean": 1.6,
+        "p95": 2.900000002235174,
+        "p99": 4
+      },
+      "gpu": {
+        "mean": 49.10102850000002,
+        "p95": 53.355435,
+        "p99": 61.362576
+      },
+      "calls": 105,
+      "triangles": 74354
+    },
+    {
+      "trial": 2,
+      "variant": "original",
+      "frame": {
+        "mean": 54.37166666664804,
+        "p95": 63.5,
+        "p99": 67.79999999701977
+      },
+      "update": {
+        "mean": 0.061666666685293116,
+        "p95": 0.10000000149011612,
+        "p99": 0.19999999925494194
+      },
+      "submit": {
+        "mean": 1.4766666664741934,
+        "p95": 2.199999999254942,
+        "p99": 2.699999999254942
+      },
+      "gpu": {
+        "mean": 49.48222079166667,
+        "p95": 58.239015,
+        "p99": 63.920456
+      },
+      "calls": 105,
+      "triangles": 74354
+    },
+    {
+      "trial": 2,
+      "variant": "pairedSkirts",
+      "frame": {
+        "mean": 46.14999999993791,
+        "p95": 51.899999998509884,
+        "p99": 62.399999998509884
+      },
+      "update": {
+        "mean": 0.05250000022351742,
+        "p95": 0.19999999925494194,
+        "p99": 0.19999999925494194
+      },
+      "submit": {
+        "mean": 1.4799999996709328,
+        "p95": 2.300000000745058,
+        "p99": 3.100000001490116
+      },
+      "gpu": {
+        "mean": 41.423526083333314,
+        "p95": 46.596359,
+        "p99": 51.811975
+      },
+      "calls": 105,
+      "triangles": 56286
+    }
+  ],
+  "materials": [
+    {
+      "type": "MeshStandardMaterial",
+      "color": "3f8f46",
+      "map": false,
+      "transparent": false,
+      "roughness": 0.55,
+      "metalness": 0,
+      "side": 0
+    },
+    {
+      "type": "MeshStandardMaterial",
+      "color": "6b5137",
+      "map": false,
+      "transparent": false,
+      "roughness": 0.55,
+      "metalness": 0,
+      "side": 0
+    },
+    {
+      "type": "MeshStandardMaterial",
+      "color": "858583",
+      "map": false,
+      "transparent": false,
+      "roughness": 0.55,
+      "metalness": 0,
+      "side": 0
+    },
+    {
+      "type": "MeshStandardMaterial",
+      "color": "b8b59f",
+      "map": false,
+      "transparent": false,
+      "roughness": 0.55,
+      "metalness": 0,
+      "side": 0
+    },
+    {
+      "type": "MeshBasicMaterial",
+      "color": "2f83b7",
+      "map": false,
+      "transparent": true,
+      "side": 2
+    },
+    {
+      "type": "MeshStandardMaterial",
+      "color": "c49a64",
+      "map": false,
+      "transparent": false,
+      "roughness": 0.65,
+      "metalness": 0,
+      "side": 0
+    },
+    {
+      "type": "MeshStandardMaterial",
+      "color": "594434",
+      "map": false,
+      "transparent": false,
+      "roughness": 0.95,
+      "metalness": 0,
+      "side": 0
+    },
+    {
+      "type": "MeshStandardMaterial",
+      "color": "244d32",
+      "map": false,
+      "transparent": false,
+      "roughness": 0.85,
+      "metalness": 0,
+      "side": 0
+    },
+    {
+      "type": "MeshStandardMaterial",
+      "color": "c9aa5a",
+      "map": false,
+      "transparent": false,
+      "roughness": 0.55,
+      "metalness": 0,
+      "side": 0
+    },
+    {
+      "type": "MeshBasicMaterial",
+      "color": "6f5238",
+      "map": false,
+      "transparent": true,
+      "side": 2
+    },
+    {
+      "type": "MeshStandardMaterial",
+      "color": "bcb9a7",
+      "map": false,
+      "transparent": false,
+      "roughness": 0.9,
+      "metalness": 0,
+      "side": 0
+    },
+    {
+      "type": "MeshStandardMaterial",
+      "color": "e8eef2",
+      "map": false,
+      "transparent": false,
+      "roughness": 0.55,
+      "metalness": 0,
+      "side": 0
+    },
+    {
+      "type": "MeshStandardMaterial",
+      "color": "d6b785",
+      "map": false,
+      "transparent": false,
+      "roughness": 0.65,
+      "metalness": 0,
+      "side": 0
+    },
+    {
+      "type": "MeshStandardMaterial",
+      "color": "796858",
+      "map": false,
+      "transparent": false,
+      "roughness": 0.95,
+      "metalness": 0,
+      "side": 0
+    },
+    {
+      "type": "MeshStandardMaterial",
+      "color": "427c38",
+      "map": false,
+      "transparent": false,
+      "roughness": 0.85,
+      "metalness": 0,
+      "side": 0
+    },
+    {
+      "type": "MeshStandardMaterial",
+      "color": "ad7c49",
+      "map": false,
+      "transparent": false,
+      "roughness": 0.65,
+      "metalness": 0,
+      "side": 0
+    },
+    {
+      "type": "MeshStandardMaterial",
+      "color": "51402e",
+      "map": false,
+      "transparent": false,
+      "roughness": 0.95,
+      "metalness": 0,
+      "side": 0
+    },
+    {
+      "type": "MeshStandardMaterial",
+      "color": "2e6137",
+      "map": false,
+      "transparent": false,
+      "roughness": 0.85,
+      "metalness": 0,
+      "side": 0
+    },
+    {
+      "type": "MeshStandardMaterial",
+      "color": "cdb58c",
+      "map": false,
+      "transparent": false,
+      "roughness": 0.65,
+      "metalness": 0,
+      "side": 0
+    },
+    {
+      "type": "MeshStandardMaterial",
+      "color": "82786a",
+      "map": false,
+      "transparent": false,
+      "roughness": 0.95,
+      "metalness": 0,
+      "side": 0
+    },
+    {
+      "type": "MeshStandardMaterial",
+      "color": "31583d",
+      "map": false,
+      "transparent": false,
+      "roughness": 0.85,
+      "metalness": 0,
+      "side": 0
+    },
+    {
+      "type": "MeshStandardMaterial",
+      "color": "f7dfeb",
+      "map": false,
+      "transparent": false,
+      "roughness": 0.85,
+      "metalness": 0,
+      "side": 0
+    },
+    {
+      "type": "MeshStandardMaterial",
+      "color": "65813b",
+      "map": false,
+      "transparent": false,
+      "roughness": 0.85,
+      "metalness": 0,
+      "side": 0
+    },
+    {
+      "type": "MeshStandardMaterial",
+      "color": "f5c629",
+      "map": false,
+      "transparent": false,
+      "roughness": 0.85,
+      "metalness": 0,
+      "side": 0
+    },
+    {
+      "type": "MeshStandardMaterial",
+      "color": "4d3523",
+      "map": false,
+      "transparent": false,
+      "roughness": 0.85,
+      "metalness": 0,
+      "side": 0
+    },
+    {
+      "type": "MeshStandardMaterial",
+      "color": "587342",
+      "map": false,
+      "transparent": false,
+      "roughness": 0.55,
+      "metalness": 0,
+      "side": 0
+    },
+    {
+      "type": "MeshStandardMaterial",
+      "color": "8b613b",
+      "map": false,
+      "transparent": false,
+      "roughness": 0.95,
+      "metalness": 0,
+      "side": 0
+    },
+    {
+      "type": "MeshStandardMaterial",
+      "color": "ba8960",
+      "map": false,
+      "transparent": false,
+      "roughness": 0.65,
+      "metalness": 0,
+      "side": 0
+    },
+    {
+      "type": "MeshStandardMaterial",
+      "color": "67513d",
+      "map": false,
+      "transparent": false,
+      "roughness": 0.95,
+      "metalness": 0,
+      "side": 0
+    },
+    {
+      "type": "MeshStandardMaterial",
+      "color": "447638",
+      "map": false,
+      "transparent": false,
+      "roughness": 0.85,
+      "metalness": 0,
+      "side": 0
+    },
+    {
+      "type": "MeshStandardMaterial",
+      "color": "c89d78",
+      "map": false,
+      "transparent": false,
+      "roughness": 0.65,
+      "metalness": 0,
+      "side": 0
+    },
+    {
+      "type": "MeshStandardMaterial",
+      "color": "635846",
+      "map": false,
+      "transparent": false,
+      "roughness": 0.95,
+      "metalness": 0,
+      "side": 0
+    },
+    {
+      "type": "MeshStandardMaterial",
+      "color": "507940",
+      "map": false,
+      "transparent": false,
+      "roughness": 0.85,
+      "metalness": 0,
+      "side": 0
+    },
+    {
+      "type": "MeshStandardMaterial",
+      "color": "b77852",
+      "map": false,
+      "transparent": false,
+      "roughness": 0.65,
+      "metalness": 0,
+      "side": 0
+    },
+    {
+      "type": "MeshStandardMaterial",
+      "color": "65443b",
+      "map": false,
+      "transparent": false,
+      "roughness": 0.95,
+      "metalness": 0,
+      "side": 0
+    },
+    {
+      "type": "MeshStandardMaterial",
+      "color": "3f703e",
+      "map": false,
+      "transparent": false,
+      "roughness": 0.85,
+      "metalness": 0,
+      "side": 0
+    }
+  ],
+  "drained": true,
+  "complete": true,
+  "timer": {
+    "supported": true,
+    "elapsedMs": 40.683112,
+    "samples": 1079,
+    "pending": 1,
+    "discarded": 0
+  },
+  "layers": [
+    "Terrain distance detail",
+    "Vegetation distance detail"
+  ]
+}

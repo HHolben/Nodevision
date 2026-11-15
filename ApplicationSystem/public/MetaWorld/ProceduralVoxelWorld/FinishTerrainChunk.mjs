@@ -10,7 +10,7 @@ export function finishTerrainChunk(THREE,root,palette,floorOffset,definition,cel
       geometry.setAttribute("uv", new THREE.Float32BufferAttribute(result.uvs,2));
       geometry.setAttribute("normal", new THREE.Float32BufferAttribute(result.normals,3));
       for (const group of result.groups) geometry.addGroup(group.start, group.count, group.materialIndex);
-      geometry.setIndex(result.indices); geometry.computeBoundingSphere();
+      geometry.setIndex(ArrayBuffer.isView(result.indices)?new THREE.BufferAttribute(result.indices,1):result.indices); geometry.computeBoundingSphere();
       mesh = new THREE.Mesh(geometry, palette.materials);
       mesh.position.fromArray(voxelToWorld(chunkToVoxel(cell), [0,floorOffset,0]));
       Object.assign(mesh.userData, { proceduralTerrainId: definition.id, proceduralChunk: cell.slice(),

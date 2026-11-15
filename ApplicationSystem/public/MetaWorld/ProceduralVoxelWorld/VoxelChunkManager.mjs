@@ -75,12 +75,14 @@ export class VoxelChunkManager {
     this.stats.installationMs+=entry.installationMs||0;this.stats.generationMs+=entry.generationMs;this.stats.meshingMs+=entry.meshingMs;this.stats.maxBuildMs=Math.max(this.stats.maxBuildMs,entry.buildMs??0);
   }
   invalidateRegion(bounds){
+    this.meshCache?.invalidate(bounds,'region');
     for(const key of this.columnLevels.keys()){const [x,z]=key.split(',').map(Number);if((x+1)*32>bounds.min[0]&&x*32<bounds.max[0]&&(z+1)*32>bounds.min[2]&&z*32<bounds.max[2])this.columnLevels.delete(key);}
     cancelProgressive(this);
     for(const key of [...this.loaded.region(bounds)])this.releaseEntry(key);
     this.queue.length=0;this.center='';this.stats.loaded=this.loaded.size;
   }
   invalidateBounds(bounds) {
+    this.meshCache?.invalidate({min:[bounds.minX,-Infinity,bounds.minZ],max:[bounds.maxX,Infinity,bounds.maxZ]},'bounds');
     for(const key of this.columnLevels.keys()){const [x,z]=key.split(',').map(Number);if((x+1)*32>bounds.minX&&x*32<bounds.maxX&&(z+1)*32>bounds.minZ&&z*32<bounds.maxZ)this.columnLevels.delete(key);}
     cancelProgressive(this);
     for (const [key,entry] of this.loaded) {
@@ -91,6 +93,7 @@ export class VoxelChunkManager {
     this.queue.length=0;this.center='';this.stats.loaded=this.loaded.size;
   }
   invalidateAll() {
+    this.meshCache?.clear('all');
     cancelProgressive(this);this.columnLevels.clear();
     for(const key of this.loaded.keys())this.invalidated.add(key);
     this.queue.length=0;this.center='';
