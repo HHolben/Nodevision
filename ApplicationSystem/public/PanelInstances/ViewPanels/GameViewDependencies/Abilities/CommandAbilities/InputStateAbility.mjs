@@ -69,6 +69,8 @@ export function installInputStateAbility(ctx) {
       crouch,
       crawl: heldKeys[bindings.crawl],
       use: (useBinding !== "mouse0" && heldKeys[bindings.use]) || heldKeys.r || readGamepadBinding(gp, gpBindings.use) > 0 || !!gp?.buttons?.[5]?.pressed,
+      toolUse: !!heldKeys[bindings.use] || readGamepadBinding(gp,gpBindings.use)>0 || !!gp?.buttons?.[5]?.pressed,
+      toolPadUse: readGamepadBinding(gp,gpBindings.use)>0 || !!gp?.buttons?.[5]?.pressed,
       grab: heldKeys.mouse0,
       stretch: heldKeys.g || (heldKeys.shift && heldKeys.s),
       rotate: heldKeys.mouse2,

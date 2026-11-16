@@ -1,3 +1,5 @@
+import {createMob} from '/MetaWorld/Mobs/Runtime.mjs';
+import {installMobAuthoring} from '/MetaWorld/Mobs/Authoring.mjs';
 // Nodevision/ApplicationSystem/public/PanelInstances/ViewPanels/GameViewDependencies/worldLoading.mjs
 // This file loads a world definition from the server and builds its scene objects. The loader registers live MetaWorld layer data for side panels.
 import {installEducationalWorldBridge} from '/Education/WorldLinks.mjs';
@@ -10,6 +12,8 @@ import {createConstruction} from '../../../MetaWorld/Constructions/ConstructionR
 import {installConstructionAuthoring} from '../../../MetaWorld/Constructions/Authoring.mjs';
 import { createModelWorldObject, installModelWorldCommand } from "/Models/ModelWorldAsset.mjs";
 import { createDownloadedImagePlane, installDownloadedImageCommand } from "/MetaWorld/DownloadedImagePlane.mjs";
+import {createArcheryTarget} from '/MetaWorld/ArcheryTarget/Runtime.mjs';
+import {installTargetAuthoring} from '/MetaWorld/ArcheryTarget/Authoring.mjs';
 import { createTextObject } from '../../../MetaWorld/Text/TextRuntime.mjs';
 import { installTextAuthoring } from '../../../MetaWorld/Text/TextAuthoringBridge.mjs';
 import { terrainGridFromDefinition } from "../../../MetaWorld/TerrainRepresentation/GridDefinition.mjs";
@@ -1199,7 +1203,7 @@ export function registerMetaWorldLayerBridge({ state, filePath, worldData, layer
   const sourceId = "legacy-metaworld:" + (filePath || "active");
   const history = worldSession(filePath).history;
   const readBridgeExpressionOptions = () => getExpressionLayerOptions(camera || window.VRWorldContext?.camera);
-  const managedObject = def => def?.type === 'construction' || ['gox-model','model-asset'].includes(def?.type) || def?.type === 'image-plane' || def?.type === 'terrain-surface' || PRIMITIVE_WORLD_OBJECT_TYPES.has(def?.type) || def?.type === "world-text" || def?.type === "physical-path" || def?.type === "procedural-voxel-world" || def?.type === "iframe" || def?.equationCollider?.infinite === true;
+  const managedObject = def => def?.type === 'mob' || def?.type === 'archery-target' || def?.type === 'construction' || ['gox-model','model-asset'].includes(def?.type) || def?.type === 'image-plane' || def?.type === 'terrain-surface' || PRIMITIVE_WORLD_OBJECT_TYPES.has(def?.type) || def?.type === "world-text" || def?.type === "physical-path" || def?.type === "procedural-voxel-world" || def?.type === "iframe" || def?.equationCollider?.infinite === true;
   const snapshotWorldObjects = () => {
     const meshes = new Map(layerEntries.map(entry => [entry.def, entry.object3d]));
     return JSON.stringify((worldData.objects || []).map(def => {
@@ -1217,7 +1221,7 @@ export function registerMetaWorldLayerBridge({ state, filePath, worldData, layer
   const attachLayerBreakHandler = (entry) => {
     if(entry.object3d){if(entry.def.educationalLinks!==undefined)entry.object3d.userData.educationalLinks=structuredClone(entry.def.educationalLinks);else delete entry.object3d.userData.educationalLinks;}
     if (!entry?.object3d) return;
-    if (['construction','physical-path','world-text','gox-model','model-asset'].includes(entry.def?.type)) { entry.object3d.userData.onBreakTarget = () => bridge.removeObjectLayer(entry.id); return; }
+    if (['mob','archery-target','construction','physical-path','world-text','gox-model','model-asset'].includes(entry.def?.type)) { entry.object3d.userData.onBreakTarget = () => bridge.removeObjectLayer(entry.id); return; }
     if (isExpressionLayerType(entry.def?.type)) {
       entry.object3d.userData.breakable = entry.def?.locked !== true;
       entry.object3d.userData.placedByPlayer = true;
@@ -1241,6 +1245,8 @@ export function registerMetaWorldLayerBridge({ state, filePath, worldData, layer
     for (const child of [...(object3d?.children || [])]) if (child.userData?.textRuntime) scene.add(child);
     object3d?.userData?.modelRuntime?.dispose();
     object3d?.userData?.textRuntime?.dispose();
+    object3d?.userData?.archeryTargetRuntime?.dispose();
+    object3d?.userData?.mobRuntime?.dispose();
     object3d?.userData?.constructionRuntime?.dispose();
     object3d?.userData?.pathRuntime?.dispose();
     object3d?.userData?.terrainRuntime?.dispose();
@@ -1332,6 +1338,8 @@ export function registerMetaWorldLayerBridge({ state, filePath, worldData, layer
         const mesh = PRIMITIVE_WORLD_OBJECT_TYPES.has(def.type) ? createPrimitiveWorldMesh(THREE,def,{color:def.color})
           : ['gox-model','model-asset'].includes(def.type) ? createModelWorldObject(def)
           : def.type === 'image-plane' ? createDownloadedImagePlane(THREE, def)
+          : def.type === 'mob' ? createMob(THREE,def,colliders)
+          : def.type === 'archery-target' ? createArcheryTarget(THREE,def,colliders)
           : def.type === 'world-text' ? createTextObject(THREE, def)
           : def.type === 'construction' ? createConstruction(THREE,def,filePath,colliders)
           : def.type === 'physical-path' ? createPathObject(THREE, def, colliders)
@@ -1951,6 +1959,8 @@ export function registerMetaWorldLayerBridge({ state, filePath, worldData, layer
     attach:(mesh,sound)=>attachSoundObjectRuntime(mesh,sound,filePath),dispose:disposeSoundObjectRuntime,
     changed(objectId){markMetaWorldLayersDirty(worldData);syncBridgeWorldState(state,worldData);notifyMetaWorldLayersChanged({reason:'soundPropertyUpdated',objectId});}
   });
+  installTargetAuthoring(bridge,{THREE,scene,objects,colliders,layerEntries,worldData,select:selectMetaWorldObject,changed(objectId){markMetaWorldLayersDirty(worldData);syncBridgeWorldState(state,worldData);notifyMetaWorldLayersChanged({reason:'archeryTargetUpdated',objectId});}});
+  installMobAuthoring(bridge,{THREE,scene,objects,colliders,layerEntries,worldData,select:selectMetaWorldObject,changed(objectId){markMetaWorldLayersDirty(worldData);syncBridgeWorldState(state,worldData);notifyMetaWorldLayersChanged({reason:'mobUpdated',objectId});}});
   installTextAuthoring(bridge, { THREE, scene, objects, layerEntries, worldData, select:selectMetaWorldObject,
     changed(objectId) { markMetaWorldLayersDirty(worldData); syncBridgeWorldState(state,worldData); notifyMetaWorldLayersChanged({reason:'textUpdated',objectId}); }
   });
@@ -2321,6 +2331,8 @@ function resetLegacyWorldScene(ctx, state, worldData = null) {
   objects?.forEach((obj) => {
     obj?.userData?.modelRuntime?.dispose();
     obj?.userData?.textRuntime?.dispose();
+    obj?.userData?.archeryTargetRuntime?.dispose();
+    obj?.userData?.mobRuntime?.dispose();
     obj?.userData?.constructionRuntime?.dispose();
     obj?.userData?.pathRuntime?.dispose();
     obj?.userData?.terrainRuntime?.dispose();
@@ -2453,6 +2465,8 @@ async function loadStlWorld(filePath, state, THREE) {
   objects?.forEach((obj) => {
     obj?.userData?.modelRuntime?.dispose();
     obj?.userData?.textRuntime?.dispose();
+    obj?.userData?.archeryTargetRuntime?.dispose();
+    obj?.userData?.mobRuntime?.dispose();
     obj?.userData?.constructionRuntime?.dispose();
     obj?.userData?.pathRuntime?.dispose();
     obj?.userData?.terrainRuntime?.dispose();
@@ -2736,6 +2750,8 @@ export async function loadWorldFromFile(filePath, state, THREE, options = {}) {
     objects.forEach((obj) => {
       obj?.userData?.modelRuntime?.dispose();
       obj?.userData?.textRuntime?.dispose();
+    obj?.userData?.archeryTargetRuntime?.dispose();
+    obj?.userData?.mobRuntime?.dispose();
       obj?.userData?.constructionRuntime?.dispose();
       obj?.userData?.pathRuntime?.dispose();
       obj?.userData?.terrainRuntime?.dispose();
@@ -3379,6 +3395,10 @@ export async function loadWorldFromFile(filePath, state, THREE, options = {}) {
             }
           })();
         }
+      } else if (def.type === 'mob') {
+        mesh=createMob(THREE,def,colliders);
+      } else if (def.type === 'archery-target') {
+        mesh=createArcheryTarget(THREE,def,colliders);
       } else if (def.type === 'world-text') {
         mesh = createTextObject(THREE, def);
       } else if (def.type === 'construction') {
@@ -3634,7 +3654,7 @@ export async function loadWorldFromFile(filePath, state, THREE, options = {}) {
           }
         }
 
-        if (((isEquationObjectDefinition(def) && !isEquationInequalityDefinition && def.collider !== false) || (isExpressionLayerType(def.type) && def.collider?.enabled === true) || def.isSolid || def.collidable === true) && !isLiquidDefinition) {
+        if (def.type!=='mob' && def.type!=='archery-target' && ((isEquationObjectDefinition(def) && !isEquationInequalityDefinition && def.collider !== false) || (isExpressionLayerType(def.type) && def.collider?.enabled === true) || def.isSolid || def.collidable === true) && !isLiquidDefinition) {
           if(def.preserveLocalTransform===true){
             const colliderRef=makeObjectColliderRef(THREE,mesh,def,portalShape||def.type);
             if(colliderRef){colliders.push(colliderRef);mesh.userData.colliderRef=colliderRef;}

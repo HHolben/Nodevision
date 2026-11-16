@@ -8,6 +8,7 @@ export function installRotateGizmoAbility(ctx) {
 
   function disposeRotateState() {
     if (!ctx.rotateState) return;
+    ctx.rotateState.target?.userData?.mobRuntime?.suspend(false,'rotate');
     ctx.rotateState.handles?.forEach((handle) => handle?.parent?.remove(handle));
     ctx.rotateState.group?.parent?.remove(ctx.rotateState.group);
     window.removeEventListener("pointerdown", onRotatePointerDown, true);
@@ -21,6 +22,7 @@ export function installRotateGizmoAbility(ctx) {
 
   function createRotateGizmo(target) {
     if (target?.userData?.pathRuntime) return false;
+    target?.userData?.mobRuntime?.suspend(true,'rotate');
     const group = new THREE.Group();
     const handles = [];
     const axes = [

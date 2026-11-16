@@ -5,7 +5,7 @@ export function frustumInstances(THREE,mesh,pack,floor,step){
  const stats={scans:0,bufferRewrites:0,culled:0};let source=[],selected=[],dirty=true;
  function record(matrix,offset){let changed=0;for(let i=0;i<16;i++){const v=matrix.elements[i];if(previous[offset+i]!==v)changed=1;previous[offset+i]=v;}return changed;}
  function prepare(camera,worldMatrix=mesh.matrixWorld){
-  const material=mesh.material,safe=(material.isMeshStandardMaterial||material.isMeshBasicMaterial)&&!material.displacementMap&&material.onBeforeCompile===THREE.Material.prototype.onBeforeCompile&&material.customProgramCacheKey===THREE.Material.prototype.customProgramCacheKey;
+  const material=mesh.material,safe=(material.isMeshStandardMaterial||material.isMeshBasicMaterial)&&!material.displacementMap&&(material.userData.vegetationDither===true||material.onBeforeCompile===THREE.Material.prototype.onBeforeCompile&&material.customProgramCacheKey===THREE.Material.prototype.customProgramCacheKey);
   if(!camera||camera.isArrayCamera||!mesh.frustumCulled||!safe){dirty=true;if(selected!==source){selected=source;stats.culled=0;stats.bufferRewrites++;pack(source);}return;}
   const changed=record(camera.projectionMatrix,0)|record(camera.matrixWorldInverse,16)|record(worldMatrix,32);
   if(!dirty&&!changed)return;dirty=false;stats.scans++;

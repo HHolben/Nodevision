@@ -1,5 +1,6 @@
 // Nodevision/ApplicationSystem/public/MetaWorld/TerrainRepresentation/MeshCache.mjs
 // This per-runtime LRU retains compact CPU occupancy and polygonal buffers independently of live meshes and GPU resources. Signed chunk keys, halo-aware invalidation, generation stamps and explicit byte/count limits prevent stale reuse or unbounded travel history.
+import {GROUND_NORMAL_HALO} from './GroundNormals.mjs';
 export function createMeshCache({maxBytes=32*1048576,maxEntries=128}={}) {
  if(!Number.isFinite(maxBytes)||maxBytes<0||!Number.isInteger(maxEntries)||maxEntries<0)throw new RangeError('Mesh cache budgets must be finite nonnegative bytes and an integer entry count.');
  const entries=new Map(),stats={hits:0,misses:0,builds:0,evictions:0,invalidations:0,reasons:{}};let bytes=0,revision=0;
@@ -7,8 +8,8 @@ export function createMeshCache({maxBytes=32*1048576,maxEntries=128}={}) {
  const remove=k=>{const old=entries.get(k);if(old){bytes-=old.bytes;entries.delete(k);}};
  function invalidate(bounds,reason='terrain') {
   revision++;stats.invalidations++;stats.reasons[reason]=(stats.reasons[reason]||0)+1;
-  // Surface Nets reads a one-cell halo; either side of an edited seam must rebuild.
-  for(const [k,e] of entries)if(!bounds||e.cell.every((n,i)=>n*32-1<bounds.max[i]&&(n+1)*32+1>bounds.min[i]))remove(k);
+  // Occupancy uses one cell; natural normals also read a bounded horizontal height stencil.
+  for(const [k,e] of entries)if(!bounds||e.cell.every((n,i)=>{const halo=i===1?1:GROUND_NORMAL_HALO;return n*32-halo<bounds.max[i]&&(n+1)*32+halo>bounds.min[i];}))remove(k);
  }
  return {
   get revision(){return revision;},

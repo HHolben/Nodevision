@@ -3,6 +3,7 @@
 export function mergeProxyBoxes(cells, step, materials) {
   const groups = new Map(), boxes = [];
   for (const cell of cells) {
+    if(cell.size){boxes.push(cell);continue;}
     const material = materials[cell.material - 1];
     if (!material || material.transparent || material.opacity < 1 || material.wireframe || Object.values(material).some(value => value?.isTexture)) { boxes.push(cell); continue; }
     const key = `${cell.material}:${cell.id}:${cell.chunk}`;

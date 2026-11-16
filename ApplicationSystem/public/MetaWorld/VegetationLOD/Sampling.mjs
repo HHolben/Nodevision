@@ -1,5 +1,6 @@
 // Nodevision/ApplicationSystem/public/MetaWorld/VegetationLOD/Sampling.mjs
 // This module samples the authoritative feature shapes into aligned, material-preserving proxy cells. Placement is queried once per region and reused across visual levels; composed exclusions remain authoritative.
+import {anchorVoxelTrunks} from './Trunks.mjs';
 import {AEGEAN_SPECIES} from '../Aegean/PlantPlacement.mjs';
 import {featureMaterialPriority} from '../ProceduralVoxelWorld/VoxelMaterialIds.mjs';
 export function* vegetationRegion(generator,rx,rz){
@@ -30,5 +31,6 @@ export function* vegetationCells(generator,region,level,proceduralOutside=false)
  }
  // Overlapping providers must not create duplicate proxy cells.
  const unique=new Map();for(const cell of cells){const old=unique.get(cell.key);if(!old||featureMaterialPriority(cell.material)>featureMaterialPriority(old.material))unique.set(cell.key,cell);}
- return {region,level,step,cells:[...unique.values()],identities:[...identities.values()]};
+ const result=[...unique.values()];if(level===2)yield*anchorVoxelTrunks(generator,region,result,step,proceduralOutside);
+ return {region,level,step,cells:result,identities:[...identities.values()]};
 }

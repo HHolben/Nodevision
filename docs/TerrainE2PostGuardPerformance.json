@@ -1,0 +1,4353 @@
+{
+  "complete": true,
+  "results": [
+    {
+      "scenario": "large",
+      "mode": "voxel",
+      "enabled": true,
+      "trial": 0,
+      "variant": "baseline",
+      "preparationMs": 634.2000000001863,
+      "drained": true,
+      "fingerprint": {
+        "geometry": "c05b007eb1fb02aee80af3ac2cd4af5f7f8112da7a5c055f8fe697ff04a451b8",
+        "normals": "ef8280d3d258f52e003ddc1373b6d0f40103c0699455ebf2b091fd27b9298ba9",
+        "chunks": 27,
+        "vertices": 110544,
+        "triangles": 55272,
+        "bufferBytes": 3869040
+      },
+      "sourceIdentityRestored": true,
+      "initial": {
+        "requests": 26,
+        "evictions": 0,
+        "cancelled": 0,
+        "cacheHits": 0,
+        "transitions": 4,
+        "generationMs": 84.30000000167638,
+        "installationMs": 17.40000000130385,
+        "bytes": 176776,
+        "firstInstalledMs": 176,
+        "started": 478.80000000074506,
+        "aheadRequests": 0,
+        "lastRequestLatencyMs": 544.2000000001863,
+        "instanceCulling": {
+          "scans": 47,
+          "bufferRewrites": 62,
+          "culled": 161
+        },
+        "regions": 22,
+        "queue": 0,
+        "representedTrees": 64,
+        "levels": {
+          "0": 0,
+          "1": 1,
+          "2": 63
+        },
+        "proxyCells": 2326,
+        "proxyBoxes": 801,
+        "triangles": 9612,
+        "drawCalls": 43,
+        "queueAgeMs": 0,
+        "visibleCoverage": null,
+        "gpuUploadMs": null
+      },
+      "phases": {
+        "stationary": {
+          "frameMs": {
+            "samples": 180,
+            "mean": 29.90277777777778,
+            "p95": 33.200000000186265,
+            "p99": 35.10000000055879,
+            "max": 35.5
+          },
+          "updateMs": {
+            "samples": 180,
+            "mean": 0.04888888886198402,
+            "p95": 0.10000000055879354,
+            "p99": 0.20000000018626451,
+            "max": 0.20000000018626451
+          },
+          "prepareMs": {
+            "samples": 180,
+            "mean": 0.07500000002587007,
+            "p95": 0.20000000018626451,
+            "p99": 0.20000000018626451,
+            "max": 0.30000000074505806
+          },
+          "submitMs": {
+            "samples": 180,
+            "mean": 0.7105555555731472,
+            "p95": 1.5,
+            "p99": 2.2000000001862645,
+            "max": 2.2999999998137355
+          },
+          "driverMs": {
+            "samples": 176,
+            "mean": 26.526026170454564,
+            "p95": 29.455854,
+            "p99": 32.035996,
+            "max": 32.348663
+          },
+          "drawCallsMean": 73,
+          "trianglesMean": 48998,
+          "vegetation": {
+            "requests": 26,
+            "evictions": 0,
+            "cancelled": 0,
+            "cacheHits": 0,
+            "transitions": 4,
+            "generationMs": 84.50000000093132,
+            "installationMs": 17.40000000130385,
+            "bytes": 176776,
+            "firstInstalledMs": 176,
+            "started": 478.80000000074506,
+            "aheadRequests": 0,
+            "lastRequestLatencyMs": 544.2000000001863,
+            "instanceCulling": {
+              "scans": 47,
+              "bufferRewrites": 62,
+              "culled": 161
+            },
+            "regions": 22,
+            "queue": 0,
+            "representedTrees": 64,
+            "levels": {
+              "0": 0,
+              "1": 1,
+              "2": 63
+            },
+            "proxyCells": 2326,
+            "proxyBoxes": 801,
+            "triangles": 9612,
+            "drawCalls": 43,
+            "queueAgeMs": 0,
+            "visibleCoverage": null,
+            "gpuUploadMs": null
+          },
+          "meshCache": {
+            "hits": 0,
+            "misses": 0,
+            "builds": 0,
+            "evictions": 0,
+            "invalidations": 0,
+            "reasons": {},
+            "entries": 0,
+            "bytes": 0,
+            "maxBytes": 33554432,
+            "maxEntries": 128,
+            "revision": 0,
+            "gpuBytes": 0
+          },
+          "residentGeometryBytes": 5085408,
+          "continuity": []
+        },
+        "walking": {
+          "frameMs": {
+            "samples": 60,
+            "mean": 30.041666666666668,
+            "p95": 32.89999999944121,
+            "p99": 35.80000000074506,
+            "max": 35.80000000074506
+          },
+          "updateMs": {
+            "samples": 60,
+            "mean": 0.041666666682188706,
+            "p95": 0.10000000055879354,
+            "p99": 0.20000000018626451,
+            "max": 0.20000000018626451
+          },
+          "prepareMs": {
+            "samples": 60,
+            "mean": 0.33166666665735345,
+            "p95": 0.5,
+            "p99": 4.800000000745058,
+            "max": 4.800000000745058
+          },
+          "submitMs": {
+            "samples": 60,
+            "mean": 0.5883333332991848,
+            "p95": 0.900000000372529,
+            "p99": 2.300000000745058,
+            "max": 2.300000000745058
+          },
+          "driverMs": {
+            "samples": 58,
+            "mean": 26.717096620689656,
+            "p95": 29.640392,
+            "p99": 30.445023,
+            "max": 30.445023
+          },
+          "drawCallsMean": 72.63333333333334,
+          "trianglesMean": 48599.46666666667,
+          "vegetation": {
+            "requests": 26,
+            "evictions": 0,
+            "cancelled": 0,
+            "cacheHits": 0,
+            "transitions": 4,
+            "generationMs": 84.50000000093132,
+            "installationMs": 17.40000000130385,
+            "bytes": 176776,
+            "firstInstalledMs": 176,
+            "started": 478.80000000074506,
+            "aheadRequests": 0,
+            "lastRequestLatencyMs": 544.2000000001863,
+            "instanceCulling": {
+              "scans": 2867,
+              "bufferRewrites": 63,
+              "culled": 162
+            },
+            "regions": 22,
+            "queue": 0,
+            "representedTrees": 64,
+            "levels": {
+              "0": 0,
+              "1": 1,
+              "2": 63
+            },
+            "proxyCells": 2326,
+            "proxyBoxes": 801,
+            "triangles": 9612,
+            "drawCalls": 43,
+            "queueAgeMs": 0,
+            "visibleCoverage": null,
+            "gpuUploadMs": null
+          },
+          "meshCache": {
+            "hits": 0,
+            "misses": 0,
+            "builds": 0,
+            "evictions": 0,
+            "invalidations": 0,
+            "reasons": {},
+            "entries": 0,
+            "bytes": 0,
+            "maxBytes": 33554432,
+            "maxEntries": 128,
+            "revision": 0,
+            "gpuBytes": 0
+          },
+          "residentGeometryBytes": 5085408,
+          "continuity": []
+        },
+        "running": {
+          "frameMs": {
+            "samples": 60,
+            "mean": 36.11166666666977,
+            "p95": 40,
+            "p99": 41.59999999962747,
+            "max": 41.59999999962747
+          },
+          "updateMs": {
+            "samples": 60,
+            "mean": 4.481666666719442,
+            "p95": 7.7000000001862645,
+            "p99": 10.400000000372529,
+            "max": 10.400000000372529
+          },
+          "prepareMs": {
+            "samples": 60,
+            "mean": 0.2599999999782691,
+            "p95": 0.5,
+            "p99": 1.900000000372529,
+            "max": 1.900000000372529
+          },
+          "submitMs": {
+            "samples": 60,
+            "mean": 0.5949999999720603,
+            "p95": 0.8000000007450581,
+            "p99": 1,
+            "max": 1
+          },
+          "driverMs": {
+            "samples": 59,
+            "mean": 28.426652220338983,
+            "p95": 30.941551,
+            "p99": 31.369814,
+            "max": 31.369814
+          },
+          "drawCallsMean": 70.23333333333333,
+          "trianglesMean": 45362.2,
+          "vegetation": {
+            "requests": 33,
+            "evictions": 0,
+            "cancelled": 0,
+            "cacheHits": 42,
+            "transitions": 6,
+            "generationMs": 117.70000000111759,
+            "installationMs": 23.400000003166497,
+            "bytes": 236892,
+            "firstInstalledMs": 176,
+            "started": 478.80000000074506,
+            "aheadRequests": 0,
+            "lastRequestLatencyMs": 341,
+            "instanceCulling": {
+              "scans": 5813,
+              "bufferRewrites": 146,
+              "culled": 280
+            },
+            "regions": 26,
+            "queue": 4,
+            "representedTrees": 78,
+            "levels": {
+              "0": 0,
+              "1": 3,
+              "2": 75
+            },
+            "proxyCells": 3117,
+            "proxyBoxes": 1051,
+            "triangles": 12612,
+            "drawCalls": 42,
+            "queueAgeMs": 530.1999999992549,
+            "visibleCoverage": null,
+            "gpuUploadMs": null
+          },
+          "meshCache": {
+            "hits": 0,
+            "misses": 0,
+            "builds": 0,
+            "evictions": 0,
+            "invalidations": 0,
+            "reasons": {},
+            "entries": 0,
+            "bytes": 0,
+            "maxBytes": 33554432,
+            "maxEntries": 128,
+            "revision": 0,
+            "gpuBytes": 0
+          },
+          "residentGeometryBytes": 8105928,
+          "continuity": []
+        },
+        "fast": {
+          "frameMs": {
+            "samples": 60,
+            "mean": 40.275,
+            "p95": 47.19999999925494,
+            "p99": 48.90000000037253,
+            "max": 48.90000000037253
+          },
+          "updateMs": {
+            "samples": 60,
+            "mean": 5.883333333286767,
+            "p95": 8.699999999254942,
+            "p99": 12.100000000558794,
+            "max": 12.100000000558794
+          },
+          "prepareMs": {
+            "samples": 60,
+            "mean": 0.3233333333550642,
+            "p95": 0.599999999627471,
+            "p99": 0.599999999627471,
+            "max": 0.599999999627471
+          },
+          "submitMs": {
+            "samples": 60,
+            "mean": 0.6249999999689559,
+            "p95": 0.900000000372529,
+            "p99": 1,
+            "max": 1
+          },
+          "driverMs": {
+            "samples": 59,
+            "mean": 30.951038966101695,
+            "p95": 35.890856,
+            "p99": 36.50006,
+            "max": 36.50006
+          },
+          "drawCallsMean": 69.18333333333334,
+          "trianglesMean": 40797.333333333336,
+          "vegetation": {
+            "requests": 45,
+            "evictions": 0,
+            "cancelled": 0,
+            "cacheHits": 155,
+            "transitions": 9,
+            "generationMs": 189.40000000223517,
+            "installationMs": 42.00000000465661,
+            "bytes": 535876,
+            "firstInstalledMs": 176,
+            "started": 478.80000000074506,
+            "aheadRequests": 3,
+            "lastRequestLatencyMs": 454.40000000037253,
+            "instanceCulling": {
+              "scans": 9394,
+              "bufferRewrites": 394,
+              "culled": 1247
+            },
+            "regions": 36,
+            "queue": 7,
+            "representedTrees": 118,
+            "levels": {
+              "0": 0,
+              "1": 12,
+              "2": 106
+            },
+            "proxyCells": 7051,
+            "proxyBoxes": 2332,
+            "triangles": 27984,
+            "drawCalls": 47,
+            "queueAgeMs": 0,
+            "visibleCoverage": null,
+            "gpuUploadMs": null
+          },
+          "meshCache": {
+            "hits": 0,
+            "misses": 0,
+            "builds": 0,
+            "evictions": 0,
+            "invalidations": 0,
+            "reasons": {},
+            "entries": 0,
+            "bytes": 0,
+            "maxBytes": 33554432,
+            "maxEntries": 128,
+            "revision": 0,
+            "gpuBytes": 0
+          },
+          "residentGeometryBytes": 3918520,
+          "continuity": []
+        },
+        "backtracking": {
+          "frameMs": {
+            "samples": 60,
+            "mean": 50.531666666672876,
+            "p95": 58.40000000037253,
+            "p99": 63.59999999962747,
+            "max": 63.59999999962747
+          },
+          "updateMs": {
+            "samples": 60,
+            "mean": 5.694999999987583,
+            "p95": 8.799999999813735,
+            "p99": 10.5,
+            "max": 10.5
+          },
+          "prepareMs": {
+            "samples": 60,
+            "mean": 0.4033333333985259,
+            "p95": 0.7999999998137355,
+            "p99": 0.8000000007450581,
+            "max": 0.8000000007450581
+          },
+          "submitMs": {
+            "samples": 60,
+            "mean": 0.7266666666449358,
+            "p95": 1.099999999627471,
+            "p99": 1.1000000005587935,
+            "max": 1.1000000005587935
+          },
+          "driverMs": {
+            "samples": 59,
+            "mean": 41.32613688135593,
+            "p95": 49.152893,
+            "p99": 50.338139,
+            "max": 50.338139
+          },
+          "drawCallsMean": 91.93333333333334,
+          "trianglesMean": 67754.13333333333,
+          "vegetation": {
+            "requests": 53,
+            "evictions": 14,
+            "cancelled": 1,
+            "cacheHits": 330,
+            "transitions": 13,
+            "generationMs": 254.10000000149012,
+            "installationMs": 52.500000005587935,
+            "bytes": 333260,
+            "firstInstalledMs": 176,
+            "started": 478.80000000074506,
+            "aheadRequests": 3,
+            "lastRequestLatencyMs": 194.40000000037253,
+            "instanceCulling": {
+              "scans": 10097,
+              "bufferRewrites": 344,
+              "culled": 172
+            },
+            "regions": 24,
+            "queue": 1,
+            "representedTrees": 70,
+            "levels": {
+              "0": 0,
+              "1": 12,
+              "2": 58
+            },
+            "proxyCells": 4385,
+            "proxyBoxes": 1382,
+            "triangles": 16584,
+            "drawCalls": 50,
+            "queueAgeMs": 231.40000000037253,
+            "visibleCoverage": null,
+            "gpuUploadMs": null
+          },
+          "meshCache": {
+            "hits": 0,
+            "misses": 0,
+            "builds": 0,
+            "evictions": 0,
+            "invalidations": 0,
+            "reasons": {},
+            "entries": 0,
+            "bytes": 0,
+            "maxBytes": 33554432,
+            "maxEntries": 128,
+            "revision": 0,
+            "gpuBytes": 0
+          },
+          "residentGeometryBytes": 4016624,
+          "continuity": []
+        },
+        "turning": {
+          "frameMs": {
+            "samples": 60,
+            "mean": 21.866666666666667,
+            "p95": 39.59999999962747,
+            "p99": 44.299999999813735,
+            "max": 44.299999999813735
+          },
+          "updateMs": {
+            "samples": 60,
+            "mean": 4.054999999950329,
+            "p95": 5.1000000005587935,
+            "p99": 6.400000000372529,
+            "max": 6.400000000372529
+          },
+          "prepareMs": {
+            "samples": 60,
+            "mean": 0.20833333348855376,
+            "p95": 0.40000000037252903,
+            "p99": 0.5,
+            "max": 0.5
+          },
+          "submitMs": {
+            "samples": 60,
+            "mean": 0.421666666554908,
+            "p95": 0.900000000372529,
+            "p99": 1.2000000001862645,
+            "max": 1.2000000001862645
+          },
+          "driverMs": {
+            "samples": 59,
+            "mean": 13.897220322033903,
+            "p95": 29.109384,
+            "p99": 35.866243,
+            "max": 35.866243
+          },
+          "drawCallsMean": 34.5,
+          "trianglesMean": 31475.533333333333,
+          "vegetation": {
+            "requests": 53,
+            "evictions": 14,
+            "cancelled": 1,
+            "cacheHits": 330,
+            "transitions": 14,
+            "generationMs": 258.3000000016764,
+            "installationMs": 54.10000000614673,
+            "bytes": 241984,
+            "firstInstalledMs": 176,
+            "started": 478.80000000074506,
+            "aheadRequests": 3,
+            "lastRequestLatencyMs": 320.90000000037253,
+            "instanceCulling": {
+              "scans": 13178,
+              "bufferRewrites": 583,
+              "culled": 172
+            },
+            "regions": 24,
+            "queue": 0,
+            "representedTrees": 70,
+            "levels": {
+              "0": 0,
+              "1": 7,
+              "2": 63
+            },
+            "proxyCells": 3184,
+            "proxyBoxes": 1049,
+            "triangles": 12588,
+            "drawCalls": 50,
+            "queueAgeMs": 0,
+            "visibleCoverage": null,
+            "gpuUploadMs": null
+          },
+          "meshCache": {
+            "hits": 0,
+            "misses": 0,
+            "builds": 0,
+            "evictions": 0,
+            "invalidations": 0,
+            "reasons": {},
+            "entries": 0,
+            "bytes": 0,
+            "maxBytes": 33554432,
+            "maxEntries": 128,
+            "revision": 0,
+            "gpuBytes": 0
+          },
+          "residentGeometryBytes": 6988416,
+          "continuity": []
+        },
+        "teleport": {
+          "frameMs": {
+            "samples": 60,
+            "mean": 43.70166666667598,
+            "p95": 52.799999999813735,
+            "p99": 54.5,
+            "max": 54.5
+          },
+          "updateMs": {
+            "samples": 60,
+            "mean": 7.190000000068297,
+            "p95": 10,
+            "p99": 10.5,
+            "max": 10.5
+          },
+          "prepareMs": {
+            "samples": 60,
+            "mean": 0.0433333333581686,
+            "p95": 0.19999999925494194,
+            "p99": 0.20000000018626451,
+            "max": 0.20000000018626451
+          },
+          "submitMs": {
+            "samples": 60,
+            "mean": 0.7249999999689559,
+            "p95": 1.2999999998137355,
+            "p99": 1.5,
+            "max": 1.5
+          },
+          "driverMs": {
+            "samples": 59,
+            "mean": 33.29549383050848,
+            "p95": 40.787907,
+            "p99": 43.999323,
+            "max": 43.999323
+          },
+          "drawCallsMean": 54.53333333333333,
+          "trianglesMean": 36484.066666666666,
+          "vegetation": {
+            "requests": 72,
+            "evictions": 14,
+            "cancelled": 1,
+            "cacheHits": 338,
+            "transitions": 14,
+            "generationMs": 327.9000000031665,
+            "installationMs": 71.50000000558794,
+            "bytes": 517712,
+            "firstInstalledMs": 176,
+            "started": 478.80000000074506,
+            "aheadRequests": 13,
+            "lastRequestLatencyMs": 2316.399999999441,
+            "instanceCulling": {
+              "scans": 13290,
+              "bufferRewrites": 721,
+              "culled": 1573
+            },
+            "regions": 42,
+            "queue": 36,
+            "representedTrees": 136,
+            "levels": {
+              "0": 1,
+              "1": 7,
+              "2": 129
+            },
+            "proxyCells": 6680,
+            "proxyBoxes": 2258,
+            "triangles": 27096,
+            "drawCalls": 32,
+            "queueAgeMs": 2620.2999999998137,
+            "visibleCoverage": null,
+            "gpuUploadMs": null
+          },
+          "meshCache": {
+            "hits": 0,
+            "misses": 0,
+            "builds": 0,
+            "evictions": 0,
+            "invalidations": 0,
+            "reasons": {},
+            "entries": 0,
+            "bytes": 0,
+            "maxBytes": 33554432,
+            "maxEntries": 128,
+            "revision": 0,
+            "gpuBytes": 0
+          },
+          "residentGeometryBytes": 2903392,
+          "continuity": []
+        },
+        "stopped-late": {
+          "frameMs": {
+            "samples": 180,
+            "mean": 46.05333333333127,
+            "p95": 52.200000000186265,
+            "p99": 71.5,
+            "max": 109.80000000074506
+          },
+          "updateMs": {
+            "samples": 180,
+            "mean": 5.872222222248093,
+            "p95": 9.200000000186265,
+            "p99": 14.299999999813735,
+            "max": 15.799999999813735
+          },
+          "prepareMs": {
+            "samples": 180,
+            "mean": 0.12777777777260377,
+            "p95": 0.20000000018626451,
+            "p99": 0.7000000001862645,
+            "max": 1.2999999998137355
+          },
+          "submitMs": {
+            "samples": 180,
+            "mean": 0.8816666666521794,
+            "p95": 1.400000000372529,
+            "p99": 1.900000000372529,
+            "max": 2.099999999627471
+          },
+          "driverMs": {
+            "samples": 179,
+            "mean": 36.81049811173184,
+            "p95": 40.850045,
+            "p99": 60.414604,
+            "max": 98.493062
+          },
+          "drawCallsMean": 75.12222222222222,
+          "trianglesMean": 53453.41111111111,
+          "vegetation": {
+            "requests": 106,
+            "evictions": 22,
+            "cancelled": 1,
+            "cacheHits": 359,
+            "transitions": 18,
+            "generationMs": 542.5000000018626,
+            "installationMs": 118.20000000484288,
+            "bytes": 1243892,
+            "firstInstalledMs": 176,
+            "started": 478.80000000074506,
+            "aheadRequests": 14,
+            "lastRequestLatencyMs": 7201,
+            "instanceCulling": {
+              "scans": 10060,
+              "bufferRewrites": 786,
+              "culled": 3137
+            },
+            "regions": 64,
+            "queue": 9,
+            "representedTrees": 192,
+            "levels": {
+              "0": 1,
+              "1": 18,
+              "2": 174
+            },
+            "proxyCells": 13377,
+            "proxyBoxes": 4151,
+            "triangles": 49812,
+            "drawCalls": 54,
+            "queueAgeMs": 8287.599999999627,
+            "visibleCoverage": null,
+            "gpuUploadMs": null
+          },
+          "meshCache": {
+            "hits": 0,
+            "misses": 0,
+            "builds": 0,
+            "evictions": 0,
+            "invalidations": 0,
+            "reasons": {},
+            "entries": 0,
+            "bytes": 0,
+            "maxBytes": 33554432,
+            "maxEntries": 128,
+            "revision": 0,
+            "gpuBytes": 0
+          },
+          "residentGeometryBytes": 9338200,
+          "continuity": [
+            {
+              "frame": 0,
+              "target": "maple:13,12",
+              "detail": null
+            },
+            {
+              "frame": 10,
+              "target": "maple:13,12",
+              "detail": null
+            },
+            {
+              "frame": 20,
+              "target": "maple:13,12",
+              "detail": null
+            },
+            {
+              "frame": 30,
+              "target": "maple:13,12",
+              "detail": null
+            },
+            {
+              "frame": 40,
+              "target": "maple:13,12",
+              "detail": null
+            },
+            {
+              "frame": 50,
+              "target": "maple:13,12",
+              "detail": null
+            },
+            {
+              "frame": 60,
+              "target": "maple:13,12",
+              "detail": null
+            },
+            {
+              "frame": 70,
+              "target": "maple:13,12",
+              "detail": null
+            },
+            {
+              "frame": 80,
+              "target": "maple:13,12",
+              "detail": null
+            },
+            {
+              "frame": 90,
+              "target": "maple:13,12",
+              "detail": null
+            },
+            {
+              "frame": 100,
+              "target": "maple:13,12",
+              "detail": null
+            },
+            {
+              "frame": 110,
+              "target": "maple:13,12",
+              "detail": null
+            },
+            {
+              "frame": 120,
+              "target": "maple:13,12",
+              "detail": null
+            },
+            {
+              "frame": 130,
+              "target": "maple:13,12",
+              "detail": null
+            },
+            {
+              "frame": 140,
+              "target": "maple:13,12",
+              "detail": null
+            },
+            {
+              "frame": 150,
+              "target": "maple:13,12",
+              "detail": null
+            },
+            {
+              "frame": 160,
+              "target": "maple:13,12",
+              "detail": null
+            },
+            {
+              "frame": 170,
+              "target": "maple:13,12",
+              "detail": null
+            }
+          ]
+        }
+      }
+    },
+    {
+      "scenario": "large",
+      "mode": "voxel",
+      "enabled": true,
+      "trial": 0,
+      "variant": "modified",
+      "preparationMs": 1007.9000000003725,
+      "drained": true,
+      "fingerprint": {
+        "geometry": "c05b007eb1fb02aee80af3ac2cd4af5f7f8112da7a5c055f8fe697ff04a451b8",
+        "normals": "ef8280d3d258f52e003ddc1373b6d0f40103c0699455ebf2b091fd27b9298ba9",
+        "chunks": 27,
+        "vertices": 110544,
+        "triangles": 55272,
+        "bufferBytes": 3869040
+      },
+      "sourceIdentityRestored": true,
+      "initial": {
+        "requests": 26,
+        "evictions": 0,
+        "cancelled": 0,
+        "cacheHits": 0,
+        "transitions": 4,
+        "generationMs": 92.50000000093132,
+        "installationMs": 18.70000000204891,
+        "bytes": 176776,
+        "firstInstalledMs": 158.90000000037253,
+        "started": 30239.900000000373,
+        "aheadRequests": 0,
+        "lastRequestLatencyMs": 650.0999999996275,
+        "shaderMeshes": {
+          "dither": 0,
+          "opaque": 47
+        },
+        "detailAttribution": {
+          "preparationMs": 0,
+          "attributeBytes": 0
+        },
+        "visibleInstances": 682,
+        "estimatedGpuBytes": 99048,
+        "extraTransitionDrawCalls": 0,
+        "continuity": {
+          "completed": 0,
+          "lateUpgrades": 0,
+          "incompleteFeatures": 64,
+          "failures": 0,
+          "maxTransitioning": 0,
+          "lastDurationMs": 0,
+          "readinessLatencyMs": 0,
+          "timeNearBeforeReadyMs": 0,
+          "trackedFeatures": 64,
+          "transitioning": 0,
+          "durationMs": 350,
+          "stateBytes": 53688
+        },
+        "transitionRegions": 0,
+        "transitionBytes": 0,
+        "instanceCulling": {
+          "scans": 47,
+          "bufferRewrites": 62,
+          "culled": 166
+        },
+        "regions": 22,
+        "queue": 0,
+        "representedTrees": 64,
+        "levels": {
+          "0": 0,
+          "1": 1,
+          "2": 63
+        },
+        "proxyCells": 2268,
+        "proxyBoxes": 848,
+        "triangles": 10176,
+        "drawCalls": 41,
+        "queueAgeMs": 0,
+        "visibleCoverage": null,
+        "gpuUploadMs": null
+      },
+      "phases": {
+        "stationary": {
+          "frameMs": {
+            "samples": 180,
+            "mean": 30.57055555555659,
+            "p95": 34.40000000037253,
+            "p99": 38.700000000186265,
+            "max": 39
+          },
+          "updateMs": {
+            "samples": 180,
+            "mean": 0.1188888888909585,
+            "p95": 0.20000000018626451,
+            "p99": 0.2999999998137355,
+            "max": 0.7999999998137355
+          },
+          "prepareMs": {
+            "samples": 180,
+            "mean": 0.09000000000103481,
+            "p95": 0.20000000018626451,
+            "p99": 0.20000000018626451,
+            "max": 0.20000000018626451
+          },
+          "submitMs": {
+            "samples": 180,
+            "mean": 0.6177777777891607,
+            "p95": 0.900000000372529,
+            "p99": 1.5,
+            "max": 1.900000000372529
+          },
+          "driverMs": {
+            "samples": 175,
+            "mean": 27.476508211428566,
+            "p95": 31.294973,
+            "p99": 34.873346,
+            "max": 35.030701
+          },
+          "drawCallsMean": 71,
+          "trianglesMean": 49502,
+          "vegetation": {
+            "requests": 26,
+            "evictions": 0,
+            "cancelled": 0,
+            "cacheHits": 0,
+            "transitions": 4,
+            "generationMs": 92.70000000111759,
+            "installationMs": 18.70000000204891,
+            "bytes": 176776,
+            "firstInstalledMs": 158.90000000037253,
+            "started": 30239.900000000373,
+            "aheadRequests": 0,
+            "lastRequestLatencyMs": 650.0999999996275,
+            "shaderMeshes": {
+              "dither": 0,
+              "opaque": 47
+            },
+            "detailAttribution": {
+              "preparationMs": 0,
+              "attributeBytes": 0
+            },
+            "visibleInstances": 682,
+            "estimatedGpuBytes": 99048,
+            "extraTransitionDrawCalls": 0,
+            "continuity": {
+              "completed": 0,
+              "lateUpgrades": 0,
+              "incompleteFeatures": 64,
+              "failures": 0,
+              "maxTransitioning": 0,
+              "lastDurationMs": 0,
+              "readinessLatencyMs": 0,
+              "timeNearBeforeReadyMs": 0,
+              "trackedFeatures": 64,
+              "transitioning": 0,
+              "durationMs": 350,
+              "stateBytes": 53688
+            },
+            "transitionRegions": 0,
+            "transitionBytes": 0,
+            "instanceCulling": {
+              "scans": 47,
+              "bufferRewrites": 62,
+              "culled": 166
+            },
+            "regions": 22,
+            "queue": 0,
+            "representedTrees": 64,
+            "levels": {
+              "0": 0,
+              "1": 1,
+              "2": 63
+            },
+            "proxyCells": 2268,
+            "proxyBoxes": 848,
+            "triangles": 10176,
+            "drawCalls": 41,
+            "queueAgeMs": 0,
+            "visibleCoverage": null,
+            "gpuUploadMs": null
+          },
+          "meshCache": {
+            "hits": 0,
+            "misses": 0,
+            "builds": 0,
+            "evictions": 0,
+            "invalidations": 0,
+            "reasons": {},
+            "entries": 0,
+            "bytes": 0,
+            "maxBytes": 33554432,
+            "maxEntries": 128,
+            "revision": 0,
+            "gpuBytes": 0
+          },
+          "residentGeometryBytes": 5085408,
+          "continuity": []
+        },
+        "walking": {
+          "frameMs": {
+            "samples": 60,
+            "mean": 30.91333333333023,
+            "p95": 34.59999999962747,
+            "p99": 38.5,
+            "max": 38.5
+          },
+          "updateMs": {
+            "samples": 60,
+            "mean": 0.1033333333209157,
+            "p95": 0.20000000018626451,
+            "p99": 0.2999999998137355,
+            "max": 0.2999999998137355
+          },
+          "prepareMs": {
+            "samples": 60,
+            "mean": 0.2966666666480402,
+            "p95": 0.5,
+            "p99": 0.7000000001862645,
+            "max": 0.7000000001862645
+          },
+          "submitMs": {
+            "samples": 60,
+            "mean": 0.5749999999379118,
+            "p95": 0.7999999998137355,
+            "p99": 2,
+            "max": 2
+          },
+          "driverMs": {
+            "samples": 59,
+            "mean": 27.657999118644064,
+            "p95": 31.103035,
+            "p99": 34.95815,
+            "max": 34.95815
+          },
+          "drawCallsMean": 70.63333333333334,
+          "trianglesMean": 49103.46666666667,
+          "vegetation": {
+            "requests": 26,
+            "evictions": 0,
+            "cancelled": 0,
+            "cacheHits": 0,
+            "transitions": 4,
+            "generationMs": 92.70000000111759,
+            "installationMs": 18.70000000204891,
+            "bytes": 176776,
+            "firstInstalledMs": 158.90000000037253,
+            "started": 30239.900000000373,
+            "aheadRequests": 0,
+            "lastRequestLatencyMs": 650.0999999996275,
+            "shaderMeshes": {
+              "dither": 0,
+              "opaque": 47
+            },
+            "detailAttribution": {
+              "preparationMs": 0,
+              "attributeBytes": 0
+            },
+            "visibleInstances": 681,
+            "estimatedGpuBytes": 99048,
+            "extraTransitionDrawCalls": 0,
+            "continuity": {
+              "completed": 0,
+              "lateUpgrades": 0,
+              "incompleteFeatures": 64,
+              "failures": 0,
+              "maxTransitioning": 0,
+              "lastDurationMs": 0,
+              "readinessLatencyMs": 0,
+              "timeNearBeforeReadyMs": 0,
+              "trackedFeatures": 64,
+              "transitioning": 0,
+              "durationMs": 350,
+              "stateBytes": 53688
+            },
+            "transitionRegions": 0,
+            "transitionBytes": 0,
+            "instanceCulling": {
+              "scans": 2867,
+              "bufferRewrites": 63,
+              "culled": 167
+            },
+            "regions": 22,
+            "queue": 0,
+            "representedTrees": 64,
+            "levels": {
+              "0": 0,
+              "1": 1,
+              "2": 63
+            },
+            "proxyCells": 2268,
+            "proxyBoxes": 848,
+            "triangles": 10176,
+            "drawCalls": 41,
+            "queueAgeMs": 0,
+            "visibleCoverage": null,
+            "gpuUploadMs": null
+          },
+          "meshCache": {
+            "hits": 0,
+            "misses": 0,
+            "builds": 0,
+            "evictions": 0,
+            "invalidations": 0,
+            "reasons": {},
+            "entries": 0,
+            "bytes": 0,
+            "maxBytes": 33554432,
+            "maxEntries": 128,
+            "revision": 0,
+            "gpuBytes": 0
+          },
+          "residentGeometryBytes": 5085408,
+          "continuity": []
+        },
+        "running": {
+          "frameMs": {
+            "samples": 60,
+            "mean": 38.43500000000931,
+            "p95": 43.30000000074506,
+            "p99": 136.40000000037253,
+            "max": 136.40000000037253
+          },
+          "updateMs": {
+            "samples": 60,
+            "mean": 4.254999999934808,
+            "p95": 7.800000000745058,
+            "p99": 8.299999999813735,
+            "max": 8.299999999813735
+          },
+          "prepareMs": {
+            "samples": 60,
+            "mean": 0.25666666668839755,
+            "p95": 0.5,
+            "p99": 0.5,
+            "max": 0.5
+          },
+          "submitMs": {
+            "samples": 60,
+            "mean": 0.9100000000248353,
+            "p95": 1,
+            "p99": 17.399999999441206,
+            "max": 17.399999999441206
+          },
+          "driverMs": {
+            "samples": 59,
+            "mean": 30.3889716440678,
+            "p95": 32.7094,
+            "p99": 97.20111,
+            "max": 97.20111
+          },
+          "drawCallsMean": 70.4,
+          "trianglesMean": 46603.433333333334,
+          "vegetation": {
+            "requests": 34,
+            "evictions": 0,
+            "cancelled": 0,
+            "cacheHits": 42,
+            "transitions": 6,
+            "generationMs": 125.80000000167638,
+            "installationMs": 28.000000002793968,
+            "bytes": 272156,
+            "firstInstalledMs": 158.90000000037253,
+            "started": 30239.900000000373,
+            "aheadRequests": 0,
+            "lastRequestLatencyMs": 464.80000000074506,
+            "shaderMeshes": {
+              "dither": 0,
+              "opaque": 61
+            },
+            "detailAttribution": {
+              "preparationMs": 0,
+              "attributeBytes": 0
+            },
+            "visibleInstances": 816,
+            "estimatedGpuBytes": 140364,
+            "extraTransitionDrawCalls": 0,
+            "continuity": {
+              "completed": 0,
+              "lateUpgrades": 0,
+              "incompleteFeatures": 81,
+              "failures": 0,
+              "maxTransitioning": 0,
+              "lastDurationMs": 0,
+              "readinessLatencyMs": 0,
+              "timeNearBeforeReadyMs": 0,
+              "trackedFeatures": 81,
+              "transitioning": 0,
+              "durationMs": 350,
+              "stateBytes": 63640
+            },
+            "transitionRegions": 0,
+            "transitionBytes": 0,
+            "instanceCulling": {
+              "scans": 5827,
+              "bufferRewrites": 155,
+              "culled": 446
+            },
+            "regions": 27,
+            "queue": 3,
+            "representedTrees": 81,
+            "levels": {
+              "0": 0,
+              "1": 3,
+              "2": 78
+            },
+            "proxyCells": 3508,
+            "proxyBoxes": 1262,
+            "triangles": 15144,
+            "drawCalls": 42,
+            "queueAgeMs": 551.3000000007451,
+            "visibleCoverage": null,
+            "gpuUploadMs": null
+          },
+          "meshCache": {
+            "hits": 0,
+            "misses": 0,
+            "builds": 0,
+            "evictions": 0,
+            "invalidations": 0,
+            "reasons": {},
+            "entries": 0,
+            "bytes": 0,
+            "maxBytes": 33554432,
+            "maxEntries": 128,
+            "revision": 0,
+            "gpuBytes": 0
+          },
+          "residentGeometryBytes": 8105928,
+          "continuity": []
+        },
+        "fast": {
+          "frameMs": {
+            "samples": 60,
+            "mean": 43.528333333320916,
+            "p95": 48.799999999813735,
+            "p99": 154.70000000018626,
+            "max": 154.70000000018626
+          },
+          "updateMs": {
+            "samples": 60,
+            "mean": 5.989999999990687,
+            "p95": 9.599999999627471,
+            "p99": 13.5,
+            "max": 13.5
+          },
+          "prepareMs": {
+            "samples": 60,
+            "mean": 0.3916666666977108,
+            "p95": 0.7000000001862645,
+            "p99": 0.900000000372529,
+            "max": 0.900000000372529
+          },
+          "submitMs": {
+            "samples": 60,
+            "mean": 0.9050000000279397,
+            "p95": 1.2999999998137355,
+            "p99": 11.899999999441206,
+            "max": 11.899999999441206
+          },
+          "driverMs": {
+            "samples": 59,
+            "mean": 33.450368864406784,
+            "p95": 38.37026,
+            "p99": 111.613968,
+            "max": 111.613968
+          },
+          "drawCallsMean": 70.45,
+          "trianglesMean": 42402.433333333334,
+          "vegetation": {
+            "requests": 46,
+            "evictions": 0,
+            "cancelled": 0,
+            "cacheHits": 157,
+            "transitions": 9,
+            "generationMs": 200.60000000242144,
+            "installationMs": 46.20000000204891,
+            "bytes": 535876,
+            "firstInstalledMs": 158.90000000037253,
+            "started": 30239.900000000373,
+            "aheadRequests": 3,
+            "lastRequestLatencyMs": 413.59999999962747,
+            "shaderMeshes": {
+              "dither": 0,
+              "opaque": 89
+            },
+            "detailAttribution": {
+              "preparationMs": 7.599999999627471,
+              "attributeBytes": 38464
+            },
+            "visibleInstances": 1114,
+            "estimatedGpuBytes": 244320,
+            "extraTransitionDrawCalls": 0,
+            "continuity": {
+              "completed": 0,
+              "lateUpgrades": 0,
+              "incompleteFeatures": 118,
+              "failures": 0,
+              "maxTransitioning": 0,
+              "lastDurationMs": 0,
+              "readinessLatencyMs": 0,
+              "timeNearBeforeReadyMs": 0,
+              "trackedFeatures": 118,
+              "transitioning": 0,
+              "durationMs": 350,
+              "stateBytes": 85352
+            },
+            "transitionRegions": 0,
+            "transitionBytes": 0,
+            "instanceCulling": {
+              "scans": 9446,
+              "bufferRewrites": 398,
+              "culled": 1300
+            },
+            "regions": 36,
+            "queue": 7,
+            "representedTrees": 118,
+            "levels": {
+              "0": 0,
+              "1": 12,
+              "2": 106
+            },
+            "proxyCells": 6941,
+            "proxyBoxes": 2414,
+            "triangles": 28968,
+            "drawCalls": 47,
+            "queueAgeMs": 495.29999999981374,
+            "visibleCoverage": null,
+            "gpuUploadMs": null
+          },
+          "meshCache": {
+            "hits": 0,
+            "misses": 0,
+            "builds": 0,
+            "evictions": 0,
+            "invalidations": 0,
+            "reasons": {},
+            "entries": 0,
+            "bytes": 0,
+            "maxBytes": 33554432,
+            "maxEntries": 128,
+            "revision": 0,
+            "gpuBytes": 0
+          },
+          "residentGeometryBytes": 4559472,
+          "continuity": []
+        },
+        "backtracking": {
+          "frameMs": {
+            "samples": 60,
+            "mean": 49.81666666666667,
+            "p95": 56.30000000074506,
+            "p99": 78.6000000005588,
+            "max": 78.6000000005588
+          },
+          "updateMs": {
+            "samples": 60,
+            "mean": 5.186666666654249,
+            "p95": 8,
+            "p99": 9.100000000558794,
+            "max": 9.100000000558794
+          },
+          "prepareMs": {
+            "samples": 60,
+            "mean": 0.45000000004656615,
+            "p95": 0.8999999994412065,
+            "p99": 1,
+            "max": 1
+          },
+          "submitMs": {
+            "samples": 60,
+            "mean": 0.751666666691502,
+            "p95": 1.1000000005587935,
+            "p99": 1.7000000001862645,
+            "max": 1.7000000001862645
+          },
+          "driverMs": {
+            "samples": 59,
+            "mean": 41.09382654237287,
+            "p95": 49.139712,
+            "p99": 67.030012,
+            "max": 67.030012
+          },
+          "drawCallsMean": 94.28333333333333,
+          "trianglesMean": 70593.53333333334,
+          "vegetation": {
+            "requests": 51,
+            "evictions": 14,
+            "cancelled": 1,
+            "cacheHits": 333,
+            "transitions": 12,
+            "generationMs": 232.30000000074506,
+            "installationMs": 52.70000000111759,
+            "bytes": 241984,
+            "firstInstalledMs": 158.90000000037253,
+            "started": 30239.900000000373,
+            "aheadRequests": 3,
+            "lastRequestLatencyMs": 182.79999999981374,
+            "shaderMeshes": {
+              "dither": 3,
+              "opaque": 52
+            },
+            "detailAttribution": {
+              "preparationMs": 10.899999999441206,
+              "attributeBytes": 0
+            },
+            "visibleInstances": 919,
+            "estimatedGpuBytes": 153234,
+            "extraTransitionDrawCalls": 3,
+            "continuity": {
+              "completed": 0,
+              "lateUpgrades": 0,
+              "incompleteFeatures": 70,
+              "failures": 0,
+              "maxTransitioning": 0,
+              "lastDurationMs": 0,
+              "readinessLatencyMs": 0,
+              "timeNearBeforeReadyMs": 0,
+              "trackedFeatures": 70,
+              "transitioning": 0,
+              "durationMs": 350,
+              "stateBytes": 57144
+            },
+            "transitionRegions": 1,
+            "transitionBytes": 107008,
+            "instanceCulling": {
+              "scans": 10602,
+              "bufferRewrites": 364,
+              "culled": 175
+            },
+            "regions": 24,
+            "queue": 0,
+            "representedTrees": 70,
+            "levels": {
+              "0": 0,
+              "1": 7,
+              "2": 63
+            },
+            "proxyCells": 3123,
+            "proxyBoxes": 1094,
+            "triangles": 13128,
+            "drawCalls": 48,
+            "queueAgeMs": 0,
+            "visibleCoverage": null,
+            "gpuUploadMs": null
+          },
+          "meshCache": {
+            "hits": 0,
+            "misses": 0,
+            "builds": 0,
+            "evictions": 0,
+            "invalidations": 0,
+            "reasons": {},
+            "entries": 0,
+            "bytes": 0,
+            "maxBytes": 33554432,
+            "maxEntries": 128,
+            "revision": 0,
+            "gpuBytes": 0
+          },
+          "residentGeometryBytes": 5204336,
+          "continuity": []
+        },
+        "turning": {
+          "frameMs": {
+            "samples": 60,
+            "mean": 23.108333333333334,
+            "p95": 44.200000000186265,
+            "p99": 51.5,
+            "max": 51.5
+          },
+          "updateMs": {
+            "samples": 60,
+            "mean": 3.9450000000031045,
+            "p95": 5.1000000005587935,
+            "p99": 5.5,
+            "max": 5.5
+          },
+          "prepareMs": {
+            "samples": 60,
+            "mean": 0.25000000004656614,
+            "p95": 0.40000000037252903,
+            "p99": 0.5,
+            "max": 0.5
+          },
+          "submitMs": {
+            "samples": 60,
+            "mean": 0.4199999998944501,
+            "p95": 0.7000000001862645,
+            "p99": 1,
+            "max": 1
+          },
+          "driverMs": {
+            "samples": 59,
+            "mean": 15.145098881355933,
+            "p95": 37.541205,
+            "p99": 42.797693,
+            "max": 42.797693
+          },
+          "drawCallsMean": 36.88333333333333,
+          "trianglesMean": 34600.1,
+          "vegetation": {
+            "requests": 51,
+            "evictions": 14,
+            "cancelled": 1,
+            "cacheHits": 333,
+            "transitions": 12,
+            "generationMs": 232.40000000037253,
+            "installationMs": 52.70000000111759,
+            "bytes": 241984,
+            "firstInstalledMs": 158.90000000037253,
+            "started": 30239.900000000373,
+            "aheadRequests": 3,
+            "lastRequestLatencyMs": 182.79999999981374,
+            "shaderMeshes": {
+              "dither": 0,
+              "opaque": 55
+            },
+            "detailAttribution": {
+              "preparationMs": 10.899999999441206,
+              "attributeBytes": 0
+            },
+            "visibleInstances": 919,
+            "estimatedGpuBytes": 122004,
+            "extraTransitionDrawCalls": 0,
+            "continuity": {
+              "completed": 0,
+              "lateUpgrades": 0,
+              "incompleteFeatures": 70,
+              "failures": 0,
+              "maxTransitioning": 0,
+              "lastDurationMs": 0,
+              "readinessLatencyMs": 0,
+              "timeNearBeforeReadyMs": 0,
+              "trackedFeatures": 70,
+              "transitioning": 0,
+              "durationMs": 350,
+              "stateBytes": 57144
+            },
+            "transitionRegions": 0,
+            "transitionBytes": 0,
+            "instanceCulling": {
+              "scans": 13902,
+              "bufferRewrites": 618,
+              "culled": 175
+            },
+            "regions": 24,
+            "queue": 0,
+            "representedTrees": 70,
+            "levels": {
+              "0": 0,
+              "1": 7,
+              "2": 63
+            },
+            "proxyCells": 3123,
+            "proxyBoxes": 1094,
+            "triangles": 13128,
+            "drawCalls": 48,
+            "queueAgeMs": 0,
+            "visibleCoverage": null,
+            "gpuUploadMs": null
+          },
+          "meshCache": {
+            "hits": 0,
+            "misses": 0,
+            "builds": 0,
+            "evictions": 0,
+            "invalidations": 0,
+            "reasons": {},
+            "entries": 0,
+            "bytes": 0,
+            "maxBytes": 33554432,
+            "maxEntries": 128,
+            "revision": 0,
+            "gpuBytes": 0
+          },
+          "residentGeometryBytes": 8615304,
+          "continuity": []
+        },
+        "teleport": {
+          "frameMs": {
+            "samples": 60,
+            "mean": 46.08666666666977,
+            "p95": 58.5,
+            "p99": 105.70000000018626,
+            "max": 105.70000000018626
+          },
+          "updateMs": {
+            "samples": 60,
+            "mean": 7.816666666651145,
+            "p95": 11,
+            "p99": 12.600000000558794,
+            "max": 12.600000000558794
+          },
+          "prepareMs": {
+            "samples": 60,
+            "mean": 0.08999999995964268,
+            "p95": 0.20000000018626451,
+            "p99": 0.2999999998137355,
+            "max": 0.2999999998137355
+          },
+          "submitMs": {
+            "samples": 60,
+            "mean": 0.8866666667163372,
+            "p95": 1.2000000001862645,
+            "p99": 14,
+            "max": 14
+          },
+          "driverMs": {
+            "samples": 59,
+            "mean": 34.60579366101695,
+            "p95": 46.409136,
+            "p99": 67.747286,
+            "max": 67.747286
+          },
+          "drawCallsMean": 53.56666666666667,
+          "trianglesMean": 35860.96666666667,
+          "vegetation": {
+            "requests": 69,
+            "evictions": 14,
+            "cancelled": 1,
+            "cacheHits": 341,
+            "transitions": 12,
+            "generationMs": 302.6999999973923,
+            "installationMs": 72.29999999981374,
+            "bytes": 506236,
+            "firstInstalledMs": 158.90000000037253,
+            "started": 30239.900000000373,
+            "aheadRequests": 12,
+            "lastRequestLatencyMs": 2664.2999999998137,
+            "shaderMeshes": {
+              "dither": 0,
+              "opaque": 101
+            },
+            "detailAttribution": {
+              "preparationMs": 33.599999997764826,
+              "attributeBytes": 101512
+            },
+            "visibleInstances": 711,
+            "estimatedGpuBytes": 249054,
+            "extraTransitionDrawCalls": 0,
+            "continuity": {
+              "completed": 1,
+              "lateUpgrades": 1,
+              "incompleteFeatures": 129,
+              "failures": 0,
+              "maxTransitioning": 1,
+              "lastDurationMs": 364.40000000037253,
+              "readinessLatencyMs": 20818.799999999814,
+              "timeNearBeforeReadyMs": 1676.0999999996275,
+              "trackedFeatures": 130,
+              "transitioning": 0,
+              "durationMs": 350,
+              "stateBytes": 91104
+            },
+            "transitionRegions": 0,
+            "transitionBytes": 0,
+            "instanceCulling": {
+              "scans": 14009,
+              "bufferRewrites": 744,
+              "culled": 1574
+            },
+            "regions": 41,
+            "queue": 37,
+            "representedTrees": 129,
+            "levels": {
+              "0": 1,
+              "1": 7,
+              "2": 122
+            },
+            "proxyCells": 6408,
+            "proxyBoxes": 2285,
+            "triangles": 27420,
+            "drawCalls": 32,
+            "queueAgeMs": 2762.7999999998137,
+            "visibleCoverage": null,
+            "gpuUploadMs": null
+          },
+          "meshCache": {
+            "hits": 0,
+            "misses": 0,
+            "builds": 0,
+            "evictions": 0,
+            "invalidations": 0,
+            "reasons": {},
+            "entries": 0,
+            "bytes": 0,
+            "maxBytes": 33554432,
+            "maxEntries": 128,
+            "revision": 0,
+            "gpuBytes": 0
+          },
+          "residentGeometryBytes": 3122032,
+          "continuity": []
+        },
+        "stopped-late": {
+          "frameMs": {
+            "samples": 180,
+            "mean": 48.17055555555659,
+            "p95": 59.700000000186265,
+            "p99": 69.1000000005588,
+            "max": 69.5
+          },
+          "updateMs": {
+            "samples": 180,
+            "mean": 6.228888888838184,
+            "p95": 11.399999999441206,
+            "p99": 15.099999999627471,
+            "max": 22.299999999813735
+          },
+          "prepareMs": {
+            "samples": 180,
+            "mean": 0.15666666670391957,
+            "p95": 0.30000000074505806,
+            "p99": 0.5,
+            "max": 0.599999999627471
+          },
+          "submitMs": {
+            "samples": 180,
+            "mean": 0.824999999979304,
+            "p95": 1.300000000745058,
+            "p99": 1.5,
+            "max": 1.7999999998137355
+          },
+          "driverMs": {
+            "samples": 179,
+            "mean": 38.593621061452474,
+            "p95": 47.639241,
+            "p99": 55.076605,
+            "max": 57.264822
+          },
+          "drawCallsMean": 73.58888888888889,
+          "trianglesMean": 55921.26666666667,
+          "vegetation": {
+            "requests": 104,
+            "evictions": 22,
+            "cancelled": 1,
+            "cacheHits": 361,
+            "transitions": 16,
+            "generationMs": 517.6999999945983,
+            "installationMs": 124.10000000149012,
+            "bytes": 1243892,
+            "firstInstalledMs": 158.90000000037253,
+            "started": 30239.900000000373,
+            "aheadRequests": 12,
+            "lastRequestLatencyMs": 8458.799999999814,
+            "shaderMeshes": {
+              "dither": 3,
+              "opaque": 161
+            },
+            "detailAttribution": {
+              "preparationMs": 74.79999999701977,
+              "attributeBytes": 150432
+            },
+            "visibleInstances": 1084,
+            "estimatedGpuBytes": 490542,
+            "extraTransitionDrawCalls": 0,
+            "continuity": {
+              "completed": 2,
+              "lateUpgrades": 2,
+              "incompleteFeatures": 192,
+              "failures": 0,
+              "maxTransitioning": 1,
+              "lastDurationMs": 369.59999999962747,
+              "readinessLatencyMs": 5561.100000000559,
+              "timeNearBeforeReadyMs": 2896,
+              "trackedFeatures": 193,
+              "transitioning": 0,
+              "durationMs": 350,
+              "stateBytes": 128072
+            },
+            "transitionRegions": 1,
+            "transitionBytes": 20976,
+            "instanceCulling": {
+              "scans": 10763,
+              "bufferRewrites": 795,
+              "culled": 3622
+            },
+            "regions": 64,
+            "queue": 9,
+            "representedTrees": 192,
+            "levels": {
+              "0": 1,
+              "1": 18,
+              "2": 174
+            },
+            "proxyCells": 15483,
+            "proxyBoxes": 4706,
+            "triangles": 56472,
+            "drawCalls": 54,
+            "queueAgeMs": 8669.700000000186,
+            "visibleCoverage": null,
+            "gpuUploadMs": null
+          },
+          "meshCache": {
+            "hits": 0,
+            "misses": 0,
+            "builds": 0,
+            "evictions": 0,
+            "invalidations": 0,
+            "reasons": {},
+            "entries": 0,
+            "bytes": 0,
+            "maxBytes": 33554432,
+            "maxEntries": 128,
+            "revision": 0,
+            "gpuBytes": 0
+          },
+          "residentGeometryBytes": 9492760,
+          "continuity": [
+            {
+              "frame": 0,
+              "target": "maple:13,12",
+              "detail": 0,
+              "completed": 1,
+              "lateUpgrades": 1,
+              "incompleteFeatures": 118,
+              "failures": 0,
+              "maxTransitioning": 1,
+              "lastDurationMs": 364.40000000037253,
+              "readinessLatencyMs": 20818.799999999814,
+              "timeNearBeforeReadyMs": 1676.0999999996275,
+              "trackedFeatures": 118,
+              "transitioning": 0,
+              "durationMs": 350,
+              "stateBytes": 84392
+            },
+            {
+              "frame": 10,
+              "target": "maple:13,12",
+              "detail": 0,
+              "completed": 1,
+              "lateUpgrades": 1,
+              "incompleteFeatures": 131,
+              "failures": 0,
+              "maxTransitioning": 1,
+              "lastDurationMs": 364.40000000037253,
+              "readinessLatencyMs": 20818.799999999814,
+              "timeNearBeforeReadyMs": 1676.0999999996275,
+              "trackedFeatures": 131,
+              "transitioning": 0,
+              "durationMs": 350,
+              "stateBytes": 92600
+            },
+            {
+              "frame": 20,
+              "target": "maple:13,12",
+              "detail": 0,
+              "completed": 1,
+              "lateUpgrades": 1,
+              "incompleteFeatures": 134,
+              "failures": 0,
+              "maxTransitioning": 1,
+              "lastDurationMs": 364.40000000037253,
+              "readinessLatencyMs": 20818.799999999814,
+              "timeNearBeforeReadyMs": 1676.0999999996275,
+              "trackedFeatures": 134,
+              "transitioning": 0,
+              "durationMs": 350,
+              "stateBytes": 94488
+            },
+            {
+              "frame": 30,
+              "target": "maple:13,12",
+              "detail": 0,
+              "completed": 1,
+              "lateUpgrades": 1,
+              "incompleteFeatures": 141,
+              "failures": 0,
+              "maxTransitioning": 1,
+              "lastDurationMs": 364.40000000037253,
+              "readinessLatencyMs": 20818.799999999814,
+              "timeNearBeforeReadyMs": 1676.0999999996275,
+              "trackedFeatures": 141,
+              "transitioning": 0,
+              "durationMs": 350,
+              "stateBytes": 98840
+            },
+            {
+              "frame": 40,
+              "target": "maple:13,12",
+              "detail": 0,
+              "completed": 1,
+              "lateUpgrades": 1,
+              "incompleteFeatures": 146,
+              "failures": 0,
+              "maxTransitioning": 1,
+              "lastDurationMs": 364.40000000037253,
+              "readinessLatencyMs": 20818.799999999814,
+              "timeNearBeforeReadyMs": 1676.0999999996275,
+              "trackedFeatures": 146,
+              "transitioning": 0,
+              "durationMs": 350,
+              "stateBytes": 101400
+            },
+            {
+              "frame": 50,
+              "target": "maple:13,12",
+              "detail": 0,
+              "completed": 1,
+              "lateUpgrades": 1,
+              "incompleteFeatures": 153,
+              "failures": 0,
+              "maxTransitioning": 1,
+              "lastDurationMs": 364.40000000037253,
+              "readinessLatencyMs": 20818.799999999814,
+              "timeNearBeforeReadyMs": 1676.0999999996275,
+              "trackedFeatures": 153,
+              "transitioning": 0,
+              "durationMs": 350,
+              "stateBytes": 105432
+            },
+            {
+              "frame": 60,
+              "target": "maple:13,12",
+              "detail": 0,
+              "completed": 1,
+              "lateUpgrades": 1,
+              "incompleteFeatures": 163,
+              "failures": 0,
+              "maxTransitioning": 1,
+              "lastDurationMs": 364.40000000037253,
+              "readinessLatencyMs": 20818.799999999814,
+              "timeNearBeforeReadyMs": 1676.0999999996275,
+              "trackedFeatures": 163,
+              "transitioning": 0,
+              "durationMs": 350,
+              "stateBytes": 111192
+            },
+            {
+              "frame": 70,
+              "target": "maple:13,12",
+              "detail": 1,
+              "completed": 2,
+              "lateUpgrades": 2,
+              "incompleteFeatures": 166,
+              "failures": 0,
+              "maxTransitioning": 1,
+              "lastDurationMs": 369.59999999962747,
+              "readinessLatencyMs": 5561.100000000559,
+              "timeNearBeforeReadyMs": 2896,
+              "trackedFeatures": 167,
+              "transitioning": 0,
+              "durationMs": 350,
+              "stateBytes": 113096
+            },
+            {
+              "frame": 80,
+              "target": "maple:13,12",
+              "detail": 1,
+              "completed": 2,
+              "lateUpgrades": 2,
+              "incompleteFeatures": 177,
+              "failures": 0,
+              "maxTransitioning": 1,
+              "lastDurationMs": 369.59999999962747,
+              "readinessLatencyMs": 5561.100000000559,
+              "timeNearBeforeReadyMs": 2896,
+              "trackedFeatures": 178,
+              "transitioning": 0,
+              "durationMs": 350,
+              "stateBytes": 119672
+            },
+            {
+              "frame": 90,
+              "target": "maple:13,12",
+              "detail": 1,
+              "completed": 2,
+              "lateUpgrades": 2,
+              "incompleteFeatures": 182,
+              "failures": 0,
+              "maxTransitioning": 1,
+              "lastDurationMs": 369.59999999962747,
+              "readinessLatencyMs": 5561.100000000559,
+              "timeNearBeforeReadyMs": 2896,
+              "trackedFeatures": 183,
+              "transitioning": 0,
+              "durationMs": 350,
+              "stateBytes": 122552
+            },
+            {
+              "frame": 100,
+              "target": "maple:13,12",
+              "detail": 1,
+              "completed": 2,
+              "lateUpgrades": 2,
+              "incompleteFeatures": 192,
+              "failures": 0,
+              "maxTransitioning": 1,
+              "lastDurationMs": 369.59999999962747,
+              "readinessLatencyMs": 5561.100000000559,
+              "timeNearBeforeReadyMs": 2896,
+              "trackedFeatures": 193,
+              "transitioning": 0,
+              "durationMs": 350,
+              "stateBytes": 128072
+            },
+            {
+              "frame": 110,
+              "target": "maple:13,12",
+              "detail": 1,
+              "completed": 2,
+              "lateUpgrades": 2,
+              "incompleteFeatures": 192,
+              "failures": 0,
+              "maxTransitioning": 1,
+              "lastDurationMs": 369.59999999962747,
+              "readinessLatencyMs": 5561.100000000559,
+              "timeNearBeforeReadyMs": 2896,
+              "trackedFeatures": 193,
+              "transitioning": 0,
+              "durationMs": 350,
+              "stateBytes": 128072
+            },
+            {
+              "frame": 120,
+              "target": "maple:13,12",
+              "detail": 1,
+              "completed": 2,
+              "lateUpgrades": 2,
+              "incompleteFeatures": 192,
+              "failures": 0,
+              "maxTransitioning": 1,
+              "lastDurationMs": 369.59999999962747,
+              "readinessLatencyMs": 5561.100000000559,
+              "timeNearBeforeReadyMs": 2896,
+              "trackedFeatures": 193,
+              "transitioning": 0,
+              "durationMs": 350,
+              "stateBytes": 128072
+            },
+            {
+              "frame": 130,
+              "target": "maple:13,12",
+              "detail": 1,
+              "completed": 2,
+              "lateUpgrades": 2,
+              "incompleteFeatures": 192,
+              "failures": 0,
+              "maxTransitioning": 1,
+              "lastDurationMs": 369.59999999962747,
+              "readinessLatencyMs": 5561.100000000559,
+              "timeNearBeforeReadyMs": 2896,
+              "trackedFeatures": 193,
+              "transitioning": 0,
+              "durationMs": 350,
+              "stateBytes": 128072
+            },
+            {
+              "frame": 140,
+              "target": "maple:13,12",
+              "detail": 1,
+              "completed": 2,
+              "lateUpgrades": 2,
+              "incompleteFeatures": 192,
+              "failures": 0,
+              "maxTransitioning": 1,
+              "lastDurationMs": 369.59999999962747,
+              "readinessLatencyMs": 5561.100000000559,
+              "timeNearBeforeReadyMs": 2896,
+              "trackedFeatures": 193,
+              "transitioning": 0,
+              "durationMs": 350,
+              "stateBytes": 128072
+            },
+            {
+              "frame": 150,
+              "target": "maple:13,12",
+              "detail": 1,
+              "completed": 2,
+              "lateUpgrades": 2,
+              "incompleteFeatures": 192,
+              "failures": 0,
+              "maxTransitioning": 1,
+              "lastDurationMs": 369.59999999962747,
+              "readinessLatencyMs": 5561.100000000559,
+              "timeNearBeforeReadyMs": 2896,
+              "trackedFeatures": 193,
+              "transitioning": 0,
+              "durationMs": 350,
+              "stateBytes": 128072
+            },
+            {
+              "frame": 160,
+              "target": "maple:13,12",
+              "detail": 1,
+              "completed": 2,
+              "lateUpgrades": 2,
+              "incompleteFeatures": 192,
+              "failures": 0,
+              "maxTransitioning": 1,
+              "lastDurationMs": 369.59999999962747,
+              "readinessLatencyMs": 5561.100000000559,
+              "timeNearBeforeReadyMs": 2896,
+              "trackedFeatures": 193,
+              "transitioning": 0,
+              "durationMs": 350,
+              "stateBytes": 128072
+            },
+            {
+              "frame": 170,
+              "target": "maple:13,12",
+              "detail": 1,
+              "completed": 2,
+              "lateUpgrades": 2,
+              "incompleteFeatures": 192,
+              "failures": 0,
+              "maxTransitioning": 1,
+              "lastDurationMs": 369.59999999962747,
+              "readinessLatencyMs": 5561.100000000559,
+              "timeNearBeforeReadyMs": 2896,
+              "trackedFeatures": 193,
+              "transitioning": 0,
+              "durationMs": 350,
+              "stateBytes": 128072
+            }
+          ]
+        }
+      }
+    },
+    {
+      "scenario": "large",
+      "mode": "voxel",
+      "enabled": true,
+      "trial": 1,
+      "variant": "modified",
+      "preparationMs": 966.7000000001863,
+      "drained": true,
+      "fingerprint": {
+        "geometry": "c05b007eb1fb02aee80af3ac2cd4af5f7f8112da7a5c055f8fe697ff04a451b8",
+        "normals": "ef8280d3d258f52e003ddc1373b6d0f40103c0699455ebf2b091fd27b9298ba9",
+        "chunks": 27,
+        "vertices": 110544,
+        "triangles": 55272,
+        "bufferBytes": 3869040
+      },
+      "sourceIdentityRestored": true,
+      "initial": {
+        "requests": 26,
+        "evictions": 0,
+        "cancelled": 0,
+        "cacheHits": 0,
+        "transitions": 4,
+        "generationMs": 83.6000000005588,
+        "installationMs": 14.199999999254942,
+        "bytes": 176776,
+        "firstInstalledMs": 54.200000000186265,
+        "started": 61390.40000000037,
+        "aheadRequests": 0,
+        "lastRequestLatencyMs": 611.5,
+        "shaderMeshes": {
+          "dither": 0,
+          "opaque": 47
+        },
+        "detailAttribution": {
+          "preparationMs": 0,
+          "attributeBytes": 0
+        },
+        "visibleInstances": 682,
+        "estimatedGpuBytes": 99048,
+        "extraTransitionDrawCalls": 0,
+        "continuity": {
+          "completed": 0,
+          "lateUpgrades": 0,
+          "incompleteFeatures": 64,
+          "failures": 0,
+          "maxTransitioning": 0,
+          "lastDurationMs": 0,
+          "readinessLatencyMs": 0,
+          "timeNearBeforeReadyMs": 0,
+          "trackedFeatures": 64,
+          "transitioning": 0,
+          "durationMs": 350,
+          "stateBytes": 53688
+        },
+        "transitionRegions": 0,
+        "transitionBytes": 0,
+        "instanceCulling": {
+          "scans": 47,
+          "bufferRewrites": 62,
+          "culled": 166
+        },
+        "regions": 22,
+        "queue": 0,
+        "representedTrees": 64,
+        "levels": {
+          "0": 0,
+          "1": 1,
+          "2": 63
+        },
+        "proxyCells": 2268,
+        "proxyBoxes": 848,
+        "triangles": 10176,
+        "drawCalls": 41,
+        "queueAgeMs": 0,
+        "visibleCoverage": null,
+        "gpuUploadMs": null
+      },
+      "phases": {
+        "stationary": {
+          "frameMs": {
+            "samples": 180,
+            "mean": 31.52277777778088,
+            "p95": 36,
+            "p99": 39.59999999962747,
+            "max": 41.799999999813735
+          },
+          "updateMs": {
+            "samples": 180,
+            "mean": 0.11444444445789688,
+            "p95": 0.20000000018626451,
+            "p99": 0.2999999998137355,
+            "max": 0.30000000074505806
+          },
+          "prepareMs": {
+            "samples": 180,
+            "mean": 0.08222222219531734,
+            "p95": 0.20000000018626451,
+            "p99": 0.20000000018626451,
+            "max": 0.2999999998137355
+          },
+          "submitMs": {
+            "samples": 180,
+            "mean": 0.587222222228431,
+            "p95": 0.8999999994412065,
+            "p99": 1.2999999998137355,
+            "max": 1.8999999994412065
+          },
+          "driverMs": {
+            "samples": 176,
+            "mean": 28.18978417045455,
+            "p95": 32.654129,
+            "p99": 37.049625,
+            "max": 38.686767
+          },
+          "drawCallsMean": 71,
+          "trianglesMean": 49502,
+          "vegetation": {
+            "requests": 26,
+            "evictions": 0,
+            "cancelled": 0,
+            "cacheHits": 0,
+            "transitions": 4,
+            "generationMs": 84.1000000005588,
+            "installationMs": 14.199999999254942,
+            "bytes": 176776,
+            "firstInstalledMs": 54.200000000186265,
+            "started": 61390.40000000037,
+            "aheadRequests": 0,
+            "lastRequestLatencyMs": 611.5,
+            "shaderMeshes": {
+              "dither": 0,
+              "opaque": 47
+            },
+            "detailAttribution": {
+              "preparationMs": 0,
+              "attributeBytes": 0
+            },
+            "visibleInstances": 682,
+            "estimatedGpuBytes": 99048,
+            "extraTransitionDrawCalls": 0,
+            "continuity": {
+              "completed": 0,
+              "lateUpgrades": 0,
+              "incompleteFeatures": 64,
+              "failures": 0,
+              "maxTransitioning": 0,
+              "lastDurationMs": 0,
+              "readinessLatencyMs": 0,
+              "timeNearBeforeReadyMs": 0,
+              "trackedFeatures": 64,
+              "transitioning": 0,
+              "durationMs": 350,
+              "stateBytes": 53688
+            },
+            "transitionRegions": 0,
+            "transitionBytes": 0,
+            "instanceCulling": {
+              "scans": 47,
+              "bufferRewrites": 62,
+              "culled": 166
+            },
+            "regions": 22,
+            "queue": 0,
+            "representedTrees": 64,
+            "levels": {
+              "0": 0,
+              "1": 1,
+              "2": 63
+            },
+            "proxyCells": 2268,
+            "proxyBoxes": 848,
+            "triangles": 10176,
+            "drawCalls": 41,
+            "queueAgeMs": 0,
+            "visibleCoverage": null,
+            "gpuUploadMs": null
+          },
+          "meshCache": {
+            "hits": 0,
+            "misses": 0,
+            "builds": 0,
+            "evictions": 0,
+            "invalidations": 0,
+            "reasons": {},
+            "entries": 0,
+            "bytes": 0,
+            "maxBytes": 33554432,
+            "maxEntries": 128,
+            "revision": 0,
+            "gpuBytes": 0
+          },
+          "residentGeometryBytes": 5085408,
+          "continuity": []
+        },
+        "walking": {
+          "frameMs": {
+            "samples": 60,
+            "mean": 32.76333333334575,
+            "p95": 39.200000000186265,
+            "p99": 39.90000000037253,
+            "max": 39.90000000037253
+          },
+          "updateMs": {
+            "samples": 60,
+            "mean": 0.09666666658595205,
+            "p95": 0.20000000018626451,
+            "p99": 0.20000000018626451,
+            "max": 0.20000000018626451
+          },
+          "prepareMs": {
+            "samples": 60,
+            "mean": 0.263333333361273,
+            "p95": 0.40000000037252903,
+            "p99": 0.5,
+            "max": 0.5
+          },
+          "submitMs": {
+            "samples": 60,
+            "mean": 0.5650000000062089,
+            "p95": 0.8000000007450581,
+            "p99": 0.900000000372529,
+            "max": 0.900000000372529
+          },
+          "driverMs": {
+            "samples": 59,
+            "mean": 29.422300271186447,
+            "p95": 35.882479,
+            "p99": 36.276515,
+            "max": 36.276515
+          },
+          "drawCallsMean": 70.63333333333334,
+          "trianglesMean": 49103.46666666667,
+          "vegetation": {
+            "requests": 26,
+            "evictions": 0,
+            "cancelled": 0,
+            "cacheHits": 0,
+            "transitions": 4,
+            "generationMs": 84.1000000005588,
+            "installationMs": 14.199999999254942,
+            "bytes": 176776,
+            "firstInstalledMs": 54.200000000186265,
+            "started": 61390.40000000037,
+            "aheadRequests": 0,
+            "lastRequestLatencyMs": 611.5,
+            "shaderMeshes": {
+              "dither": 0,
+              "opaque": 47
+            },
+            "detailAttribution": {
+              "preparationMs": 0,
+              "attributeBytes": 0
+            },
+            "visibleInstances": 681,
+            "estimatedGpuBytes": 99048,
+            "extraTransitionDrawCalls": 0,
+            "continuity": {
+              "completed": 0,
+              "lateUpgrades": 0,
+              "incompleteFeatures": 64,
+              "failures": 0,
+              "maxTransitioning": 0,
+              "lastDurationMs": 0,
+              "readinessLatencyMs": 0,
+              "timeNearBeforeReadyMs": 0,
+              "trackedFeatures": 64,
+              "transitioning": 0,
+              "durationMs": 350,
+              "stateBytes": 53688
+            },
+            "transitionRegions": 0,
+            "transitionBytes": 0,
+            "instanceCulling": {
+              "scans": 2867,
+              "bufferRewrites": 63,
+              "culled": 167
+            },
+            "regions": 22,
+            "queue": 0,
+            "representedTrees": 64,
+            "levels": {
+              "0": 0,
+              "1": 1,
+              "2": 63
+            },
+            "proxyCells": 2268,
+            "proxyBoxes": 848,
+            "triangles": 10176,
+            "drawCalls": 41,
+            "queueAgeMs": 0,
+            "visibleCoverage": null,
+            "gpuUploadMs": null
+          },
+          "meshCache": {
+            "hits": 0,
+            "misses": 0,
+            "builds": 0,
+            "evictions": 0,
+            "invalidations": 0,
+            "reasons": {},
+            "entries": 0,
+            "bytes": 0,
+            "maxBytes": 33554432,
+            "maxEntries": 128,
+            "revision": 0,
+            "gpuBytes": 0
+          },
+          "residentGeometryBytes": 5085408,
+          "continuity": []
+        },
+        "running": {
+          "frameMs": {
+            "samples": 60,
+            "mean": 38.416666666666664,
+            "p95": 43.200000000186265,
+            "p99": 119,
+            "max": 119
+          },
+          "updateMs": {
+            "samples": 60,
+            "mean": 4.729999999996895,
+            "p95": 7.3999999994412065,
+            "p99": 9.099999999627471,
+            "max": 9.099999999627471
+          },
+          "prepareMs": {
+            "samples": 60,
+            "mean": 0.2683333333426466,
+            "p95": 0.40000000037252903,
+            "p99": 0.7999999998137355,
+            "max": 0.7999999998137355
+          },
+          "submitMs": {
+            "samples": 60,
+            "mean": 0.6383333333457509,
+            "p95": 1,
+            "p99": 5.8999999994412065,
+            "max": 5.8999999994412065
+          },
+          "driverMs": {
+            "samples": 59,
+            "mean": 30.201804779661018,
+            "p95": 32.527257,
+            "p99": 88.914171,
+            "max": 88.914171
+          },
+          "drawCallsMean": 69.78333333333333,
+          "trianglesMean": 45953.86666666667,
+          "vegetation": {
+            "requests": 33,
+            "evictions": 0,
+            "cancelled": 0,
+            "cacheHits": 42,
+            "transitions": 6,
+            "generationMs": 118.20000000111759,
+            "installationMs": 20.19999999832362,
+            "bytes": 236892,
+            "firstInstalledMs": 54.200000000186265,
+            "started": 61390.40000000037,
+            "aheadRequests": 0,
+            "lastRequestLatencyMs": 428.3999999994412,
+            "shaderMeshes": {
+              "dither": 0,
+              "opaque": 58
+            },
+            "detailAttribution": {
+              "preparationMs": 0,
+              "attributeBytes": 0
+            },
+            "visibleInstances": 816,
+            "estimatedGpuBytes": 125598,
+            "extraTransitionDrawCalls": 0,
+            "continuity": {
+              "completed": 0,
+              "lateUpgrades": 0,
+              "incompleteFeatures": 78,
+              "failures": 0,
+              "maxTransitioning": 0,
+              "lastDurationMs": 0,
+              "readinessLatencyMs": 0,
+              "timeNearBeforeReadyMs": 0,
+              "trackedFeatures": 78,
+              "transitioning": 0,
+              "durationMs": 350,
+              "stateBytes": 61912
+            },
+            "transitionRegions": 0,
+            "transitionBytes": 0,
+            "instanceCulling": {
+              "scans": 5795,
+              "bufferRewrites": 144,
+              "culled": 289
+            },
+            "regions": 26,
+            "queue": 4,
+            "representedTrees": 78,
+            "levels": {
+              "0": 0,
+              "1": 3,
+              "2": 75
+            },
+            "proxyCells": 3048,
+            "proxyBoxes": 1105,
+            "triangles": 13260,
+            "drawCalls": 42,
+            "queueAgeMs": 543.7999999998137,
+            "visibleCoverage": null,
+            "gpuUploadMs": null
+          },
+          "meshCache": {
+            "hits": 0,
+            "misses": 0,
+            "builds": 0,
+            "evictions": 0,
+            "invalidations": 0,
+            "reasons": {},
+            "entries": 0,
+            "bytes": 0,
+            "maxBytes": 33554432,
+            "maxEntries": 128,
+            "revision": 0,
+            "gpuBytes": 0
+          },
+          "residentGeometryBytes": 7283408,
+          "continuity": []
+        },
+        "fast": {
+          "frameMs": {
+            "samples": 60,
+            "mean": 40.80833333333333,
+            "p95": 48.5,
+            "p99": 50.09999999962747,
+            "max": 50.09999999962747
+          },
+          "updateMs": {
+            "samples": 60,
+            "mean": 6.011666666592161,
+            "p95": 9.099999999627471,
+            "p99": 13.5,
+            "max": 13.5
+          },
+          "prepareMs": {
+            "samples": 60,
+            "mean": 0.38500000005587937,
+            "p95": 0.7000000001862645,
+            "p99": 1,
+            "max": 1
+          },
+          "submitMs": {
+            "samples": 60,
+            "mean": 0.5949999998944501,
+            "p95": 0.900000000372529,
+            "p99": 1.2999999998137355,
+            "max": 1.2999999998137355
+          },
+          "driverMs": {
+            "samples": 59,
+            "mean": 31.40411242372882,
+            "p95": 35.770638,
+            "p99": 37.984161,
+            "max": 37.984161
+          },
+          "drawCallsMean": 69.5,
+          "trianglesMean": 41246.6,
+          "vegetation": {
+            "requests": 45,
+            "evictions": 0,
+            "cancelled": 0,
+            "cacheHits": 154,
+            "transitions": 8,
+            "generationMs": 187.60000000242144,
+            "installationMs": 34.999999998137355,
+            "bytes": 456076,
+            "firstInstalledMs": 54.200000000186265,
+            "started": 61390.40000000037,
+            "aheadRequests": 3,
+            "lastRequestLatencyMs": 433.30000000074506,
+            "shaderMeshes": {
+              "dither": 0,
+              "opaque": 92
+            },
+            "detailAttribution": {
+              "preparationMs": 6.5,
+              "attributeBytes": 38464
+            },
+            "visibleInstances": 1032,
+            "estimatedGpuBytes": 228534,
+            "extraTransitionDrawCalls": 0,
+            "continuity": {
+              "completed": 0,
+              "lateUpgrades": 0,
+              "incompleteFeatures": 125,
+              "failures": 0,
+              "maxTransitioning": 0,
+              "lastDurationMs": 0,
+              "readinessLatencyMs": 0,
+              "timeNearBeforeReadyMs": 0,
+              "trackedFeatures": 125,
+              "transitioning": 0,
+              "durationMs": 350,
+              "stateBytes": 89944
+            },
+            "transitionRegions": 0,
+            "transitionBytes": 0,
+            "instanceCulling": {
+              "scans": 9859,
+              "bufferRewrites": 385,
+              "culled": 1121
+            },
+            "regions": 37,
+            "queue": 7,
+            "representedTrees": 125,
+            "levels": {
+              "0": 0,
+              "1": 7,
+              "2": 118
+            },
+            "proxyCells": 5876,
+            "proxyBoxes": 2153,
+            "triangles": 25836,
+            "drawCalls": 50,
+            "queueAgeMs": 0,
+            "visibleCoverage": null,
+            "gpuUploadMs": null
+          },
+          "meshCache": {
+            "hits": 0,
+            "misses": 0,
+            "builds": 0,
+            "evictions": 0,
+            "invalidations": 0,
+            "reasons": {},
+            "entries": 0,
+            "bytes": 0,
+            "maxBytes": 33554432,
+            "maxEntries": 128,
+            "revision": 0,
+            "gpuBytes": 0
+          },
+          "residentGeometryBytes": 3955768,
+          "continuity": []
+        },
+        "backtracking": {
+          "frameMs": {
+            "samples": 60,
+            "mean": 48.568333333327125,
+            "p95": 51.299999999813735,
+            "p99": 160.40000000037253,
+            "max": 160.40000000037253
+          },
+          "updateMs": {
+            "samples": 60,
+            "mean": 5.610000000040357,
+            "p95": 8.799999999813735,
+            "p99": 16.59999999962747,
+            "max": 16.59999999962747
+          },
+          "prepareMs": {
+            "samples": 60,
+            "mean": 0.4199999999254942,
+            "p95": 0.7000000001862645,
+            "p99": 1,
+            "max": 1
+          },
+          "submitMs": {
+            "samples": 60,
+            "mean": 0.7150000000062088,
+            "p95": 1,
+            "p99": 5.599999999627471,
+            "max": 5.599999999627471
+          },
+          "driverMs": {
+            "samples": 59,
+            "mean": 39.024139999999996,
+            "p95": 42.015399,
+            "p99": 119.315796,
+            "max": 119.315796
+          },
+          "drawCallsMean": 92.08333333333333,
+          "trianglesMean": 65451.03333333333,
+          "vegetation": {
+            "requests": 49,
+            "evictions": 14,
+            "cancelled": 1,
+            "cacheHits": 328,
+            "transitions": 9,
+            "generationMs": 232.00000000279397,
+            "installationMs": 40.19999999832362,
+            "bytes": 333260,
+            "firstInstalledMs": 54.200000000186265,
+            "started": 61390.40000000037,
+            "aheadRequests": 3,
+            "lastRequestLatencyMs": 1229.2999999998137,
+            "shaderMeshes": {
+              "dither": 0,
+              "opaque": 55
+            },
+            "detailAttribution": {
+              "preparationMs": 9.5,
+              "attributeBytes": 0
+            },
+            "visibleInstances": 1247,
+            "estimatedGpuBytes": 144732,
+            "extraTransitionDrawCalls": 0,
+            "continuity": {
+              "completed": 0,
+              "lateUpgrades": 0,
+              "incompleteFeatures": 70,
+              "failures": 0,
+              "maxTransitioning": 0,
+              "lastDurationMs": 0,
+              "readinessLatencyMs": 0,
+              "timeNearBeforeReadyMs": 0,
+              "trackedFeatures": 70,
+              "transitioning": 0,
+              "durationMs": 350,
+              "stateBytes": 57144
+            },
+            "transitionRegions": 0,
+            "transitionBytes": 0,
+            "instanceCulling": {
+              "scans": 11225,
+              "bufferRewrites": 379,
+              "culled": 175
+            },
+            "regions": 24,
+            "queue": 1,
+            "representedTrees": 70,
+            "levels": {
+              "0": 0,
+              "1": 12,
+              "2": 58
+            },
+            "proxyCells": 4333,
+            "proxyBoxes": 1422,
+            "triangles": 17064,
+            "drawCalls": 48,
+            "queueAgeMs": 235.80000000074506,
+            "visibleCoverage": null,
+            "gpuUploadMs": null
+          },
+          "meshCache": {
+            "hits": 0,
+            "misses": 0,
+            "builds": 0,
+            "evictions": 0,
+            "invalidations": 0,
+            "reasons": {},
+            "entries": 0,
+            "bytes": 0,
+            "maxBytes": 33554432,
+            "maxEntries": 128,
+            "revision": 0,
+            "gpuBytes": 0
+          },
+          "residentGeometryBytes": 4328616,
+          "continuity": []
+        },
+        "turning": {
+          "frameMs": {
+            "samples": 60,
+            "mean": 22.943333333327125,
+            "p95": 42.90000000037253,
+            "p99": 48.299999999813735,
+            "max": 48.299999999813735
+          },
+          "updateMs": {
+            "samples": 60,
+            "mean": 3.9850000000093133,
+            "p95": 5.1000000005587935,
+            "p99": 5.5,
+            "max": 5.5
+          },
+          "prepareMs": {
+            "samples": 60,
+            "mean": 0.2733333333240201,
+            "p95": 0.5,
+            "p99": 0.7000000001862645,
+            "max": 0.7000000001862645
+          },
+          "submitMs": {
+            "samples": 60,
+            "mean": 0.3933333332495143,
+            "p95": 0.7999999998137355,
+            "p99": 0.7999999998137355,
+            "max": 0.7999999998137355
+          },
+          "driverMs": {
+            "samples": 59,
+            "mean": 14.908373966101696,
+            "p95": 34.461458,
+            "p99": 39.09513,
+            "max": 39.09513
+          },
+          "drawCallsMean": 34.63333333333333,
+          "trianglesMean": 32207.3,
+          "vegetation": {
+            "requests": 49,
+            "evictions": 14,
+            "cancelled": 1,
+            "cacheHits": 328,
+            "transitions": 10,
+            "generationMs": 235.20000000298023,
+            "installationMs": 41.29999999888241,
+            "bytes": 241984,
+            "firstInstalledMs": 54.200000000186265,
+            "started": 61390.40000000037,
+            "aheadRequests": 3,
+            "lastRequestLatencyMs": 323.30000000074506,
+            "shaderMeshes": {
+              "dither": 0,
+              "opaque": 55
+            },
+            "detailAttribution": {
+              "preparationMs": 9.5,
+              "attributeBytes": 0
+            },
+            "visibleInstances": 919,
+            "estimatedGpuBytes": 122004,
+            "extraTransitionDrawCalls": 0,
+            "continuity": {
+              "completed": 0,
+              "lateUpgrades": 0,
+              "incompleteFeatures": 70,
+              "failures": 0,
+              "maxTransitioning": 0,
+              "lastDurationMs": 0,
+              "readinessLatencyMs": 0,
+              "timeNearBeforeReadyMs": 0,
+              "trackedFeatures": 70,
+              "transitioning": 0,
+              "durationMs": 350,
+              "stateBytes": 57144
+            },
+            "transitionRegions": 0,
+            "transitionBytes": 0,
+            "instanceCulling": {
+              "scans": 14438,
+              "bufferRewrites": 633,
+              "culled": 175
+            },
+            "regions": 24,
+            "queue": 0,
+            "representedTrees": 70,
+            "levels": {
+              "0": 0,
+              "1": 7,
+              "2": 63
+            },
+            "proxyCells": 3123,
+            "proxyBoxes": 1094,
+            "triangles": 13128,
+            "drawCalls": 48,
+            "queueAgeMs": 0,
+            "visibleCoverage": null,
+            "gpuUploadMs": null
+          },
+          "meshCache": {
+            "hits": 0,
+            "misses": 0,
+            "builds": 0,
+            "evictions": 0,
+            "invalidations": 0,
+            "reasons": {},
+            "entries": 0,
+            "bytes": 0,
+            "maxBytes": 33554432,
+            "maxEntries": 128,
+            "revision": 0,
+            "gpuBytes": 0
+          },
+          "residentGeometryBytes": 7294720,
+          "continuity": []
+        },
+        "teleport": {
+          "frameMs": {
+            "samples": 60,
+            "mean": 44.875,
+            "p95": 58.69999999925494,
+            "p99": 95.5,
+            "max": 95.5
+          },
+          "updateMs": {
+            "samples": 60,
+            "mean": 7.963333333361273,
+            "p95": 11.799999999813735,
+            "p99": 16.600000000558794,
+            "max": 16.600000000558794
+          },
+          "prepareMs": {
+            "samples": 60,
+            "mean": 0.10666666653317709,
+            "p95": 0.20000000018626451,
+            "p99": 0.2999999998137355,
+            "max": 0.2999999998137355
+          },
+          "submitMs": {
+            "samples": 60,
+            "mean": 0.6683333334202568,
+            "p95": 1.1000000005587935,
+            "p99": 4.6000000005587935,
+            "max": 4.6000000005587935
+          },
+          "driverMs": {
+            "samples": 59,
+            "mean": 33.56767228813559,
+            "p95": 44.259025,
+            "p99": 65.405239,
+            "max": 65.405239
+          },
+          "drawCallsMean": 51.71666666666667,
+          "trianglesMean": 34488.63333333333,
+          "vegetation": {
+            "requests": 65,
+            "evictions": 14,
+            "cancelled": 1,
+            "cacheHits": 336,
+            "transitions": 10,
+            "generationMs": 308.00000000186265,
+            "installationMs": 62.09999999869615,
+            "bytes": 490656,
+            "firstInstalledMs": 54.200000000186265,
+            "started": 61390.40000000037,
+            "aheadRequests": 12,
+            "lastRequestLatencyMs": 2643.7999999998137,
+            "shaderMeshes": {
+              "dither": 0,
+              "opaque": 98
+            },
+            "detailAttribution": {
+              "preparationMs": 42.700000000186265,
+              "attributeBytes": 101512
+            },
+            "visibleInstances": 711,
+            "estimatedGpuBytes": 241776,
+            "extraTransitionDrawCalls": 0,
+            "continuity": {
+              "completed": 1,
+              "lateUpgrades": 1,
+              "incompleteFeatures": 126,
+              "failures": 0,
+              "maxTransitioning": 1,
+              "lastDurationMs": 358,
+              "readinessLatencyMs": 20798.400000000373,
+              "timeNearBeforeReadyMs": 1630,
+              "trackedFeatures": 127,
+              "transitioning": 0,
+              "durationMs": 350,
+              "stateBytes": 89376
+            },
+            "transitionRegions": 0,
+            "transitionBytes": 0,
+            "instanceCulling": {
+              "scans": 14542,
+              "bufferRewrites": 753,
+              "culled": 1513
+            },
+            "regions": 40,
+            "queue": 38,
+            "representedTrees": 126,
+            "levels": {
+              "0": 1,
+              "1": 7,
+              "2": 119
+            },
+            "proxyCells": 6207,
+            "proxyBoxes": 2224,
+            "triangles": 26688,
+            "drawCalls": 32,
+            "queueAgeMs": 0,
+            "visibleCoverage": null,
+            "gpuUploadMs": null
+          },
+          "meshCache": {
+            "hits": 0,
+            "misses": 0,
+            "builds": 0,
+            "evictions": 0,
+            "invalidations": 0,
+            "reasons": {},
+            "entries": 0,
+            "bytes": 0,
+            "maxBytes": 33554432,
+            "maxEntries": 128,
+            "revision": 0,
+            "gpuBytes": 0
+          },
+          "residentGeometryBytes": 3122032,
+          "continuity": []
+        },
+        "stopped-late": {
+          "frameMs": {
+            "samples": 180,
+            "mean": 47.68555555555763,
+            "p95": 55.10000000055879,
+            "p99": 70.20000000018626,
+            "max": 73.5
+          },
+          "updateMs": {
+            "samples": 180,
+            "mean": 6.397777777801578,
+            "p95": 9.799999999813735,
+            "p99": 15.300000000745058,
+            "max": 17.799999999813735
+          },
+          "prepareMs": {
+            "samples": 180,
+            "mean": 0.1683333333167765,
+            "p95": 0.30000000074505806,
+            "p99": 0.40000000037252903,
+            "max": 0.7000000001862645
+          },
+          "submitMs": {
+            "samples": 180,
+            "mean": 0.7516666666863279,
+            "p95": 1.2000000001862645,
+            "p99": 1.300000000745058,
+            "max": 1.3999999994412065
+          },
+          "driverMs": {
+            "samples": 179,
+            "mean": 37.96225679888266,
+            "p95": 42.945663,
+            "p99": 58.249828,
+            "max": 61.695344
+          },
+          "drawCallsMean": 73.25,
+          "trianglesMean": 56354.7,
+          "vegetation": {
+            "requests": 101,
+            "evictions": 22,
+            "cancelled": 1,
+            "cacheHits": 355,
+            "transitions": 13,
+            "generationMs": 516.9000000013039,
+            "installationMs": 102.39999999571592,
+            "bytes": 1097136,
+            "firstInstalledMs": 54.200000000186265,
+            "started": 61390.40000000037,
+            "aheadRequests": 12,
+            "lastRequestLatencyMs": 7716.9000000003725,
+            "shaderMeshes": {
+              "dither": 0,
+              "opaque": 164
+            },
+            "detailAttribution": {
+              "preparationMs": 85.00000000093132,
+              "attributeBytes": 150432
+            },
+            "visibleInstances": 1084,
+            "estimatedGpuBytes": 457686,
+            "extraTransitionDrawCalls": 0,
+            "continuity": {
+              "completed": 2,
+              "lateUpgrades": 2,
+              "incompleteFeatures": 192,
+              "failures": 0,
+              "maxTransitioning": 1,
+              "lastDurationMs": 371.40000000037253,
+              "readinessLatencyMs": 5750.799999999814,
+              "timeNearBeforeReadyMs": 3193.5,
+              "trackedFeatures": 193,
+              "transitioning": 0,
+              "durationMs": 350,
+              "stateBytes": 128072
+            },
+            "transitionRegions": 0,
+            "transitionBytes": 0,
+            "instanceCulling": {
+              "scans": 11311,
+              "bufferRewrites": 815,
+              "culled": 3274
+            },
+            "regions": 64,
+            "queue": 10,
+            "representedTrees": 192,
+            "levels": {
+              "0": 1,
+              "1": 16,
+              "2": 176
+            },
+            "proxyCells": 13546,
+            "proxyBoxes": 4358,
+            "triangles": 52296,
+            "drawCalls": 54,
+            "queueAgeMs": 8581.700000000186,
+            "visibleCoverage": null,
+            "gpuUploadMs": null
+          },
+          "meshCache": {
+            "hits": 0,
+            "misses": 0,
+            "builds": 0,
+            "evictions": 0,
+            "invalidations": 0,
+            "reasons": {},
+            "entries": 0,
+            "bytes": 0,
+            "maxBytes": 33554432,
+            "maxEntries": 128,
+            "revision": 0,
+            "gpuBytes": 0
+          },
+          "residentGeometryBytes": 8892096,
+          "continuity": [
+            {
+              "frame": 0,
+              "target": "maple:13,12",
+              "detail": 0,
+              "completed": 1,
+              "lateUpgrades": 1,
+              "incompleteFeatures": 115,
+              "failures": 0,
+              "maxTransitioning": 1,
+              "lastDurationMs": 358,
+              "readinessLatencyMs": 20798.400000000373,
+              "timeNearBeforeReadyMs": 1630,
+              "trackedFeatures": 115,
+              "transitioning": 0,
+              "durationMs": 350,
+              "stateBytes": 82664
+            },
+            {
+              "frame": 10,
+              "target": "maple:13,12",
+              "detail": 0,
+              "completed": 1,
+              "lateUpgrades": 1,
+              "incompleteFeatures": 121,
+              "failures": 0,
+              "maxTransitioning": 1,
+              "lastDurationMs": 358,
+              "readinessLatencyMs": 20798.400000000373,
+              "timeNearBeforeReadyMs": 1630,
+              "trackedFeatures": 121,
+              "transitioning": 0,
+              "durationMs": 350,
+              "stateBytes": 86280
+            },
+            {
+              "frame": 20,
+              "target": "maple:13,12",
+              "detail": 0,
+              "completed": 1,
+              "lateUpgrades": 1,
+              "incompleteFeatures": 125,
+              "failures": 0,
+              "maxTransitioning": 1,
+              "lastDurationMs": 358,
+              "readinessLatencyMs": 20798.400000000373,
+              "timeNearBeforeReadyMs": 1630,
+              "trackedFeatures": 125,
+              "transitioning": 0,
+              "durationMs": 350,
+              "stateBytes": 88584
+            },
+            {
+              "frame": 30,
+              "target": "maple:13,12",
+              "detail": 0,
+              "completed": 1,
+              "lateUpgrades": 1,
+              "incompleteFeatures": 131,
+              "failures": 0,
+              "maxTransitioning": 1,
+              "lastDurationMs": 358,
+              "readinessLatencyMs": 20798.400000000373,
+              "timeNearBeforeReadyMs": 1630,
+              "trackedFeatures": 131,
+              "transitioning": 0,
+              "durationMs": 350,
+              "stateBytes": 92520
+            },
+            {
+              "frame": 40,
+              "target": "maple:13,12",
+              "detail": 0,
+              "completed": 1,
+              "lateUpgrades": 1,
+              "incompleteFeatures": 142,
+              "failures": 0,
+              "maxTransitioning": 1,
+              "lastDurationMs": 358,
+              "readinessLatencyMs": 20798.400000000373,
+              "timeNearBeforeReadyMs": 1630,
+              "trackedFeatures": 142,
+              "transitioning": 0,
+              "durationMs": 350,
+              "stateBytes": 99256
+            },
+            {
+              "frame": 50,
+              "target": "maple:13,12",
+              "detail": 0,
+              "completed": 1,
+              "lateUpgrades": 1,
+              "incompleteFeatures": 146,
+              "failures": 0,
+              "maxTransitioning": 1,
+              "lastDurationMs": 358,
+              "readinessLatencyMs": 20798.400000000373,
+              "timeNearBeforeReadyMs": 1630,
+              "trackedFeatures": 146,
+              "transitioning": 0,
+              "durationMs": 350,
+              "stateBytes": 101400
+            },
+            {
+              "frame": 60,
+              "target": "maple:13,12",
+              "detail": 0,
+              "completed": 1,
+              "lateUpgrades": 1,
+              "incompleteFeatures": 153,
+              "failures": 0,
+              "maxTransitioning": 1,
+              "lastDurationMs": 358,
+              "readinessLatencyMs": 20798.400000000373,
+              "timeNearBeforeReadyMs": 1630,
+              "trackedFeatures": 153,
+              "transitioning": 0,
+              "durationMs": 350,
+              "stateBytes": 105432
+            },
+            {
+              "frame": 70,
+              "target": "maple:13,12",
+              "detail": 0.5185714285714286,
+              "completed": 1,
+              "lateUpgrades": 2,
+              "incompleteFeatures": 163,
+              "failures": 0,
+              "maxTransitioning": 1,
+              "lastDurationMs": 358,
+              "readinessLatencyMs": 5750.799999999814,
+              "timeNearBeforeReadyMs": 3193.5,
+              "trackedFeatures": 164,
+              "transitioning": 1,
+              "durationMs": 350,
+              "stateBytes": 111768
+            },
+            {
+              "frame": 80,
+              "target": "maple:13,12",
+              "detail": 1,
+              "completed": 2,
+              "lateUpgrades": 2,
+              "incompleteFeatures": 175,
+              "failures": 0,
+              "maxTransitioning": 1,
+              "lastDurationMs": 371.40000000037253,
+              "readinessLatencyMs": 5750.799999999814,
+              "timeNearBeforeReadyMs": 3193.5,
+              "trackedFeatures": 176,
+              "transitioning": 0,
+              "durationMs": 350,
+              "stateBytes": 118760
+            },
+            {
+              "frame": 90,
+              "target": "maple:13,12",
+              "detail": 1,
+              "completed": 2,
+              "lateUpgrades": 2,
+              "incompleteFeatures": 179,
+              "failures": 0,
+              "maxTransitioning": 1,
+              "lastDurationMs": 371.40000000037253,
+              "readinessLatencyMs": 5750.799999999814,
+              "timeNearBeforeReadyMs": 3193.5,
+              "trackedFeatures": 180,
+              "transitioning": 0,
+              "durationMs": 350,
+              "stateBytes": 120824
+            },
+            {
+              "frame": 100,
+              "target": "maple:13,12",
+              "detail": 1,
+              "completed": 2,
+              "lateUpgrades": 2,
+              "incompleteFeatures": 186,
+              "failures": 0,
+              "maxTransitioning": 1,
+              "lastDurationMs": 371.40000000037253,
+              "readinessLatencyMs": 5750.799999999814,
+              "timeNearBeforeReadyMs": 3193.5,
+              "trackedFeatures": 187,
+              "transitioning": 0,
+              "durationMs": 350,
+              "stateBytes": 124856
+            },
+            {
+              "frame": 110,
+              "target": "maple:13,12",
+              "detail": 1,
+              "completed": 2,
+              "lateUpgrades": 2,
+              "incompleteFeatures": 192,
+              "failures": 0,
+              "maxTransitioning": 1,
+              "lastDurationMs": 371.40000000037253,
+              "readinessLatencyMs": 5750.799999999814,
+              "timeNearBeforeReadyMs": 3193.5,
+              "trackedFeatures": 193,
+              "transitioning": 0,
+              "durationMs": 350,
+              "stateBytes": 128072
+            },
+            {
+              "frame": 120,
+              "target": "maple:13,12",
+              "detail": 1,
+              "completed": 2,
+              "lateUpgrades": 2,
+              "incompleteFeatures": 192,
+              "failures": 0,
+              "maxTransitioning": 1,
+              "lastDurationMs": 371.40000000037253,
+              "readinessLatencyMs": 5750.799999999814,
+              "timeNearBeforeReadyMs": 3193.5,
+              "trackedFeatures": 193,
+              "transitioning": 0,
+              "durationMs": 350,
+              "stateBytes": 128072
+            },
+            {
+              "frame": 130,
+              "target": "maple:13,12",
+              "detail": 1,
+              "completed": 2,
+              "lateUpgrades": 2,
+              "incompleteFeatures": 192,
+              "failures": 0,
+              "maxTransitioning": 1,
+              "lastDurationMs": 371.40000000037253,
+              "readinessLatencyMs": 5750.799999999814,
+              "timeNearBeforeReadyMs": 3193.5,
+              "trackedFeatures": 193,
+              "transitioning": 0,
+              "durationMs": 350,
+              "stateBytes": 128072
+            },
+            {
+              "frame": 140,
+              "target": "maple:13,12",
+              "detail": 1,
+              "completed": 2,
+              "lateUpgrades": 2,
+              "incompleteFeatures": 192,
+              "failures": 0,
+              "maxTransitioning": 1,
+              "lastDurationMs": 371.40000000037253,
+              "readinessLatencyMs": 5750.799999999814,
+              "timeNearBeforeReadyMs": 3193.5,
+              "trackedFeatures": 193,
+              "transitioning": 0,
+              "durationMs": 350,
+              "stateBytes": 128072
+            },
+            {
+              "frame": 150,
+              "target": "maple:13,12",
+              "detail": 1,
+              "completed": 2,
+              "lateUpgrades": 2,
+              "incompleteFeatures": 192,
+              "failures": 0,
+              "maxTransitioning": 1,
+              "lastDurationMs": 371.40000000037253,
+              "readinessLatencyMs": 5750.799999999814,
+              "timeNearBeforeReadyMs": 3193.5,
+              "trackedFeatures": 193,
+              "transitioning": 0,
+              "durationMs": 350,
+              "stateBytes": 128072
+            },
+            {
+              "frame": 160,
+              "target": "maple:13,12",
+              "detail": 1,
+              "completed": 2,
+              "lateUpgrades": 2,
+              "incompleteFeatures": 192,
+              "failures": 0,
+              "maxTransitioning": 1,
+              "lastDurationMs": 371.40000000037253,
+              "readinessLatencyMs": 5750.799999999814,
+              "timeNearBeforeReadyMs": 3193.5,
+              "trackedFeatures": 193,
+              "transitioning": 0,
+              "durationMs": 350,
+              "stateBytes": 128072
+            },
+            {
+              "frame": 170,
+              "target": "maple:13,12",
+              "detail": 1,
+              "completed": 2,
+              "lateUpgrades": 2,
+              "incompleteFeatures": 192,
+              "failures": 0,
+              "maxTransitioning": 1,
+              "lastDurationMs": 371.40000000037253,
+              "readinessLatencyMs": 5750.799999999814,
+              "timeNearBeforeReadyMs": 3193.5,
+              "trackedFeatures": 193,
+              "transitioning": 0,
+              "durationMs": 350,
+              "stateBytes": 128072
+            }
+          ]
+        }
+      }
+    },
+    {
+      "scenario": "large",
+      "mode": "voxel",
+      "enabled": true,
+      "trial": 1,
+      "variant": "baseline",
+      "preparationMs": 664.3999999994412,
+      "drained": true,
+      "fingerprint": {
+        "geometry": "c05b007eb1fb02aee80af3ac2cd4af5f7f8112da7a5c055f8fe697ff04a451b8",
+        "normals": "ef8280d3d258f52e003ddc1373b6d0f40103c0699455ebf2b091fd27b9298ba9",
+        "chunks": 27,
+        "vertices": 110544,
+        "triangles": 55272,
+        "bufferBytes": 3869040
+      },
+      "sourceIdentityRestored": true,
+      "initial": {
+        "requests": 26,
+        "evictions": 0,
+        "cancelled": 0,
+        "cacheHits": 0,
+        "transitions": 4,
+        "generationMs": 72.1000000005588,
+        "installationMs": 11.299999999813735,
+        "bytes": 176776,
+        "firstInstalledMs": 33.299999999813735,
+        "started": 92271.20000000019,
+        "aheadRequests": 0,
+        "lastRequestLatencyMs": 529.8999999994412,
+        "instanceCulling": {
+          "scans": 47,
+          "bufferRewrites": 62,
+          "culled": 161
+        },
+        "regions": 22,
+        "queue": 0,
+        "representedTrees": 64,
+        "levels": {
+          "0": 0,
+          "1": 1,
+          "2": 63
+        },
+        "proxyCells": 2326,
+        "proxyBoxes": 801,
+        "triangles": 9612,
+        "drawCalls": 43,
+        "queueAgeMs": 0,
+        "visibleCoverage": null,
+        "gpuUploadMs": null
+      },
+      "phases": {
+        "stationary": {
+          "frameMs": {
+            "samples": 180,
+            "mean": 31.40777777777985,
+            "p95": 37.90000000037253,
+            "p99": 43.39999999944121,
+            "max": 44.59999999962747
+          },
+          "updateMs": {
+            "samples": 180,
+            "mean": 0.042777777783986594,
+            "p95": 0.10000000055879354,
+            "p99": 0.20000000018626451,
+            "max": 0.20000000018626451
+          },
+          "prepareMs": {
+            "samples": 180,
+            "mean": 0.08500000000931322,
+            "p95": 0.20000000018626451,
+            "p99": 0.20000000018626451,
+            "max": 0.20000000018626451
+          },
+          "submitMs": {
+            "samples": 180,
+            "mean": 0.6544444444175396,
+            "p95": 1.099999999627471,
+            "p99": 1.7000000001862645,
+            "max": 1.8999999994412065
+          },
+          "driverMs": {
+            "samples": 175,
+            "mean": 28.25582202857144,
+            "p95": 33.77436,
+            "p99": 39.297835,
+            "max": 41.174303
+          },
+          "drawCallsMean": 73,
+          "trianglesMean": 48998,
+          "vegetation": {
+            "requests": 26,
+            "evictions": 0,
+            "cancelled": 0,
+            "cacheHits": 0,
+            "transitions": 4,
+            "generationMs": 72.29999999981374,
+            "installationMs": 11.299999999813735,
+            "bytes": 176776,
+            "firstInstalledMs": 33.299999999813735,
+            "started": 92271.20000000019,
+            "aheadRequests": 0,
+            "lastRequestLatencyMs": 529.8999999994412,
+            "instanceCulling": {
+              "scans": 47,
+              "bufferRewrites": 62,
+              "culled": 161
+            },
+            "regions": 22,
+            "queue": 0,
+            "representedTrees": 64,
+            "levels": {
+              "0": 0,
+              "1": 1,
+              "2": 63
+            },
+            "proxyCells": 2326,
+            "proxyBoxes": 801,
+            "triangles": 9612,
+            "drawCalls": 43,
+            "queueAgeMs": 0,
+            "visibleCoverage": null,
+            "gpuUploadMs": null
+          },
+          "meshCache": {
+            "hits": 0,
+            "misses": 0,
+            "builds": 0,
+            "evictions": 0,
+            "invalidations": 0,
+            "reasons": {},
+            "entries": 0,
+            "bytes": 0,
+            "maxBytes": 33554432,
+            "maxEntries": 128,
+            "revision": 0,
+            "gpuBytes": 0
+          },
+          "residentGeometryBytes": 5085408,
+          "continuity": []
+        },
+        "walking": {
+          "frameMs": {
+            "samples": 60,
+            "mean": 30.529999999996896,
+            "p95": 35.10000000055879,
+            "p99": 36.59999999962747,
+            "max": 36.59999999962747
+          },
+          "updateMs": {
+            "samples": 60,
+            "mean": 0.03499999997826914,
+            "p95": 0.10000000055879354,
+            "p99": 0.10000000055879354,
+            "max": 0.10000000055879354
+          },
+          "prepareMs": {
+            "samples": 60,
+            "mean": 0.26666666674427686,
+            "p95": 0.40000000037252903,
+            "p99": 1.7000000001862645,
+            "max": 1.7000000001862645
+          },
+          "submitMs": {
+            "samples": 60,
+            "mean": 0.5966666667101284,
+            "p95": 0.900000000372529,
+            "p99": 1,
+            "max": 1
+          },
+          "driverMs": {
+            "samples": 59,
+            "mean": 27.314381949152544,
+            "p95": 31.148613,
+            "p99": 32.425009,
+            "max": 32.425009
+          },
+          "drawCallsMean": 72.63333333333334,
+          "trianglesMean": 48599.46666666667,
+          "vegetation": {
+            "requests": 26,
+            "evictions": 0,
+            "cancelled": 0,
+            "cacheHits": 0,
+            "transitions": 4,
+            "generationMs": 72.29999999981374,
+            "installationMs": 11.299999999813735,
+            "bytes": 176776,
+            "firstInstalledMs": 33.299999999813735,
+            "started": 92271.20000000019,
+            "aheadRequests": 0,
+            "lastRequestLatencyMs": 529.8999999994412,
+            "instanceCulling": {
+              "scans": 2867,
+              "bufferRewrites": 63,
+              "culled": 162
+            },
+            "regions": 22,
+            "queue": 0,
+            "representedTrees": 64,
+            "levels": {
+              "0": 0,
+              "1": 1,
+              "2": 63
+            },
+            "proxyCells": 2326,
+            "proxyBoxes": 801,
+            "triangles": 9612,
+            "drawCalls": 43,
+            "queueAgeMs": 0,
+            "visibleCoverage": null,
+            "gpuUploadMs": null
+          },
+          "meshCache": {
+            "hits": 0,
+            "misses": 0,
+            "builds": 0,
+            "evictions": 0,
+            "invalidations": 0,
+            "reasons": {},
+            "entries": 0,
+            "bytes": 0,
+            "maxBytes": 33554432,
+            "maxEntries": 128,
+            "revision": 0,
+            "gpuBytes": 0
+          },
+          "residentGeometryBytes": 5085408,
+          "continuity": []
+        },
+        "running": {
+          "frameMs": {
+            "samples": 60,
+            "mean": 36.50166666667598,
+            "p95": 41.39999999944121,
+            "p99": 43.5,
+            "max": 43.5
+          },
+          "updateMs": {
+            "samples": 60,
+            "mean": 4.538333333392317,
+            "p95": 7.7000000001862645,
+            "p99": 8.200000000186265,
+            "max": 8.200000000186265
+          },
+          "prepareMs": {
+            "samples": 60,
+            "mean": 0.20499999998137355,
+            "p95": 0.40000000037252903,
+            "p99": 0.40000000037252903,
+            "max": 0.40000000037252903
+          },
+          "submitMs": {
+            "samples": 60,
+            "mean": 0.5483333332774539,
+            "p95": 0.8999999994412065,
+            "p99": 0.900000000372529,
+            "max": 0.900000000372529
+          },
+          "driverMs": {
+            "samples": 59,
+            "mean": 28.809675762711862,
+            "p95": 33.266577,
+            "p99": 35.616714,
+            "max": 35.616714
+          },
+          "drawCallsMean": 69.8,
+          "trianglesMean": 44726.46666666667,
+          "vegetation": {
+            "requests": 33,
+            "evictions": 0,
+            "cancelled": 0,
+            "cacheHits": 42,
+            "transitions": 6,
+            "generationMs": 104.8000000026077,
+            "installationMs": 15.200000000186265,
+            "bytes": 236892,
+            "firstInstalledMs": 33.299999999813735,
+            "started": 92271.20000000019,
+            "aheadRequests": 0,
+            "lastRequestLatencyMs": 350.5,
+            "instanceCulling": {
+              "scans": 5812,
+              "bufferRewrites": 144,
+              "culled": 280
+            },
+            "regions": 26,
+            "queue": 4,
+            "representedTrees": 78,
+            "levels": {
+              "0": 0,
+              "1": 3,
+              "2": 75
+            },
+            "proxyCells": 3117,
+            "proxyBoxes": 1051,
+            "triangles": 12612,
+            "drawCalls": 42,
+            "queueAgeMs": 541.2000000001863,
+            "visibleCoverage": null,
+            "gpuUploadMs": null
+          },
+          "meshCache": {
+            "hits": 0,
+            "misses": 0,
+            "builds": 0,
+            "evictions": 0,
+            "invalidations": 0,
+            "reasons": {},
+            "entries": 0,
+            "bytes": 0,
+            "maxBytes": 33554432,
+            "maxEntries": 128,
+            "revision": 0,
+            "gpuBytes": 0
+          },
+          "residentGeometryBytes": 7652552,
+          "continuity": []
+        },
+        "fast": {
+          "frameMs": {
+            "samples": 60,
+            "mean": 55.016666666666666,
+            "p95": 76.59999999962747,
+            "p99": 117.59999999962747,
+            "max": 117.59999999962747
+          },
+          "updateMs": {
+            "samples": 60,
+            "mean": 6.098333333386108,
+            "p95": 9,
+            "p99": 10.599999999627471,
+            "max": 10.599999999627471
+          },
+          "prepareMs": {
+            "samples": 60,
+            "mean": 0.46166666665424905,
+            "p95": 0.7999999998137355,
+            "p99": 1.099999999627471,
+            "max": 1.099999999627471
+          },
+          "submitMs": {
+            "samples": 60,
+            "mean": 0.9366666667163372,
+            "p95": 1.7999999998137355,
+            "p99": 4.099999999627471,
+            "max": 4.099999999627471
+          },
+          "driverMs": {
+            "samples": 59,
+            "mean": 44.89557137288137,
+            "p95": 66.137287,
+            "p99": 104.8242,
+            "max": 104.8242
+          },
+          "drawCallsMean": 68.13333333333334,
+          "trianglesMean": 39181.86666666667,
+          "vegetation": {
+            "requests": 44,
+            "evictions": 0,
+            "cancelled": 0,
+            "cacheHits": 151,
+            "transitions": 8,
+            "generationMs": 177.0000000037253,
+            "installationMs": 31.200000001117587,
+            "bytes": 444600,
+            "firstInstalledMs": 33.299999999813735,
+            "started": 92271.20000000019,
+            "aheadRequests": 0,
+            "lastRequestLatencyMs": 557.4000000003725,
+            "instanceCulling": {
+              "scans": 9729,
+              "bufferRewrites": 383,
+              "culled": 1044
+            },
+            "regions": 36,
+            "queue": 8,
+            "representedTrees": 118,
+            "levels": {
+              "0": 0,
+              "1": 7,
+              "2": 111
+            },
+            "proxyCells": 5850,
+            "proxyBoxes": 1999,
+            "triangles": 23988,
+            "drawCalls": 47,
+            "queueAgeMs": 0,
+            "visibleCoverage": null,
+            "gpuUploadMs": null
+          },
+          "meshCache": {
+            "hits": 0,
+            "misses": 0,
+            "builds": 0,
+            "evictions": 0,
+            "invalidations": 0,
+            "reasons": {},
+            "entries": 0,
+            "bytes": 0,
+            "maxBytes": 33554432,
+            "maxEntries": 128,
+            "revision": 0,
+            "gpuBytes": 0
+          },
+          "residentGeometryBytes": 2689528,
+          "continuity": []
+        },
+        "backtracking": {
+          "frameMs": {
+            "samples": 60,
+            "mean": 53.8700000000031,
+            "p95": 71.20000000018626,
+            "p99": 86.29999999981374,
+            "max": 86.29999999981374
+          },
+          "updateMs": {
+            "samples": 60,
+            "mean": 5.573333333417152,
+            "p95": 8.5,
+            "p99": 10.300000000745058,
+            "max": 10.300000000745058
+          },
+          "prepareMs": {
+            "samples": 60,
+            "mean": 0.43999999994412065,
+            "p95": 0.7999999998137355,
+            "p99": 0.8999999994412065,
+            "max": 0.8999999994412065
+          },
+          "submitMs": {
+            "samples": 60,
+            "mean": 0.801666666722546,
+            "p95": 1.5,
+            "p99": 2.2999999998137355,
+            "max": 2.2999999998137355
+          },
+          "driverMs": {
+            "samples": 59,
+            "mean": 44.63657710169491,
+            "p95": 58.653856,
+            "p99": 81.390072,
+            "max": 81.390072
+          },
+          "drawCallsMean": 87.98333333333333,
+          "trianglesMean": 59216.7,
+          "vegetation": {
+            "requests": 47,
+            "evictions": 12,
+            "cancelled": 1,
+            "cacheHits": 325,
+            "transitions": 9,
+            "generationMs": 222.20000000298023,
+            "installationMs": 35.90000000037253,
+            "bytes": 333260,
+            "firstInstalledMs": 33.299999999813735,
+            "started": 92271.20000000019,
+            "aheadRequests": 0,
+            "lastRequestLatencyMs": 1396.5999999996275,
+            "instanceCulling": {
+              "scans": 11110,
+              "bufferRewrites": 390,
+              "culled": 172
+            },
+            "regions": 24,
+            "queue": 1,
+            "representedTrees": 70,
+            "levels": {
+              "0": 0,
+              "1": 12,
+              "2": 58
+            },
+            "proxyCells": 4385,
+            "proxyBoxes": 1382,
+            "triangles": 16584,
+            "drawCalls": 50,
+            "queueAgeMs": 252.1000000005588,
+            "visibleCoverage": null,
+            "gpuUploadMs": null
+          },
+          "meshCache": {
+            "hits": 0,
+            "misses": 0,
+            "builds": 0,
+            "evictions": 0,
+            "invalidations": 0,
+            "reasons": {},
+            "entries": 0,
+            "bytes": 0,
+            "maxBytes": 33554432,
+            "maxEntries": 128,
+            "revision": 0,
+            "gpuBytes": 0
+          },
+          "residentGeometryBytes": 3789752,
+          "continuity": []
+        },
+        "turning": {
+          "frameMs": {
+            "samples": 60,
+            "mean": 22.168333333327123,
+            "p95": 44.40000000037253,
+            "p99": 49.200000000186265,
+            "max": 49.200000000186265
+          },
+          "updateMs": {
+            "samples": 60,
+            "mean": 4.034999999993791,
+            "p95": 5.599999999627471,
+            "p99": 5.7999999998137355,
+            "max": 5.7999999998137355
+          },
+          "prepareMs": {
+            "samples": 60,
+            "mean": 0.22833333338300388,
+            "p95": 0.5,
+            "p99": 0.5,
+            "max": 0.5
+          },
+          "submitMs": {
+            "samples": 60,
+            "mean": 0.3783333332588275,
+            "p95": 0.8999999994412065,
+            "p99": 0.900000000372529,
+            "max": 0.900000000372529
+          },
+          "driverMs": {
+            "samples": 59,
+            "mean": 14.352004406779665,
+            "p95": 35.363166,
+            "p99": 40.094753,
+            "max": 40.094753
+          },
+          "drawCallsMean": 34,
+          "trianglesMean": 30950.566666666666,
+          "vegetation": {
+            "requests": 47,
+            "evictions": 12,
+            "cancelled": 1,
+            "cacheHits": 325,
+            "transitions": 10,
+            "generationMs": 227.60000000335276,
+            "installationMs": 36.799999999813735,
+            "bytes": 241984,
+            "firstInstalledMs": 33.299999999813735,
+            "started": 92271.20000000019,
+            "aheadRequests": 0,
+            "lastRequestLatencyMs": 396.20000000018626,
+            "instanceCulling": {
+              "scans": 14317,
+              "bufferRewrites": 659,
+              "culled": 172
+            },
+            "regions": 24,
+            "queue": 0,
+            "representedTrees": 70,
+            "levels": {
+              "0": 0,
+              "1": 7,
+              "2": 63
+            },
+            "proxyCells": 3184,
+            "proxyBoxes": 1049,
+            "triangles": 12588,
+            "drawCalls": 50,
+            "queueAgeMs": 0,
+            "visibleCoverage": null,
+            "gpuUploadMs": null
+          },
+          "meshCache": {
+            "hits": 0,
+            "misses": 0,
+            "builds": 0,
+            "evictions": 0,
+            "invalidations": 0,
+            "reasons": {},
+            "entries": 0,
+            "bytes": 0,
+            "maxBytes": 33554432,
+            "maxEntries": 128,
+            "revision": 0,
+            "gpuBytes": 0
+          },
+          "residentGeometryBytes": 6949960,
+          "continuity": []
+        },
+        "teleport": {
+          "frameMs": {
+            "samples": 60,
+            "mean": 42.60999999999379,
+            "p95": 49.5,
+            "p99": 52,
+            "max": 52
+          },
+          "updateMs": {
+            "samples": 60,
+            "mean": 7.313333333392317,
+            "p95": 10.200000000186265,
+            "p99": 12.299999999813735,
+            "max": 12.299999999813735
+          },
+          "prepareMs": {
+            "samples": 60,
+            "mean": 0.0700000000341485,
+            "p95": 0.20000000018626451,
+            "p99": 0.20000000018626451,
+            "max": 0.20000000018626451
+          },
+          "submitMs": {
+            "samples": 60,
+            "mean": 0.6483333333084981,
+            "p95": 1,
+            "p99": 1.199999999254942,
+            "max": 1.199999999254942
+          },
+          "driverMs": {
+            "samples": 59,
+            "mean": 32.24320610169491,
+            "p95": 39.29514,
+            "p99": 40.52406,
+            "max": 40.52406
+          },
+          "drawCallsMean": 54.5,
+          "trianglesMean": 37355.566666666666,
+          "vegetation": {
+            "requests": 65,
+            "evictions": 12,
+            "cancelled": 1,
+            "cacheHits": 333,
+            "transitions": 10,
+            "generationMs": 298.3000000016764,
+            "installationMs": 53.69999999832362,
+            "bytes": 506236,
+            "firstInstalledMs": 33.299999999813735,
+            "started": 92271.20000000019,
+            "aheadRequests": 9,
+            "lastRequestLatencyMs": 2357.199999999255,
+            "instanceCulling": {
+              "scans": 14426,
+              "bufferRewrites": 791,
+              "culled": 1508
+            },
+            "regions": 41,
+            "queue": 37,
+            "representedTrees": 129,
+            "levels": {
+              "0": 1,
+              "1": 7,
+              "2": 122
+            },
+            "proxyCells": 6529,
+            "proxyBoxes": 2193,
+            "triangles": 26316,
+            "drawCalls": 32,
+            "queueAgeMs": 2553,
+            "visibleCoverage": null,
+            "gpuUploadMs": null
+          },
+          "meshCache": {
+            "hits": 0,
+            "misses": 0,
+            "builds": 0,
+            "evictions": 0,
+            "invalidations": 0,
+            "reasons": {},
+            "entries": 0,
+            "bytes": 0,
+            "maxBytes": 33554432,
+            "maxEntries": 128,
+            "revision": 0,
+            "gpuBytes": 0
+          },
+          "residentGeometryBytes": 2903392,
+          "continuity": []
+        },
+        "stopped-late": {
+          "frameMs": {
+            "samples": 180,
+            "mean": 44.71944444444444,
+            "p95": 52.40000000037253,
+            "p99": 61.09999999962747,
+            "max": 61.39999999944121
+          },
+          "updateMs": {
+            "samples": 180,
+            "mean": 5.817222222199456,
+            "p95": 8.899999999441206,
+            "p99": 12.200000000186265,
+            "max": 13.300000000745058
+          },
+          "prepareMs": {
+            "samples": 180,
+            "mean": 0.14055555562178293,
+            "p95": 0.20000000018626451,
+            "p99": 0.30000000074505806,
+            "max": 0.5
+          },
+          "submitMs": {
+            "samples": 180,
+            "mean": 0.8199999999668863,
+            "p95": 1.3999999994412065,
+            "p99": 1.400000000372529,
+            "max": 1.5
+          },
+          "driverMs": {
+            "samples": 179,
+            "mean": 35.591323435754205,
+            "p95": 41.564421,
+            "p99": 45.01154,
+            "max": 50.061019
+          },
+          "drawCallsMean": 71.66111111111111,
+          "trianglesMean": 52428.77777777778,
+          "vegetation": {
+            "requests": 101,
+            "evictions": 21,
+            "cancelled": 1,
+            "cacheHits": 352,
+            "transitions": 14,
+            "generationMs": 509.1000000005588,
+            "installationMs": 97.49999999813735,
+            "bytes": 1249212,
+            "firstInstalledMs": 33.299999999813735,
+            "started": 92271.20000000019,
+            "aheadRequests": 12,
+            "lastRequestLatencyMs": 7820.4000000003725,
+            "instanceCulling": {
+              "scans": 10294,
+              "bufferRewrites": 815,
+              "culled": 3324
+            },
+            "regions": 64,
+            "queue": 9,
+            "representedTrees": 197,
+            "levels": {
+              "0": 1,
+              "1": 18,
+              "2": 179
+            },
+            "proxyCells": 13910,
+            "proxyBoxes": 4272,
+            "triangles": 51264,
+            "drawCalls": 51,
+            "queueAgeMs": 8049.100000000559,
+            "visibleCoverage": null,
+            "gpuUploadMs": null
+          },
+          "meshCache": {
+            "hits": 0,
+            "misses": 0,
+            "builds": 0,
+            "evictions": 0,
+            "invalidations": 0,
+            "reasons": {},
+            "entries": 0,
+            "bytes": 0,
+            "maxBytes": 33554432,
+            "maxEntries": 128,
+            "revision": 0,
+            "gpuBytes": 0
+          },
+          "residentGeometryBytes": 8597696,
+          "continuity": [
+            {
+              "frame": 0,
+              "target": "maple:13,12",
+              "detail": null
+            },
+            {
+              "frame": 10,
+              "target": "maple:13,12",
+              "detail": null
+            },
+            {
+              "frame": 20,
+              "target": "maple:13,12",
+              "detail": null
+            },
+            {
+              "frame": 30,
+              "target": "maple:13,12",
+              "detail": null
+            },
+            {
+              "frame": 40,
+              "target": "maple:13,12",
+              "detail": null
+            },
+            {
+              "frame": 50,
+              "target": "maple:13,12",
+              "detail": null
+            },
+            {
+              "frame": 60,
+              "target": "maple:13,12",
+              "detail": null
+            },
+            {
+              "frame": 70,
+              "target": "maple:13,12",
+              "detail": null
+            },
+            {
+              "frame": 80,
+              "target": "maple:13,12",
+              "detail": null
+            },
+            {
+              "frame": 90,
+              "target": "maple:13,12",
+              "detail": null
+            },
+            {
+              "frame": 100,
+              "target": "maple:13,12",
+              "detail": null
+            },
+            {
+              "frame": 110,
+              "target": "maple:13,12",
+              "detail": null
+            },
+            {
+              "frame": 120,
+              "target": "maple:13,12",
+              "detail": null
+            },
+            {
+              "frame": 130,
+              "target": "maple:13,12",
+              "detail": null
+            },
+            {
+              "frame": 140,
+              "target": "maple:13,12",
+              "detail": null
+            },
+            {
+              "frame": 150,
+              "target": "maple:13,12",
+              "detail": null
+            },
+            {
+              "frame": 160,
+              "target": "maple:13,12",
+              "detail": null
+            },
+            {
+              "frame": 170,
+              "target": "maple:13,12",
+              "detail": null
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "environment": "Chromium SwiftShader, 640x480 pixel ratio 1; elapsed driver queries are not hardware GPU execution.",
+  "method": "Fresh runtime per case; two reversed-order trials for large/infinite with distant layers, one pair for other cases and disabled control. Settle queues then 60 warmup frames. Stationary180, movement phases60 each, stopped-late180. Fixed 0.06/0.18/0.6 m per frame. Rapid turn/teleport and stopped-late are deliberately separate from stationary LOD comparison. Stop phase pauses new detailed work for 30 frames while proxies prepare, then restores the existing work budget. GC/upload bytes unmeasured."
+}

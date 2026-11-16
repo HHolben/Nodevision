@@ -8,6 +8,7 @@ export function installStretchGizmoAbility(ctx) {
 
   function disposeStretchState() {
     if (!ctx.stretchState) return;
+    ctx.stretchState.target?.userData?.mobRuntime?.suspend(false,'stretch');
     ctx.stretchState.handles?.forEach((h) => h?.parent?.remove(h));
     ctx.stretchState.group?.parent?.remove(ctx.stretchState.group);
     window.removeEventListener("pointerdown", onStretchPointerDown, true);
@@ -18,6 +19,7 @@ export function installStretchGizmoAbility(ctx) {
 
   function createStretchGizmo(target) {
     if (target?.userData?.pathRuntime) return false;
+    target?.userData?.mobRuntime?.suspend(true,'stretch');
     const group = new THREE.Group();
     const handleGeo = new THREE.ConeGeometry(0.08, 0.24, 12);
     const handleMat = new THREE.MeshStandardMaterial({ color: 0x48b0ff });

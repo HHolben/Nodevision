@@ -1,6 +1,8 @@
+import {mobProperties} from '/MetaWorld/Mobs/Properties.mjs';
 // Nodevision/ApplicationSystem/public/PanelInstances/ViewPanels/GameViewDependencies/objectInspector.mjs
 // This file defines browser-side object Inspector logic for the Nodevision UI. It renders interface components and handles user interactions.
 
+import {targetProperties} from '/MetaWorld/ArcheryTarget/Properties.mjs';
 import { mountWorldAssociations } from '../../../Education/WorldAssociations.mjs';
 import {createConstructionProperties} from '../../../MetaWorld/Constructions/Properties.mjs';
 import { openTextEditor } from '../../../MetaWorld/Text/TextEditor.mjs';
@@ -135,6 +137,7 @@ function applyMaterialType(THREE, target, typeName, colorHex) {
 }
 
 function syncTargetCollider(THREE, colliders, target) {
+  if(target?.userData?.mobRuntime){target.userData.mobRuntime.refresh();return;}
   const colliderRef = target?.userData?.colliderRef;
   if (!colliderRef) return;
   if (colliderRef.type === "compound" && typeof colliderRef.update === "function") {
@@ -172,6 +175,8 @@ export function createObjectInspector({ THREE, panel, scene, sceneObjects, colli
     title: "Inspect / Modify",
     closeBehavior: "hide",
     onRequestClose: () => {
+      mobPanel.hide();
+      archeryProperties.hide();
       associations.show(null);
       stopPreviewLoop();
       terrainProperties.hide();
@@ -188,6 +193,8 @@ export function createObjectInspector({ THREE, panel, scene, sceneObjects, colli
   root.style.font = "12px/1.3 monospace";
   const associations = mountWorldAssociations(floatingPanel.content);
   floatingPanel.content.appendChild(root);
+  const mobPanel=mobProperties(floatingPanel.content,mesh=>{activeTarget=mesh;populateFormFromTarget(mesh);});
+  const archeryProperties=targetProperties(floatingPanel.content,mesh=>{activeTarget=mesh;populateFormFromTarget(mesh);});
   const terrainProperties = createVoxelWorldProperties(floatingPanel.content, root);
   const pathProperties = createPathProperties(floatingPanel.content, root);
   const constructionProperties=createConstructionProperties(floatingPanel.content,root);
@@ -568,6 +575,7 @@ export function createObjectInspector({ THREE, panel, scene, sceneObjects, colli
   }
 
   function loadPreviewFromTarget(target) {
+    const isTarget=!!(target?.userData?.archeryTargetRuntime||target?.userData?.mobRuntime);previewHost.style.display=isTarget?'none':'block';if(isTarget){stopPreviewLoop();return;}
     if (!ensurePreviewRenderer()) return;
     if (previewMesh) {
       previewScene.remove(previewMesh);
@@ -1153,6 +1161,8 @@ export function createObjectInspector({ THREE, panel, scene, sceneObjects, colli
 
   function applyFormToTarget() {
     if (!activeTarget) return;
+    if(activeTarget.userData.mobRuntime){try{getActiveMetaWorldLayerBridge().updateMob(activeTarget.userData.metaWorldLayerId,{scale:[Number(sxInput.value),Number(syInput.value),Number(szInput.value)]});}catch(error){infoLine.textContent=error.message;}return;}
+    if(activeTarget.userData.archeryTargetRuntime){try{getActiveMetaWorldLayerBridge().updateArcheryTarget(activeTarget.userData.metaWorldLayerId,{scale:[Number(sxInput.value),Number(syInput.value),Number(szInput.value)]});}catch(error){infoLine.textContent=error.message;}return;}
     window.VRWorldContext?.recordObjectTransform?.(activeTarget);
     if (isEquationColliderPlane(activeTarget)) {
       resizeEquationColliderPlaneMesh(THREE, activeTarget, readPlaneInputs(activeTarget));
@@ -1254,6 +1264,9 @@ export function createObjectInspector({ THREE, panel, scene, sceneObjects, colli
   return {
     showConstructionEditing(section){root.style.display="none";constructionProperties.hide();terrainProperties.hide();pathProperties.hide();root.style.display="none";floatingPanel.content.append(section);floatingPanel.setVisible(true);floatingPanel.undock();},
     inspectTarget(target, distance = null) {
+      mobPanel.hide();
+      archeryProperties.hide();if(target?.userData.archeryTargetRuntime)archeryProperties.show(target);
+      if(target?.userData.mobRuntime)mobPanel.show(target);
       associations.show(target);
       const textTarget = target?.userData?.textRoot || target;
       if (textTarget?.userData?.textRuntime) return openTextEditor(textTarget);
@@ -1284,6 +1297,8 @@ export function createObjectInspector({ THREE, panel, scene, sceneObjects, colli
       return true;
     },
     hide() {
+      mobPanel.hide();
+      archeryProperties.hide();
       associations.show(null);
       pathProperties.hide();constructionProperties.hide();
       terrainProperties.hide();
@@ -1310,6 +1325,8 @@ export function createObjectInspector({ THREE, panel, scene, sceneObjects, colli
       return true;
     },
     dispose() {
+      mobPanel.dispose();
+      archeryProperties.dispose();
       associations.dispose();
       pathProperties.dispose();constructionProperties.dispose();
       terrainProperties.dispose();

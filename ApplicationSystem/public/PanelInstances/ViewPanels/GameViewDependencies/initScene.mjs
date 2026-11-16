@@ -609,8 +609,9 @@ export function initScene({ THREE, PointerLockControls, panel, canvas, state, lo
   const update = () => {
     temporalController.update();
     window.VRWorldContext?.updatePathTransforms?.();
+    objects.forEach(object=>object.userData?.mobRuntime?.tick(performance.now(),window.VRWorldContext));
     objects.forEach(object => object.userData?.proceduralVoxelRuntime?.update((viewController.getActiveCamera() || camera).getWorldPosition(voxelStreamPosition),window.VRWorldContext?.astronomy??null));
-    if (movementState.paused) { flashlightTool.update(); hangGliderTool.update(); return; }
+    if (movementState.paused) { window.VRWorldContext?.archeryBow?.suspend(); flashlightTool.update(); hangGliderTool.update(); return; }
     consolePanels.updateEnvironmentLighting?.(temporalController.getTimeSeconds?.() ?? 0);
     movementUpdate();
     viewController.update();

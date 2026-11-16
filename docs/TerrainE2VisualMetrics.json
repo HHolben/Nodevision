@@ -1,0 +1,886 @@
+{
+  "complete": true,
+  "results": [
+    {
+      "mode": "voxel",
+      "variant": "baseline",
+      "id": "pine:4,1",
+      "species": "Pine",
+      "seed": 205642905,
+      "origin": [
+        214,
+        205,
+        72
+      ],
+      "min": [
+        202,
+        205,
+        60
+      ],
+      "max": [
+        227,
+        237,
+        85
+      ],
+      "chunks": 8,
+      "drawableChunks": 4,
+      "distances": [
+        {
+          "label": "distant",
+          "distance": 60,
+          "level": 2,
+          "cells": 45,
+          "coverage": 2240,
+          "trunkAxisOffsetM": 0.5
+        },
+        {
+          "label": "intermediate",
+          "distance": 32,
+          "level": 1,
+          "cells": 262,
+          "coverage": 6283,
+          "trunkAxisOffsetM": 0
+        },
+        {
+          "label": "near",
+          "distance": 20,
+          "level": 1,
+          "cells": 262,
+          "coverage": 16287,
+          "trunkAxisOffsetM": 0
+        }
+      ],
+      "proxyCells": 262,
+      "proxyTriangles": 696,
+      "frames": [
+        {
+          "timeMs": 0,
+          "coverage": 16603,
+          "detailFraction": 0,
+          "change": null
+        },
+        {
+          "timeMs": 60,
+          "coverage": 16703,
+          "detailFraction": 0.5,
+          "change": {
+            "silhouetteIoU": 0.9940130515476262,
+            "changedSilhouetteFraction": 0.005986948452373825,
+            "meanChannelChange": 0.060572916666666664
+          }
+        },
+        {
+          "timeMs": 120,
+          "coverage": 16703,
+          "detailFraction": 0.5,
+          "change": {
+            "silhouetteIoU": 1,
+            "changedSilhouetteFraction": 0,
+            "meanChannelChange": 0
+          }
+        },
+        {
+          "timeMs": 200,
+          "coverage": 16601,
+          "detailFraction": 1,
+          "change": {
+            "silhouetteIoU": 0.8840300956044578,
+            "changedSilhouetteFraction": 0.11596990439554224,
+            "meanChannelChange": 1.506162109375
+          }
+        },
+        {
+          "timeMs": 240,
+          "coverage": 16601,
+          "detailFraction": 1,
+          "change": {
+            "silhouetteIoU": 1,
+            "changedSilhouetteFraction": 0,
+            "meanChannelChange": 0
+          }
+        },
+        {
+          "timeMs": 280,
+          "coverage": 16601,
+          "detailFraction": 1,
+          "change": {
+            "silhouetteIoU": 1,
+            "changedSilhouetteFraction": 0,
+            "meanChannelChange": 0
+          }
+        },
+        {
+          "timeMs": 320,
+          "coverage": 16601,
+          "detailFraction": 1,
+          "change": {
+            "silhouetteIoU": 1,
+            "changedSilhouetteFraction": 0,
+            "meanChannelChange": 0
+          }
+        },
+        {
+          "timeMs": 360,
+          "coverage": 16601,
+          "detailFraction": 1,
+          "change": {
+            "silhouetteIoU": 1,
+            "changedSilhouetteFraction": 0,
+            "meanChannelChange": 0
+          }
+        },
+        {
+          "timeMs": 400,
+          "coverage": 16601,
+          "detailFraction": 1,
+          "change": {
+            "silhouetteIoU": 1,
+            "changedSilhouetteFraction": 0,
+            "meanChannelChange": 0
+          }
+        },
+        {
+          "timeMs": 440,
+          "coverage": 16601,
+          "detailFraction": 1,
+          "change": {
+            "silhouetteIoU": 1,
+            "changedSilhouetteFraction": 0,
+            "meanChannelChange": 0
+          }
+        },
+        {
+          "timeMs": 480,
+          "coverage": 16601,
+          "detailFraction": 1,
+          "change": {
+            "silhouetteIoU": 1,
+            "changedSilhouetteFraction": 0,
+            "meanChannelChange": 0
+          }
+        },
+        {
+          "timeMs": 520,
+          "coverage": 16601,
+          "detailFraction": 1,
+          "change": {
+            "silhouetteIoU": 1,
+            "changedSilhouetteFraction": 0,
+            "meanChannelChange": 0
+          }
+        },
+        {
+          "timeMs": 560,
+          "coverage": 16601,
+          "detailFraction": 1,
+          "change": {
+            "silhouetteIoU": 1,
+            "changedSilhouetteFraction": 0,
+            "meanChannelChange": 0
+          }
+        },
+        {
+          "timeMs": 600,
+          "coverage": 16601,
+          "detailFraction": 1,
+          "change": {
+            "silhouetteIoU": 1,
+            "changedSilhouetteFraction": 0,
+            "meanChannelChange": 0
+          }
+        },
+        {
+          "timeMs": 700,
+          "coverage": 16601,
+          "detailFraction": 1,
+          "change": {
+            "silhouetteIoU": 1,
+            "changedSilhouetteFraction": 0,
+            "meanChannelChange": 0
+          }
+        }
+      ],
+      "firstToDetailed": {
+        "silhouetteIoU": 0.8783730270973581,
+        "changedSilhouetteFraction": 0.12162697290264185,
+        "meanChannelChange": 1.5667350260416666
+      },
+      "continuity": {
+        "completed": 0,
+        "lateUpgrades": 0,
+        "incompleteFeatures": 0,
+        "failures": 0,
+        "maxTransitioning": 0,
+        "lastDurationMs": 0,
+        "readinessLatencyMs": 0,
+        "timeNearBeforeReadyMs": 0,
+        "trackedFeatures": 0,
+        "transitioning": 0,
+        "durationMs": 350,
+        "stateBytes": 16384
+      },
+      "classifiedVertices": 0
+    },
+    {
+      "mode": "voxel",
+      "variant": "modified",
+      "id": "pine:4,1",
+      "species": "Pine",
+      "seed": 205642905,
+      "origin": [
+        214,
+        205,
+        72
+      ],
+      "min": [
+        202,
+        205,
+        60
+      ],
+      "max": [
+        227,
+        237,
+        85
+      ],
+      "chunks": 8,
+      "drawableChunks": 4,
+      "distances": [
+        {
+          "label": "distant",
+          "distance": 60,
+          "level": 2,
+          "cells": 45,
+          "coverage": 2141,
+          "trunkAxisOffsetM": 0.1767766952966369
+        },
+        {
+          "label": "intermediate",
+          "distance": 32,
+          "level": 1,
+          "cells": 262,
+          "coverage": 6283,
+          "trunkAxisOffsetM": 0
+        },
+        {
+          "label": "near",
+          "distance": 20,
+          "level": 1,
+          "cells": 262,
+          "coverage": 16287,
+          "trunkAxisOffsetM": 0
+        }
+      ],
+      "proxyCells": 262,
+      "proxyTriangles": 696,
+      "frames": [
+        {
+          "timeMs": 0,
+          "coverage": 16603,
+          "detailFraction": 0,
+          "change": null
+        },
+        {
+          "timeMs": 60,
+          "coverage": 16603,
+          "detailFraction": 0,
+          "change": {
+            "silhouetteIoU": 1,
+            "changedSilhouetteFraction": 0,
+            "meanChannelChange": 0
+          }
+        },
+        {
+          "timeMs": 120,
+          "coverage": 16603,
+          "detailFraction": 0,
+          "change": {
+            "silhouetteIoU": 1,
+            "changedSilhouetteFraction": 0,
+            "meanChannelChange": 0
+          }
+        },
+        {
+          "timeMs": 200,
+          "coverage": 16603,
+          "detailFraction": 0,
+          "change": {
+            "silhouetteIoU": 1,
+            "changedSilhouetteFraction": 0,
+            "meanChannelChange": 0
+          }
+        },
+        {
+          "timeMs": 240,
+          "coverage": 16598,
+          "detailFraction": 0.11428571428571428,
+          "change": {
+            "silhouetteIoU": 0.9841630311360784,
+            "changedSilhouetteFraction": 0.01583696886392159,
+            "meanChannelChange": 0.18808159722222223
+          }
+        },
+        {
+          "timeMs": 280,
+          "coverage": 16618,
+          "detailFraction": 0.22857142857142856,
+          "change": {
+            "silhouetteIoU": 0.9863652673125224,
+            "changedSilhouetteFraction": 0.013634732687477575,
+            "meanChannelChange": 0.17508246527777777
+          }
+        },
+        {
+          "timeMs": 320,
+          "coverage": 16605,
+          "detailFraction": 0.34285714285714286,
+          "change": {
+            "silhouetteIoU": 0.9846475507765831,
+            "changedSilhouetteFraction": 0.015352449223416966,
+            "meanChannelChange": 0.18232096354166666
+          }
+        },
+        {
+          "timeMs": 360,
+          "coverage": 16615,
+          "detailFraction": 0.45714285714285713,
+          "change": {
+            "silhouetteIoU": 0.9877932024892293,
+            "changedSilhouetteFraction": 0.012206797510770704,
+            "meanChannelChange": 0.15596137152777778
+          }
+        },
+        {
+          "timeMs": 400,
+          "coverage": 16630,
+          "detailFraction": 0.5714285714285714,
+          "change": {
+            "silhouetteIoU": 0.984776119402985,
+            "changedSilhouetteFraction": 0.015223880597014926,
+            "meanChannelChange": 0.19071397569444445
+          }
+        },
+        {
+          "timeMs": 440,
+          "coverage": 16629,
+          "detailFraction": 0.6857142857142857,
+          "change": {
+            "silhouetteIoU": 0.9852563719930759,
+            "changedSilhouetteFraction": 0.014743628006924133,
+            "meanChannelChange": 0.17766059027777778
+          }
+        },
+        {
+          "timeMs": 480,
+          "coverage": 16628,
+          "detailFraction": 0.8,
+          "change": {
+            "silhouetteIoU": 0.9854925373134328,
+            "changedSilhouetteFraction": 0.014507462686567165,
+            "meanChannelChange": 0.17133897569444445
+          }
+        },
+        {
+          "timeMs": 520,
+          "coverage": 16628,
+          "detailFraction": 0.9142857142857143,
+          "change": {
+            "silhouetteIoU": 0.9863815553697288,
+            "changedSilhouetteFraction": 0.013618444630271174,
+            "meanChannelChange": 0.1665939670138889
+          }
+        },
+        {
+          "timeMs": 560,
+          "coverage": 16601,
+          "detailFraction": 1,
+          "change": {
+            "silhouetteIoU": 0.9866674638287696,
+            "changedSilhouetteFraction": 0.01333253617123042,
+            "meanChannelChange": 0.15898111979166665
+          }
+        },
+        {
+          "timeMs": 600,
+          "coverage": 16601,
+          "detailFraction": 1,
+          "change": {
+            "silhouetteIoU": 1,
+            "changedSilhouetteFraction": 0,
+            "meanChannelChange": 0
+          }
+        },
+        {
+          "timeMs": 700,
+          "coverage": 16601,
+          "detailFraction": 1,
+          "change": {
+            "silhouetteIoU": 1,
+            "changedSilhouetteFraction": 0,
+            "meanChannelChange": 0
+          }
+        }
+      ],
+      "firstToDetailed": {
+        "silhouetteIoU": 0.8783730270973581,
+        "changedSilhouetteFraction": 0.12162697290264185,
+        "meanChannelChange": 1.5667350260416666
+      },
+      "continuity": {
+        "completed": 1,
+        "lateUpgrades": 1,
+        "incompleteFeatures": 0,
+        "failures": 0,
+        "maxTransitioning": 1,
+        "lastDurationMs": 360,
+        "readinessLatencyMs": 200,
+        "timeNearBeforeReadyMs": 200,
+        "trackedFeatures": 1,
+        "transitioning": 0,
+        "durationMs": 350,
+        "stateBytes": 16960
+      },
+      "classifiedVertices": 7960
+    },
+    {
+      "mode": "polygonal",
+      "variant": "baseline",
+      "id": "pine:4,1",
+      "species": "Pine",
+      "seed": 205642905,
+      "origin": [
+        214,
+        205,
+        72
+      ],
+      "min": [
+        202,
+        205,
+        60
+      ],
+      "max": [
+        227,
+        237,
+        85
+      ],
+      "chunks": 8,
+      "drawableChunks": 4,
+      "distances": [
+        {
+          "label": "distant",
+          "distance": 60,
+          "level": 2,
+          "cells": 45,
+          "coverage": 2240,
+          "trunkAxisOffsetM": 0.5
+        },
+        {
+          "label": "intermediate",
+          "distance": 32,
+          "level": 1,
+          "cells": 262,
+          "coverage": 6283,
+          "trunkAxisOffsetM": 0
+        },
+        {
+          "label": "near",
+          "distance": 20,
+          "level": 1,
+          "cells": 262,
+          "coverage": 16287,
+          "trunkAxisOffsetM": 0
+        }
+      ],
+      "proxyCells": 262,
+      "proxyTriangles": 696,
+      "frames": [
+        {
+          "timeMs": 0,
+          "coverage": 16603,
+          "detailFraction": 0,
+          "change": null
+        },
+        {
+          "timeMs": 60,
+          "coverage": 16628,
+          "detailFraction": 0.5,
+          "change": {
+            "silhouetteIoU": 0.9984965119076257,
+            "changedSilhouetteFraction": 0.0015034880923743084,
+            "meanChannelChange": 0.020164930555555554
+          }
+        },
+        {
+          "timeMs": 120,
+          "coverage": 16628,
+          "detailFraction": 0.5,
+          "change": {
+            "silhouetteIoU": 1,
+            "changedSilhouetteFraction": 0,
+            "meanChannelChange": 0
+          }
+        },
+        {
+          "timeMs": 200,
+          "coverage": 14778,
+          "detailFraction": 1,
+          "change": {
+            "silhouetteIoU": 0.8570245979186376,
+            "changedSilhouetteFraction": 0.14297540208136233,
+            "meanChannelChange": 2.2362272135416665
+          }
+        },
+        {
+          "timeMs": 240,
+          "coverage": 14778,
+          "detailFraction": 1,
+          "change": {
+            "silhouetteIoU": 1,
+            "changedSilhouetteFraction": 0,
+            "meanChannelChange": 0
+          }
+        },
+        {
+          "timeMs": 280,
+          "coverage": 14778,
+          "detailFraction": 1,
+          "change": {
+            "silhouetteIoU": 1,
+            "changedSilhouetteFraction": 0,
+            "meanChannelChange": 0
+          }
+        },
+        {
+          "timeMs": 320,
+          "coverage": 14778,
+          "detailFraction": 1,
+          "change": {
+            "silhouetteIoU": 1,
+            "changedSilhouetteFraction": 0,
+            "meanChannelChange": 0
+          }
+        },
+        {
+          "timeMs": 360,
+          "coverage": 14778,
+          "detailFraction": 1,
+          "change": {
+            "silhouetteIoU": 1,
+            "changedSilhouetteFraction": 0,
+            "meanChannelChange": 0
+          }
+        },
+        {
+          "timeMs": 400,
+          "coverage": 14778,
+          "detailFraction": 1,
+          "change": {
+            "silhouetteIoU": 1,
+            "changedSilhouetteFraction": 0,
+            "meanChannelChange": 0
+          }
+        },
+        {
+          "timeMs": 440,
+          "coverage": 14778,
+          "detailFraction": 1,
+          "change": {
+            "silhouetteIoU": 1,
+            "changedSilhouetteFraction": 0,
+            "meanChannelChange": 0
+          }
+        },
+        {
+          "timeMs": 480,
+          "coverage": 14778,
+          "detailFraction": 1,
+          "change": {
+            "silhouetteIoU": 1,
+            "changedSilhouetteFraction": 0,
+            "meanChannelChange": 0
+          }
+        },
+        {
+          "timeMs": 520,
+          "coverage": 14778,
+          "detailFraction": 1,
+          "change": {
+            "silhouetteIoU": 1,
+            "changedSilhouetteFraction": 0,
+            "meanChannelChange": 0
+          }
+        },
+        {
+          "timeMs": 560,
+          "coverage": 14778,
+          "detailFraction": 1,
+          "change": {
+            "silhouetteIoU": 1,
+            "changedSilhouetteFraction": 0,
+            "meanChannelChange": 0
+          }
+        },
+        {
+          "timeMs": 600,
+          "coverage": 14778,
+          "detailFraction": 1,
+          "change": {
+            "silhouetteIoU": 1,
+            "changedSilhouetteFraction": 0,
+            "meanChannelChange": 0
+          }
+        },
+        {
+          "timeMs": 700,
+          "coverage": 14778,
+          "detailFraction": 1,
+          "change": {
+            "silhouetteIoU": 1,
+            "changedSilhouetteFraction": 0,
+            "meanChannelChange": 0
+          }
+        }
+      ],
+      "firstToDetailed": {
+        "silhouetteIoU": 0.855546357615894,
+        "changedSilhouetteFraction": 0.14445364238410596,
+        "meanChannelChange": 2.256392144097222
+      },
+      "continuity": {
+        "completed": 0,
+        "lateUpgrades": 0,
+        "incompleteFeatures": 0,
+        "failures": 0,
+        "maxTransitioning": 0,
+        "lastDurationMs": 0,
+        "readinessLatencyMs": 0,
+        "timeNearBeforeReadyMs": 0,
+        "trackedFeatures": 0,
+        "transitioning": 0,
+        "durationMs": 350,
+        "stateBytes": 16384
+      },
+      "classifiedVertices": 0
+    },
+    {
+      "mode": "polygonal",
+      "variant": "modified",
+      "id": "pine:4,1",
+      "species": "Pine",
+      "seed": 205642905,
+      "origin": [
+        214,
+        205,
+        72
+      ],
+      "min": [
+        202,
+        205,
+        60
+      ],
+      "max": [
+        227,
+        237,
+        85
+      ],
+      "chunks": 8,
+      "drawableChunks": 4,
+      "distances": [
+        {
+          "label": "distant",
+          "distance": 60,
+          "level": 2,
+          "cells": 45,
+          "coverage": 1550,
+          "trunkAxisOffsetM": 0.5
+        },
+        {
+          "label": "intermediate",
+          "distance": 32,
+          "level": 1,
+          "cells": 262,
+          "coverage": 5123,
+          "trunkAxisOffsetM": 0
+        },
+        {
+          "label": "near",
+          "distance": 20,
+          "level": 1,
+          "cells": 262,
+          "coverage": 13151,
+          "trunkAxisOffsetM": 0
+        }
+      ],
+      "proxyCells": 262,
+      "proxyTriangles": 816,
+      "frames": [
+        {
+          "timeMs": 0,
+          "coverage": 13391,
+          "detailFraction": 0,
+          "change": null
+        },
+        {
+          "timeMs": 60,
+          "coverage": 13391,
+          "detailFraction": 0,
+          "change": {
+            "silhouetteIoU": 1,
+            "changedSilhouetteFraction": 0,
+            "meanChannelChange": 0
+          }
+        },
+        {
+          "timeMs": 120,
+          "coverage": 13391,
+          "detailFraction": 0,
+          "change": {
+            "silhouetteIoU": 1,
+            "changedSilhouetteFraction": 0,
+            "meanChannelChange": 0
+          }
+        },
+        {
+          "timeMs": 200,
+          "coverage": 13391,
+          "detailFraction": 0,
+          "change": {
+            "silhouetteIoU": 1,
+            "changedSilhouetteFraction": 0,
+            "meanChannelChange": 0
+          }
+        },
+        {
+          "timeMs": 240,
+          "coverage": 13531,
+          "detailFraction": 0.11428571428571428,
+          "change": {
+            "silhouetteIoU": 0.98145285935085,
+            "changedSilhouetteFraction": 0.01854714064914992,
+            "meanChannelChange": 0.18803059895833332
+          }
+        },
+        {
+          "timeMs": 280,
+          "coverage": 13708,
+          "detailFraction": 0.22857142857142856,
+          "change": {
+            "silhouetteIoU": 0.9792908007557041,
+            "changedSilhouetteFraction": 0.020709199244295887,
+            "meanChannelChange": 0.21133463541666667
+          }
+        },
+        {
+          "timeMs": 320,
+          "coverage": 13852,
+          "detailFraction": 0.34285714285714286,
+          "change": {
+            "silhouetteIoU": 0.9818783259024881,
+            "changedSilhouetteFraction": 0.018121674097511864,
+            "meanChannelChange": 0.18752387152777777
+          }
+        },
+        {
+          "timeMs": 360,
+          "coverage": 13999,
+          "detailFraction": 0.45714285714285713,
+          "change": {
+            "silhouetteIoU": 0.9825597949886105,
+            "changedSilhouetteFraction": 0.01744020501138952,
+            "meanChannelChange": 0.183837890625
+          }
+        },
+        {
+          "timeMs": 400,
+          "coverage": 14175,
+          "detailFraction": 0.5714285714285714,
+          "change": {
+            "silhouetteIoU": 0.9808760458412431,
+            "changedSilhouetteFraction": 0.019123954158756944,
+            "meanChannelChange": 0.20374565972222222
+          }
+        },
+        {
+          "timeMs": 440,
+          "coverage": 14335,
+          "detailFraction": 0.6857142857142857,
+          "change": {
+            "silhouetteIoU": 0.9834423264227077,
+            "changedSilhouetteFraction": 0.016557673577292334,
+            "meanChannelChange": 0.17863498263888888
+          }
+        },
+        {
+          "timeMs": 480,
+          "coverage": 14484,
+          "detailFraction": 0.8,
+          "change": {
+            "silhouetteIoU": 0.9832771316495768,
+            "changedSilhouetteFraction": 0.016722868350423234,
+            "meanChannelChange": 0.18229058159722222
+          }
+        },
+        {
+          "timeMs": 520,
+          "coverage": 14642,
+          "detailFraction": 0.9142857142857143,
+          "change": {
+            "silhouetteIoU": 0.9833844058563159,
+            "changedSilhouetteFraction": 0.01661559414368403,
+            "meanChannelChange": 0.1825151909722222
+          }
+        },
+        {
+          "timeMs": 560,
+          "coverage": 14778,
+          "detailFraction": 1,
+          "change": {
+            "silhouetteIoU": 0.9867639113992437,
+            "changedSilhouetteFraction": 0.013236088600756347,
+            "meanChannelChange": 0.14908962673611112
+          }
+        },
+        {
+          "timeMs": 600,
+          "coverage": 14778,
+          "detailFraction": 1,
+          "change": {
+            "silhouetteIoU": 1,
+            "changedSilhouetteFraction": 0,
+            "meanChannelChange": 0
+          }
+        },
+        {
+          "timeMs": 700,
+          "coverage": 14778,
+          "detailFraction": 1,
+          "change": {
+            "silhouetteIoU": 1,
+            "changedSilhouetteFraction": 0,
+            "meanChannelChange": 0
+          }
+        }
+      ],
+      "firstToDetailed": {
+        "silhouetteIoU": 0.8534675615212528,
+        "changedSilhouetteFraction": 0.1465324384787472,
+        "meanChannelChange": 1.6670030381944445
+      },
+      "continuity": {
+        "completed": 1,
+        "lateUpgrades": 1,
+        "incompleteFeatures": 0,
+        "failures": 0,
+        "maxTransitioning": 1,
+        "lastDurationMs": 360,
+        "readinessLatencyMs": 200,
+        "timeNearBeforeReadyMs": 200,
+        "trackedFeatures": 1,
+        "transitioning": 0,
+        "durationMs": 350,
+        "stateBytes": 16960
+      },
+      "classifiedVertices": 2060
+    }
+  ],
+  "environment": "Chromium WebGL, 640x480, SwiftShader; deterministic clock and stationary camera; partial chunks at 60 ms, all chunks at 200 ms. Visual time is stepped, not an FPS benchmark."
+}

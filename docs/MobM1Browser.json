@@ -1,0 +1,53 @@
+{
+  "states": [
+    "Idle",
+    "Grazing",
+    "Wandering",
+    "Alert",
+    "Fleeing",
+    "Recovering"
+  ],
+  "modes": [
+    "voxel",
+    "polygonal"
+  ],
+  "hits": [
+    {
+      "arrowId": "arrow-1",
+      "shooterId": "session-player",
+      "launchForce": 62.04833333306015,
+      "launchSpeed": 39.38538222902634,
+      "flightDuration": 0.027554194699689998,
+      "traveledDistance": 1.0852200935921155,
+      "point": [
+        21,
+        1.2232834752216968,
+        15.914951329862653
+      ],
+      "normal": [
+        0,
+        0,
+        1
+      ],
+      "incomingVelocity": [
+        0,
+        -1.1901395768035261,
+        -39.37229476750137
+      ],
+      "simulationTime": 0.027554194699689998,
+      "mobId": "0fa75309-ab1a-4295-b2a2-86bd0601d65a",
+      "speciesId": "brown-hare"
+    }
+  ],
+  "model": {
+    "triangles": 674,
+    "groundHome": [
+      20,
+      1,
+      15.5
+    ]
+  },
+  "hopLift": 0.04376820852573804,
+  "teleporterWithMobs": true,
+  "viewerBehavior": true
+}

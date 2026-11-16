@@ -549,6 +549,8 @@ export function serializeMesh(mesh) {
 }
 
 function serializeMeshGeometry(mesh) {
+  if(mesh?.userData?.mobRuntime)return mesh.userData.mobRuntime.serialize();
+  if(mesh?.userData?.archeryTargetRuntime)return mesh.userData.archeryTargetRuntime.serialize();
   if(mesh?.userData?.constructionRuntime)return mesh.userData.constructionRuntime.serialize();
   if (mesh?.userData?.runtimeGenerated) return null;
   if (mesh?.userData?.modelRuntime) return mesh.userData.modelRuntime.serialize();

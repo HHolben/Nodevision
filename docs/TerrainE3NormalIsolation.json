@@ -1,0 +1,943 @@
+{
+  "complete": true,
+  "results": [
+    {
+      "scenario": "large",
+      "trial": 0,
+      "shading": "lit",
+      "variant": "baseline",
+      "frameMs": {
+        "mean": 42.814444444452725,
+        "p95": 49.399999998509884,
+        "samples": 180,
+        "max": 59.80000000447035
+      },
+      "driverMs": {
+        "mean": 39.52671713294798,
+        "p95": 45.201897,
+        "samples": 173,
+        "max": 56.826916
+      },
+      "submissionMs": {
+        "mean": 0.9022222223381201,
+        "p95": 1.5,
+        "samples": 180,
+        "max": 1.8000000044703484
+      },
+      "calls": 133,
+      "triangles": 86306
+    },
+    {
+      "scenario": "large",
+      "trial": 0,
+      "shading": "lit",
+      "variant": "modified",
+      "frameMs": {
+        "mean": 52.916666666666664,
+        "p95": 66.40000000596046,
+        "samples": 180,
+        "max": 75.29999999701977
+      },
+      "driverMs": {
+        "mean": 48.960797205714314,
+        "p95": 61.56633,
+        "samples": 175,
+        "max": 70.909973
+      },
+      "submissionMs": {
+        "mean": 0.9866666670474741,
+        "p95": 1.7000000029802322,
+        "samples": 180,
+        "max": 2.4000000059604645
+      },
+      "calls": 133,
+      "triangles": 86306
+    },
+    {
+      "scenario": "large",
+      "trial": 0,
+      "shading": "unlit",
+      "variant": "baseline",
+      "frameMs": {
+        "mean": 40.9422222222305,
+        "p95": 49.5,
+        "samples": 180,
+        "max": 61.79999999701977
+      },
+      "driverMs": {
+        "mean": 37.02273611864408,
+        "p95": 45.283717,
+        "samples": 177,
+        "max": 58.586652
+      },
+      "submissionMs": {
+        "mean": 1.3561111116160949,
+        "p95": 1.9000000059604645,
+        "samples": 180,
+        "max": 19.100000001490116
+      },
+      "calls": 133,
+      "triangles": 86306
+    },
+    {
+      "scenario": "large",
+      "trial": 0,
+      "shading": "unlit",
+      "variant": "modified",
+      "frameMs": {
+        "mean": 39.92555555556383,
+        "p95": 46.100000001490116,
+        "samples": 180,
+        "max": 57.100000001490116
+      },
+      "driverMs": {
+        "mean": 36.28432121264366,
+        "p95": 42.430697,
+        "samples": 174,
+        "max": 53.436837
+      },
+      "submissionMs": {
+        "mean": 1.1799999999503294,
+        "p95": 1.8999999985098839,
+        "samples": 180,
+        "max": 4.100000001490116
+      },
+      "calls": 133,
+      "triangles": 86306
+    },
+    {
+      "scenario": "large",
+      "trial": 1,
+      "shading": "unlit",
+      "variant": "modified",
+      "frameMs": {
+        "mean": 40.22666666665011,
+        "p95": 47.600000001490116,
+        "samples": 180,
+        "max": 57.600000001490116
+      },
+      "driverMs": {
+        "mean": 36.48661408045978,
+        "p95": 43.196015,
+        "samples": 174,
+        "max": 53.401709
+      },
+      "submissionMs": {
+        "mean": 1.1716666670723095,
+        "p95": 2,
+        "samples": 180,
+        "max": 3.2000000029802322
+      },
+      "calls": 133,
+      "triangles": 86306
+    },
+    {
+      "scenario": "large",
+      "trial": 1,
+      "shading": "unlit",
+      "variant": "baseline",
+      "frameMs": {
+        "mean": 39.8827777777695,
+        "p95": 45.70000000298023,
+        "samples": 180,
+        "max": 52.599999994039536
+      },
+      "driverMs": {
+        "mean": 36.15772248850574,
+        "p95": 42.274174,
+        "samples": 174,
+        "max": 49.078925
+      },
+      "submissionMs": {
+        "mean": 1.2122222224043475,
+        "p95": 2,
+        "samples": 180,
+        "max": 4.299999997019768
+      },
+      "calls": 133,
+      "triangles": 86306
+    },
+    {
+      "scenario": "large",
+      "trial": 1,
+      "shading": "lit",
+      "variant": "modified",
+      "frameMs": {
+        "mean": 67.44277777775294,
+        "p95": 109.60000000149012,
+        "samples": 180,
+        "max": 139.09999999403954
+      },
+      "driverMs": {
+        "mean": 63.51397505172416,
+        "p95": 101.694641,
+        "samples": 174,
+        "max": 134.249866
+      },
+      "submissionMs": {
+        "mean": 1.156666666517655,
+        "p95": 1.8999999985098839,
+        "samples": 180,
+        "max": 5.700000002980232
+      },
+      "calls": 133,
+      "triangles": 86306
+    },
+    {
+      "scenario": "large",
+      "trial": 1,
+      "shading": "lit",
+      "variant": "baseline",
+      "frameMs": {
+        "mean": 62.56222222223878,
+        "p95": 107.80000000447035,
+        "samples": 180,
+        "max": 139.89999999850988
+      },
+      "driverMs": {
+        "mean": 58.63521741242941,
+        "p95": 103.528928,
+        "samples": 177,
+        "max": 134.80128
+      },
+      "submissionMs": {
+        "mean": 1.135000000231796,
+        "p95": 1.9000000059604645,
+        "samples": 180,
+        "max": 4.100000001490116
+      },
+      "calls": 133,
+      "triangles": 86306
+    },
+    {
+      "scenario": "large",
+      "trial": 2,
+      "shading": "lit",
+      "variant": "baseline",
+      "frameMs": {
+        "mean": 55.19333333335817,
+        "p95": 63.899999998509884,
+        "samples": 180,
+        "max": 83.20000000298023
+      },
+      "driverMs": {
+        "mean": 51.22058606179776,
+        "p95": 60.575014,
+        "samples": 178,
+        "max": 80.122125
+      },
+      "submissionMs": {
+        "mean": 1.00277777781917,
+        "p95": 1.5,
+        "samples": 180,
+        "max": 2.6999999955296516
+      },
+      "calls": 133,
+      "triangles": 86306
+    },
+    {
+      "scenario": "large",
+      "trial": 2,
+      "shading": "lit",
+      "variant": "modified",
+      "frameMs": {
+        "mean": 57.59722222222222,
+        "p95": 69.69999999552965,
+        "samples": 180,
+        "max": 84.90000000596046
+      },
+      "driverMs": {
+        "mean": 53.43677673714285,
+        "p95": 65.142906,
+        "samples": 175,
+        "max": 81.262075
+      },
+      "submissionMs": {
+        "mean": 1.0133333335320154,
+        "p95": 1.5,
+        "samples": 180,
+        "max": 3.899999998509884
+      },
+      "calls": 133,
+      "triangles": 86306
+    },
+    {
+      "scenario": "large",
+      "trial": 2,
+      "shading": "unlit",
+      "variant": "baseline",
+      "frameMs": {
+        "mean": 39.42555555556383,
+        "p95": 45.20000000298023,
+        "samples": 180,
+        "max": 57.5
+      },
+      "driverMs": {
+        "mean": 35.84289743575418,
+        "p95": 41.409453,
+        "samples": 179,
+        "max": 53.346528
+      },
+      "submissionMs": {
+        "mean": 1.101111111127668,
+        "p95": 1.7000000029802322,
+        "samples": 180,
+        "max": 2.7999999970197678
+      },
+      "calls": 133,
+      "triangles": 86306
+    },
+    {
+      "scenario": "large",
+      "trial": 2,
+      "shading": "unlit",
+      "variant": "modified",
+      "frameMs": {
+        "mean": 39.92388888891372,
+        "p95": 46.5,
+        "samples": 180,
+        "max": 63.899999998509884
+      },
+      "driverMs": {
+        "mean": 36.171687774011296,
+        "p95": 42.733406,
+        "samples": 177,
+        "max": 60.772649
+      },
+      "submissionMs": {
+        "mean": 1.100555555563834,
+        "p95": 1.6999999955296516,
+        "samples": 180,
+        "max": 3.1999999955296516
+      },
+      "calls": 133,
+      "triangles": 86306
+    },
+    {
+      "scenario": "infinite",
+      "trial": 0,
+      "shading": "lit",
+      "variant": "baseline",
+      "frameMs": {
+        "mean": 62.291111111102836,
+        "p95": 101.89999999850988,
+        "samples": 180,
+        "max": 141.5
+      },
+      "driverMs": {
+        "mean": 57.996799721590946,
+        "p95": 96.674627,
+        "samples": 176,
+        "max": 136.426843
+      },
+      "submissionMs": {
+        "mean": 1.576111111127668,
+        "p95": 2.2999999970197678,
+        "samples": 180,
+        "max": 24.5
+      },
+      "calls": 105,
+      "triangles": 68386
+    },
+    {
+      "scenario": "infinite",
+      "trial": 0,
+      "shading": "lit",
+      "variant": "modified",
+      "frameMs": {
+        "mean": 51.54944444443617,
+        "p95": 57.70000000298023,
+        "samples": 180,
+        "max": 65.79999999701977
+      },
+      "driverMs": {
+        "mean": 47.549926597701145,
+        "p95": 53.264857,
+        "samples": 174,
+        "max": 61.106171
+      },
+      "submissionMs": {
+        "mean": 1.2249999999172159,
+        "p95": 1.7999999970197678,
+        "samples": 180,
+        "max": 3.8000000044703484
+      },
+      "calls": 105,
+      "triangles": 68386
+    },
+    {
+      "scenario": "infinite",
+      "trial": 0,
+      "shading": "unlit",
+      "variant": "baseline",
+      "frameMs": {
+        "mean": 39.59555555553072,
+        "p95": 51.29999999701977,
+        "samples": 180,
+        "max": 197.20000000298023
+      },
+      "driverMs": {
+        "mean": 35.78721405142859,
+        "p95": 47.851519,
+        "samples": 175,
+        "max": 189.674031
+      },
+      "submissionMs": {
+        "mean": 1.2972222220980458,
+        "p95": 2,
+        "samples": 180,
+        "max": 2.7999999970197678
+      },
+      "calls": 105,
+      "triangles": 68386
+    },
+    {
+      "scenario": "infinite",
+      "trial": 0,
+      "shading": "unlit",
+      "variant": "modified",
+      "frameMs": {
+        "mean": 52.00444444446928,
+        "p95": 91.09999999403954,
+        "samples": 180,
+        "max": 138
+      },
+      "driverMs": {
+        "mean": 47.97370587078652,
+        "p95": 85.35673,
+        "samples": 178,
+        "max": 131.693171
+      },
+      "submissionMs": {
+        "mean": 1.4766666671054232,
+        "p95": 2.100000001490116,
+        "samples": 180,
+        "max": 5.299999997019768
+      },
+      "calls": 105,
+      "triangles": 68386
+    },
+    {
+      "scenario": "infinite",
+      "trial": 1,
+      "shading": "unlit",
+      "variant": "modified",
+      "frameMs": {
+        "mean": 36.57666666665011,
+        "p95": 42.29999999701977,
+        "samples": 180,
+        "max": 97.5
+      },
+      "driverMs": {
+        "mean": 32.78634761931818,
+        "p95": 37.858276,
+        "samples": 176,
+        "max": 93.3119
+      },
+      "submissionMs": {
+        "mean": 1.3399999996440277,
+        "p95": 1.9000000059604645,
+        "samples": 180,
+        "max": 3.7999999970197678
+      },
+      "calls": 105,
+      "triangles": 68386
+    },
+    {
+      "scenario": "infinite",
+      "trial": 1,
+      "shading": "unlit",
+      "variant": "baseline",
+      "frameMs": {
+        "mean": 34.522777777786054,
+        "p95": 41.399999998509884,
+        "samples": 180,
+        "max": 47.69999999552965
+      },
+      "driverMs": {
+        "mean": 30.952900261363656,
+        "p95": 36.653335,
+        "samples": 176,
+        "max": 43.254578
+      },
+      "submissionMs": {
+        "mean": 1.3305555558866924,
+        "p95": 2,
+        "samples": 180,
+        "max": 4
+      },
+      "calls": 105,
+      "triangles": 68386
+    },
+    {
+      "scenario": "infinite",
+      "trial": 1,
+      "shading": "lit",
+      "variant": "modified",
+      "frameMs": {
+        "mean": 49.09111111110283,
+        "p95": 59.100000001490116,
+        "samples": 180,
+        "max": 86.19999999552965
+      },
+      "driverMs": {
+        "mean": 44.93929357558138,
+        "p95": 52.822965,
+        "samples": 172,
+        "max": 79.658617
+      },
+      "submissionMs": {
+        "mean": 1.2288888884915246,
+        "p95": 2.399999998509884,
+        "samples": 180,
+        "max": 4.299999997019768
+      },
+      "calls": 105,
+      "triangles": 68386
+    },
+    {
+      "scenario": "infinite",
+      "trial": 1,
+      "shading": "lit",
+      "variant": "baseline",
+      "frameMs": {
+        "mean": 58.91444444445272,
+        "p95": 82.60000000149012,
+        "samples": 180,
+        "max": 151.60000000149012
+      },
+      "driverMs": {
+        "mean": 54.913931202247234,
+        "p95": 76.816194,
+        "samples": 178,
+        "max": 148.217771
+      },
+      "submissionMs": {
+        "mean": 1.2561111110366052,
+        "p95": 2.100000001490116,
+        "samples": 180,
+        "max": 3.899999998509884
+      },
+      "calls": 105,
+      "triangles": 68386
+    },
+    {
+      "scenario": "infinite",
+      "trial": 2,
+      "shading": "lit",
+      "variant": "baseline",
+      "frameMs": {
+        "mean": 52.37944444446928,
+        "p95": 59.29999999701977,
+        "samples": 180,
+        "max": 76.5
+      },
+      "driverMs": {
+        "mean": 48.43904130635836,
+        "p95": 54.617637,
+        "samples": 173,
+        "max": 72.626619
+      },
+      "submissionMs": {
+        "mean": 1.2449999998841021,
+        "p95": 1.8999999985098839,
+        "samples": 180,
+        "max": 3.7999999970197678
+      },
+      "calls": 105,
+      "triangles": 68386
+    },
+    {
+      "scenario": "infinite",
+      "trial": 2,
+      "shading": "lit",
+      "variant": "modified",
+      "frameMs": {
+        "mean": 52.56388888888889,
+        "p95": 60.099999994039536,
+        "samples": 180,
+        "max": 67.39999999850988
+      },
+      "driverMs": {
+        "mean": 48.47739218390806,
+        "p95": 56.206637,
+        "samples": 174,
+        "max": 62.595609
+      },
+      "submissionMs": {
+        "mean": 1.2466666668653488,
+        "p95": 1.8000000044703484,
+        "samples": 180,
+        "max": 3.7999999970197678
+      },
+      "calls": 105,
+      "triangles": 68386
+    },
+    {
+      "scenario": "infinite",
+      "trial": 2,
+      "shading": "unlit",
+      "variant": "baseline",
+      "frameMs": {
+        "mean": 35.94722222222222,
+        "p95": 41.899999998509884,
+        "samples": 180,
+        "max": 47.5
+      },
+      "driverMs": {
+        "mean": 32.16478407471266,
+        "p95": 38.306606,
+        "samples": 174,
+        "max": 43.889938
+      },
+      "submissionMs": {
+        "mean": 1.3277777777363857,
+        "p95": 2.2000000029802322,
+        "samples": 180,
+        "max": 4.300000004470348
+      },
+      "calls": 105,
+      "triangles": 68386
+    },
+    {
+      "scenario": "infinite",
+      "trial": 2,
+      "shading": "unlit",
+      "variant": "modified",
+      "frameMs": {
+        "mean": 36.387222222238776,
+        "p95": 43.600000001490116,
+        "samples": 180,
+        "max": 50
+      },
+      "driverMs": {
+        "mean": 32.66469165340911,
+        "p95": 39.232121,
+        "samples": 176,
+        "max": 46.303335
+      },
+      "submissionMs": {
+        "mean": 1.3072222221642733,
+        "p95": 1.8999999985098839,
+        "samples": 180,
+        "max": 3.7000000029802322
+      },
+      "calls": 105,
+      "triangles": 68386
+    },
+    {
+      "scenario": "geographic",
+      "trial": 0,
+      "shading": "lit",
+      "variant": "baseline",
+      "frameMs": {
+        "mean": 25.84666666669978,
+        "p95": 30.30000000447035,
+        "samples": 180,
+        "max": 34.29999999701977
+      },
+      "driverMs": {
+        "mean": 22.9940112,
+        "p95": 27.145934,
+        "samples": 175,
+        "max": 31.564414
+      },
+      "submissionMs": {
+        "mean": 0.5344444444196091,
+        "p95": 0.7999999970197678,
+        "samples": 180,
+        "max": 2.2000000029802322
+      },
+      "calls": 42,
+      "triangles": 48704
+    },
+    {
+      "scenario": "geographic",
+      "trial": 0,
+      "shading": "lit",
+      "variant": "modified",
+      "frameMs": {
+        "mean": 26.5983333333085,
+        "p95": 32.20000000298023,
+        "samples": 180,
+        "max": 42
+      },
+      "driverMs": {
+        "mean": 23.649377228571428,
+        "p95": 29.29747,
+        "samples": 175,
+        "max": 37.760404
+      },
+      "submissionMs": {
+        "mean": 0.4994444443947739,
+        "p95": 0.7000000029802322,
+        "samples": 180,
+        "max": 1.8999999985098839
+      },
+      "calls": 42,
+      "triangles": 48704
+    },
+    {
+      "scenario": "geographic",
+      "trial": 0,
+      "shading": "unlit",
+      "variant": "baseline",
+      "frameMs": {
+        "mean": 17.129444444427886,
+        "p95": 21.799999997019768,
+        "samples": 180,
+        "max": 30.19999999552965
+      },
+      "driverMs": {
+        "mean": 13.79612925423728,
+        "p95": 18.98641,
+        "samples": 177,
+        "max": 27.571268
+      },
+      "submissionMs": {
+        "mean": 0.5427777779599031,
+        "p95": 0.7999999970197678,
+        "samples": 180,
+        "max": 1.2000000029802322
+      },
+      "calls": 42,
+      "triangles": 48704
+    },
+    {
+      "scenario": "geographic",
+      "trial": 0,
+      "shading": "unlit",
+      "variant": "modified",
+      "frameMs": {
+        "mean": 17.223333333349892,
+        "p95": 22.100000001490116,
+        "samples": 180,
+        "max": 29.30000000447035
+      },
+      "driverMs": {
+        "mean": 13.879515028089884,
+        "p95": 19.023456,
+        "samples": 178,
+        "max": 26.582741
+      },
+      "submissionMs": {
+        "mean": 0.5505555558121866,
+        "p95": 0.8000000044703484,
+        "samples": 180,
+        "max": 1.7999999970197678
+      },
+      "calls": 42,
+      "triangles": 48704
+    },
+    {
+      "scenario": "geographic",
+      "trial": 1,
+      "shading": "unlit",
+      "variant": "modified",
+      "frameMs": {
+        "mean": 17.031666666683222,
+        "p95": 21.600000001490116,
+        "samples": 180,
+        "max": 25.80000000447035
+      },
+      "driverMs": {
+        "mean": 13.316235810055876,
+        "p95": 18.07457,
+        "samples": 179,
+        "max": 22.149561
+      },
+      "submissionMs": {
+        "mean": 0.5199999998841021,
+        "p95": 0.7000000029802322,
+        "samples": 180,
+        "max": 0.8999999985098839
+      },
+      "calls": 42,
+      "triangles": 48704
+    },
+    {
+      "scenario": "geographic",
+      "trial": 1,
+      "shading": "unlit",
+      "variant": "baseline",
+      "frameMs": {
+        "mean": 16.75722222224706,
+        "p95": 19.399999998509884,
+        "samples": 180,
+        "max": 25.899999998509884
+      },
+      "driverMs": {
+        "mean": 13.024291247191,
+        "p95": 15.864626,
+        "samples": 178,
+        "max": 22.312552
+      },
+      "submissionMs": {
+        "mean": 0.5700000001738469,
+        "p95": 0.8000000044703484,
+        "samples": 180,
+        "max": 4.800000004470348
+      },
+      "calls": 42,
+      "triangles": 48704
+    },
+    {
+      "scenario": "geographic",
+      "trial": 1,
+      "shading": "lit",
+      "variant": "modified",
+      "frameMs": {
+        "mean": 26.463333333325053,
+        "p95": 31,
+        "samples": 180,
+        "max": 39.80000000447035
+      },
+      "driverMs": {
+        "mean": 23.441480685393252,
+        "p95": 28.367732,
+        "samples": 178,
+        "max": 36.534167
+      },
+      "submissionMs": {
+        "mean": 0.5116666664679845,
+        "p95": 0.7999999970197678,
+        "samples": 180,
+        "max": 2
+      },
+      "calls": 42,
+      "triangles": 48704
+    },
+    {
+      "scenario": "geographic",
+      "trial": 1,
+      "shading": "lit",
+      "variant": "baseline",
+      "frameMs": {
+        "mean": 29.188333333366447,
+        "p95": 44.20000000298023,
+        "samples": 180,
+        "max": 76
+      },
+      "driverMs": {
+        "mean": 26.163818745762704,
+        "p95": 39.996609,
+        "samples": 177,
+        "max": 68.721126
+      },
+      "submissionMs": {
+        "mean": 0.5233333333498902,
+        "p95": 0.7999999970197678,
+        "samples": 180,
+        "max": 1.3999999985098839
+      },
+      "calls": 42,
+      "triangles": 48704
+    },
+    {
+      "scenario": "geographic",
+      "trial": 2,
+      "shading": "lit",
+      "variant": "baseline",
+      "frameMs": {
+        "mean": 40.433888888897165,
+        "p95": 54.70000000298023,
+        "samples": 180,
+        "max": 92.79999999701977
+      },
+      "driverMs": {
+        "mean": 36.90023517514127,
+        "p95": 50.917128,
+        "samples": 177,
+        "max": 81.502341
+      },
+      "submissionMs": {
+        "mean": 0.5872222220318185,
+        "p95": 0.8999999985098839,
+        "samples": 180,
+        "max": 2
+      },
+      "calls": 42,
+      "triangles": 48704
+    },
+    {
+      "scenario": "geographic",
+      "trial": 2,
+      "shading": "lit",
+      "variant": "modified",
+      "frameMs": {
+        "mean": 24.766111111102834,
+        "p95": 32.19999999552965,
+        "samples": 180,
+        "max": 41.399999998509884
+      },
+      "driverMs": {
+        "mean": 22.056606011235953,
+        "p95": 29.303004,
+        "samples": 178,
+        "max": 37.510356
+      },
+      "submissionMs": {
+        "mean": 0.48222222187452846,
+        "p95": 0.7000000029802322,
+        "samples": 180,
+        "max": 0.8000000044703484
+      },
+      "calls": 42,
+      "triangles": 48704
+    },
+    {
+      "scenario": "geographic",
+      "trial": 2,
+      "shading": "unlit",
+      "variant": "baseline",
+      "frameMs": {
+        "mean": 17.406111111077998,
+        "p95": 23.19999999552965,
+        "samples": 180,
+        "max": 45.599999994039536
+      },
+      "driverMs": {
+        "mean": 13.468225067796613,
+        "p95": 19.945797,
+        "samples": 177,
+        "max": 40.347185
+      },
+      "submissionMs": {
+        "mean": 0.5688888888392184,
+        "p95": 0.7999999970197678,
+        "samples": 180,
+        "max": 3
+      },
+      "calls": 42,
+      "triangles": 48704
+    },
+    {
+      "scenario": "geographic",
+      "trial": 2,
+      "shading": "unlit",
+      "variant": "modified",
+      "frameMs": {
+        "mean": 16.664444444452723,
+        "p95": 18.5,
+        "samples": 180,
+        "max": 23.100000001490116
+      },
+      "driverMs": {
+        "mean": 12.307252067415732,
+        "p95": 15.543541,
+        "samples": 178,
+        "max": 20.470286
+      },
+      "submissionMs": {
+        "mean": 0.5194444444444445,
+        "p95": 0.7000000029802322,
+        "samples": 180,
+        "max": 2.600000001490116
+      },
+      "calls": 42,
+      "triangles": 48704
+    }
+  ],
+  "method": "One settled production runtime per world; only normal BufferAttributes swap; no runtime updates. Three reversed-order pairs, 45 warmup and 180 measured frames per condition; lit and unlit controls. Newly completed async GPU samples only.",
+  "environment": "Chromium SwiftShader, 640x480, pixel ratio 1. Driver queries are software execution, not hardware GPU measurements."
+}

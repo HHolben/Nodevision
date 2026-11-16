@@ -5,8 +5,9 @@ export function createMovementUpdateLoop(ctx) {
   const { controls, getBindings, movementState } = ctx;
 
   return function update() {
+    ctx.api.tickArchery?.();
     ctx.api.updateVoxelWorldPreview?.({cleanupOnly:true});
-    if (ctx.api.runFramePreflight().stop) {ctx.api.updateSessionVoxelTools?.({cleanupOnly:true});ctx.api.updateRaycastingTeleporter?.({cleanupOnly:true});return;}
+    if (ctx.api.runFramePreflight().stop) {ctx.api.updateArcheryBow?.({cleanupOnly:true});ctx.api.updateSessionVoxelTools?.({cleanupOnly:true});ctx.api.updateRaycastingTeleporter?.({cleanupOnly:true});return;}
     const nowMs = performance.now();
     const baseSpeed = 0.2;
     const bindings = getBindings();
@@ -15,7 +16,7 @@ export function createMovementUpdateLoop(ctx) {
     ctx.api.handleInventoryToggles(inputState, inventory);
     applySkipClickFrame(ctx, inputState);
     if (ctx.api.handleStlEditUse(inputState.use)) return;
-    if (ctx.api.handleInventoryMenu(inputState, inventory)) {ctx.api.updateSessionVoxelTools?.({cleanupOnly:true});ctx.api.updateRaycastingTeleporter?.({cleanupOnly:true});return;}
+    if (ctx.api.handleInventoryMenu(inputState, inventory)) {ctx.api.updateArcheryBow?.({cleanupOnly:true});ctx.api.updateSessionVoxelTools?.({cleanupOnly:true});ctx.api.updateRaycastingTeleporter?.({cleanupOnly:true});return;}
     if(ctx.api.raycastingTeleportPending?.()&&ctx.api.updateRaycastingTeleporter?.(inputState))return;
     const crouching = inputState.crouch;
     const crawling = inputState.crawl;
@@ -33,6 +34,8 @@ export function createMovementUpdateLoop(ctx) {
       speed: baseSpeed
     });
     ctx.api.handleCameraCommands(inputState);
+    const bowActive=ctx.api.updateArcheryBow?.(inputState);
+    if(bowActive)return;
     if(ctx.api.updateRaycastingTeleporter?.(inputState))return;
     ctx.api.updateTapeMeasurePreview();
     ctx.api.updateVoxelWorldPreview?.({snapToGrid:!!inputState.snapPlace});

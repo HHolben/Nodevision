@@ -12,7 +12,7 @@ const patterns=Array.from({length:256},(_,mask)=>{
   const length=Math.hypot(...normal)||1;
   return {fraction:p.map(v=>Math.round(v/n*4096)/4096),offset:p.map(v=>v/n),normal:normal.map(v=>v/length)};
 });
-export function* surfaceNetSteps(data,chunk,getVoxel){
+export function* surfaceNetSteps(data,chunk,getVoxel,shade=null){
   const origin=chunk.map(v=>v*32),cache=new Uint16Array(34**3),at=(x,y,z)=>(x+1)+34*((y+1)+34*(z+1));
   for(let z=-1;z<=32;z++)for(let y=-1;y<=32;y++){for(let x=-1;x<=32;x++)cache[at(x,y,z)]=x>=0&&x<32&&y>=0&&y<32&&z>=0&&z<32?data[voxelIndex(x,y,z)]:getVoxel(origin[0]+x,origin[1]+y,origin[2]+z);yield;}
   const positions=[],normals=[],uvs=[],indices=[],buckets=new Map();let solidVoxels=0,liquidVoxels=0;
@@ -28,7 +28,7 @@ export function* surfaceNetSteps(data,chunk,getVoxel){
         if(mask===0||mask===255)continue;
         const {fraction,offset,normal}=patterns[mask],index=positions.length/3;nodes[key(x,y,z)]=index;
         positions.push((x+.5+fraction[0])*.25,(y+.5+fraction[1])*.25,(z+.5+fraction[2])*.25);
-        normals.push(...normal);uvs.push((origin[0]+x+offset[0])*.25,(origin[2]+z+offset[2])*.25);
+        normals.push(...(!liquid&&shade?shade(origin[0]+x,origin[1]+y,origin[2]+z,patterns[mask],cache,i):normal));uvs.push((origin[0]+x+offset[0])*.25,(origin[2]+z+offset[2])*.25);
       }yield;
     }
     for(let z=-1;z<32;z++)for(let y=-1;y<32;y++){

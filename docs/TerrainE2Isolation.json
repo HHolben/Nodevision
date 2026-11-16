@@ -1,0 +1,384 @@
+{
+  "complete": true,
+  "results": [
+    {
+      "trial": 0,
+      "variant": "baseline",
+      "frameMs": {
+        "mean": 21.79833333333437,
+        "p95": 24.09999999962747,
+        "samples": 180
+      },
+      "calls": 73,
+      "triangles": 48998,
+      "vegetation": {
+        "requests": 26,
+        "evictions": 0,
+        "cancelled": 0,
+        "cacheHits": 0,
+        "transitions": 4,
+        "generationMs": 62.20000000298023,
+        "installationMs": 14.599999997764826,
+        "bytes": 176776,
+        "firstInstalledMs": 3.599999999627471,
+        "started": 975.7000000001863,
+        "aheadRequests": 0,
+        "lastRequestLatencyMs": 114.5,
+        "instanceCulling": {
+          "scans": 47,
+          "bufferRewrites": 62,
+          "culled": 161
+        },
+        "regions": 22,
+        "queue": 0,
+        "representedTrees": 64,
+        "levels": {
+          "0": 0,
+          "1": 1,
+          "2": 63
+        },
+        "proxyCells": 2326,
+        "proxyBoxes": 801,
+        "triangles": 9612,
+        "drawCalls": 43,
+        "queueAgeMs": 0,
+        "visibleCoverage": null,
+        "gpuUploadMs": null
+      }
+    },
+    {
+      "trial": 0,
+      "variant": "modified",
+      "frameMs": {
+        "mean": 22.114444444442373,
+        "p95": 24.799999999813735,
+        "samples": 180
+      },
+      "calls": 71,
+      "triangles": 49502,
+      "vegetation": {
+        "requests": 26,
+        "evictions": 0,
+        "cancelled": 0,
+        "cacheHits": 0,
+        "transitions": 4,
+        "generationMs": 49.599999997764826,
+        "installationMs": 15.899999999441206,
+        "bytes": 176776,
+        "firstInstalledMs": 4.7999999998137355,
+        "started": 1093.4000000003725,
+        "aheadRequests": 0,
+        "lastRequestLatencyMs": 90.5,
+        "shaderMeshes": {
+          "dither": 0,
+          "opaque": 47
+        },
+        "detailAttribution": {
+          "preparationMs": 0,
+          "attributeBytes": 0
+        },
+        "visibleInstances": 682,
+        "estimatedGpuBytes": 99048,
+        "extraTransitionDrawCalls": 0,
+        "continuity": {
+          "completed": 0,
+          "lateUpgrades": 0,
+          "incompleteFeatures": 64,
+          "failures": 0,
+          "maxTransitioning": 0,
+          "lastDurationMs": 0,
+          "readinessLatencyMs": 0,
+          "timeNearBeforeReadyMs": 0,
+          "trackedFeatures": 64,
+          "transitioning": 0,
+          "durationMs": 350,
+          "stateBytes": 53688
+        },
+        "transitionRegions": 0,
+        "transitionBytes": 0,
+        "instanceCulling": {
+          "scans": 47,
+          "bufferRewrites": 62,
+          "culled": 166
+        },
+        "regions": 22,
+        "queue": 0,
+        "representedTrees": 64,
+        "levels": {
+          "0": 0,
+          "1": 1,
+          "2": 63
+        },
+        "proxyCells": 2268,
+        "proxyBoxes": 848,
+        "triangles": 10176,
+        "drawCalls": 41,
+        "queueAgeMs": 0,
+        "visibleCoverage": null,
+        "gpuUploadMs": null
+      }
+    },
+    {
+      "trial": 0,
+      "variant": "shared",
+      "frameMs": {
+        "mean": 22.069444444444443,
+        "p95": 24.799999999813735,
+        "samples": 180
+      },
+      "calls": 71,
+      "triangles": 49502,
+      "vegetation": {
+        "requests": 26,
+        "evictions": 0,
+        "cancelled": 0,
+        "cacheHits": 0,
+        "transitions": 4,
+        "generationMs": 49.599999997764826,
+        "installationMs": 15.899999999441206,
+        "bytes": 176776,
+        "firstInstalledMs": 4.7999999998137355,
+        "started": 1093.4000000003725,
+        "aheadRequests": 0,
+        "lastRequestLatencyMs": 90.5,
+        "shaderMeshes": {
+          "dither": 0,
+          "opaque": 47
+        },
+        "detailAttribution": {
+          "preparationMs": 0,
+          "attributeBytes": 0
+        },
+        "visibleInstances": 682,
+        "estimatedGpuBytes": 97352,
+        "extraTransitionDrawCalls": 0,
+        "continuity": {
+          "completed": 0,
+          "lateUpgrades": 0,
+          "incompleteFeatures": 64,
+          "failures": 0,
+          "maxTransitioning": 0,
+          "lastDurationMs": 0,
+          "readinessLatencyMs": 0,
+          "timeNearBeforeReadyMs": 0,
+          "trackedFeatures": 64,
+          "transitioning": 0,
+          "durationMs": 350,
+          "stateBytes": 53688
+        },
+        "transitionRegions": 0,
+        "transitionBytes": 0,
+        "instanceCulling": {
+          "scans": 47,
+          "bufferRewrites": 62,
+          "culled": 166
+        },
+        "regions": 22,
+        "queue": 0,
+        "representedTrees": 64,
+        "levels": {
+          "0": 0,
+          "1": 1,
+          "2": 63
+        },
+        "proxyCells": 2268,
+        "proxyBoxes": 848,
+        "triangles": 10176,
+        "drawCalls": 41,
+        "queueAgeMs": 0,
+        "visibleCoverage": null,
+        "gpuUploadMs": null
+      }
+    },
+    {
+      "trial": 1,
+      "variant": "shared",
+      "frameMs": {
+        "mean": 26.449444444446513,
+        "p95": 32.700000000186265,
+        "samples": 180
+      },
+      "calls": 71,
+      "triangles": 49502,
+      "vegetation": {
+        "requests": 26,
+        "evictions": 0,
+        "cancelled": 0,
+        "cacheHits": 0,
+        "transitions": 4,
+        "generationMs": 49.599999997764826,
+        "installationMs": 15.899999999441206,
+        "bytes": 176776,
+        "firstInstalledMs": 4.7999999998137355,
+        "started": 1093.4000000003725,
+        "aheadRequests": 0,
+        "lastRequestLatencyMs": 90.5,
+        "shaderMeshes": {
+          "dither": 0,
+          "opaque": 47
+        },
+        "detailAttribution": {
+          "preparationMs": 0,
+          "attributeBytes": 0
+        },
+        "visibleInstances": 682,
+        "estimatedGpuBytes": 97352,
+        "extraTransitionDrawCalls": 0,
+        "continuity": {
+          "completed": 0,
+          "lateUpgrades": 0,
+          "incompleteFeatures": 64,
+          "failures": 0,
+          "maxTransitioning": 0,
+          "lastDurationMs": 0,
+          "readinessLatencyMs": 0,
+          "timeNearBeforeReadyMs": 0,
+          "trackedFeatures": 64,
+          "transitioning": 0,
+          "durationMs": 350,
+          "stateBytes": 53688
+        },
+        "transitionRegions": 0,
+        "transitionBytes": 0,
+        "instanceCulling": {
+          "scans": 47,
+          "bufferRewrites": 62,
+          "culled": 166
+        },
+        "regions": 22,
+        "queue": 0,
+        "representedTrees": 64,
+        "levels": {
+          "0": 0,
+          "1": 1,
+          "2": 63
+        },
+        "proxyCells": 2268,
+        "proxyBoxes": 848,
+        "triangles": 10176,
+        "drawCalls": 41,
+        "queueAgeMs": 0,
+        "visibleCoverage": null,
+        "gpuUploadMs": null
+      }
+    },
+    {
+      "trial": 1,
+      "variant": "modified",
+      "frameMs": {
+        "mean": 30.417222222220154,
+        "p95": 33.89999999944121,
+        "samples": 180
+      },
+      "calls": 71,
+      "triangles": 49502,
+      "vegetation": {
+        "requests": 26,
+        "evictions": 0,
+        "cancelled": 0,
+        "cacheHits": 0,
+        "transitions": 4,
+        "generationMs": 49.599999997764826,
+        "installationMs": 15.899999999441206,
+        "bytes": 176776,
+        "firstInstalledMs": 4.7999999998137355,
+        "started": 1093.4000000003725,
+        "aheadRequests": 0,
+        "lastRequestLatencyMs": 90.5,
+        "shaderMeshes": {
+          "dither": 0,
+          "opaque": 47
+        },
+        "detailAttribution": {
+          "preparationMs": 0,
+          "attributeBytes": 0
+        },
+        "visibleInstances": 682,
+        "estimatedGpuBytes": 99048,
+        "extraTransitionDrawCalls": 0,
+        "continuity": {
+          "completed": 0,
+          "lateUpgrades": 0,
+          "incompleteFeatures": 64,
+          "failures": 0,
+          "maxTransitioning": 0,
+          "lastDurationMs": 0,
+          "readinessLatencyMs": 0,
+          "timeNearBeforeReadyMs": 0,
+          "trackedFeatures": 64,
+          "transitioning": 0,
+          "durationMs": 350,
+          "stateBytes": 53688
+        },
+        "transitionRegions": 0,
+        "transitionBytes": 0,
+        "instanceCulling": {
+          "scans": 47,
+          "bufferRewrites": 62,
+          "culled": 166
+        },
+        "regions": 22,
+        "queue": 0,
+        "representedTrees": 64,
+        "levels": {
+          "0": 0,
+          "1": 1,
+          "2": 63
+        },
+        "proxyCells": 2268,
+        "proxyBoxes": 848,
+        "triangles": 10176,
+        "drawCalls": 41,
+        "queueAgeMs": 0,
+        "visibleCoverage": null,
+        "gpuUploadMs": null
+      }
+    },
+    {
+      "trial": 1,
+      "variant": "baseline",
+      "frameMs": {
+        "mean": 29.553888888889922,
+        "p95": 33,
+        "samples": 180
+      },
+      "calls": 73,
+      "triangles": 48998,
+      "vegetation": {
+        "requests": 26,
+        "evictions": 0,
+        "cancelled": 0,
+        "cacheHits": 0,
+        "transitions": 4,
+        "generationMs": 62.20000000298023,
+        "installationMs": 14.599999997764826,
+        "bytes": 176776,
+        "firstInstalledMs": 3.599999999627471,
+        "started": 975.7000000001863,
+        "aheadRequests": 0,
+        "lastRequestLatencyMs": 114.5,
+        "instanceCulling": {
+          "scans": 47,
+          "bufferRewrites": 62,
+          "culled": 161
+        },
+        "regions": 22,
+        "queue": 0,
+        "representedTrees": 64,
+        "levels": {
+          "0": 0,
+          "1": 1,
+          "2": 63
+        },
+        "proxyCells": 2326,
+        "proxyBoxes": 801,
+        "triangles": 9612,
+        "drawCalls": 43,
+        "queueAgeMs": 0,
+        "visibleCoverage": null,
+        "gpuUploadMs": null
+      }
+    }
+  ],
+  "method": "Same settled voxel world and camera, 45 warmup/180 measured frames per variant, reverse-order second trial. Modified uses own per-batch box clones; shared uses the exact same old shared box GPU buffers while retaining new matrices/materials/visibility. No runtime updates inside timings."
+}

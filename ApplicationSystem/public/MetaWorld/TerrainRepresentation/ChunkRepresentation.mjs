@@ -8,9 +8,9 @@ export function chunkRepresentation(definition,manager,build,release){
     get progress(){return {pending,completed,total};},get active(){return active;},get pending(){return pending;},
     cancel(){revision++;pending=false;},
     dispose(){disposed=true;revision++;pending=false;},
-    async setRepresentation(value,beforeCommit=()=>{}){
+    async setRepresentation(value,beforeCommit=()=>{},force=false){
       const next=terrainRepresentation(value),job=++revision;pending=false;
-      if(disposed)return false;if(next===active)return true;
+      if(disposed)return false;if(next===active&&!force)return true;
       const started=performance.now();pending=true;completed=0;total=manager.loaded.size;cancelProgressive(manager);const replacements=[];let bytes=0;
       const valid=()=>!disposed&&job===revision;
       try{

@@ -3,6 +3,9 @@
 export function terrainRepresentation(value,fallback='voxel'){
   const result=value??fallback;if(!['voxel','polygonal'].includes(result))throw Error('Terrain representation must be voxel or polygonal.');return result;
 }
+export function polygonalGroundStyle(value){
+ const result=value??'standard';if(!['standard','smooth-natural'].includes(result))throw Error('Polygonal ground style must be standard or smooth-natural.');return result;
+}
 export async function prepareSteps(iterator,valid=()=>true){
   while(valid()){
     const deadline=performance.now()+4;let next;

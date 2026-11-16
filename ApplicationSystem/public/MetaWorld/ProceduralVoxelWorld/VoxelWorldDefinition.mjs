@@ -4,7 +4,7 @@ import {validateWorldExtent} from './WorldExtent.mjs';
 import { terrainStreaming } from '../TerrainLOD/Settings.mjs';
 import {validateMapSource} from '../TerrainMaps/Source.mjs';
 
-import { terrainRepresentation } from '../TerrainRepresentation/Representation.mjs';
+import { terrainRepresentation,polygonalGroundStyle } from '../TerrainRepresentation/Representation.mjs';
 import { validateGeographic } from '../Geographic/Definition.mjs';
 import { validateVegetationRevisions } from '../Aegean/Regeneration.mjs';
 import { validateProtectedRegions } from '../Aegean/ProtectedRegions.mjs';
@@ -34,6 +34,7 @@ export function validateVoxelWorld(def) {
   if (!Number.isInteger(radius) || radius < 1 || radius > 8) fail("loadRadius must be an integer from 1 to 8");
   if (def.voxelPattern || def.isVoxel || def.voxelPlacer) fail("authored voxel metadata is unsupported");
   terrainRepresentation(def.representation);
+  polygonalGroundStyle(def.polygonalGroundStyle);
   terrainStreaming(def.streaming);
   validateGeographic(def);
   validateMapSource(def);

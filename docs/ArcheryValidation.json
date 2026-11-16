@@ -1,0 +1,100 @@
+{
+  "date": "2026-11-15",
+  "metaWorldFilesPassed": 60,
+  "gameViewFilesPassed": 10,
+  "archeryFocusedCases": 15,
+  "numericalConfigurations": 243,
+  "performanceCases": 16,
+  "browser": [
+    "production GameView inventory, trusted input, voxel/polygonal, geographic, solid imports, constructions, persistence, Viewer",
+    "existing Raycasting Teleporter regression"
+  ],
+  "notebookSha256": "75533dd604cbacc1de34bd42e1e3c5a5faeef5f4779b51c520a2e0c0edd81292",
+  "environment": "Chromium SwiftShader; native Electron and hardware GPU not exercised",
+  "artifacts": {
+    "ApplicationSystem/public/PanelInstances/ViewPanels/GameViewDependencies/Archery/Physics.mjs": "b71cb607333deab555e749e4789b6311e4d2dc77bb162817d9cf95c88742b0b8",
+    "ApplicationSystem/public/PanelInstances/ViewPanels/GameViewDependencies/Archery/Input.test.mjs": "df0071694733d2113c77acd4b1eeb52714a661cd7569a2fb37cea63adb58ebbe",
+    "ApplicationSystem/public/PanelInstances/ViewPanels/GameViewDependencies/Archery/Aim.mjs": "63a8489c5f8845ba0a4bb23c5d9a91b0d06f67745983d4f836387f6056cec0a7",
+    "ApplicationSystem/public/PanelInstances/ViewPanels/GameViewDependencies/Archery/Gravity.mjs": "259a23e6dc74912f5bb3436b2e81183d6ead56c9e2c8079f6249faa9ce30eccd",
+    "ApplicationSystem/public/PanelInstances/ViewPanels/GameViewDependencies/Archery/Archery.test.mjs": "bdb298c6e0dd95d47b298697db536a853e95b8eef4a67c49679121b47677989f",
+    "ApplicationSystem/public/PanelInstances/ViewPanels/GameViewDependencies/Archery/Prediction.mjs": "3704bc151ebd763bec5f70ac5662922d6aa81bdd4957d6008ee2dec6947e800f",
+    "ApplicationSystem/public/PanelInstances/ViewPanels/GameViewDependencies/Archery/Controller.mjs": "d3dc83c178927a37203723e4475f0f77f4d66e7de3ab8b4d6bfcdf07d4dff178",
+    "ApplicationSystem/public/PanelInstances/ViewPanels/GameViewDependencies/Archery/Flight.mjs": "7feadc20b6eb43426b1b82b4244f91409775d897d3dcb3ae94b37c04689b7da1",
+    "ApplicationSystem/public/PanelInstances/ViewPanels/GameViewDependencies/Archery/Settings.mjs": "c693d96b85d1491d6ee2a35faaa955a3a0d071387d802fa027f8789eb775df89",
+    "ApplicationSystem/public/PanelInstances/ViewPanels/GameViewDependencies/Archery/Collision.mjs": "e63a6363b37cf1baf2b29455fef0348ded1433ddd805f537b174206cb34cdfa9",
+    "ApplicationSystem/public/PanelInstances/ViewPanels/GameViewDependencies/Archery/Visuals.mjs": "decbcdb23bebbe4fd0d0fd709f0d146a60881ea5561be9804680a41ceaea2439",
+    "ApplicationSystem/public/PanelInstances/ViewPanels/GameViewDependencies/inputHandlers.mjs": "cf73209b6a97eed2deddc63db965d632667d26dfd3b1dd9d7e29db7654ec13c3",
+    "ApplicationSystem/public/PanelInstances/ViewPanels/GameViewDependencies/Abilities/MovementAbilities/ArcheryBowAbility.mjs": "986d8d6dcb60348806398dbab27660942e6cfda52f69b406c715602df52d5adb",
+    "docs/ArcheryAccuracy.json": "2dfda1d9e78a8bf45af6c81299eb3131f56ff62a168ece7647f528dafdb10784",
+    "docs/ArcheryPerformance.json": "ab661b3a5ea12b58e2ae9c960af2ac4125d6e3b4612ee8ae15f6da323f6ee5ac",
+    "docs/ArcheryBowBrowserMetrics.json": "990e4b59580dd4b25bad5b9bc7fb8bb6d4ae2ff44ba0abdd82b671320720ec91",
+    "docs/ArcheryVisuals/archery-voxel.png": "477affc57b304c9bd51a3d12da188056083e20c93ffcb920ee86c22ca3aa954c",
+    "docs/ArcheryVisuals/archery-polygonal.png": "ef982eb6adb1e2f7ed7b8cc583e2d00d89cdb49ff413b3c1199e82d256da74b0"
+  },
+  "e2IntegrationRecheck": {
+    "productionPassed": true,
+    "updatedEvidence": {
+      "docs/ArcheryBowBrowserMetrics.json": {
+        "previous": "b93053ca266b2d126809f47017fe6d53311ab8ce8e6a9671b6ebb9f0cc4159c3",
+        "current": "aabc88faa4898738a347a89ddb094d1bf842621140b9ef1ab7e95482215b4b68"
+      },
+      "docs/ArcheryVisuals/archery-voxel.png": {
+        "previous": "93971b891afc41c996c602730a95578c5e6cd389ae340235994db93f35e92d6c",
+        "current": "9df0e08082179cc8f4215c206102f93b599b473cd3cf58bcba632b0caca7b715"
+      }
+    }
+  },
+  "targetIntegrationRecheck": {
+    "metaWorldTestsPassed": 294,
+    "gameViewTestsPassed": 41,
+    "productionBowPassed": true,
+    "teleporterPassed": true,
+    "updatedEvidence": {
+      "ApplicationSystem/public/PanelInstances/ViewPanels/GameViewDependencies/Archery/Controller.mjs": {
+        "previous": "a2b43f89b74d9150383b335b9eef70259c5ddff9a012ce07ac8d7a332cd5191c",
+        "current": "d3dc83c178927a37203723e4475f0f77f4d66e7de3ab8b4d6bfcdf07d4dff178"
+      },
+      "ApplicationSystem/public/PanelInstances/ViewPanels/GameViewDependencies/Archery/Flight.mjs": {
+        "previous": "16aa8677576af3300b2744d4605ff7cf09f0e846c0886251a4f408f583a93982",
+        "current": "2e7394266e56f7c60bced441fce8fb1d4da7473a4604b4a121c9215383f491e5"
+      },
+      "ApplicationSystem/public/PanelInstances/ViewPanels/GameViewDependencies/Archery/Collision.mjs": {
+        "previous": "365d8f0c1024acc8e939b3c12afdad32fb7dec998243513d4bcd37df1e466659",
+        "current": "e63a6363b37cf1baf2b29455fef0348ded1433ddd805f537b174206cb34cdfa9"
+      },
+      "docs/ArcheryBowBrowserMetrics.json": {
+        "previous": "aabc88faa4898738a347a89ddb094d1bf842621140b9ef1ab7e95482215b4b68",
+        "current": "6283758f4ef43c179e07f0c18597487353bd51b359f0355980db2ed39fb1ff6c"
+      },
+      "docs/ArcheryVisuals/archery-voxel.png": {
+        "previous": "9df0e08082179cc8f4215c206102f93b599b473cd3cf58bcba632b0caca7b715",
+        "current": "93971b891afc41c996c602730a95578c5e6cd389ae340235994db93f35e92d6c"
+      },
+      "docs/ArcheryVisuals/archery-polygonal.png": {
+        "previous": "1a2b8fcb1b75e9aec68c18c6d053095644049a8634a781b0aa3bf58e1e3c0edd",
+        "current": "ef982eb6adb1e2f7ed7b8cc583e2d00d89cdb49ff413b3c1199e82d256da74b0"
+      }
+    }
+  },
+  "mobIntegrationRecheck": {
+    "metaWorldTestsPassed": 305,
+    "gameViewTestsPassed": 41,
+    "productionBowPassed": true,
+    "productionTargetPassed": true,
+    "teleporterPassed": true,
+    "updatedEvidence": {
+      "ApplicationSystem/public/PanelInstances/ViewPanels/GameViewDependencies/Archery/Flight.mjs": {
+        "previous": "2e7394266e56f7c60bced441fce8fb1d4da7473a4604b4a121c9215383f491e5",
+        "current": "7feadc20b6eb43426b1b82b4244f91409775d897d3dcb3ae94b37c04689b7da1"
+      },
+      "docs/ArcheryBowBrowserMetrics.json": {
+        "previous": "6283758f4ef43c179e07f0c18597487353bd51b359f0355980db2ed39fb1ff6c",
+        "current": "990e4b59580dd4b25bad5b9bc7fb8bb6d4ae2ff44ba0abdd82b671320720ec91"
+      },
+      "docs/ArcheryVisuals/archery-voxel.png": {
+        "previous": "93971b891afc41c996c602730a95578c5e6cd389ae340235994db93f35e92d6c",
+        "current": "477affc57b304c9bd51a3d12da188056083e20c93ffcb920ee86c22ca3aa954c"
+      }
+    }
+  }
+}

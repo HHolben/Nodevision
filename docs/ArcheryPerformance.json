@@ -1,0 +1,758 @@
+{
+  "complete": true,
+  "environment": "Chromium SwiftShader, real RAF, fixed 81-collider scene, 30 warm + 120 measured frames, reverse second order",
+  "results": [
+    {
+      "trial": 0,
+      "scenario": "no-arrows",
+      "frames": 120,
+      "frameMs": {
+        "mean": 16.668333333327123,
+        "p95": 17.09999999962747,
+        "p99": 17.300000000745058
+      },
+      "cpuMs": {
+        "mean": 0.004166666666666667,
+        "p95": 0,
+        "p99": 0.09999999962747097
+      },
+      "physicsMs": {
+        "mean": 0,
+        "p95": 0,
+        "p99": 0
+      },
+      "predictionMs": {
+        "mean": 0,
+        "p95": 0,
+        "p99": 0
+      },
+      "collisionQueries": {
+        "mean": 0,
+        "p95": 0,
+        "p99": 0
+      },
+      "drawCalls": {
+        "mean": 81,
+        "p95": 81,
+        "p99": 81
+      },
+      "triangles": {
+        "mean": 972,
+        "p95": 972,
+        "p99": 972
+      },
+      "flying": 0,
+      "embedded": 0,
+      "dots": 0,
+      "geometryCount": 2,
+      "bufferBytes": 8292,
+      "afterCleanupGeometries": 1,
+      "afterCleanupDrawCalls": 81
+    },
+    {
+      "trial": 0,
+      "scenario": "one-flying",
+      "frames": 120,
+      "frameMs": {
+        "mean": 16.665833333336437,
+        "p95": 17.199999999254942,
+        "p99": 18.199999999254942
+      },
+      "cpuMs": {
+        "mean": 0.41750000001241766,
+        "p95": 0.6000000014901161,
+        "p99": 0.6999999992549419
+      },
+      "physicsMs": {
+        "mean": 0.4125,
+        "p95": 0.6000000014901161,
+        "p99": 0.6999999992549419
+      },
+      "predictionMs": {
+        "mean": 0,
+        "p95": 0,
+        "p99": 0
+      },
+      "collisionQueries": {
+        "mean": 2,
+        "p95": 2,
+        "p99": 2
+      },
+      "drawCalls": {
+        "mean": 82,
+        "p95": 82,
+        "p99": 82
+      },
+      "triangles": {
+        "mean": 976,
+        "p95": 976,
+        "p99": 976
+      },
+      "flying": 1,
+      "embedded": 0,
+      "dots": 0,
+      "geometryCount": 2,
+      "bufferBytes": 8292,
+      "afterCleanupGeometries": 1,
+      "afterCleanupDrawCalls": 81
+    },
+    {
+      "trial": 0,
+      "scenario": "sixteen-flying",
+      "frames": 120,
+      "frameMs": {
+        "mean": 16.66500000000621,
+        "p95": 17.200000001117587,
+        "p99": 17.40000000037253
+      },
+      "cpuMs": {
+        "mean": 1.7575000000186265,
+        "p95": 2.400000000372529,
+        "p99": 2.700000001117587
+      },
+      "physicsMs": {
+        "mean": 1.7466666666790842,
+        "p95": 2.400000000372529,
+        "p99": 2.700000001117587
+      },
+      "predictionMs": {
+        "mean": 0,
+        "p95": 0,
+        "p99": 0
+      },
+      "collisionQueries": {
+        "mean": 32,
+        "p95": 32,
+        "p99": 32
+      },
+      "drawCalls": {
+        "mean": 82,
+        "p95": 82,
+        "p99": 82
+      },
+      "triangles": {
+        "mean": 1036,
+        "p95": 1036,
+        "p99": 1036
+      },
+      "flying": 16,
+      "embedded": 0,
+      "dots": 0,
+      "geometryCount": 2,
+      "bufferBytes": 8292,
+      "afterCleanupGeometries": 1,
+      "afterCleanupDrawCalls": 81
+    },
+    {
+      "trial": 0,
+      "scenario": "64-embedded",
+      "frames": 120,
+      "frameMs": {
+        "mean": 16.66333333333023,
+        "p95": 17.09999999962747,
+        "p99": 17.299999998882413
+      },
+      "cpuMs": {
+        "mean": 0.12666666670702398,
+        "p95": 0.2000000011175871,
+        "p99": 0.2999999988824129
+      },
+      "physicsMs": {
+        "mean": 0.12166666672565044,
+        "p95": 0.2000000011175871,
+        "p99": 0.2999999988824129
+      },
+      "predictionMs": {
+        "mean": 0,
+        "p95": 0,
+        "p99": 0
+      },
+      "collisionQueries": {
+        "mean": 0,
+        "p95": 0,
+        "p99": 0
+      },
+      "drawCalls": {
+        "mean": 82,
+        "p95": 82,
+        "p99": 82
+      },
+      "triangles": {
+        "mean": 1228,
+        "p95": 1228,
+        "p99": 1228
+      },
+      "flying": 0,
+      "embedded": 64,
+      "dots": 0,
+      "geometryCount": 2,
+      "bufferBytes": 8292,
+      "afterCleanupGeometries": 1,
+      "afterCleanupDrawCalls": 81
+    },
+    {
+      "trial": 0,
+      "scenario": "preview-disabled",
+      "frames": 120,
+      "frameMs": {
+        "mean": 16.668333333327123,
+        "p95": 17.199999999254942,
+        "p99": 17.300000000745058
+      },
+      "cpuMs": {
+        "mean": 0.007500000018626452,
+        "p95": 0.09999999962747097,
+        "p99": 0.10000000149011612
+      },
+      "physicsMs": {
+        "mean": 0,
+        "p95": 0,
+        "p99": 0
+      },
+      "predictionMs": {
+        "mean": 0,
+        "p95": 0,
+        "p99": 0
+      },
+      "collisionQueries": {
+        "mean": 0,
+        "p95": 0,
+        "p99": 0
+      },
+      "drawCalls": {
+        "mean": 81,
+        "p95": 81,
+        "p99": 81
+      },
+      "triangles": {
+        "mean": 972,
+        "p95": 972,
+        "p99": 972
+      },
+      "flying": 0,
+      "embedded": 0,
+      "dots": 0,
+      "geometryCount": 2,
+      "bufferBytes": 8292,
+      "afterCleanupGeometries": 1,
+      "afterCleanupDrawCalls": 81
+    },
+    {
+      "trial": 0,
+      "scenario": "minimum-force-preview",
+      "frames": 120,
+      "frameMs": {
+        "mean": 16.665833333336437,
+        "p95": 17,
+        "p99": 17.199999999254942
+      },
+      "cpuMs": {
+        "mean": 0.04166666665114462,
+        "p95": 0.10000000149011612,
+        "p99": 0.2000000011175871
+      },
+      "physicsMs": {
+        "mean": 0,
+        "p95": 0,
+        "p99": 0
+      },
+      "predictionMs": {
+        "mean": 0.002499999990686774,
+        "p95": 0,
+        "p99": 0.09999999962747097
+      },
+      "collisionQueries": {
+        "mean": 0,
+        "p95": 0,
+        "p99": 0
+      },
+      "drawCalls": {
+        "mean": 82,
+        "p95": 82,
+        "p99": 82
+      },
+      "triangles": {
+        "mean": 972,
+        "p95": 972,
+        "p99": 972
+      },
+      "flying": 0,
+      "embedded": 0,
+      "dots": 19,
+      "geometryCount": 3,
+      "bufferBytes": 8292,
+      "afterCleanupGeometries": 1,
+      "afterCleanupDrawCalls": 81
+    },
+    {
+      "trial": 0,
+      "scenario": "maximum-force-long-preview",
+      "frames": 120,
+      "frameMs": {
+        "mean": 16.66500000000621,
+        "p95": 17.100000001490116,
+        "p99": 17.40000000037253
+      },
+      "cpuMs": {
+        "mean": 0.03666666666977107,
+        "p95": 0.10000000149011612,
+        "p99": 0.10000000149011612
+      },
+      "physicsMs": {
+        "mean": 0,
+        "p95": 0,
+        "p99": 0
+      },
+      "predictionMs": {
+        "mean": 0.0008333333302289247,
+        "p95": 0,
+        "p99": 0
+      },
+      "collisionQueries": {
+        "mean": 0,
+        "p95": 0,
+        "p99": 0
+      },
+      "drawCalls": {
+        "mean": 82,
+        "p95": 82,
+        "p99": 82
+      },
+      "triangles": {
+        "mean": 972,
+        "p95": 972,
+        "p99": 972
+      },
+      "flying": 0,
+      "embedded": 0,
+      "dots": 74,
+      "geometryCount": 3,
+      "bufferBytes": 8292,
+      "afterCleanupGeometries": 1,
+      "afterCleanupDrawCalls": 81
+    },
+    {
+      "trial": 0,
+      "scenario": "moving-aim-dense-colliders",
+      "frames": 120,
+      "frameMs": {
+        "mean": 16.667499999996895,
+        "p95": 17,
+        "p99": 17
+      },
+      "cpuMs": {
+        "mean": 3.3191666666573534,
+        "p95": 6.199999999254942,
+        "p99": 7.099999999627471
+      },
+      "physicsMs": {
+        "mean": 0,
+        "p95": 0,
+        "p99": 0
+      },
+      "predictionMs": {
+        "mean": 3.284166666616996,
+        "p95": 6.100000001490116,
+        "p99": 7.099999999627471
+      },
+      "collisionQueries": {
+        "mean": 71.2,
+        "p95": 120,
+        "p99": 120
+      },
+      "drawCalls": {
+        "mean": 82,
+        "p95": 82,
+        "p99": 82
+      },
+      "triangles": {
+        "mean": 972,
+        "p95": 972,
+        "p99": 972
+      },
+      "flying": 0,
+      "embedded": 0,
+      "dots": 87,
+      "geometryCount": 3,
+      "bufferBytes": 8292,
+      "afterCleanupGeometries": 1,
+      "afterCleanupDrawCalls": 81
+    },
+    {
+      "trial": 1,
+      "scenario": "moving-aim-dense-colliders",
+      "frames": 120,
+      "frameMs": {
+        "mean": 16.665833333336437,
+        "p95": 16.90000000037253,
+        "p99": 17.09999999962747
+      },
+      "cpuMs": {
+        "mean": 3.249166666669771,
+        "p95": 6.099999999627471,
+        "p99": 6.700000001117587
+      },
+      "physicsMs": {
+        "mean": 0,
+        "p95": 0,
+        "p99": 0
+      },
+      "predictionMs": {
+        "mean": 3.22333333332402,
+        "p95": 6,
+        "p99": 6.700000001117587
+      },
+      "collisionQueries": {
+        "mean": 72.68333333333334,
+        "p95": 120,
+        "p99": 120
+      },
+      "drawCalls": {
+        "mean": 82,
+        "p95": 82,
+        "p99": 82
+      },
+      "triangles": {
+        "mean": 972,
+        "p95": 972,
+        "p99": 972
+      },
+      "flying": 0,
+      "embedded": 0,
+      "dots": 85,
+      "geometryCount": 3,
+      "bufferBytes": 8292,
+      "afterCleanupGeometries": 1,
+      "afterCleanupDrawCalls": 81
+    },
+    {
+      "trial": 1,
+      "scenario": "maximum-force-long-preview",
+      "frames": 120,
+      "frameMs": {
+        "mean": 16.66500000000621,
+        "p95": 17,
+        "p99": 17.299999998882413
+      },
+      "cpuMs": {
+        "mean": 0.02750000008381903,
+        "p95": 0.10000000149011612,
+        "p99": 0.19999999925494194
+      },
+      "physicsMs": {
+        "mean": 0,
+        "p95": 0,
+        "p99": 0
+      },
+      "predictionMs": {
+        "mean": 0.0016666666604578495,
+        "p95": 0,
+        "p99": 0.09999999962747097
+      },
+      "collisionQueries": {
+        "mean": 0,
+        "p95": 0,
+        "p99": 0
+      },
+      "drawCalls": {
+        "mean": 82,
+        "p95": 82,
+        "p99": 82
+      },
+      "triangles": {
+        "mean": 972,
+        "p95": 972,
+        "p99": 972
+      },
+      "flying": 0,
+      "embedded": 0,
+      "dots": 74,
+      "geometryCount": 3,
+      "bufferBytes": 8292,
+      "afterCleanupGeometries": 1,
+      "afterCleanupDrawCalls": 81
+    },
+    {
+      "trial": 1,
+      "scenario": "minimum-force-preview",
+      "frames": 120,
+      "frameMs": {
+        "mean": 16.666666666666668,
+        "p95": 17,
+        "p99": 17.299999998882413
+      },
+      "cpuMs": {
+        "mean": 0.025000000015522043,
+        "p95": 0.10000000149011612,
+        "p99": 0.10000000149011612
+      },
+      "physicsMs": {
+        "mean": 0,
+        "p95": 0,
+        "p99": 0
+      },
+      "predictionMs": {
+        "mean": 0.0016666666604578495,
+        "p95": 0,
+        "p99": 0.09999999962747097
+      },
+      "collisionQueries": {
+        "mean": 0,
+        "p95": 0,
+        "p99": 0
+      },
+      "drawCalls": {
+        "mean": 82,
+        "p95": 82,
+        "p99": 82
+      },
+      "triangles": {
+        "mean": 972,
+        "p95": 972,
+        "p99": 972
+      },
+      "flying": 0,
+      "embedded": 0,
+      "dots": 19,
+      "geometryCount": 3,
+      "bufferBytes": 8292,
+      "afterCleanupGeometries": 1,
+      "afterCleanupDrawCalls": 81
+    },
+    {
+      "trial": 1,
+      "scenario": "preview-disabled",
+      "frames": 120,
+      "frameMs": {
+        "mean": 16.66500000000621,
+        "p95": 17,
+        "p99": 17.199999999254942
+      },
+      "cpuMs": {
+        "mean": 0.004999999996895591,
+        "p95": 0.09999999962747097,
+        "p99": 0.09999999962747097
+      },
+      "physicsMs": {
+        "mean": 0,
+        "p95": 0,
+        "p99": 0
+      },
+      "predictionMs": {
+        "mean": 0,
+        "p95": 0,
+        "p99": 0
+      },
+      "collisionQueries": {
+        "mean": 0,
+        "p95": 0,
+        "p99": 0
+      },
+      "drawCalls": {
+        "mean": 81,
+        "p95": 81,
+        "p99": 81
+      },
+      "triangles": {
+        "mean": 972,
+        "p95": 972,
+        "p99": 972
+      },
+      "flying": 0,
+      "embedded": 0,
+      "dots": 0,
+      "geometryCount": 2,
+      "bufferBytes": 8292,
+      "afterCleanupGeometries": 1,
+      "afterCleanupDrawCalls": 81
+    },
+    {
+      "trial": 1,
+      "scenario": "64-embedded",
+      "frames": 120,
+      "frameMs": {
+        "mean": 16.668333333342648,
+        "p95": 17,
+        "p99": 17.09999999962747
+      },
+      "cpuMs": {
+        "mean": 0.10583333326503634,
+        "p95": 0.2000000011175871,
+        "p99": 0.30000000074505806
+      },
+      "physicsMs": {
+        "mean": 0.09749999994722505,
+        "p95": 0.2000000011175871,
+        "p99": 0.2000000011175871
+      },
+      "predictionMs": {
+        "mean": 0,
+        "p95": 0,
+        "p99": 0
+      },
+      "collisionQueries": {
+        "mean": 0,
+        "p95": 0,
+        "p99": 0
+      },
+      "drawCalls": {
+        "mean": 82,
+        "p95": 82,
+        "p99": 82
+      },
+      "triangles": {
+        "mean": 1228,
+        "p95": 1228,
+        "p99": 1228
+      },
+      "flying": 0,
+      "embedded": 64,
+      "dots": 0,
+      "geometryCount": 2,
+      "bufferBytes": 8292,
+      "afterCleanupGeometries": 1,
+      "afterCleanupDrawCalls": 81
+    },
+    {
+      "trial": 1,
+      "scenario": "sixteen-flying",
+      "frames": 120,
+      "frameMs": {
+        "mean": 16.669166666657354,
+        "p95": 17.09999999962747,
+        "p99": 17.200000001117587
+      },
+      "cpuMs": {
+        "mean": 1.6558333332495143,
+        "p95": 2.299999998882413,
+        "p99": 2.5
+      },
+      "physicsMs": {
+        "mean": 1.64499999989445,
+        "p95": 2.299999998882413,
+        "p99": 2.5
+      },
+      "predictionMs": {
+        "mean": 0,
+        "p95": 0,
+        "p99": 0
+      },
+      "collisionQueries": {
+        "mean": 32,
+        "p95": 32,
+        "p99": 32
+      },
+      "drawCalls": {
+        "mean": 82,
+        "p95": 82,
+        "p99": 82
+      },
+      "triangles": {
+        "mean": 1036,
+        "p95": 1036,
+        "p99": 1036
+      },
+      "flying": 16,
+      "embedded": 0,
+      "dots": 0,
+      "geometryCount": 2,
+      "bufferBytes": 8292,
+      "afterCleanupGeometries": 1,
+      "afterCleanupDrawCalls": 81
+    },
+    {
+      "trial": 1,
+      "scenario": "one-flying",
+      "frames": 120,
+      "frameMs": {
+        "mean": 16.666666666666668,
+        "p95": 17,
+        "p99": 17.199999999254942
+      },
+      "cpuMs": {
+        "mean": 0.18000000016763806,
+        "p95": 0.30000000074505806,
+        "p99": 0.30000000074505806
+      },
+      "physicsMs": {
+        "mean": 0.17500000012417635,
+        "p95": 0.30000000074505806,
+        "p99": 0.30000000074505806
+      },
+      "predictionMs": {
+        "mean": 0,
+        "p95": 0,
+        "p99": 0
+      },
+      "collisionQueries": {
+        "mean": 2,
+        "p95": 2,
+        "p99": 2
+      },
+      "drawCalls": {
+        "mean": 82,
+        "p95": 82,
+        "p99": 82
+      },
+      "triangles": {
+        "mean": 976,
+        "p95": 976,
+        "p99": 976
+      },
+      "flying": 1,
+      "embedded": 0,
+      "dots": 0,
+      "geometryCount": 2,
+      "bufferBytes": 8292,
+      "afterCleanupGeometries": 1,
+      "afterCleanupDrawCalls": 81
+    },
+    {
+      "trial": 1,
+      "scenario": "no-arrows",
+      "frames": 120,
+      "frameMs": {
+        "mean": 16.666666666666668,
+        "p95": 17,
+        "p99": 17.200000001117587
+      },
+      "cpuMs": {
+        "mean": 0.0033333333364377418,
+        "p95": 0,
+        "p99": 0.09999999962747097
+      },
+      "physicsMs": {
+        "mean": 0,
+        "p95": 0,
+        "p99": 0
+      },
+      "predictionMs": {
+        "mean": 0,
+        "p95": 0,
+        "p99": 0
+      },
+      "collisionQueries": {
+        "mean": 0,
+        "p95": 0,
+        "p99": 0
+      },
+      "drawCalls": {
+        "mean": 81,
+        "p95": 81,
+        "p99": 81
+      },
+      "triangles": {
+        "mean": 972,
+        "p95": 972,
+        "p99": 972
+      },
+      "flying": 0,
+      "embedded": 0,
+      "dots": 0,
+      "geometryCount": 2,
+      "bufferBytes": 8292,
+      "afterCleanupGeometries": 1,
+      "afterCleanupDrawCalls": 81
+    }
+  ]
+}

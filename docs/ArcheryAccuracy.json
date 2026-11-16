@@ -1,0 +1,13 @@
+{
+  "cases": 243,
+  "frameRates": [
+    30,
+    60,
+    144
+  ],
+  "fixedStep": 0.008333333333333333,
+  "maxPredictedActualPositionErrorM": 0,
+  "maxTwoSecondFineReferenceErrorM": 0.00019161867348448518,
+  "fineReferenceStep": 0.0010416666666666667,
+  "conditions": "Same launch inputs and stationary colliders; shared midpoint algorithm. Real-time preview may lag during incremental recalculation."
+}

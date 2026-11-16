@@ -1,0 +1,9 @@
+// Placement uses the existing authoritative height/coverage interface, including signed infinity and finite NoData rejection.
+import test from 'node:test';import assert from 'node:assert/strict';import * as THREE from '../../lib/three/three.module.js';import {targetPlacement} from './Placement.mjs';
+test('placement honors source coverage, infinite signed coordinates, foot support and initial camera orientation',()=>{
+ const old=globalThis.window;try{for(const kind of ['procedural','geographic','map','hybrid','infinite']){
+  let covered=true,ready=true,rough=false;const camera=new THREE.PerspectiveCamera(60,1,.1,500);camera.position.set(kind==='infinite'?-20:20,8,20);camera.lookAt(camera.position.x,8,10);camera.updateMatrixWorld(true);const root=new THREE.Group(),dimensions=[400,400,400];dimensions.infinite=kind==='infinite';const collider={target:root,sampleGroundY:(x,z)=>rough&&x>camera.position.x+.3?4:3};root.userData={colliderRef:collider,terrainRuntime:{definition:{terrainSource:kind==='infinite'?'procedural':kind,size:[100,100,100],terrainMap:{outside:'empty'}},generator:{dimensions},manager:{},sampleTerrainSource:()=>({covered}),mapSampleReady:()=>ready}};
+  const ctx={THREE,camera,controls:{getObject:()=>camera},objects:[root],colliders:[collider]};globalThis.window={VRWorldContext:ctx};const p=targetPlacement(ctx);assert.equal(p.position[1],3);assert.ok(p.position[2]<20);if(kind==='infinite')assert.ok(p.position[0]<0);const face=new THREE.Vector3(0,0,1).applyEuler(new THREE.Euler(...p.rotation));assert.ok(face.z>.9);
+  if(['geographic','map','hybrid'].includes(kind)){covered=false;assert.throws(()=>targetPlacement(ctx),/coverage/);covered=true;}ready=false;assert.throws(()=>targetPlacement(ctx),/coverage/);ready=true;rough=true;assert.throws(()=>targetPlacement(ctx),/feet/);
+ }}finally{globalThis.window=old;}
+});

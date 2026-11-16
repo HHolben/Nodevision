@@ -1,0 +1,118 @@
+{
+  "hits": [
+    {
+      "arrowId": "arrow-1",
+      "shooterId": "session-player",
+      "launchForce": 59.24333333326504,
+      "launchSpeed": 38.48484550224447,
+      "flightDuration": 0.06498558588593806,
+      "traveledDistance": 2.5022243579823065,
+      "point": [
+        21,
+        1.7085620092856324,
+        15.071999999999997
+      ],
+      "normal": [
+        0,
+        0,
+        1
+      ],
+      "part": "face",
+      "incomingVelocity": [
+        0,
+        -2.8062987360073586,
+        -38.45536565276845
+      ],
+      "simulationTime": 0.06498558588593806,
+      "ringId": "bullseye",
+      "score": 10,
+      "radialDistance": 0.0761983255953036,
+      "normalizedRadialDistance": 0.126997209325506,
+      "localPoint": [
+        0,
+        1.4238016744046964,
+        0.05999999999999872
+      ],
+      "targetId": "ca434de5-fb77-4dc5-8d32-64479cd4aa92",
+      "targetLabel": "β",
+      "greekLetter": "β",
+      "timestamp": 1794789324140
+    },
+    {
+      "arrowId": "arrow-2",
+      "shooterId": "session-player",
+      "launchForce": 61.74583333333334,
+      "launchSpeed": 39.289258498135766,
+      "flightDuration": 0.06365509427618775,
+      "traveledDistance": 2.5020555980515797,
+      "point": [
+        21,
+        1.7121534729718924,
+        15.071999999999997
+      ],
+      "normal": [
+        0,
+        0,
+        1
+      ],
+      "part": "face",
+      "incomingVelocity": [
+        0,
+        -2.7488423083397646,
+        -39.259164502866064
+      ],
+      "simulationTime": 0.06365509427618775,
+      "ringId": "bullseye",
+      "score": 10,
+      "radialDistance": 0.07320543919008693,
+      "normalizedRadialDistance": 0.12200906531681155,
+      "localPoint": [
+        0,
+        1.426794560809913,
+        0.05999999999999872
+      ],
+      "targetId": "ca434de5-fb77-4dc5-8d32-64479cd4aa92",
+      "targetLabel": "β",
+      "greekLetter": "β",
+      "timestamp": 1794789326911
+    }
+  ],
+  "modes": [
+    {
+      "mode": "voxel",
+      "score": 10,
+      "snapshot": {
+        "lastForce": 59.24333333326504,
+        "lastSpeed": 38.48484550224447,
+        "physicsMs": 3.800000000745058,
+        "steps": 0,
+        "discardedSeconds": 0,
+        "flying": 0,
+        "embedded": 1,
+        "predictionMs": 0,
+        "dots": 0,
+        "recomputations": 0,
+        "collisionQueries": 9,
+        "bufferBytes": 8292
+      }
+    },
+    {
+      "mode": "polygonal",
+      "score": 10,
+      "snapshot": {
+        "lastForce": 61.74583333333334,
+        "lastSpeed": 39.289258498135766,
+        "physicsMs": 0.10000000149011612,
+        "steps": 0,
+        "discardedSeconds": 0,
+        "flying": 0,
+        "embedded": 2,
+        "predictionMs": 0,
+        "dots": 0,
+        "recomputations": 0,
+        "collisionQueries": 18,
+        "bufferBytes": 8292
+      }
+    }
+  ]
+}

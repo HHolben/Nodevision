@@ -1,0 +1,92 @@
+{
+  "unitFilesPassed": 60,
+  "focusedCases": 18,
+  "integration": [
+    "native GameView vegetation",
+    "world extent",
+    "terrain maps/imports",
+    "Raycasting Teleporter"
+  ],
+  "artifacts": {
+    "TerrainE2VisualMetrics.json": {
+      "sha256": "06d9bf10d39b1c519be4e66aea432215fd40c3a17b41864de10401a27c828267",
+      "cases": 4,
+      "complete": true
+    },
+    "TerrainE2Performance.json": {
+      "sha256": "e5c725c1072ea40c68fb0bbc2db9d6ab7b062ca132e7c454cd6e8857dc8dcb71",
+      "cases": 36,
+      "complete": true
+    },
+    "TerrainE2PostGuardPerformance.json": {
+      "sha256": "c7ae9c31aaafccfbf700b5a0d519fc67bb97bb309b253d4f7c97d40b150d3840",
+      "cases": 4,
+      "complete": true
+    },
+    "TerrainE2CPU.json": {
+      "sha256": "b00e58ce1c550698cac8efb41ca32895c2a566b5417cb6e57769faaec972ef3d",
+      "cases": 48,
+      "complete": true
+    },
+    "TerrainE2Isolation.json": {
+      "sha256": "0ef83cf8ced1b1b813c9b7095e0313ab9f0772956d7b722de93f7d21cf7fda81",
+      "cases": 6,
+      "complete": true
+    },
+    "TerrainE2ResumeBaseline.json": {
+      "sha256": "1768cde73d7bf76a419609675a18f3fd55b100575d2e74f922eadc80cb7b3616",
+      "cases": 0,
+      "complete": true
+    },
+    "TerrainE2ResumeResults.json": {
+      "sha256": "97119e15e187f98d33aa26b25b82f2185cbe72f610cb9a19cb23dc666d157ee3",
+      "cases": 8,
+      "complete": true
+    }
+  },
+  "limitations": [
+    "Chromium SwiftShader; no hardware GPU FPS claim",
+    "Main matrix predates same-ID source-edit guard; final four-case performance check retained separately"
+  ],
+  "resumedFix": {
+    "unitFilesPassed": 60,
+    "gameViewFilesPassed": 10,
+    "focusedE2Cases": 18,
+    "beforeRegression": "Actual runtime invalidation failed to restore target proxy without loaded-map revision",
+    "afterRegression": "Pass; proxy remains through intermediate recovery in both modes",
+    "production": [
+      "GameView vegetation, E3 controls/history, Editor/Viewer",
+      "extent UI, negative collision/editing, excavation, paths",
+      "finite map/hybrid and imported assets",
+      "Raycasting Teleporter",
+      "Archery Bow"
+    ],
+    "results": "TerrainE2ResumeResults.json",
+    "cases": 8,
+    "additionalRenderedCaptures": 16,
+    "benchmarkScope": "Two reversed-order stationary/recovery trials per representation; previous 36-case movement matrix retained as historical, not rerun",
+    "sourceSha256": {
+      "Runtime.mjs": "59710f011af831c195f73a6221a84c5fe2b6f8fdf197183d3c1bb1eaa9bb0093",
+      "Ownership.mjs": "565bf71a949dc15a41ef8c12548d72ea12c316fdea5be08c09e36b7325f12ae6",
+      "Continuity.test.mjs": "b18a78a67d563e34742c4dc7c3547c03b4be2795034f769ac6188375a19c3249"
+    },
+    "visualSha256": {
+      "before-polygonal-ready.png": "13d682cd634971e0c296b747babb09501bbaf28e3a1280267b667c3742310e51",
+      "before-voxel-restored.png": "70c5ab8a53ceca7b10f80cebcf6792dbc0f33f6d68c1d200e5c12c672ecc177a",
+      "after-polygonal-invalidated.png": "e294e1c67efc439b06a5f5f9b058aa9eeacdc1caacbc9538395a51156e2e9f79",
+      "before-polygonal-invalidated.png": "c25a9314f8d51b97e7c5f29091c318cf81761e710339b3b0acb4e6fb6d3395be",
+      "after-voxel-recovering.png": "629df29c896932c2a7e5e6c420594275f2208f4d97b3ee2eb075815fbd66d9bc",
+      "after-voxel-ready.png": "70c5ab8a53ceca7b10f80cebcf6792dbc0f33f6d68c1d200e5c12c672ecc177a",
+      "after-polygonal-ready.png": "13d682cd634971e0c296b747babb09501bbaf28e3a1280267b667c3742310e51",
+      "before-voxel-recovering.png": "b43c9f0c303153e298c826a1e668930bb0aa82b0ebbc3425e9c71d53a8db48fe",
+      "before-polygonal-recovering.png": "e277d7802ef108ba0d6c0f69bb11e84ff6ecc61c356c5f801eb9813d03ebb36d",
+      "after-polygonal-restored.png": "13d682cd634971e0c296b747babb09501bbaf28e3a1280267b667c3742310e51",
+      "after-voxel-invalidated.png": "99640cde3b54aa78d2573e08d3b6963f209e7715c17f57286c87e2a75e294854",
+      "before-voxel-ready.png": "70c5ab8a53ceca7b10f80cebcf6792dbc0f33f6d68c1d200e5c12c672ecc177a",
+      "after-voxel-restored.png": "70c5ab8a53ceca7b10f80cebcf6792dbc0f33f6d68c1d200e5c12c672ecc177a",
+      "before-polygonal-restored.png": "13d682cd634971e0c296b747babb09501bbaf28e3a1280267b667c3742310e51",
+      "before-voxel-invalidated.png": "8b9f0273cc7133441bb9619c5d9eaece16a94d82dcd62e1803a70f113f4bb47b",
+      "after-polygonal-recovering.png": "ea9f1f41a815bc1ecab52bbd449fcac5947c97354bfadda71fdc9d0d81e399fa"
+    }
+  }
+}

@@ -1,0 +1,708 @@
+{
+  "complete": true,
+  "records": [
+    {
+      "name": "gentle",
+      "variant": "original",
+      "vertices": 55370,
+      "triangles": 104024,
+      "bufferBytes": 2395984,
+      "naturalTopSamples": 15106,
+      "uniqueTopNormals": 4,
+      "heightMeanErrorM": -0.12496354094380394,
+      "heightRmseM": 0.13618497952408085,
+      "normalMeanErrorDegrees": 18.343856142327464,
+      "edgeNormalMeanJumpDegrees": 14.813525436099162,
+      "seamPairs": 1633,
+      "seamNormalMaxComponentDifference": 0,
+      "extractionMs": 231.49999997764826,
+      "generationMs": 29.700000032782555,
+      "frameMs": {
+        "samples": 90,
+        "mean": 16.666666666666668,
+        "p95": 19.30000000447035,
+        "max": 26.099999994039536
+      },
+      "submissionMs": {
+        "samples": 90,
+        "mean": 0.25000000016556845,
+        "p95": 0.3999999985098839,
+        "max": 0.6000000014901161
+      },
+      "driverMs": {
+        "samples": 86,
+        "mean": 13.638963674418601,
+        "p95": 17.0577,
+        "max": 22.881251
+      },
+      "calls": 26,
+      "submittedTriangles": 104024,
+      "pictures": {
+        "lit": "TerrainE3Visuals/gentle-original-lit.png",
+        "neutral": "TerrainE3Visuals/gentle-original-neutral.png",
+        "unlit": "TerrainE3Visuals/gentle-original-unlit.png",
+        "normals": "TerrainE3Visuals/gentle-original-normals.png",
+        "wire": "TerrainE3Visuals/gentle-original-wire.png",
+        "flat": "TerrainE3Visuals/gentle-original-flat.png"
+      },
+      "unchangedGeometryRenders": {}
+    },
+    {
+      "name": "gentle",
+      "variant": "modified",
+      "vertices": 55370,
+      "triangles": 104024,
+      "bufferBytes": 2395984,
+      "naturalTopSamples": 15106,
+      "uniqueTopNormals": 537,
+      "heightMeanErrorM": -0.12496354094380394,
+      "heightRmseM": 0.13618497952408085,
+      "normalMeanErrorDegrees": 1.1073210087678909,
+      "edgeNormalMeanJumpDegrees": 0.3963797166011729,
+      "seamPairs": 1633,
+      "seamNormalMaxComponentDifference": 0,
+      "extractionMs": 166.99999997764826,
+      "generationMs": 7.800000011920929,
+      "frameMs": {
+        "samples": 90,
+        "mean": 16.66222222223878,
+        "p95": 18.299999997019768,
+        "max": 20.600000001490116
+      },
+      "submissionMs": {
+        "samples": 90,
+        "mean": 0.2533333334657881,
+        "p95": 0.3999999985098839,
+        "max": 0.6999999955296516
+      },
+      "driverMs": {
+        "samples": 89,
+        "mean": 13.15210748314607,
+        "p95": 16.065747,
+        "max": 18.230418
+      },
+      "calls": 26,
+      "submittedTriangles": 104024,
+      "pictures": {
+        "lit": "TerrainE3Visuals/gentle-modified-lit.png",
+        "neutral": "TerrainE3Visuals/gentle-modified-neutral.png",
+        "unlit": "TerrainE3Visuals/gentle-modified-unlit.png",
+        "normals": "TerrainE3Visuals/gentle-modified-normals.png",
+        "wire": "TerrainE3Visuals/gentle-modified-wire.png",
+        "flat": "TerrainE3Visuals/gentle-modified-flat.png"
+      },
+      "unchangedGeometryRenders": {
+        "unlit": true,
+        "wire": true,
+        "flat": true
+      }
+    },
+    {
+      "name": "gentle",
+      "variant": "lod1",
+      "vertices": 2048,
+      "triangles": 1024,
+      "bufferBytes": 96256,
+      "naturalTopSamples": 988,
+      "uniqueTopNormals": 3,
+      "heightMeanErrorM": -0.09887749486812236,
+      "heightRmseM": 0.12256501626510123,
+      "normalMeanErrorDegrees": 13.554912806562214,
+      "edgeNormalMeanJumpDegrees": 17.51306429009058,
+      "seamPairs": 819,
+      "seamNormalMaxComponentDifference": 0,
+      "extractionMs": 5.799999997019768,
+      "generationMs": 0,
+      "frameMs": {
+        "samples": 90,
+        "mean": 16.663333333283664,
+        "p95": 17,
+        "max": 21.5
+      },
+      "submissionMs": {
+        "samples": 90,
+        "mean": 0.14222222144405047,
+        "p95": 0.20000000298023224,
+        "max": 0.30000000447034836
+      },
+      "driverMs": {
+        "samples": 89,
+        "mean": 10.83726707865169,
+        "p95": 12.914365,
+        "max": 16.911622
+      },
+      "calls": 1,
+      "submittedTriangles": 1024,
+      "pictures": {
+        "lit": "TerrainE3Visuals/gentle-lod1-lit.png",
+        "neutral": "TerrainE3Visuals/gentle-lod1-neutral.png",
+        "unlit": "TerrainE3Visuals/gentle-lod1-unlit.png",
+        "normals": "TerrainE3Visuals/gentle-lod1-normals.png",
+        "wire": "TerrainE3Visuals/gentle-lod1-wire.png",
+        "flat": "TerrainE3Visuals/gentle-lod1-flat.png"
+      },
+      "unchangedGeometryRenders": {}
+    },
+    {
+      "name": "gentle",
+      "variant": "lod2",
+      "vertices": 320,
+      "triangles": 160,
+      "bufferBytes": 15040,
+      "naturalTopSamples": 108,
+      "uniqueTopNormals": 2,
+      "heightMeanErrorM": -0.1143583543668596,
+      "heightRmseM": 0.12556230196214696,
+      "normalMeanErrorDegrees": 10.748141886182013,
+      "edgeNormalMeanJumpDegrees": 6.6412631372936355,
+      "seamPairs": 99,
+      "seamNormalMaxComponentDifference": 0,
+      "extractionMs": 1.1000000014901161,
+      "generationMs": 0,
+      "frameMs": {
+        "samples": 90,
+        "mean": 16.666666666666668,
+        "p95": 18.599999994039536,
+        "max": 21.200000002980232
+      },
+      "submissionMs": {
+        "samples": 90,
+        "mean": 0.12666666673289406,
+        "p95": 0.20000000298023224,
+        "max": 0.4000000059604645
+      },
+      "driverMs": {
+        "samples": 89,
+        "mean": 13.322995179775287,
+        "p95": 16.323064,
+        "max": 18.709931
+      },
+      "calls": 1,
+      "submittedTriangles": 160,
+      "pictures": {
+        "lit": "TerrainE3Visuals/gentle-lod2-lit.png",
+        "neutral": "TerrainE3Visuals/gentle-lod2-neutral.png",
+        "unlit": "TerrainE3Visuals/gentle-lod2-unlit.png",
+        "normals": "TerrainE3Visuals/gentle-lod2-normals.png",
+        "wire": "TerrainE3Visuals/gentle-lod2-wire.png",
+        "flat": "TerrainE3Visuals/gentle-lod2-flat.png"
+      },
+      "unchangedGeometryRenders": {}
+    },
+    {
+      "name": "gentle",
+      "variant": "heightfield025",
+      "vertices": 16641,
+      "triangles": 32768,
+      "bufferBytes": 595992,
+      "naturalTopSamples": 11025,
+      "uniqueTopNormals": 3,
+      "heightMeanErrorM": -0.09662435571341024,
+      "heightRmseM": 0.1206313934458367,
+      "normalMeanErrorDegrees": 13.52582404098526,
+      "edgeNormalMeanJumpDegrees": 11.110480171196807,
+      "seamPairs": 0,
+      "seamNormalMaxComponentDifference": 0,
+      "extractionMs": 6.199999995529652,
+      "generationMs": 0,
+      "frameMs": {
+        "samples": 90,
+        "mean": 16.665555555538997,
+        "p95": 17,
+        "max": 17.099999994039536
+      },
+      "submissionMs": {
+        "samples": 90,
+        "mean": 0.11444444408019384,
+        "p95": 0.20000000298023224,
+        "max": 0.20000000298023224
+      },
+      "driverMs": {
+        "samples": 89,
+        "mean": 11.875302707865167,
+        "p95": 13.773528,
+        "max": 14.494787
+      },
+      "calls": 1,
+      "submittedTriangles": 32768,
+      "pictures": {
+        "lit": "TerrainE3Visuals/gentle-heightfield025-lit.png",
+        "neutral": "TerrainE3Visuals/gentle-heightfield025-neutral.png",
+        "unlit": "TerrainE3Visuals/gentle-heightfield025-unlit.png",
+        "normals": "TerrainE3Visuals/gentle-heightfield025-normals.png",
+        "wire": "TerrainE3Visuals/gentle-heightfield025-wire.png",
+        "flat": "TerrainE3Visuals/gentle-heightfield025-flat.png"
+      },
+      "unchangedGeometryRenders": {}
+    },
+    {
+      "name": "steep",
+      "variant": "original",
+      "vertices": 67930,
+      "triangles": 127516,
+      "bufferBytes": 2938856,
+      "naturalTopSamples": 20588,
+      "uniqueTopNormals": 4,
+      "heightMeanErrorM": -0.12525129226283652,
+      "heightRmseM": 0.1326839185625972,
+      "normalMeanErrorDegrees": 18.08625739906505,
+      "edgeNormalMeanJumpDegrees": 16.577896016524157,
+      "seamPairs": 1820,
+      "seamNormalMaxComponentDifference": 0,
+      "extractionMs": 197.09999999403954,
+      "generationMs": 45.8999999910593,
+      "frameMs": {
+        "samples": 90,
+        "mean": 16.82777777777778,
+        "p95": 19.099999994039536,
+        "max": 21.799999997019768
+      },
+      "submissionMs": {
+        "samples": 90,
+        "mean": 0.2755555556052261,
+        "p95": 0.4000000059604645,
+        "max": 1.2999999970197678
+      },
+      "driverMs": {
+        "samples": 89,
+        "mean": 14.339870134831461,
+        "p95": 16.287249,
+        "max": 19.906465
+      },
+      "calls": 36,
+      "submittedTriangles": 119324,
+      "pictures": {
+        "lit": "TerrainE3Visuals/steep-original-lit.png",
+        "neutral": "TerrainE3Visuals/steep-original-neutral.png",
+        "unlit": "TerrainE3Visuals/steep-original-unlit.png",
+        "normals": "TerrainE3Visuals/steep-original-normals.png",
+        "wire": "TerrainE3Visuals/steep-original-wire.png",
+        "flat": "TerrainE3Visuals/steep-original-flat.png"
+      },
+      "unchangedGeometryRenders": {}
+    },
+    {
+      "name": "steep",
+      "variant": "modified",
+      "vertices": 67930,
+      "triangles": 127516,
+      "bufferBytes": 2938856,
+      "naturalTopSamples": 20588,
+      "uniqueTopNormals": 557,
+      "heightMeanErrorM": -0.12525129226283652,
+      "heightRmseM": 0.1326839185625972,
+      "normalMeanErrorDegrees": 0.8265559234184295,
+      "edgeNormalMeanJumpDegrees": 0.2728618528217926,
+      "seamPairs": 1820,
+      "seamNormalMaxComponentDifference": 0,
+      "extractionMs": 197.7999999895692,
+      "generationMs": 29.400000035762787,
+      "frameMs": {
+        "samples": 90,
+        "mean": 16.89666666669978,
+        "p95": 19.299999997019768,
+        "max": 21.5
+      },
+      "submissionMs": {
+        "samples": 90,
+        "mean": 0.2522222225864728,
+        "p95": 0.4000000059604645,
+        "max": 1
+      },
+      "driverMs": {
+        "samples": 89,
+        "mean": 14.259364213483144,
+        "p95": 16.543436,
+        "max": 18.160946
+      },
+      "calls": 36,
+      "submittedTriangles": 119324,
+      "pictures": {
+        "lit": "TerrainE3Visuals/steep-modified-lit.png",
+        "neutral": "TerrainE3Visuals/steep-modified-neutral.png",
+        "unlit": "TerrainE3Visuals/steep-modified-unlit.png",
+        "normals": "TerrainE3Visuals/steep-modified-normals.png",
+        "wire": "TerrainE3Visuals/steep-modified-wire.png",
+        "flat": "TerrainE3Visuals/steep-modified-flat.png"
+      },
+      "unchangedGeometryRenders": {
+        "unlit": true,
+        "wire": true,
+        "flat": true
+      }
+    },
+    {
+      "name": "steep",
+      "variant": "lod1",
+      "vertices": 2048,
+      "triangles": 1024,
+      "bufferBytes": 96256,
+      "naturalTopSamples": 988,
+      "uniqueTopNormals": 3,
+      "heightMeanErrorM": -0.03503134102196912,
+      "heightRmseM": 0.07985710265776698,
+      "normalMeanErrorDegrees": 9.909624674120833,
+      "edgeNormalMeanJumpDegrees": 12.094651406479539,
+      "seamPairs": 819,
+      "seamNormalMaxComponentDifference": 0,
+      "extractionMs": 6.399999998509884,
+      "generationMs": 0,
+      "frameMs": {
+        "samples": 90,
+        "mean": 16.665555555538997,
+        "p95": 16.899999998509884,
+        "max": 17.299999997019768
+      },
+      "submissionMs": {
+        "samples": 90,
+        "mean": 0.10444444475902451,
+        "p95": 0.20000000298023224,
+        "max": 0.20000000298023224
+      },
+      "driverMs": {
+        "samples": 89,
+        "mean": 11.837853426966294,
+        "p95": 13.368899,
+        "max": 15.338957
+      },
+      "calls": 1,
+      "submittedTriangles": 1024,
+      "pictures": {
+        "lit": "TerrainE3Visuals/steep-lod1-lit.png",
+        "neutral": "TerrainE3Visuals/steep-lod1-neutral.png",
+        "unlit": "TerrainE3Visuals/steep-lod1-unlit.png",
+        "normals": "TerrainE3Visuals/steep-lod1-normals.png",
+        "wire": "TerrainE3Visuals/steep-lod1-wire.png",
+        "flat": "TerrainE3Visuals/steep-lod1-flat.png"
+      },
+      "unchangedGeometryRenders": {}
+    },
+    {
+      "name": "steep",
+      "variant": "lod2",
+      "vertices": 320,
+      "triangles": 160,
+      "bufferBytes": 15040,
+      "naturalTopSamples": 108,
+      "uniqueTopNormals": 3,
+      "heightMeanErrorM": -0.03769168770019308,
+      "heightRmseM": 0.08582477183475326,
+      "normalMeanErrorDegrees": 9.840440868347006,
+      "edgeNormalMeanJumpDegrees": 13.218812704264167,
+      "seamPairs": 99,
+      "seamNormalMaxComponentDifference": 0,
+      "extractionMs": 0.6000000014901161,
+      "generationMs": 0,
+      "frameMs": {
+        "samples": 90,
+        "mean": 16.67222222222222,
+        "p95": 17.700000002980232,
+        "max": 20.599999994039536
+      },
+      "submissionMs": {
+        "samples": 90,
+        "mean": 0.11111111102832688,
+        "p95": 0.20000000298023224,
+        "max": 0.8000000044703484
+      },
+      "driverMs": {
+        "samples": 89,
+        "mean": 13.14899335955056,
+        "p95": 15.735919,
+        "max": 17.871792
+      },
+      "calls": 1,
+      "submittedTriangles": 160,
+      "pictures": {
+        "lit": "TerrainE3Visuals/steep-lod2-lit.png",
+        "neutral": "TerrainE3Visuals/steep-lod2-neutral.png",
+        "unlit": "TerrainE3Visuals/steep-lod2-unlit.png",
+        "normals": "TerrainE3Visuals/steep-lod2-normals.png",
+        "wire": "TerrainE3Visuals/steep-lod2-wire.png",
+        "flat": "TerrainE3Visuals/steep-lod2-flat.png"
+      },
+      "unchangedGeometryRenders": {}
+    },
+    {
+      "name": "steep",
+      "variant": "heightfield025",
+      "vertices": 16641,
+      "triangles": 32768,
+      "bufferBytes": 595992,
+      "naturalTopSamples": 11025,
+      "uniqueTopNormals": 3,
+      "heightMeanErrorM": -0.03567197476102971,
+      "heightRmseM": 0.08053974319769737,
+      "normalMeanErrorDegrees": 10.668221083471524,
+      "edgeNormalMeanJumpDegrees": 12.700854741906733,
+      "seamPairs": 0,
+      "seamNormalMaxComponentDifference": 0,
+      "extractionMs": 8.399999998509884,
+      "generationMs": 0,
+      "frameMs": {
+        "samples": 90,
+        "mean": 16.66111111111111,
+        "p95": 22,
+        "max": 24.899999998509884
+      },
+      "submissionMs": {
+        "samples": 90,
+        "mean": 0.11333333336644702,
+        "p95": 0.20000000298023224,
+        "max": 0.29999999701976776
+      },
+      "driverMs": {
+        "samples": 89,
+        "mean": 12.813645146067413,
+        "p95": 18.728438,
+        "max": 21.855407
+      },
+      "calls": 1,
+      "submittedTriangles": 32768,
+      "pictures": {
+        "lit": "TerrainE3Visuals/steep-heightfield025-lit.png",
+        "neutral": "TerrainE3Visuals/steep-heightfield025-neutral.png",
+        "unlit": "TerrainE3Visuals/steep-heightfield025-unlit.png",
+        "normals": "TerrainE3Visuals/steep-heightfield025-normals.png",
+        "wire": "TerrainE3Visuals/steep-heightfield025-wire.png",
+        "flat": "TerrainE3Visuals/steep-heightfield025-flat.png"
+      },
+      "unchangedGeometryRenders": {}
+    },
+    {
+      "name": "edited",
+      "variant": "original",
+      "vertices": 57223,
+      "triangles": 107824,
+      "bufferBytes": 2478080,
+      "naturalTopSamples": 13954,
+      "uniqueTopNormals": 13,
+      "heightMeanErrorM": -0.12517900336820123,
+      "heightRmseM": 0.1371357906057241,
+      "normalMeanErrorDegrees": 18.661581966941192,
+      "edgeNormalMeanJumpDegrees": 14.965640061879284,
+      "seamPairs": 1442,
+      "seamNormalMaxComponentDifference": 0,
+      "extractionMs": 144.2999999895692,
+      "generationMs": 21.30000003427267,
+      "frameMs": {
+        "samples": 90,
+        "mean": 17.74111111106144,
+        "p95": 24.5,
+        "max": 28.799999997019768
+      },
+      "submissionMs": {
+        "samples": 90,
+        "mean": 0.20999999990065893,
+        "p95": 0.3999999985098839,
+        "max": 0.4000000059604645
+      },
+      "driverMs": {
+        "samples": 88,
+        "mean": 15.494720193181818,
+        "p95": 21.994173,
+        "max": 26.186228
+      },
+      "calls": 27,
+      "submittedTriangles": 107824,
+      "pictures": {
+        "lit": "TerrainE3Visuals/edited-original-lit.png",
+        "neutral": "TerrainE3Visuals/edited-original-neutral.png",
+        "unlit": "TerrainE3Visuals/edited-original-unlit.png",
+        "normals": "TerrainE3Visuals/edited-original-normals.png",
+        "wire": "TerrainE3Visuals/edited-original-wire.png",
+        "flat": "TerrainE3Visuals/edited-original-flat.png"
+      },
+      "unchangedGeometryRenders": {}
+    },
+    {
+      "name": "edited",
+      "variant": "modified",
+      "vertices": 57223,
+      "triangles": 107824,
+      "bufferBytes": 2478080,
+      "naturalTopSamples": 13954,
+      "uniqueTopNormals": 550,
+      "heightMeanErrorM": -0.12517900336820123,
+      "heightRmseM": 0.1371357906057241,
+      "normalMeanErrorDegrees": 1.6568333800581716,
+      "edgeNormalMeanJumpDegrees": 0.7765707153542687,
+      "seamPairs": 1442,
+      "seamNormalMaxComponentDifference": 0,
+      "extractionMs": 170.19999998807907,
+      "generationMs": 34.80000001192093,
+      "frameMs": {
+        "samples": 90,
+        "mean": 26.436666666633553,
+        "p95": 34.099999994039536,
+        "max": 63.19999999552965
+      },
+      "submissionMs": {
+        "samples": 90,
+        "mean": 0.2977777771651745,
+        "p95": 0.4000000059604645,
+        "max": 2
+      },
+      "driverMs": {
+        "samples": 88,
+        "mean": 23.216493625,
+        "p95": 29.990288,
+        "max": 58.940488
+      },
+      "calls": 27,
+      "submittedTriangles": 107824,
+      "pictures": {
+        "lit": "TerrainE3Visuals/edited-modified-lit.png",
+        "neutral": "TerrainE3Visuals/edited-modified-neutral.png",
+        "unlit": "TerrainE3Visuals/edited-modified-unlit.png",
+        "normals": "TerrainE3Visuals/edited-modified-normals.png",
+        "wire": "TerrainE3Visuals/edited-modified-wire.png",
+        "flat": "TerrainE3Visuals/edited-modified-flat.png"
+      },
+      "unchangedGeometryRenders": {
+        "unlit": true,
+        "wire": true,
+        "flat": true
+      }
+    },
+    {
+      "name": "edited",
+      "variant": "lod1",
+      "vertices": 2048,
+      "triangles": 1024,
+      "bufferBytes": 96256,
+      "naturalTopSamples": 988,
+      "uniqueTopNormals": 3,
+      "heightMeanErrorM": -0.09887749486812236,
+      "heightRmseM": 0.12256501626510123,
+      "normalMeanErrorDegrees": 13.554912806562214,
+      "edgeNormalMeanJumpDegrees": 17.51306429009058,
+      "seamPairs": 819,
+      "seamNormalMaxComponentDifference": 0,
+      "extractionMs": 7.100000001490116,
+      "generationMs": 0,
+      "frameMs": {
+        "samples": 90,
+        "mean": 16.621111111094553,
+        "p95": 17,
+        "max": 21.299999997019768
+      },
+      "submissionMs": {
+        "samples": 90,
+        "mean": 0.10777777781089147,
+        "p95": 0.20000000298023224,
+        "max": 0.20000000298023224
+      },
+      "driverMs": {
+        "samples": 89,
+        "mean": 11.30493784269663,
+        "p95": 14.548656,
+        "max": 17.629287
+      },
+      "calls": 1,
+      "submittedTriangles": 1024,
+      "pictures": {
+        "lit": "TerrainE3Visuals/edited-lod1-lit.png",
+        "neutral": "TerrainE3Visuals/edited-lod1-neutral.png",
+        "unlit": "TerrainE3Visuals/edited-lod1-unlit.png",
+        "normals": "TerrainE3Visuals/edited-lod1-normals.png",
+        "wire": "TerrainE3Visuals/edited-lod1-wire.png",
+        "flat": "TerrainE3Visuals/edited-lod1-flat.png"
+      },
+      "unchangedGeometryRenders": {}
+    },
+    {
+      "name": "edited",
+      "variant": "lod2",
+      "vertices": 320,
+      "triangles": 160,
+      "bufferBytes": 15040,
+      "naturalTopSamples": 108,
+      "uniqueTopNormals": 2,
+      "heightMeanErrorM": -0.1143583543668596,
+      "heightRmseM": 0.12556230196214696,
+      "normalMeanErrorDegrees": 10.748141886182013,
+      "edgeNormalMeanJumpDegrees": 6.6412631372936355,
+      "seamPairs": 99,
+      "seamNormalMaxComponentDifference": 0,
+      "extractionMs": 1.3999999985098839,
+      "generationMs": 0,
+      "frameMs": {
+        "samples": 90,
+        "mean": 17.33555555558867,
+        "p95": 21.700000002980232,
+        "max": 26.799999997019768
+      },
+      "submissionMs": {
+        "samples": 90,
+        "mean": 0.11777777787711885,
+        "p95": 0.20000000298023224,
+        "max": 0.29999999701976776
+      },
+      "driverMs": {
+        "samples": 89,
+        "mean": 14.287629280898878,
+        "p95": 18.43662,
+        "max": 20.636141
+      },
+      "calls": 1,
+      "submittedTriangles": 160,
+      "pictures": {
+        "lit": "TerrainE3Visuals/edited-lod2-lit.png",
+        "neutral": "TerrainE3Visuals/edited-lod2-neutral.png",
+        "unlit": "TerrainE3Visuals/edited-lod2-unlit.png",
+        "normals": "TerrainE3Visuals/edited-lod2-normals.png",
+        "wire": "TerrainE3Visuals/edited-lod2-wire.png",
+        "flat": "TerrainE3Visuals/edited-lod2-flat.png"
+      },
+      "unchangedGeometryRenders": {}
+    },
+    {
+      "name": "edited",
+      "variant": "heightfield025",
+      "vertices": 16641,
+      "triangles": 32768,
+      "bufferBytes": 595992,
+      "naturalTopSamples": 11025,
+      "uniqueTopNormals": 3,
+      "heightMeanErrorM": -0.09662435571341024,
+      "heightRmseM": 0.1206313934458367,
+      "normalMeanErrorDegrees": 13.52582404098526,
+      "edgeNormalMeanJumpDegrees": 11.110480171196807,
+      "seamPairs": 0,
+      "seamNormalMaxComponentDifference": 0,
+      "extractionMs": 17.600000001490116,
+      "generationMs": 0,
+      "frameMs": {
+        "samples": 90,
+        "mean": 16.66444444441133,
+        "p95": 21.19999999552965,
+        "max": 26.5
+      },
+      "submissionMs": {
+        "samples": 90,
+        "mean": 0.10333333354857233,
+        "p95": 0.20000000298023224,
+        "max": 0.29999999701976776
+      },
+      "driverMs": {
+        "samples": 89,
+        "mean": 12.199483179775283,
+        "p95": 18.674867,
+        "max": 24.001627
+      },
+      "calls": 1,
+      "submittedTriangles": 32768,
+      "pictures": {
+        "lit": "TerrainE3Visuals/edited-heightfield025-lit.png",
+        "neutral": "TerrainE3Visuals/edited-heightfield025-neutral.png",
+        "unlit": "TerrainE3Visuals/edited-heightfield025-unlit.png",
+        "normals": "TerrainE3Visuals/edited-heightfield025-normals.png",
+        "wire": "TerrainE3Visuals/edited-heightfield025-wire.png",
+        "flat": "TerrainE3Visuals/edited-heightfield025-flat.png"
+      },
+      "unchangedGeometryRenders": {}
+    }
+  ],
+  "environment": "Chromium SwiftShader, 800x500; software elapsed queries are not hardware GPU times. Diagnostic frames only, not a production FPS guarantee."
+}

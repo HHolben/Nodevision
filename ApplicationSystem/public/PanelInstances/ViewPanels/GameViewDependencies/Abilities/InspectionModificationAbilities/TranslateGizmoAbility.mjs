@@ -8,6 +8,7 @@ export function installTranslateGizmoAbility(ctx) {
 
   function disposeTranslateState() {
     if (!ctx.translateState) return;
+    ctx.translateState.target?.userData?.mobRuntime?.suspend(false,'translate');
     ctx.translateState.handles?.forEach((handle) => handle?.parent?.remove(handle));
     ctx.translateState.group?.parent?.remove(ctx.translateState.group);
     window.removeEventListener("pointerdown", onTranslatePointerDown, true);
@@ -23,6 +24,7 @@ export function installTranslateGizmoAbility(ctx) {
       if (ctx.translateState.dragging) return;
       disposeTranslateState();
     }
+    target?.userData?.mobRuntime?.suspend(true,'translate');
     const group = new THREE.Group();
     const handles = [];
     const axes = [

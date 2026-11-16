@@ -1,9 +1,11 @@
+import {mobDefinition} from './Mobs/Definition.mjs';
 // Nodevision/ApplicationSystem/public/MetaWorld/MetaWorldLoader.mjs
 // MetaWorld loader parses and validates embedded Nodevision world definitions.
 
 import { readWorldGravityModel } from "../PanelInstances/ViewPanels/GameViewDependencies/gravityModel.mjs";
 
 import { validateVoxelWorld } from "./ProceduralVoxelWorld/VoxelWorldDefinition.mjs";
+import {targetDefinition} from './ArcheryTarget/Definition.mjs';
 import { validatePath } from './Paths/PathDefinition.mjs';
 
 const WORLD_SCRIPT_ID = "nodevision-metaworld";
@@ -142,6 +144,8 @@ function inheritPatternField(clone, def, key) {
 }
 
 function expandVoxelPatternDefinition(def, index) {
+  if(def?.type==='mob')return [mobDefinition(def)];
+  if(def?.type==='archery-target')return [targetDefinition(def)];
   if (def?.type === 'physical-path') return [validatePath(def)];
   if (def?.type === "procedural-voxel-world") return [validateVoxelWorld(def)];
   if (!isVoxelPatternDefinition(def)) return [def];

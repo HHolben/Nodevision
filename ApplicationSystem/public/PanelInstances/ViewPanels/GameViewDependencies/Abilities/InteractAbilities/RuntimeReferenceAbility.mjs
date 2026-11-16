@@ -123,6 +123,7 @@ export function installRuntimeReferenceAbility(ctx) {
   }
 
   function updateColliderForTarget(target) {
+    if(target?.userData?.mobRuntime){target.userData.mobRuntime.refresh();return;}
     updateSpawnRuntimeForTarget(target);
     updatePortalRuntimeForTarget(target);
     const ref = target?.userData?.colliderRef;

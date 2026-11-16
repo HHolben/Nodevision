@@ -1,0 +1,293 @@
+{
+  "method": "Eight identical precomputed chunk buffers per source; one warmup trial per variant discarded; six interleaved warmed extraction trials, no concurrent browser benchmark. Includes halo queries and corrected normal preparation; generation is outside extraction.",
+  "results": [
+    {
+      "name": "procedural",
+      "trial": 0,
+      "variant": "baseline",
+      "elapsedMs": 79.92325500000004,
+      "vertices": 10320,
+      "triangles": 17956
+    },
+    {
+      "name": "procedural",
+      "trial": 0,
+      "variant": "modified",
+      "elapsedMs": 74.77890300000001,
+      "vertices": 10320,
+      "triangles": 17956
+    },
+    {
+      "name": "procedural",
+      "trial": 1,
+      "variant": "modified",
+      "elapsedMs": 69.72981599999997,
+      "vertices": 10320,
+      "triangles": 17956
+    },
+    {
+      "name": "procedural",
+      "trial": 1,
+      "variant": "baseline",
+      "elapsedMs": 58.83967500000006,
+      "vertices": 10320,
+      "triangles": 17956
+    },
+    {
+      "name": "procedural",
+      "trial": 2,
+      "variant": "baseline",
+      "elapsedMs": 56.64262899999994,
+      "vertices": 10320,
+      "triangles": 17956
+    },
+    {
+      "name": "procedural",
+      "trial": 2,
+      "variant": "modified",
+      "elapsedMs": 65.76532799999995,
+      "vertices": 10320,
+      "triangles": 17956
+    },
+    {
+      "name": "procedural",
+      "trial": 3,
+      "variant": "modified",
+      "elapsedMs": 71.43297200000006,
+      "vertices": 10320,
+      "triangles": 17956
+    },
+    {
+      "name": "procedural",
+      "trial": 3,
+      "variant": "baseline",
+      "elapsedMs": 56.930789000000004,
+      "vertices": 10320,
+      "triangles": 17956
+    },
+    {
+      "name": "procedural",
+      "trial": 4,
+      "variant": "baseline",
+      "elapsedMs": 55.033499000000006,
+      "vertices": 10320,
+      "triangles": 17956
+    },
+    {
+      "name": "procedural",
+      "trial": 4,
+      "variant": "modified",
+      "elapsedMs": 66.64716799999997,
+      "vertices": 10320,
+      "triangles": 17956
+    },
+    {
+      "name": "procedural",
+      "trial": 5,
+      "variant": "modified",
+      "elapsedMs": 63.999966000000086,
+      "vertices": 10320,
+      "triangles": 17956
+    },
+    {
+      "name": "procedural",
+      "trial": 5,
+      "variant": "baseline",
+      "elapsedMs": 51.80648499999984,
+      "vertices": 10320,
+      "triangles": 17956
+    },
+    {
+      "name": "infinite",
+      "trial": 0,
+      "variant": "baseline",
+      "elapsedMs": 60.35733099999993,
+      "vertices": 12997,
+      "triangles": 24096
+    },
+    {
+      "name": "infinite",
+      "trial": 0,
+      "variant": "modified",
+      "elapsedMs": 71.83876099999998,
+      "vertices": 12997,
+      "triangles": 24096
+    },
+    {
+      "name": "infinite",
+      "trial": 1,
+      "variant": "modified",
+      "elapsedMs": 68.49928799999998,
+      "vertices": 12997,
+      "triangles": 24096
+    },
+    {
+      "name": "infinite",
+      "trial": 1,
+      "variant": "baseline",
+      "elapsedMs": 57.44891699999994,
+      "vertices": 12997,
+      "triangles": 24096
+    },
+    {
+      "name": "infinite",
+      "trial": 2,
+      "variant": "baseline",
+      "elapsedMs": 60.68390599999998,
+      "vertices": 12997,
+      "triangles": 24096
+    },
+    {
+      "name": "infinite",
+      "trial": 2,
+      "variant": "modified",
+      "elapsedMs": 82.17274499999985,
+      "vertices": 12997,
+      "triangles": 24096
+    },
+    {
+      "name": "infinite",
+      "trial": 3,
+      "variant": "modified",
+      "elapsedMs": 69.74885200000017,
+      "vertices": 12997,
+      "triangles": 24096
+    },
+    {
+      "name": "infinite",
+      "trial": 3,
+      "variant": "baseline",
+      "elapsedMs": 55.57159300000012,
+      "vertices": 12997,
+      "triangles": 24096
+    },
+    {
+      "name": "infinite",
+      "trial": 4,
+      "variant": "baseline",
+      "elapsedMs": 56.09907099999987,
+      "vertices": 12997,
+      "triangles": 24096
+    },
+    {
+      "name": "infinite",
+      "trial": 4,
+      "variant": "modified",
+      "elapsedMs": 67.34588699999995,
+      "vertices": 12997,
+      "triangles": 24096
+    },
+    {
+      "name": "infinite",
+      "trial": 5,
+      "variant": "modified",
+      "elapsedMs": 65.62208400000009,
+      "vertices": 12997,
+      "triangles": 24096
+    },
+    {
+      "name": "infinite",
+      "trial": 5,
+      "variant": "baseline",
+      "elapsedMs": 55.13319700000011,
+      "vertices": 12997,
+      "triangles": 24096
+    },
+    {
+      "name": "geographic",
+      "trial": 0,
+      "variant": "baseline",
+      "elapsedMs": 144.4042989999998,
+      "vertices": 12187,
+      "triangles": 22454
+    },
+    {
+      "name": "geographic",
+      "trial": 0,
+      "variant": "modified",
+      "elapsedMs": 166.9276259999997,
+      "vertices": 12187,
+      "triangles": 22454
+    },
+    {
+      "name": "geographic",
+      "trial": 1,
+      "variant": "modified",
+      "elapsedMs": 167.48467000000028,
+      "vertices": 12187,
+      "triangles": 22454
+    },
+    {
+      "name": "geographic",
+      "trial": 1,
+      "variant": "baseline",
+      "elapsedMs": 157.52981099999988,
+      "vertices": 12187,
+      "triangles": 22454
+    },
+    {
+      "name": "geographic",
+      "trial": 2,
+      "variant": "baseline",
+      "elapsedMs": 144.6760360000003,
+      "vertices": 12187,
+      "triangles": 22454
+    },
+    {
+      "name": "geographic",
+      "trial": 2,
+      "variant": "modified",
+      "elapsedMs": 157.94969899999978,
+      "vertices": 12187,
+      "triangles": 22454
+    },
+    {
+      "name": "geographic",
+      "trial": 3,
+      "variant": "modified",
+      "elapsedMs": 156.46620499999972,
+      "vertices": 12187,
+      "triangles": 22454
+    },
+    {
+      "name": "geographic",
+      "trial": 3,
+      "variant": "baseline",
+      "elapsedMs": 137.83455400000003,
+      "vertices": 12187,
+      "triangles": 22454
+    },
+    {
+      "name": "geographic",
+      "trial": 4,
+      "variant": "baseline",
+      "elapsedMs": 137.56642599999986,
+      "vertices": 12187,
+      "triangles": 22454
+    },
+    {
+      "name": "geographic",
+      "trial": 4,
+      "variant": "modified",
+      "elapsedMs": 157.124409,
+      "vertices": 12187,
+      "triangles": 22454
+    },
+    {
+      "name": "geographic",
+      "trial": 5,
+      "variant": "modified",
+      "elapsedMs": 155.0927300000003,
+      "vertices": 12187,
+      "triangles": 22454
+    },
+    {
+      "name": "geographic",
+      "trial": 5,
+      "variant": "baseline",
+      "elapsedMs": 148.8049460000002,
+      "vertices": 12187,
+      "triangles": 22454
+    }
+  ]
+}

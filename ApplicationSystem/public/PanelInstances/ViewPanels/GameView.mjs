@@ -116,6 +116,7 @@ function cleanupLegacyGameView(panel, state = {}) {
     window.VRWorldContext.cancelPathDrawing?.();
     window.VRWorldContext.objects.forEach((object) => {
       try {
+        object?.userData?.mobRuntime?.dispose();
         object?.userData?.constructionRuntime?.dispose();
         object?.userData?.pathRuntime?.dispose();
         object?.userData?.proceduralVoxelRuntime?.dispose();

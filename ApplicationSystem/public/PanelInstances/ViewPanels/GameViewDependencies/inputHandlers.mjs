@@ -5,6 +5,10 @@ import { setStatus } from "/StatusBar.mjs";
 
 export function createInputHandlers({ getBindings, normalizeKeyName, movementState, acceptsInput = () => true }) {
   const heldKeys = {};
+  const toolInput = {events:[],revision:0};
+  if(movementState) movementState.toolInput=toolInput;
+  const useKey=()=>normalizeKeyName(getBindings()?.use || 'r');
+  function edge(key,down,e){if(key!==useKey()||e.repeat)return;if(toolInput.events.length>=32){toolInput.events.length=0;toolInput.revision++;return;}toolInput.events.push({down,time:performance.now()});}
   function syncMouseButtons(buttonMask) {
     if (!Number.isFinite(buttonMask)) return;
     heldKeys.mouse0 = (buttonMask & 1) !== 0;
@@ -13,6 +17,7 @@ export function createInputHandlers({ getBindings, normalizeKeyName, movementSta
   }
 
   function clearTransientInputs() {
+    toolInput.events.length=0;toolInput.revision++;
     Object.keys(heldKeys).forEach((key) => {
       heldKeys[key] = false;
     });
@@ -41,8 +46,9 @@ export function createInputHandlers({ getBindings, normalizeKeyName, movementSta
   }
 
   const onKeyDown = (e) => {
-    if (movementState?.textEditing || e.target?.closest?.('input,textarea,select,[contenteditable="true"]')) { clearTransientInputs(); return; }
-    if (e.key === "Escape" || e.defaultPrevented || !acceptsInput(e)) return;
+    if (movementState?.textEditing || e.target?.closest?.('input,textarea,select,[contenteditable]:not([contenteditable="false"])')) { clearTransientInputs(); return; }
+    if(e.key === "Escape"){clearTransientInputs();return;}
+    if(e.defaultPrevented || !acceptsInput(e)) return;
     const keyName = normalizeKeyName(e.key);
     const shortcutModifier = e.ctrlKey === true || e.metaKey === true;
     const isSaveShortcut = shortcutModifier && keyName === "s";
@@ -76,10 +82,12 @@ export function createInputHandlers({ getBindings, normalizeKeyName, movementSta
       return;
     }
 
+    if(!heldKeys[keyName])edge(keyName,true,e);
     heldKeys[keyName] = true;
   };
   const onKeyUp = (e) => {
     const keyName = normalizeKeyName(e.key);
+    if(heldKeys[keyName]&&!movementState?.textEditing&&!e.target?.closest?.('input,textarea,select,[contenteditable]:not([contenteditable="false"])'))edge(keyName,false,e);
     heldKeys[keyName] = false;
     if (keyName === "s" || keyName === "control" || keyName === "meta") {
       movementState.saveShortcutLatch = false;
@@ -101,11 +109,13 @@ export function createInputHandlers({ getBindings, normalizeKeyName, movementSta
   const acceptsMouseInput = e => !inventoryDragging && acceptsInput(e) && !e.target?.closest?.('[data-player-hotbar], [data-inventory-hotbar], [data-inventory-item-id]');
   const onMouseDown = (e) => {
     if (!acceptsMouseInput(e)) { clearTransientInputs(); return; }
+    if(!heldKeys['mouse'+e.button])edge('mouse'+e.button,true,e);
     if (e.button === 0) heldKeys.mouse0 = true;
     else if (e.button === 1) heldKeys.mouse1 = true;
     else if (e.button === 2) heldKeys.mouse2 = true;
   };
   const onMouseUp = (e) => {
+    if(heldKeys['mouse'+e.button]){if(acceptsMouseInput(e))edge('mouse'+e.button,false,e);else clearTransientInputs();}
     if (e.button === 0) heldKeys.mouse0 = false;
     else if (e.button === 1) heldKeys.mouse1 = false;
     else if (e.button === 2) heldKeys.mouse2 = false;
@@ -113,7 +123,7 @@ export function createInputHandlers({ getBindings, normalizeKeyName, movementSta
   const onMouseMove = (e) => syncMouseButtons(acceptsMouseInput(e) ? e.buttons : 0);
   const onPointerMove = (e) => syncMouseButtons(acceptsMouseInput(e) ? e.buttons : 0);
   const onPointerUp = (e) => syncMouseButtons(acceptsMouseInput(e) ? e.buttons : 0);
-  const onFocusIn = e => { if (!acceptsInput(e)) clearTransientInputs(); };
+  const onFocusIn = e => { if (!acceptsInput(e)||e.target?.closest?.('input,textarea,select,[contenteditable]:not([contenteditable="false"])')) clearTransientInputs(); };
   const onWindowBlur = () => clearTransientInputs();
   const onVisibilityChange = () => {
     if (document.visibilityState !== "visible") clearTransientInputs();
@@ -133,6 +143,7 @@ export function createInputHandlers({ getBindings, normalizeKeyName, movementSta
   document.addEventListener("mousemove", onMouseMove);
   document.addEventListener("pointermove", onPointerMove);
   document.addEventListener("pointerup", onPointerUp);
+  document.addEventListener("pointercancel", onWindowBlur);
   document.addEventListener("visibilitychange", onVisibilityChange);
   document.addEventListener("pointerlockchange", onPointerLockChange);
   window.addEventListener("blur", onWindowBlur);
@@ -149,6 +160,7 @@ export function createInputHandlers({ getBindings, normalizeKeyName, movementSta
     document.removeEventListener("mousemove", onMouseMove);
     document.removeEventListener("pointermove", onPointerMove);
     document.removeEventListener("pointerup", onPointerUp);
+    document.removeEventListener("pointercancel", onWindowBlur);
     document.removeEventListener("visibilitychange", onVisibilityChange);
     document.removeEventListener("pointerlockchange", onPointerLockChange);
     window.removeEventListener("blur", onWindowBlur);

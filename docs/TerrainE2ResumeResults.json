@@ -1,0 +1,1429 @@
+{
+  "complete": true,
+  "method": "Actual production runtime; two reversed-order trials; 45 warm + 180 stationary frames per case. Explicitly hide one invalidated section without modifying loaded-map membership; restore then observe 350ms ownership handoff. No source edit or camera movement during captured event. Chromium SwiftShader 640x480; not hardware FPS.",
+  "results": [
+    {
+      "trial": 0,
+      "mode": "voxel",
+      "variant": "before",
+      "id": "pine:18,13",
+      "chunks": 8,
+      "loadedRevisionUnchanged": true,
+      "frameMs": {
+        "samples": 180,
+        "mean": 27.337777777781916,
+        "p95": 32,
+        "p99": 34.80000000074506
+      },
+      "updateAndPrepareMs": {
+        "samples": 180,
+        "mean": 0.17111111123942666,
+        "p95": 0.30000000074505806,
+        "p99": 0.4000000022351742
+      },
+      "drawCalls": {
+        "samples": 180,
+        "mean": 43,
+        "p95": 43,
+        "p99": 43
+      },
+      "triangles": {
+        "samples": 180,
+        "mean": 59944,
+        "p95": 59944,
+        "p99": 59944
+      },
+      "snapshot": {
+        "requests": 34,
+        "evictions": 0,
+        "cancelled": 0,
+        "cacheHits": 0,
+        "transitions": 12,
+        "generationMs": 298.49999998882413,
+        "installationMs": 72.59999999776483,
+        "bytes": 842612,
+        "firstInstalledMs": 220.89999999850988,
+        "started": 472.30000000074506,
+        "aheadRequests": 0,
+        "lastRequestLatencyMs": 1921.699999999255,
+        "shaderMeshes": {
+          "dither": 0,
+          "opaque": 50
+        },
+        "detailAttribution": {
+          "preparationMs": 19.699999999254942,
+          "attributeBytes": 60120
+        },
+        "visibleInstances": 1056,
+        "estimatedGpuBytes": 215256,
+        "extraTransitionDrawCalls": 0,
+        "continuity": {
+          "completed": 2,
+          "lateUpgrades": 2,
+          "incompleteFeatures": 47,
+          "failures": 0,
+          "maxTransitioning": 1,
+          "lastDurationMs": 364.69999999925494,
+          "readinessLatencyMs": 8675.5,
+          "timeNearBeforeReadyMs": 8673.699999999255,
+          "trackedFeatures": 48,
+          "transitioning": 0,
+          "durationMs": 350,
+          "stateBytes": 43272
+        },
+        "transitionRegions": 0,
+        "transitionBytes": 0,
+        "instanceCulling": {
+          "scans": 50,
+          "bufferRewrites": 90,
+          "culled": 1387
+        },
+        "regions": 20,
+        "queue": 0,
+        "representedTrees": 47,
+        "levels": {
+          "0": 1,
+          "1": 30,
+          "2": 17
+        },
+        "proxyCells": 10867,
+        "proxyBoxes": 2443,
+        "triangles": 29316,
+        "drawCalls": 19,
+        "queueAgeMs": 0,
+        "visibleCoverage": null,
+        "gpuUploadMs": null
+      },
+      "captures": [
+        {
+          "stage": "ready",
+          "ownership": 1,
+          "proxyVisible": false,
+          "drawCalls": 43,
+          "triangles": 59944,
+          "pixelChange": null
+        },
+        {
+          "stage": "invalidated",
+          "ownership": 0,
+          "proxyVisible": false,
+          "drawCalls": 42,
+          "triangles": 57704,
+          "pixelChange": {
+            "changedPixels": 2103,
+            "meanChannelChange": 0.6159136284722222
+          }
+        },
+        {
+          "stage": "recovering",
+          "ownership": 0.0008571428592715945,
+          "proxyVisible": false,
+          "drawCalls": 43,
+          "triangles": 59944,
+          "pixelChange": {
+            "changedPixels": 11808,
+            "meanChannelChange": 2.917702907986111
+          }
+        },
+        {
+          "stage": "restored",
+          "ownership": 1,
+          "proxyVisible": false,
+          "drawCalls": 43,
+          "triangles": 59944,
+          "pixelChange": {
+            "changedPixels": 9705,
+            "meanChannelChange": 2.301789279513889
+          }
+        }
+      ],
+      "samples": [
+        {
+          "time": 52,
+          "value": 0.0008571428592715945,
+          "proxyVisible": false
+        },
+        {
+          "time": 267,
+          "value": 0.7614285714285715,
+          "proxyVisible": false
+        },
+        {
+          "time": 310.70000000298023,
+          "value": 0.8862857142835856,
+          "proxyVisible": false
+        },
+        {
+          "time": 337.20000000298023,
+          "value": 0.9611428571492433,
+          "proxyVisible": false
+        },
+        {
+          "time": 366.1000000014901,
+          "value": 1,
+          "proxyVisible": false
+        }
+      ]
+    },
+    {
+      "trial": 0,
+      "mode": "voxel",
+      "variant": "after",
+      "id": "pine:18,13",
+      "chunks": 8,
+      "loadedRevisionUnchanged": true,
+      "frameMs": {
+        "samples": 180,
+        "mean": 27.641666666666666,
+        "p95": 33,
+        "p99": 37.69999999925494
+      },
+      "updateAndPrepareMs": {
+        "samples": 180,
+        "mean": 0.17055555569628875,
+        "p95": 0.30000000074505806,
+        "p99": 0.30000000074505806
+      },
+      "drawCalls": {
+        "samples": 180,
+        "mean": 43,
+        "p95": 43,
+        "p99": 43
+      },
+      "triangles": {
+        "samples": 180,
+        "mean": 59944,
+        "p95": 59944,
+        "p99": 59944
+      },
+      "snapshot": {
+        "requests": 37,
+        "evictions": 0,
+        "cancelled": 0,
+        "cacheHits": 0,
+        "transitions": 12,
+        "generationMs": 266.8999999947846,
+        "installationMs": 52.599999997764826,
+        "bytes": 842612,
+        "firstInstalledMs": 172.29999999701977,
+        "started": 9799.300000000745,
+        "aheadRequests": 0,
+        "lastRequestLatencyMs": 1749.199999999255,
+        "shaderMeshes": {
+          "dither": 0,
+          "opaque": 50
+        },
+        "detailAttribution": {
+          "preparationMs": 16.800000000745058,
+          "attributeBytes": 60120
+        },
+        "visibleInstances": 1056,
+        "estimatedGpuBytes": 215256,
+        "extraTransitionDrawCalls": 0,
+        "continuity": {
+          "completed": 2,
+          "lateUpgrades": 2,
+          "incompleteFeatures": 47,
+          "failures": 0,
+          "maxTransitioning": 1,
+          "lastDurationMs": 380.79999999701977,
+          "readinessLatencyMs": 8531.5,
+          "timeNearBeforeReadyMs": 8530.20000000298,
+          "coverageRevision": 101,
+          "trackedFeatures": 48,
+          "transitioning": 0,
+          "durationMs": 350,
+          "stateBytes": 43272
+        },
+        "transitionRegions": 0,
+        "transitionBytes": 0,
+        "instanceCulling": {
+          "scans": 58,
+          "bufferRewrites": 104,
+          "culled": 1387
+        },
+        "regions": 20,
+        "queue": 0,
+        "representedTrees": 47,
+        "levels": {
+          "0": 1,
+          "1": 30,
+          "2": 17
+        },
+        "proxyCells": 10867,
+        "proxyBoxes": 2443,
+        "triangles": 29316,
+        "drawCalls": 19,
+        "queueAgeMs": 0,
+        "visibleCoverage": null,
+        "gpuUploadMs": null
+      },
+      "captures": [
+        {
+          "stage": "ready",
+          "ownership": 1,
+          "proxyVisible": false,
+          "drawCalls": 43,
+          "triangles": 59944,
+          "pixelChange": null
+        },
+        {
+          "stage": "invalidated",
+          "ownership": 0,
+          "proxyVisible": true,
+          "drawCalls": 35,
+          "triangles": 55000,
+          "pixelChange": {
+            "changedPixels": 7277,
+            "meanChannelChange": 1.3404210069444444
+          }
+        },
+        {
+          "stage": "recovering",
+          "ownership": 0.0005714285692998341,
+          "proxyVisible": true,
+          "drawCalls": 44,
+          "triangles": 60796,
+          "pixelChange": {
+            "changedPixels": 2151,
+            "meanChannelChange": 0.6140245225694444
+          }
+        },
+        {
+          "stage": "restored",
+          "ownership": 1,
+          "proxyVisible": false,
+          "drawCalls": 43,
+          "triangles": 59944,
+          "pixelChange": {
+            "changedPixels": 5228,
+            "meanChannelChange": 0.7271365017361111
+          }
+        }
+      ],
+      "samples": [
+        {
+          "time": 38,
+          "value": 0.0005714285692998341,
+          "proxyVisible": true
+        },
+        {
+          "time": 251.59999999776483,
+          "value": 0.717714285712157,
+          "proxyVisible": true
+        },
+        {
+          "time": 289,
+          "value": 0.8237142857057708,
+          "proxyVisible": true
+        },
+        {
+          "time": 318.5999999977648,
+          "value": 0.9082857142814568,
+          "proxyVisible": true
+        },
+        {
+          "time": 349.79999999701977,
+          "value": 0.9951428571343421,
+          "proxyVisible": true
+        },
+        {
+          "time": 381.69999999925494,
+          "value": 1,
+          "proxyVisible": false
+        }
+      ]
+    },
+    {
+      "trial": 0,
+      "mode": "polygonal",
+      "variant": "before",
+      "id": "pine:18,13",
+      "chunks": 8,
+      "loadedRevisionUnchanged": true,
+      "frameMs": {
+        "samples": 180,
+        "mean": 17.341666666666665,
+        "p95": 20.099999997764826,
+        "p99": 22.399999998509884
+      },
+      "updateAndPrepareMs": {
+        "samples": 180,
+        "mean": 0.12444444447755813,
+        "p95": 0.20000000298023224,
+        "p99": 0.30000000074505806
+      },
+      "drawCalls": {
+        "samples": 180,
+        "mean": 43,
+        "p95": 43,
+        "p99": 43
+      },
+      "triangles": {
+        "samples": 180,
+        "mean": 60000,
+        "p95": 60000,
+        "p99": 60000
+      },
+      "snapshot": {
+        "requests": 32,
+        "evictions": 0,
+        "cancelled": 0,
+        "cacheHits": 0,
+        "transitions": 12,
+        "generationMs": 2052.1000000052154,
+        "installationMs": 47.29999998956919,
+        "bytes": 1832520,
+        "firstInstalledMs": 308.5999999977648,
+        "started": 18950.5,
+        "aheadRequests": 0,
+        "lastRequestLatencyMs": 10106.5,
+        "shaderMeshes": {
+          "dither": 0,
+          "opaque": 0
+        },
+        "detailAttribution": {
+          "preparationMs": 15.899999994784594,
+          "attributeBytes": 16062
+        },
+        "visibleInstances": 0,
+        "estimatedGpuBytes": 879988,
+        "extraTransitionDrawCalls": 0,
+        "continuity": {
+          "completed": 2,
+          "lateUpgrades": 2,
+          "incompleteFeatures": 47,
+          "failures": 0,
+          "maxTransitioning": 1,
+          "lastDurationMs": 359.29999999701977,
+          "readinessLatencyMs": 14272.5,
+          "timeNearBeforeReadyMs": 14269.70000000298,
+          "trackedFeatures": 48,
+          "transitioning": 0,
+          "durationMs": 350,
+          "stateBytes": 43272
+        },
+        "transitionRegions": 0,
+        "transitionBytes": 0,
+        "instanceCulling": {
+          "scans": 20,
+          "bufferRewrites": 36,
+          "culled": 35
+        },
+        "regions": 20,
+        "queue": 0,
+        "representedTrees": 47,
+        "levels": {
+          "0": 1,
+          "1": 30,
+          "2": 17
+        },
+        "proxyCells": 10888,
+        "proxyBoxes": 0,
+        "triangles": 12728,
+        "drawCalls": 19,
+        "queueAgeMs": 0,
+        "visibleCoverage": null,
+        "gpuUploadMs": null
+      },
+      "captures": [
+        {
+          "stage": "ready",
+          "ownership": 1,
+          "proxyVisible": false,
+          "drawCalls": 43,
+          "triangles": 60000,
+          "pixelChange": null
+        },
+        {
+          "stage": "invalidated",
+          "ownership": 0,
+          "proxyVisible": false,
+          "drawCalls": 42,
+          "triangles": 57760,
+          "pixelChange": {
+            "changedPixels": 1927,
+            "meanChannelChange": 0.5473177083333334
+          }
+        },
+        {
+          "stage": "recovering",
+          "ownership": 0.007714285712156977,
+          "proxyVisible": false,
+          "drawCalls": 43,
+          "triangles": 60000,
+          "pixelChange": {
+            "changedPixels": 10392,
+            "meanChannelChange": 2.429421657986111
+          }
+        },
+        {
+          "stage": "restored",
+          "ownership": 1,
+          "proxyVisible": false,
+          "drawCalls": 43,
+          "triangles": 60000,
+          "pixelChange": {
+            "changedPixels": 8465,
+            "meanChannelChange": 1.8821039496527778
+          }
+        }
+      ],
+      "samples": [
+        {
+          "time": 44.099999997764826,
+          "value": 0.007714285712156977,
+          "proxyVisible": false
+        },
+        {
+          "time": 202.89999999850988,
+          "value": 0.5791428571407284,
+          "proxyVisible": false
+        },
+        {
+          "time": 231.30000000074506,
+          "value": 0.6588571428507567,
+          "proxyVisible": false
+        },
+        {
+          "time": 254.09999999776483,
+          "value": 0.7254285714243139,
+          "proxyVisible": false
+        },
+        {
+          "time": 270.69999999925494,
+          "value": 0.7728571428571429,
+          "proxyVisible": false
+        },
+        {
+          "time": 289.5999999977648,
+          "value": 0.8262857142835855,
+          "proxyVisible": false
+        },
+        {
+          "time": 306.30000000074506,
+          "value": 0.8742857142857143,
+          "proxyVisible": false
+        },
+        {
+          "time": 324.3999999985099,
+          "value": 0.9251428571343422,
+          "proxyVisible": false
+        },
+        {
+          "time": 343,
+          "value": 0.9794285714200565,
+          "proxyVisible": false
+        },
+        {
+          "time": 359.69999999925494,
+          "value": 1,
+          "proxyVisible": false
+        }
+      ]
+    },
+    {
+      "trial": 0,
+      "mode": "polygonal",
+      "variant": "after",
+      "id": "pine:18,13",
+      "chunks": 8,
+      "loadedRevisionUnchanged": true,
+      "frameMs": {
+        "samples": 180,
+        "mean": 17.180555555555557,
+        "p95": 20.200000002980232,
+        "p99": 24.5
+      },
+      "updateAndPrepareMs": {
+        "samples": 180,
+        "mean": 0.12055555565489663,
+        "p95": 0.20000000298023224,
+        "p99": 0.20000000298023224
+      },
+      "drawCalls": {
+        "samples": 180,
+        "mean": 43,
+        "p95": 43,
+        "p99": 43
+      },
+      "triangles": {
+        "samples": 180,
+        "mean": 60000,
+        "p95": 60000,
+        "p99": 60000
+      },
+      "snapshot": {
+        "requests": 32,
+        "evictions": 0,
+        "cancelled": 0,
+        "cacheHits": 0,
+        "transitions": 12,
+        "generationMs": 2117.099999964237,
+        "installationMs": 43.19999999180436,
+        "bytes": 1832520,
+        "firstInstalledMs": 280.3999999985099,
+        "started": 33937.300000000745,
+        "aheadRequests": 0,
+        "lastRequestLatencyMs": 10352,
+        "shaderMeshes": {
+          "dither": 0,
+          "opaque": 0
+        },
+        "detailAttribution": {
+          "preparationMs": 9.699999999254942,
+          "attributeBytes": 16062
+        },
+        "visibleInstances": 0,
+        "estimatedGpuBytes": 879988,
+        "extraTransitionDrawCalls": 0,
+        "continuity": {
+          "completed": 2,
+          "lateUpgrades": 2,
+          "incompleteFeatures": 47,
+          "failures": 0,
+          "maxTransitioning": 1,
+          "lastDurationMs": 354.4000000022352,
+          "readinessLatencyMs": 14492.699999999255,
+          "timeNearBeforeReadyMs": 14491.599999997765,
+          "coverageRevision": 101,
+          "trackedFeatures": 48,
+          "transitioning": 0,
+          "durationMs": 350,
+          "stateBytes": 43272
+        },
+        "transitionRegions": 0,
+        "transitionBytes": 0,
+        "instanceCulling": {
+          "scans": 20,
+          "bufferRewrites": 40,
+          "culled": 35
+        },
+        "regions": 20,
+        "queue": 0,
+        "representedTrees": 47,
+        "levels": {
+          "0": 1,
+          "1": 30,
+          "2": 17
+        },
+        "proxyCells": 10888,
+        "proxyBoxes": 0,
+        "triangles": 12728,
+        "drawCalls": 19,
+        "queueAgeMs": 0,
+        "visibleCoverage": null,
+        "gpuUploadMs": null
+      },
+      "captures": [
+        {
+          "stage": "ready",
+          "ownership": 1,
+          "proxyVisible": false,
+          "drawCalls": 43,
+          "triangles": 60000,
+          "pixelChange": null
+        },
+        {
+          "stage": "invalidated",
+          "ownership": 0,
+          "proxyVisible": true,
+          "drawCalls": 35,
+          "triangles": 55028,
+          "pixelChange": {
+            "changedPixels": 8412,
+            "meanChannelChange": 1.4277560763888888
+          }
+        },
+        {
+          "stage": "recovering",
+          "ownership": 0.014285714285714285,
+          "proxyVisible": true,
+          "drawCalls": 44,
+          "triangles": 60824,
+          "pixelChange": {
+            "changedPixels": 2151,
+            "meanChannelChange": 0.5905067274305555
+          }
+        },
+        {
+          "stage": "restored",
+          "ownership": 1,
+          "proxyVisible": false,
+          "drawCalls": 43,
+          "triangles": 60000,
+          "pixelChange": {
+            "changedPixels": 6391,
+            "meanChannelChange": 0.847724609375
+          }
+        }
+      ],
+      "samples": [
+        {
+          "time": 41.600000001490116,
+          "value": 0.014285714285714285,
+          "proxyVisible": true
+        },
+        {
+          "time": 188.60000000149012,
+          "value": 0.537714285712157,
+          "proxyVisible": true
+        },
+        {
+          "time": 217,
+          "value": 0.6182857142921006,
+          "proxyVisible": true
+        },
+        {
+          "time": 241.90000000223517,
+          "value": 0.689714285720672,
+          "proxyVisible": true
+        },
+        {
+          "time": 262.19999999925494,
+          "value": 0.7474285714328289,
+          "proxyVisible": true
+        },
+        {
+          "time": 279.5,
+          "value": 0.796857142863529,
+          "proxyVisible": true
+        },
+        {
+          "time": 297.19999999925494,
+          "value": 0.847714285712157,
+          "proxyVisible": true
+        },
+        {
+          "time": 315.9000000022352,
+          "value": 0.9005714285692998,
+          "proxyVisible": true
+        },
+        {
+          "time": 333.19999999925494,
+          "value": 0.9505714285692999,
+          "proxyVisible": true
+        },
+        {
+          "time": 355.80000000074506,
+          "value": 1,
+          "proxyVisible": false
+        }
+      ]
+    },
+    {
+      "trial": 1,
+      "mode": "voxel",
+      "variant": "after",
+      "id": "pine:18,13",
+      "chunks": 8,
+      "loadedRevisionUnchanged": true,
+      "frameMs": {
+        "samples": 180,
+        "mean": 32.933888888897165,
+        "p95": 41.600000001490116,
+        "p99": 44.69999999925494
+      },
+      "updateAndPrepareMs": {
+        "samples": 180,
+        "mean": 0.15333333323813148,
+        "p95": 0.30000000074505806,
+        "p99": 0.30000000074505806
+      },
+      "drawCalls": {
+        "samples": 180,
+        "mean": 43,
+        "p95": 43,
+        "p99": 43
+      },
+      "triangles": {
+        "samples": 180,
+        "mean": 59944,
+        "p95": 59944,
+        "p99": 59944
+      },
+      "snapshot": {
+        "requests": 34,
+        "evictions": 0,
+        "cancelled": 0,
+        "cacheHits": 0,
+        "transitions": 12,
+        "generationMs": 326.700000025332,
+        "installationMs": 63.50000001490116,
+        "bytes": 842612,
+        "firstInstalledMs": 25.899999998509884,
+        "started": 49116.800000000745,
+        "aheadRequests": 0,
+        "lastRequestLatencyMs": 2018.800000000745,
+        "shaderMeshes": {
+          "dither": 0,
+          "opaque": 50
+        },
+        "detailAttribution": {
+          "preparationMs": 15.50000000372529,
+          "attributeBytes": 60120
+        },
+        "visibleInstances": 1056,
+        "estimatedGpuBytes": 215256,
+        "extraTransitionDrawCalls": 0,
+        "continuity": {
+          "completed": 2,
+          "lateUpgrades": 2,
+          "incompleteFeatures": 47,
+          "failures": 0,
+          "maxTransitioning": 1,
+          "lastDurationMs": 357,
+          "readinessLatencyMs": 9793.5,
+          "timeNearBeforeReadyMs": 9793.300000000745,
+          "coverageRevision": 101,
+          "trackedFeatures": 48,
+          "transitioning": 0,
+          "durationMs": 350,
+          "stateBytes": 43272
+        },
+        "transitionRegions": 0,
+        "transitionBytes": 0,
+        "instanceCulling": {
+          "scans": 58,
+          "bufferRewrites": 104,
+          "culled": 1387
+        },
+        "regions": 20,
+        "queue": 0,
+        "representedTrees": 47,
+        "levels": {
+          "0": 1,
+          "1": 30,
+          "2": 17
+        },
+        "proxyCells": 10867,
+        "proxyBoxes": 2443,
+        "triangles": 29316,
+        "drawCalls": 19,
+        "queueAgeMs": 0,
+        "visibleCoverage": null,
+        "gpuUploadMs": null
+      },
+      "captures": [
+        {
+          "stage": "ready",
+          "ownership": 1,
+          "proxyVisible": false,
+          "drawCalls": 43,
+          "triangles": 59944,
+          "pixelChange": null
+        },
+        {
+          "stage": "invalidated",
+          "ownership": 0,
+          "proxyVisible": true,
+          "drawCalls": 35,
+          "triangles": 55000,
+          "pixelChange": {
+            "changedPixels": 7277,
+            "meanChannelChange": 1.3404210069444444
+          }
+        },
+        {
+          "stage": "recovering",
+          "ownership": 0.007142857142857143,
+          "proxyVisible": true,
+          "drawCalls": 44,
+          "triangles": 60796,
+          "pixelChange": {
+            "changedPixels": 2233,
+            "meanChannelChange": 0.6274251302083333
+          }
+        },
+        {
+          "stage": "restored",
+          "ownership": 1,
+          "proxyVisible": false,
+          "drawCalls": 43,
+          "triangles": 59944,
+          "pixelChange": {
+            "changedPixels": 5144,
+            "meanChannelChange": 0.7137337239583333
+          }
+        }
+      ],
+      "samples": [
+        {
+          "time": 51,
+          "value": 0.007142857142857143,
+          "proxyVisible": true
+        },
+        {
+          "time": 280.9000000022352,
+          "value": 0.7971428571428572,
+          "proxyVisible": true
+        },
+        {
+          "time": 322.6000000014901,
+          "value": 0.9197142857100282,
+          "proxyVisible": true
+        },
+        {
+          "time": 363.70000000298023,
+          "value": 1,
+          "proxyVisible": false
+        }
+      ]
+    },
+    {
+      "trial": 1,
+      "mode": "voxel",
+      "variant": "before",
+      "id": "pine:18,13",
+      "chunks": 8,
+      "loadedRevisionUnchanged": true,
+      "frameMs": {
+        "samples": 180,
+        "mean": 40.8577777777695,
+        "p95": 53.30000000074506,
+        "p99": 57.69999999925494
+      },
+      "updateAndPrepareMs": {
+        "samples": 180,
+        "mean": 0.18277777783158752,
+        "p95": 0.30000000074505806,
+        "p99": 0.4000000022351742
+      },
+      "drawCalls": {
+        "samples": 180,
+        "mean": 43,
+        "p95": 43,
+        "p99": 43
+      },
+      "triangles": {
+        "samples": 180,
+        "mean": 59944,
+        "p95": 59944,
+        "p99": 59944
+      },
+      "snapshot": {
+        "requests": 35,
+        "evictions": 0,
+        "cancelled": 0,
+        "cacheHits": 0,
+        "transitions": 12,
+        "generationMs": 299.19999999552965,
+        "installationMs": 48.30000000074506,
+        "bytes": 842612,
+        "firstInstalledMs": 28.5,
+        "started": 59373.099999997765,
+        "aheadRequests": 0,
+        "lastRequestLatencyMs": 1994.699999999255,
+        "shaderMeshes": {
+          "dither": 0,
+          "opaque": 50
+        },
+        "detailAttribution": {
+          "preparationMs": 11.599999994039536,
+          "attributeBytes": 60120
+        },
+        "visibleInstances": 1056,
+        "estimatedGpuBytes": 215256,
+        "extraTransitionDrawCalls": 0,
+        "continuity": {
+          "completed": 2,
+          "lateUpgrades": 2,
+          "incompleteFeatures": 47,
+          "failures": 0,
+          "maxTransitioning": 1,
+          "lastDurationMs": 360.9000000022352,
+          "readinessLatencyMs": 11162.599999997765,
+          "timeNearBeforeReadyMs": 11162.300000000745,
+          "trackedFeatures": 48,
+          "transitioning": 0,
+          "durationMs": 350,
+          "stateBytes": 43272
+        },
+        "transitionRegions": 0,
+        "transitionBytes": 0,
+        "instanceCulling": {
+          "scans": 50,
+          "bufferRewrites": 90,
+          "culled": 1387
+        },
+        "regions": 20,
+        "queue": 0,
+        "representedTrees": 47,
+        "levels": {
+          "0": 1,
+          "1": 30,
+          "2": 17
+        },
+        "proxyCells": 10867,
+        "proxyBoxes": 2443,
+        "triangles": 29316,
+        "drawCalls": 19,
+        "queueAgeMs": 0,
+        "visibleCoverage": null,
+        "gpuUploadMs": null
+      },
+      "captures": [
+        {
+          "stage": "ready",
+          "ownership": 1,
+          "proxyVisible": false,
+          "drawCalls": 43,
+          "triangles": 59944,
+          "pixelChange": null
+        },
+        {
+          "stage": "invalidated",
+          "ownership": 0,
+          "proxyVisible": false,
+          "drawCalls": 42,
+          "triangles": 57704,
+          "pixelChange": {
+            "changedPixels": 2103,
+            "meanChannelChange": 0.6159136284722222
+          }
+        },
+        {
+          "stage": "recovering",
+          "ownership": 0.009428571430700167,
+          "proxyVisible": false,
+          "drawCalls": 43,
+          "triangles": 59944,
+          "pixelChange": {
+            "changedPixels": 11658,
+            "meanChannelChange": 2.88435546875
+          }
+        },
+        {
+          "stage": "restored",
+          "ownership": 1,
+          "proxyVisible": false,
+          "drawCalls": 43,
+          "triangles": 59944,
+          "pixelChange": {
+            "changedPixels": 9555,
+            "meanChannelChange": 2.2684418402777777
+          }
+        }
+      ],
+      "samples": [
+        {
+          "time": 51.100000001490116,
+          "value": 0.009428571430700167,
+          "proxyVisible": false
+        },
+        {
+          "time": 312.6000000014901,
+          "value": 0.8917142857185432,
+          "proxyVisible": false
+        },
+        {
+          "time": 361.6000000014901,
+          "value": 1,
+          "proxyVisible": false
+        }
+      ]
+    },
+    {
+      "trial": 1,
+      "mode": "polygonal",
+      "variant": "after",
+      "id": "pine:18,13",
+      "chunks": 8,
+      "loadedRevisionUnchanged": true,
+      "frameMs": {
+        "samples": 180,
+        "mean": 17.430000000012416,
+        "p95": 20.5,
+        "p99": 22.100000001490116
+      },
+      "updateAndPrepareMs": {
+        "samples": 180,
+        "mean": 0.1116666665714648,
+        "p95": 0.20000000298023224,
+        "p99": 0.30000000074505806
+      },
+      "drawCalls": {
+        "samples": 180,
+        "mean": 43,
+        "p95": 43,
+        "p99": 43
+      },
+      "triangles": {
+        "samples": 180,
+        "mean": 60000,
+        "p95": 60000,
+        "p99": 60000
+      },
+      "snapshot": {
+        "requests": 32,
+        "evictions": 0,
+        "cancelled": 0,
+        "cacheHits": 0,
+        "transitions": 12,
+        "generationMs": 1985.1000000312924,
+        "installationMs": 42.99999998509884,
+        "bytes": 1832520,
+        "firstInstalledMs": 195,
+        "started": 70999.89999999851,
+        "aheadRequests": 0,
+        "lastRequestLatencyMs": 9868.599999997765,
+        "shaderMeshes": {
+          "dither": 0,
+          "opaque": 0
+        },
+        "detailAttribution": {
+          "preparationMs": 7.699999995529652,
+          "attributeBytes": 16062
+        },
+        "visibleInstances": 0,
+        "estimatedGpuBytes": 879988,
+        "extraTransitionDrawCalls": 0,
+        "continuity": {
+          "completed": 2,
+          "lateUpgrades": 2,
+          "incompleteFeatures": 47,
+          "failures": 0,
+          "maxTransitioning": 1,
+          "lastDurationMs": 355.5,
+          "readinessLatencyMs": 14103.599999997765,
+          "timeNearBeforeReadyMs": 14103,
+          "coverageRevision": 101,
+          "trackedFeatures": 48,
+          "transitioning": 0,
+          "durationMs": 350,
+          "stateBytes": 43272
+        },
+        "transitionRegions": 0,
+        "transitionBytes": 0,
+        "instanceCulling": {
+          "scans": 20,
+          "bufferRewrites": 40,
+          "culled": 35
+        },
+        "regions": 20,
+        "queue": 0,
+        "representedTrees": 47,
+        "levels": {
+          "0": 1,
+          "1": 30,
+          "2": 17
+        },
+        "proxyCells": 10888,
+        "proxyBoxes": 0,
+        "triangles": 12728,
+        "drawCalls": 19,
+        "queueAgeMs": 0,
+        "visibleCoverage": null,
+        "gpuUploadMs": null
+      },
+      "captures": [
+        {
+          "stage": "ready",
+          "ownership": 1,
+          "proxyVisible": false,
+          "drawCalls": 43,
+          "triangles": 60000,
+          "pixelChange": null
+        },
+        {
+          "stage": "invalidated",
+          "ownership": 0,
+          "proxyVisible": true,
+          "drawCalls": 35,
+          "triangles": 55028,
+          "pixelChange": {
+            "changedPixels": 8412,
+            "meanChannelChange": 1.4277560763888888
+          }
+        },
+        {
+          "stage": "recovering",
+          "ownership": 0.0037142857164144515,
+          "proxyVisible": true,
+          "drawCalls": 44,
+          "triangles": 60824,
+          "pixelChange": {
+            "changedPixels": 2061,
+            "meanChannelChange": 0.5792708333333333
+          }
+        },
+        {
+          "stage": "restored",
+          "ownership": 1,
+          "proxyVisible": false,
+          "drawCalls": 43,
+          "triangles": 60000,
+          "pixelChange": {
+            "changedPixels": 6485,
+            "meanChannelChange": 0.8590516493055556
+          }
+        }
+      ],
+      "samples": [
+        {
+          "time": 36.30000000074506,
+          "value": 0.0037142857164144515,
+          "proxyVisible": true
+        },
+        {
+          "time": 171.09999999776483,
+          "value": 0.48771428571215697,
+          "proxyVisible": true
+        },
+        {
+          "time": 189.09999999776483,
+          "value": 0.5391428571407284,
+          "proxyVisible": true
+        },
+        {
+          "time": 206.19999999925494,
+          "value": 0.5882857142921005,
+          "proxyVisible": true
+        },
+        {
+          "time": 223.69999999925494,
+          "value": 0.6382857142921005,
+          "proxyVisible": true
+        },
+        {
+          "time": 239.89999999850988,
+          "value": 0.6848571428550141,
+          "proxyVisible": true
+        },
+        {
+          "time": 256.69999999925494,
+          "value": 0.7322857142878431,
+          "proxyVisible": true
+        },
+        {
+          "time": 279.30000000074506,
+          "value": 0.796857142863529,
+          "proxyVisible": true
+        },
+        {
+          "time": 300.5999999977648,
+          "value": 0.8574285714328289,
+          "proxyVisible": true
+        },
+        {
+          "time": 317.3999999985099,
+          "value": 0.9057142857142857,
+          "proxyVisible": true
+        },
+        {
+          "time": 335.5,
+          "value": 0.9574285714328289,
+          "proxyVisible": true
+        },
+        {
+          "time": 356.3999999985099,
+          "value": 1,
+          "proxyVisible": false
+        }
+      ]
+    },
+    {
+      "trial": 1,
+      "mode": "polygonal",
+      "variant": "before",
+      "id": "pine:18,13",
+      "chunks": 8,
+      "loadedRevisionUnchanged": true,
+      "frameMs": {
+        "samples": 180,
+        "mean": 16.929444444448585,
+        "p95": 20.600000001490116,
+        "p99": 23.199999999254942
+      },
+      "updateAndPrepareMs": {
+        "samples": 180,
+        "mean": 0.1238888888930281,
+        "p95": 0.20000000298023224,
+        "p99": 0.30000000074505806
+      },
+      "drawCalls": {
+        "samples": 180,
+        "mean": 43,
+        "p95": 43,
+        "p99": 43
+      },
+      "triangles": {
+        "samples": 180,
+        "mean": 60000,
+        "p95": 60000,
+        "p99": 60000
+      },
+      "snapshot": {
+        "requests": 32,
+        "evictions": 0,
+        "cancelled": 0,
+        "cacheHits": 0,
+        "transitions": 12,
+        "generationMs": 2125.7999999932945,
+        "installationMs": 38.89999998360872,
+        "bytes": 1832520,
+        "firstInstalledMs": 207.20000000298023,
+        "started": 85689.09999999776,
+        "aheadRequests": 0,
+        "lastRequestLatencyMs": 10476.60000000149,
+        "shaderMeshes": {
+          "dither": 0,
+          "opaque": 0
+        },
+        "detailAttribution": {
+          "preparationMs": 6.900000002235174,
+          "attributeBytes": 16062
+        },
+        "visibleInstances": 0,
+        "estimatedGpuBytes": 879988,
+        "extraTransitionDrawCalls": 0,
+        "continuity": {
+          "completed": 2,
+          "lateUpgrades": 2,
+          "incompleteFeatures": 47,
+          "failures": 0,
+          "maxTransitioning": 1,
+          "lastDurationMs": 363.6000000014901,
+          "readinessLatencyMs": 14571.29999999702,
+          "timeNearBeforeReadyMs": 14570.79999999702,
+          "trackedFeatures": 48,
+          "transitioning": 0,
+          "durationMs": 350,
+          "stateBytes": 43272
+        },
+        "transitionRegions": 0,
+        "transitionBytes": 0,
+        "instanceCulling": {
+          "scans": 20,
+          "bufferRewrites": 36,
+          "culled": 35
+        },
+        "regions": 20,
+        "queue": 0,
+        "representedTrees": 47,
+        "levels": {
+          "0": 1,
+          "1": 30,
+          "2": 17
+        },
+        "proxyCells": 10888,
+        "proxyBoxes": 0,
+        "triangles": 12728,
+        "drawCalls": 19,
+        "queueAgeMs": 0,
+        "visibleCoverage": null,
+        "gpuUploadMs": null
+      },
+      "captures": [
+        {
+          "stage": "ready",
+          "ownership": 1,
+          "proxyVisible": false,
+          "drawCalls": 43,
+          "triangles": 60000,
+          "pixelChange": null
+        },
+        {
+          "stage": "invalidated",
+          "ownership": 0,
+          "proxyVisible": false,
+          "drawCalls": 42,
+          "triangles": 57760,
+          "pixelChange": {
+            "changedPixels": 1927,
+            "meanChannelChange": 0.5473177083333334
+          }
+        },
+        {
+          "stage": "recovering",
+          "ownership": 0.004000000006386212,
+          "proxyVisible": false,
+          "drawCalls": 43,
+          "triangles": 60000,
+          "pixelChange": {
+            "changedPixels": 10523,
+            "meanChannelChange": 2.458532986111111
+          }
+        },
+        {
+          "stage": "restored",
+          "ownership": 1,
+          "proxyVisible": false,
+          "drawCalls": 43,
+          "triangles": 60000,
+          "pixelChange": {
+            "changedPixels": 8596,
+            "meanChannelChange": 1.9112152777777778
+          }
+        }
+      ],
+      "samples": [
+        {
+          "time": 35,
+          "value": 0.004000000006386212,
+          "proxyVisible": false
+        },
+        {
+          "time": 173.89999999850988,
+          "value": 0.4951428571449859,
+          "proxyVisible": false
+        },
+        {
+          "time": 191.69999999925494,
+          "value": 0.5460000000042575,
+          "proxyVisible": false
+        },
+        {
+          "time": 209,
+          "value": 0.5962857142942293,
+          "proxyVisible": false
+        },
+        {
+          "time": 225.39999999850988,
+          "value": 0.6434285714370864,
+          "proxyVisible": false
+        },
+        {
+          "time": 243,
+          "value": 0.6937142857164145,
+          "proxyVisible": false
+        },
+        {
+          "time": 259.5,
+          "value": 0.7408571428592716,
+          "proxyVisible": false
+        },
+        {
+          "time": 278,
+          "value": 0.7928571428571428,
+          "proxyVisible": false
+        },
+        {
+          "time": 298.19999999925494,
+          "value": 0.8505714285799435,
+          "proxyVisible": false
+        },
+        {
+          "time": 315.30000000074506,
+          "value": 0.9002857142899717,
+          "proxyVisible": false
+        },
+        {
+          "time": 332.30000000074506,
+          "value": 0.9485714285714286,
+          "proxyVisible": false
+        },
+        {
+          "time": 348.3999999985099,
+          "value": 0.994571428575686,
+          "proxyVisible": false
+        },
+        {
+          "time": 364,
+          "value": 1,
+          "proxyVisible": false
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,90 @@
+{
+  "scope": "Phase E3 ground shading; no Phase E2 geometry",
+  "unit": {
+    "command": "npm run test:metaworld",
+    "testFiles": 58,
+    "passed": 58,
+    "failed": 0
+  },
+  "browser": [
+    {
+      "name": "native",
+      "exitCode": 0
+    },
+    {
+      "name": "extent",
+      "exitCode": 0
+    },
+    {
+      "name": "maps",
+      "exitCode": 0
+    },
+    {
+      "name": "teleporter",
+      "exitCode": 0
+    }
+  ],
+  "installedNormals": {
+    "standard": {
+      "changedComponents": 0
+    },
+    "smoothNatural": {
+      "changedComponents": 4875
+    },
+    "editorViewerSaveReopen": true,
+    "styleUndoRedo": true
+  },
+  "notebookSha256": "75533dd604cbacc1de34bd42e1e3c5a5faeef5f4779b51c520a2e0c0edd81292",
+  "applicationSourceSha256": {
+    "ApplicationSystem/public/MetaWorld/ProceduralVoxelWorld/ProceduralVoxelWorldRuntime.mjs": "bb1fd36ba89ea67ee9134e10eb385bd43e64c823c7b4ca38656ca3add8b22c7f",
+    "ApplicationSystem/public/MetaWorld/ProceduralVoxelWorld/VoxelWorldDefinition.mjs": "4f322fe51188910cbd079a511360aaea9c7359bf7239c1a59f831160684abe3c",
+    "ApplicationSystem/public/MetaWorld/TerrainRepresentation/Authoring.mjs": "da876a2653c6557f261cc2142206ffb1e5c8ee44422eae258c031b9c8e1a245d",
+    "ApplicationSystem/public/MetaWorld/TerrainRepresentation/CachedChunkBuilder.mjs": "50fb9851ccf903a6f112614dd1848d814bfe9167551f46370b14b68137fa9ad4",
+    "ApplicationSystem/public/MetaWorld/TerrainRepresentation/ChunkRepresentation.mjs": "880b0f6b2f994dadf984d42cd4dfa1c0fece271f42b61f09be551eb23bfe2bd6",
+    "ApplicationSystem/public/MetaWorld/TerrainRepresentation/Controls.mjs": "262dc87865618a29c1bc05d7bb8999be5a83e9419fde1de0379878881b976317",
+    "ApplicationSystem/public/MetaWorld/TerrainRepresentation/GroundAppearance.mjs": "ff4be56f48f44bf2712018b98327b44bab2dc65c6a5c98ed706149cdef8f4004",
+    "ApplicationSystem/public/MetaWorld/TerrainRepresentation/GroundNormals.mjs": "82e2e693c928a0d983281014b04a732fec67f84c771e0b0ff46d2323f995da54",
+    "ApplicationSystem/public/MetaWorld/TerrainRepresentation/MeshCache.mjs": "541ddd3938b7551d2ff4f618797a1eb01520468984ce981906152902dcf012ac",
+    "ApplicationSystem/public/MetaWorld/TerrainRepresentation/Representation.mjs": "7b1949b047c2a726d777259af741c19eadb2a55961b7c18a4540ea3565fcc851",
+    "ApplicationSystem/public/MetaWorld/TerrainRepresentation/SurfaceNets.mjs": "e270ec29d58adf48fb17d038bfe056ec12c37f90ae3472a5a624a10e49773d65",
+    "scripts/vegetation-phase-c-native.mjs": "bd4f4e402651754b91284e067242714f22f3663d311aef9944ad5be4c67b9b66"
+  },
+  "limits": [
+    "Chromium SwiftShader; no hardware GPU",
+    "No GC pause or driver upload-byte instrumentation",
+    "Map browser workspace/UI services are mocked",
+    "Same-scene isolation measured finalized normal algorithm before optional control was added"
+  ],
+  "evidenceSourceSha256": {
+    "scripts/profile-terrain-e3-cpu.mjs": "52c5ca9e15fa2ad6fff17463beeb771048ad86ca89446f0ce4e6041489a6b299",
+    "scripts/terrain-e3-fixtures.mjs": "b7a9a0762fdb0db68c4cbeee397d0acd012e8a7b1e7c10fa1a9089778a33a4c8",
+    "scripts/terrain-e3-metrics.mjs": "caf0a43f1971d4beeab13bbfbf634ab48e2cf6cd45c23dc2b669e36a777d48a6",
+    "scripts/terrain-e3-native-probe.mjs": "8b25b7851ff325262039f9e02829fda5f66868d623d67126607ffffa4887d354",
+    "scripts/terrain-e3-normal-isolation.mjs": "cf3f8b1870ba306cd511b2a01265b9a0928578bd23ea8d1d00da3ceca33ba811",
+    "scripts/terrain-e3-performance.mjs": "15e6d69445566927f9b02b7216303fa1dd50387199265782868e812368e84f46",
+    "scripts/terrain-e3-runtime-metrics.mjs": "af09aeccda293b9b0275b600fbd685e27ef239fff2cb45a58aa6ee01990814ff",
+    "scripts/terrain-e3-visual.mjs": "92a5d480148e45a49f18cecf8c609ebbca3e4f910e17141e9ae0fb5d199707ca",
+    "scripts/test-terrain-e3-performance.mjs": "8348e6f1290cb9d4b61b83517224c7c92433f2e8fbd77e7906fa76f7d5d40b71",
+    "scripts/test-terrain-e3.mjs": "54bde1564a07e3c52962661c4ac11573f20283efe58b3cccb3acd5c989a5461a",
+    "scripts/validate-terrain-e3.mjs": "b40b02cbb5b37fa0840c2c2e068957f58da789773ff2cec2b835ab6141a16ee6"
+  },
+  "focusedNormalsAfterTestCleanup": {
+    "passed": 9,
+    "failed": 0
+  },
+  "artifacts": {
+    "visualPngs": 90,
+    "productionCases": 24,
+    "productionPairs": 12,
+    "normalIsolationCases": 36,
+    "cpuTrials": 36,
+    "validated": true
+  },
+  "artifactSha256": {
+    "TerrainE3VisualMetrics.json": "db7fdeba0ecb23154ea7895a9a08b923597d5735b0efb0a84d872f1781193412",
+    "TerrainE3Performance.json": "db64a0c1f798f942bf25f1ca6c582b15ec4fdd3da7d8b8d55bf0b5ed0a34c624",
+    "TerrainE3NormalIsolation.json": "8b793f3d3499eaf634d4e6f70ad762e254152ae6da138ef7ac703cedf410fe03",
+    "TerrainE3CPU.json": "463da5caa2f2e9aba0906f005786d417a2c6ca82785cc5dd289195f9d615c305",
+    "TerrainE3BaselineSources.json": "dbf9b9adc3f2a2b91f3162df1bfb965c9f63c36200a98abaef918ceb4b349cd6"
+  }
+}

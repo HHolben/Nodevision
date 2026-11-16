@@ -1,0 +1,518 @@
+{
+  "complete": true,
+  "environment": "Chromium SwiftShader 640x480, 30 warm +240 measured frames, two reversed-order trials, idleMin .1/idleMax .2 for active navigation, flat authoritative ground fixture",
+  "results": [
+    {
+      "trial": 0,
+      "count": 1,
+      "enabled": false,
+      "frames": 240,
+      "frameMs": {
+        "mean": 16.665833333336437,
+        "p95": 17.100000001490116
+      },
+      "updateMs": {
+        "mean": 0.04958333338921269,
+        "p95": 0.10000000149011612
+      },
+      "behaviorMs": {
+        "mean": 0,
+        "p95": 0
+      },
+      "animationMs": {
+        "mean": 0,
+        "p95": 0
+      },
+      "drawCalls": 1,
+      "triangles": 674,
+      "sharedModelGeometries": 1,
+      "sharedModelTextures": 1,
+      "typedModelBytes": 46668,
+      "groundQueries": 0,
+      "collisionQueries": 0,
+      "navigationFailures": 0,
+      "afterCleanupGeometries": 0,
+      "afterCleanupTextures": 0
+    },
+    {
+      "trial": 0,
+      "count": 1,
+      "enabled": true,
+      "frames": 240,
+      "frameMs": {
+        "mean": 16.665416666663564,
+        "p95": 17.100000001490116
+      },
+      "updateMs": {
+        "mean": 0.14291666680946946,
+        "p95": 0.3999999985098839
+      },
+      "behaviorMs": {
+        "mean": 0.03583333329297602,
+        "p95": 0.19999999925494194
+      },
+      "animationMs": {
+        "mean": 0.054583333401630324,
+        "p95": 0.19999999925494194
+      },
+      "drawCalls": 1,
+      "triangles": 674,
+      "sharedModelGeometries": 1,
+      "sharedModelTextures": 1,
+      "typedModelBytes": 46668,
+      "groundQueries": 340,
+      "collisionQueries": 68,
+      "navigationFailures": 0,
+      "afterCleanupGeometries": 0,
+      "afterCleanupTextures": 0
+    },
+    {
+      "trial": 0,
+      "count": 5,
+      "enabled": false,
+      "frames": 240,
+      "frameMs": {
+        "mean": 16.666250000009313,
+        "p95": 17.100000001490116
+      },
+      "updateMs": {
+        "mean": 0.05750000003414849,
+        "p95": 0.10000000149011612
+      },
+      "behaviorMs": {
+        "mean": 0,
+        "p95": 0
+      },
+      "animationMs": {
+        "mean": 0,
+        "p95": 0
+      },
+      "drawCalls": 5,
+      "triangles": 3370,
+      "sharedModelGeometries": 1,
+      "sharedModelTextures": 1,
+      "typedModelBytes": 46668,
+      "groundQueries": 0,
+      "collisionQueries": 0,
+      "navigationFailures": 0,
+      "afterCleanupGeometries": 0,
+      "afterCleanupTextures": 0
+    },
+    {
+      "trial": 0,
+      "count": 5,
+      "enabled": true,
+      "frames": 240,
+      "frameMs": {
+        "mean": 16.666666666666668,
+        "p95": 17.100000001490116
+      },
+      "updateMs": {
+        "mean": 0.24125000004035732,
+        "p95": 0.5
+      },
+      "behaviorMs": {
+        "mean": 0.08541666668218871,
+        "p95": 0.30000000074505806
+      },
+      "animationMs": {
+        "mean": 0.07749999999068677,
+        "p95": 0.20000000298023224
+      },
+      "drawCalls": 5,
+      "triangles": 3370,
+      "sharedModelGeometries": 1,
+      "sharedModelTextures": 1,
+      "typedModelBytes": 46668,
+      "groundQueries": 1755,
+      "collisionQueries": 351,
+      "navigationFailures": 3,
+      "afterCleanupGeometries": 0,
+      "afterCleanupTextures": 0
+    },
+    {
+      "trial": 0,
+      "count": 20,
+      "enabled": false,
+      "frames": 240,
+      "frameMs": {
+        "mean": 16.666666666666668,
+        "p95": 17.199999999254942
+      },
+      "updateMs": {
+        "mean": 0.08791666659526527,
+        "p95": 0.19999999925494194
+      },
+      "behaviorMs": {
+        "mean": 0,
+        "p95": 0
+      },
+      "animationMs": {
+        "mean": 0,
+        "p95": 0
+      },
+      "drawCalls": 20,
+      "triangles": 13480,
+      "sharedModelGeometries": 1,
+      "sharedModelTextures": 1,
+      "typedModelBytes": 46668,
+      "groundQueries": 0,
+      "collisionQueries": 0,
+      "navigationFailures": 0,
+      "afterCleanupGeometries": 0,
+      "afterCleanupTextures": 0
+    },
+    {
+      "trial": 0,
+      "count": 20,
+      "enabled": true,
+      "frames": 240,
+      "frameMs": {
+        "mean": 16.666666666666668,
+        "p95": 17
+      },
+      "updateMs": {
+        "mean": 0.4679166667163372,
+        "p95": 0.8999999985098839
+      },
+      "behaviorMs": {
+        "mean": 0.18000000002793967,
+        "p95": 0.6000000014901161
+      },
+      "animationMs": {
+        "mean": 0.15791666673806806,
+        "p95": 0.30000000447034836
+      },
+      "drawCalls": 20,
+      "triangles": 13480,
+      "sharedModelGeometries": 1,
+      "sharedModelTextures": 1,
+      "typedModelBytes": 46668,
+      "groundQueries": 8405,
+      "collisionQueries": 1681,
+      "navigationFailures": 5,
+      "afterCleanupGeometries": 0,
+      "afterCleanupTextures": 0
+    },
+    {
+      "trial": 0,
+      "count": 50,
+      "enabled": false,
+      "frames": 240,
+      "frameMs": {
+        "mean": 16.66624999999379,
+        "p95": 17
+      },
+      "updateMs": {
+        "mean": 0.1333333332557231,
+        "p95": 0.20000000298023224
+      },
+      "behaviorMs": {
+        "mean": 0,
+        "p95": 0
+      },
+      "animationMs": {
+        "mean": 0,
+        "p95": 0
+      },
+      "drawCalls": 50,
+      "triangles": 33700,
+      "sharedModelGeometries": 1,
+      "sharedModelTextures": 1,
+      "typedModelBytes": 46668,
+      "groundQueries": 0,
+      "collisionQueries": 0,
+      "navigationFailures": 0,
+      "afterCleanupGeometries": 0,
+      "afterCleanupTextures": 0
+    },
+    {
+      "trial": 0,
+      "count": 50,
+      "enabled": true,
+      "frames": 240,
+      "frameMs": {
+        "mean": 16.666250000009313,
+        "p95": 17
+      },
+      "updateMs": {
+        "mean": 1.0604166665269683,
+        "p95": 2.399999998509884
+      },
+      "behaviorMs": {
+        "mean": 0.6033333332277835,
+        "p95": 1.8000000044703484
+      },
+      "animationMs": {
+        "mean": 0.26124999987271924,
+        "p95": 0.5000000037252903
+      },
+      "drawCalls": 50,
+      "triangles": 33700,
+      "sharedModelGeometries": 1,
+      "sharedModelTextures": 1,
+      "typedModelBytes": 46668,
+      "groundQueries": 20570,
+      "collisionQueries": 4114,
+      "navigationFailures": 10,
+      "afterCleanupGeometries": 0,
+      "afterCleanupTextures": 0
+    },
+    {
+      "trial": 1,
+      "count": 50,
+      "enabled": true,
+      "frames": 240,
+      "frameMs": {
+        "mean": 16.665833333336437,
+        "p95": 17
+      },
+      "updateMs": {
+        "mean": 1.0420833334947626,
+        "p95": 2.300000000745058
+      },
+      "behaviorMs": {
+        "mean": 0.6004166666573535,
+        "p95": 1.7000000029802322
+      },
+      "animationMs": {
+        "mean": 0.23958333355064193,
+        "p95": 0.5000000037252903
+      },
+      "drawCalls": 50,
+      "triangles": 33700,
+      "sharedModelGeometries": 1,
+      "sharedModelTextures": 1,
+      "typedModelBytes": 46668,
+      "groundQueries": 20445,
+      "collisionQueries": 4089,
+      "navigationFailures": 10,
+      "afterCleanupGeometries": 0,
+      "afterCleanupTextures": 0
+    },
+    {
+      "trial": 1,
+      "count": 50,
+      "enabled": false,
+      "frames": 240,
+      "frameMs": {
+        "mean": 16.66500000000621,
+        "p95": 17
+      },
+      "updateMs": {
+        "mean": 0.11000000000931323,
+        "p95": 0.20000000298023224
+      },
+      "behaviorMs": {
+        "mean": 0,
+        "p95": 0
+      },
+      "animationMs": {
+        "mean": 0,
+        "p95": 0
+      },
+      "drawCalls": 50,
+      "triangles": 33700,
+      "sharedModelGeometries": 1,
+      "sharedModelTextures": 1,
+      "typedModelBytes": 46668,
+      "groundQueries": 0,
+      "collisionQueries": 0,
+      "navigationFailures": 0,
+      "afterCleanupGeometries": 0,
+      "afterCleanupTextures": 0
+    },
+    {
+      "trial": 1,
+      "count": 20,
+      "enabled": true,
+      "frames": 240,
+      "frameMs": {
+        "mean": 16.665416666663564,
+        "p95": 17
+      },
+      "updateMs": {
+        "mean": 0.4437500000465661,
+        "p95": 0.8000000007450581
+      },
+      "behaviorMs": {
+        "mean": 0.17499999984477957,
+        "p95": 0.5000000037252903
+      },
+      "animationMs": {
+        "mean": 0.1445833335320155,
+        "p95": 0.30000000074505806
+      },
+      "drawCalls": 20,
+      "triangles": 13480,
+      "sharedModelGeometries": 1,
+      "sharedModelTextures": 1,
+      "typedModelBytes": 46668,
+      "groundQueries": 8355,
+      "collisionQueries": 1671,
+      "navigationFailures": 5,
+      "afterCleanupGeometries": 0,
+      "afterCleanupTextures": 0
+    },
+    {
+      "trial": 1,
+      "count": 20,
+      "enabled": false,
+      "frames": 240,
+      "frameMs": {
+        "mean": 16.66791666665425,
+        "p95": 17.100000001490116
+      },
+      "updateMs": {
+        "mean": 0.07625000006519259,
+        "p95": 0.19999999925494194
+      },
+      "behaviorMs": {
+        "mean": 0,
+        "p95": 0
+      },
+      "animationMs": {
+        "mean": 0,
+        "p95": 0
+      },
+      "drawCalls": 20,
+      "triangles": 13480,
+      "sharedModelGeometries": 1,
+      "sharedModelTextures": 1,
+      "typedModelBytes": 46668,
+      "groundQueries": 0,
+      "collisionQueries": 0,
+      "navigationFailures": 0,
+      "afterCleanupGeometries": 0,
+      "afterCleanupTextures": 0
+    },
+    {
+      "trial": 1,
+      "count": 5,
+      "enabled": true,
+      "frames": 240,
+      "frameMs": {
+        "mean": 16.667499999996895,
+        "p95": 17.199999999254942
+      },
+      "updateMs": {
+        "mean": 0.1691666666107873,
+        "p95": 0.3999999985098839
+      },
+      "behaviorMs": {
+        "mean": 0.05499999991928538,
+        "p95": 0.20000000298023224
+      },
+      "animationMs": {
+        "mean": 0.05291666664804021,
+        "p95": 0.10000000149011612
+      },
+      "drawCalls": 5,
+      "triangles": 3370,
+      "sharedModelGeometries": 1,
+      "sharedModelTextures": 1,
+      "typedModelBytes": 46668,
+      "groundQueries": 1755,
+      "collisionQueries": 351,
+      "navigationFailures": 3,
+      "afterCleanupGeometries": 0,
+      "afterCleanupTextures": 0
+    },
+    {
+      "trial": 1,
+      "count": 5,
+      "enabled": false,
+      "frames": 240,
+      "frameMs": {
+        "mean": 16.665416666679086,
+        "p95": 17.099999997764826
+      },
+      "updateMs": {
+        "mean": 0.03874999990997215,
+        "p95": 0.10000000149011612
+      },
+      "behaviorMs": {
+        "mean": 0,
+        "p95": 0
+      },
+      "animationMs": {
+        "mean": 0,
+        "p95": 0
+      },
+      "drawCalls": 5,
+      "triangles": 3370,
+      "sharedModelGeometries": 1,
+      "sharedModelTextures": 1,
+      "typedModelBytes": 46668,
+      "groundQueries": 0,
+      "collisionQueries": 0,
+      "navigationFailures": 0,
+      "afterCleanupGeometries": 0,
+      "afterCleanupTextures": 0
+    },
+    {
+      "trial": 1,
+      "count": 1,
+      "enabled": true,
+      "frames": 240,
+      "frameMs": {
+        "mean": 16.667916666669772,
+        "p95": 17.100000001490116
+      },
+      "updateMs": {
+        "mean": 0.07833333333643774,
+        "p95": 0.19999999925494194
+      },
+      "behaviorMs": {
+        "mean": 0.020833333333333332,
+        "p95": 0.10000000149011612
+      },
+      "animationMs": {
+        "mean": 0.020000000034148493,
+        "p95": 0.10000000149011612
+      },
+      "drawCalls": 1,
+      "triangles": 674,
+      "sharedModelGeometries": 1,
+      "sharedModelTextures": 1,
+      "typedModelBytes": 46668,
+      "groundQueries": 340,
+      "collisionQueries": 68,
+      "navigationFailures": 0,
+      "afterCleanupGeometries": 0,
+      "afterCleanupTextures": 0
+    },
+    {
+      "trial": 1,
+      "count": 1,
+      "enabled": false,
+      "frames": 240,
+      "frameMs": {
+        "mean": 16.66416666667598,
+        "p95": 17
+      },
+      "updateMs": {
+        "mean": 0.026249999941016237,
+        "p95": 0.10000000149011612
+      },
+      "behaviorMs": {
+        "mean": 0,
+        "p95": 0
+      },
+      "animationMs": {
+        "mean": 0,
+        "p95": 0
+      },
+      "drawCalls": 1,
+      "triangles": 674,
+      "sharedModelGeometries": 1,
+      "sharedModelTextures": 1,
+      "typedModelBytes": 46668,
+      "groundQueries": 0,
+      "collisionQueries": 0,
+      "navigationFailures": 0,
+      "afterCleanupGeometries": 0,
+      "afterCleanupTextures": 0
+    }
+  ]
+}

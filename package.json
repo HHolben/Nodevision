@@ -9,7 +9,8 @@
     "start": "node start-servers.js",
     "desktop": "electron .",
     "portable": "node ApplicationSystem/scripts/build-portable-entry.mjs && pkg --no-bytecode --public --public-packages \"*\" ApplicationSystem/build/nodevision-cli.cjs --output nodevision",
-    "build-portable": "node ApplicationSystem/scripts/build-portable-entry.mjs && pkg --no-bytecode --public --public-packages \"*\" ApplicationSystem/build/nodevision-cli.cjs --targets node18-linux-x64,node18-win-x64,node18-macos-x64 --output nodevision && node ApplicationSystem/scripts/copy-xdg-open.js"
+    "build-portable": "node ApplicationSystem/scripts/build-portable-entry.mjs && pkg --no-bytecode --public --public-packages \"*\" ApplicationSystem/build/nodevision-cli.cjs --targets node18-linux-x64,node18-win-x64,node18-macos-x64 --output nodevision && node ApplicationSystem/scripts/copy-xdg-open.js",
+    "test:archery": "node --import ./scripts/register-browser-test-imports.mjs --test ApplicationSystem/public/PanelInstances/ViewPanels/GameViewDependencies/Archery/*.test.mjs"
   },
   "dependencies": {
     "@serialport/parser-readline": "^13.0.0",

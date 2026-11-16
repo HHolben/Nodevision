@@ -230,6 +230,8 @@ function createParametricCurveObject(THREE, layer, parsed) {
 }
 
 export function disposeExpressionObject(object3d) {
+  if(object3d?.userData?.mobRuntime){object3d.userData.mobRuntime.dispose();return;}
+  if(object3d?.userData?.archeryTargetRuntime){object3d.userData.archeryTargetRuntime.dispose();return;}
   if (!object3d) return;
   object3d.traverse?.((node) => {
     node.geometry?.dispose?.();
