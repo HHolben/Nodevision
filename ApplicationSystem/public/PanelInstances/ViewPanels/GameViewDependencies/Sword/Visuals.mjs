@@ -1,0 +1,8 @@
+export function createSwordVisuals(THREE,scene){
+ const group=new THREE.Group();group.name='Xiphos sword';group.userData={noninteractive:true,excludeFromRaycast:true,isEditorHelper:true};scene.add(group);group.visible=false;
+ const steel=new THREE.MeshBasicMaterial({color:0xc7d3db}),bronze=new THREE.MeshBasicMaterial({color:0xaa793c}),wood=new THREE.MeshBasicMaterial({color:0x503121});
+ const blade=new THREE.BufferGeometry();blade.setAttribute('position',new THREE.Float32BufferAttribute([-.025,0,0,.025,0,0,-.045,0,-.45,.045,0,-.45,-.018,0,-.87,.018,0,-.87],3));blade.setIndex([0,2,1,1,2,3,2,4,3,3,4,5]);blade.computeVertexNormals();steel.side=THREE.DoubleSide;
+ const geometries=[blade,new THREE.ConeGeometry(.027,.18,4).rotateX(-Math.PI/2),new THREE.BoxGeometry(.22,.045,.055),new THREE.BoxGeometry(.035,.045,.15),new THREE.SphereGeometry(.035,8,6)];
+ geometries.forEach((g,i)=>{const mesh=new THREE.Mesh(g,i<2?steel:i===3?wood:bronze);mesh.name=['Blade','Tip','Guard','Grip','Pommel'][i];mesh.position.z=[0,-.96,.01,.11,.21][i];group.add(mesh);});let disposed=false,flashUntil=0;
+ return {group,flash(){flashUntil=performance.now()+120;},pose(pose){steel.color.set(performance.now()<flashUntil?0xffcc66:0xc7d3db);group.visible=true;group.position.copy(pose.base);group.quaternion.copy(pose.quaternion);},hide(){group.visible=false;},dispose(){if(disposed)return;disposed=true;group.removeFromParent();geometries.forEach(g=>g.dispose());[steel,bronze,wood].forEach(m=>m.dispose());},snapshot(){return {geometries:geometries.length,materials:3,visible:group.visible,geometryBytes:geometries.reduce((n,g)=>n+Object.values(g.attributes).reduce((v,a)=>v+a.array.byteLength,0)+(g.index?.array.byteLength||0),0)};}};
+}

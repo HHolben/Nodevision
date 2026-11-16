@@ -1,0 +1,596 @@
+{
+  "complete": true,
+  "environment": "Chromium/SwiftShader 640x480, actual shared Rabbit GLB. Two trials in reversed count order; 60 warm + 300 measured RAF. One 30Hz fixed simulation step per frame, 10 measured simulation seconds. Per-mob chasing player probe, flat authoritative support, vegetation/terrain rendering excluded. Frame pacing is software-renderer dependent; no hardware FPS claim. Render submission is CPU wall time, not GPU timer. Part query totals include warmup. Spatial queue receives per-mob running signals at 5Hz (capped at 128 globally, 16 spatial candidates and 8 processed per hare sample), alongside the per-mob player probe. Each mob receives one potential hit every 30 frames, otherwise broad-phase misses; damage pre-applied once outside timings. State byte fields are serialized bytes and an explicit estimate, not measured JS heap ownership.",
+  "results": [
+    {
+      "trial": 0,
+      "scenario": "1-healthy",
+      "count": 1,
+      "warmFrames": 60,
+      "measuredFrames": 300,
+      "measuredSimulationSeconds": 10,
+      "frameMs": {
+        "mean": 17.002000000004966,
+        "p95": 17.30000000447035,
+        "max": 56.899999998509884
+      },
+      "updateMs": {
+        "mean": 0.322000000278155,
+        "p95": 0.6999999955296516,
+        "max": 4.4000000059604645
+      },
+      "animationAndBoundsMs": {
+        "mean": 0.08766666675607364,
+        "p95": 0.19999999552965164,
+        "max": 4.200000002980232
+      },
+      "renderSubmissionMs": {
+        "mean": 0.28966666663686436,
+        "p95": 0.5,
+        "max": 3.7000000029802322
+      },
+      "groundAndClearanceMs": {
+        "mean": 0.037666666756073636,
+        "p95": 0.19999999552965164,
+        "max": 0.30000000447034836
+      },
+      "arrowProbeBatchMs": {
+        "mean": 0.019333333298563956,
+        "p95": 0.10000000149011612,
+        "max": 0.30000000447034836
+      },
+      "perceptionMsTotal": 16.99999999254942,
+      "perceptionUpdates": 59,
+      "processedSignals": 60,
+      "sensoryLosQueries": 60,
+      "signalQueue": {
+        "events": 7,
+        "cells": 2
+      },
+      "partHitTestMsTotal": 0.7000000029802322,
+      "partHitQueries": 12,
+      "partIntersections": 144,
+      "partHitMeanMs": 0.05833333358168602,
+      "anatomySerializedBytes": 1379,
+      "anatomyStateEstimateBytes": 416,
+      "drawCalls": 1,
+      "triangles": 674,
+      "meanTravel": 34.55672059120199,
+      "afterCleanup": {
+        "geometries": 0,
+        "textures": 0
+      }
+    },
+    {
+      "trial": 0,
+      "scenario": "1-injured",
+      "count": 1,
+      "warmFrames": 60,
+      "measuredFrames": 300,
+      "measuredSimulationSeconds": 10,
+      "frameMs": {
+        "mean": 16.997999999995034,
+        "p95": 17.899999998509884,
+        "max": 37.600000001490116
+      },
+      "updateMs": {
+        "mean": 0.2650000000745058,
+        "p95": 0.5999999940395355,
+        "max": 5.100000001490116
+      },
+      "animationAndBoundsMs": {
+        "mean": 0.05000000009934107,
+        "p95": 0.19999999552965164,
+        "max": 0.29999999701976776
+      },
+      "renderSubmissionMs": {
+        "mean": 0.25233333311975004,
+        "p95": 0.6000000014901161,
+        "max": 2.8000000044703484
+      },
+      "groundAndClearanceMs": {
+        "mean": 0.027000000029802323,
+        "p95": 0.10000000149011612,
+        "max": 0.29999999701976776
+      },
+      "arrowProbeBatchMs": {
+        "mean": 0.019666666562358538,
+        "p95": 0.10000000149011612,
+        "max": 0.3999999985098839
+      },
+      "perceptionMsTotal": 14.000000022351742,
+      "perceptionUpdates": 59,
+      "processedSignals": 60,
+      "sensoryLosQueries": 60,
+      "signalQueue": {
+        "events": 7,
+        "cells": 1
+      },
+      "partHitTestMsTotal": 0.4999999925494194,
+      "partHitQueries": 12,
+      "partIntersections": 144,
+      "partHitMeanMs": 0.04166666604578495,
+      "anatomySerializedBytes": 1477,
+      "anatomyStateEstimateBytes": 416,
+      "drawCalls": 1,
+      "triangles": 674,
+      "meanTravel": 23.50927259624272,
+      "afterCleanup": {
+        "geometries": 0,
+        "textures": 0
+      }
+    },
+    {
+      "trial": 0,
+      "scenario": "5-mixed",
+      "count": 5,
+      "warmFrames": 60,
+      "measuredFrames": 300,
+      "measuredSimulationSeconds": 10,
+      "frameMs": {
+        "mean": 17.2753333333383,
+        "p95": 18.799999997019768,
+        "max": 49.600000001490116
+      },
+      "updateMs": {
+        "mean": 0.624666666512688,
+        "p95": 1.3999999985098839,
+        "max": 6.299999997019768
+      },
+      "animationAndBoundsMs": {
+        "mean": 0.09299999992052714,
+        "p95": 0.29999999701976776,
+        "max": 0.4000000059604645
+      },
+      "renderSubmissionMs": {
+        "mean": 0.35033333361148833,
+        "p95": 0.6000000014901161,
+        "max": 13.700000002980232
+      },
+      "groundAndClearanceMs": {
+        "mean": 0.08933333329856395,
+        "p95": 0.29999999701976776,
+        "max": 3.7000000029802322
+      },
+      "arrowProbeBatchMs": {
+        "mean": 0.02366666667163372,
+        "p95": 0.10000000149011612,
+        "max": 0.5
+      },
+      "perceptionMsTotal": 62.19999997317791,
+      "perceptionUpdates": 298,
+      "processedSignals": 1334,
+      "sensoryLosQueries": 1377,
+      "signalQueue": {
+        "events": 35,
+        "cells": 7
+      },
+      "partHitTestMsTotal": 1.1000000163912773,
+      "partHitQueries": 60,
+      "partIntersections": 720,
+      "partHitMeanMs": 0.01833333360652129,
+      "anatomySerializedBytes": 7091,
+      "anatomyStateEstimateBytes": 2080,
+      "drawCalls": 5,
+      "triangles": 3370,
+      "meanTravel": 27.103960940199705,
+      "afterCleanup": {
+        "geometries": 0,
+        "textures": 0
+      }
+    },
+    {
+      "trial": 0,
+      "scenario": "20-mixed",
+      "count": 20,
+      "warmFrames": 60,
+      "measuredFrames": 300,
+      "measuredSimulationSeconds": 10,
+      "frameMs": {
+        "mean": 16.652999999995032,
+        "p95": 17.100000001490116,
+        "max": 18.899999998509884
+      },
+      "updateMs": {
+        "mean": 1.282000000004967,
+        "p95": 2.5,
+        "max": 3.5
+      },
+      "animationAndBoundsMs": {
+        "mean": 0.20866666682064533,
+        "p95": 0.4000000059604645,
+        "max": 0.6999999955296516
+      },
+      "renderSubmissionMs": {
+        "mean": 0.293333333209157,
+        "p95": 0.4000000059604645,
+        "max": 0.5
+      },
+      "groundAndClearanceMs": {
+        "mean": 0.1926666667809089,
+        "p95": 0.5000000074505806,
+        "max": 1
+      },
+      "arrowProbeBatchMs": {
+        "mean": 0.025333333363135657,
+        "p95": 0.10000000149011612,
+        "max": 0.4000000059604645
+      },
+      "perceptionMsTotal": 166.39999992400408,
+      "perceptionUpdates": 1190,
+      "processedSignals": 9377,
+      "sensoryLosQueries": 9889,
+      "signalQueue": {
+        "events": 127,
+        "cells": 16
+      },
+      "partHitTestMsTotal": 1.2000000029802322,
+      "partHitQueries": 240,
+      "partIntersections": 2880,
+      "partHitMeanMs": 0.005000000012417635,
+      "anatomySerializedBytes": 28560,
+      "anatomyStateEstimateBytes": 8320,
+      "drawCalls": 20,
+      "triangles": 13480,
+      "meanTravel": 22.00911873236888,
+      "afterCleanup": {
+        "geometries": 0,
+        "textures": 0
+      }
+    },
+    {
+      "trial": 0,
+      "scenario": "50-mixed",
+      "count": 50,
+      "warmFrames": 60,
+      "measuredFrames": 300,
+      "measuredSimulationSeconds": 10,
+      "frameMs": {
+        "mean": 17.726333333328366,
+        "p95": 22.399999998509884,
+        "max": 75.60000000149012
+      },
+      "updateMs": {
+        "mean": 2.671999999930461,
+        "p95": 5,
+        "max": 10.899999998509884
+      },
+      "animationAndBoundsMs": {
+        "mean": 0.42700000007947286,
+        "p95": 0.7999999970197678,
+        "max": 1.3999999910593033
+      },
+      "renderSubmissionMs": {
+        "mean": 0.4843333334227403,
+        "p95": 0.7000000029802322,
+        "max": 3
+      },
+      "groundAndClearanceMs": {
+        "mean": 0.5763333338747422,
+        "p95": 1.5000000074505806,
+        "max": 2.1999999955296516
+      },
+      "arrowProbeBatchMs": {
+        "mean": 0.03433333324889342,
+        "p95": 0.10000000149011612,
+        "max": 0.5
+      },
+      "perceptionMsTotal": 351.39999970793724,
+      "perceptionUpdates": 2973,
+      "processedSignals": 23739,
+      "sensoryLosQueries": 25206,
+      "signalQueue": {
+        "events": 127,
+        "cells": 22
+      },
+      "partHitTestMsTotal": 1.800000011920929,
+      "partHitQueries": 600,
+      "partIntersections": 7200,
+      "partHitMeanMs": 0.0030000000198682148,
+      "anatomySerializedBytes": 71400,
+      "anatomyStateEstimateBytes": 20800,
+      "drawCalls": 50,
+      "triangles": 33700,
+      "meanTravel": 17.68394151204431,
+      "afterCleanup": {
+        "geometries": 0,
+        "textures": 0
+      }
+    },
+    {
+      "trial": 1,
+      "scenario": "50-mixed",
+      "count": 50,
+      "warmFrames": 60,
+      "measuredFrames": 300,
+      "measuredSimulationSeconds": 10,
+      "frameMs": {
+        "mean": 26.302333333343267,
+        "p95": 47,
+        "max": 153.10000000149012
+      },
+      "updateMs": {
+        "mean": 3.562333333318432,
+        "p95": 7.700000002980232,
+        "max": 17.30000000447035
+      },
+      "animationAndBoundsMs": {
+        "mean": 0.5429999997466802,
+        "p95": 1.1000000014901161,
+        "max": 1.7999999895691872
+      },
+      "renderSubmissionMs": {
+        "mean": 0.676999999731779,
+        "p95": 1.1000000014901161,
+        "max": 8.200000002980232
+      },
+      "groundAndClearanceMs": {
+        "mean": 0.7699999994536241,
+        "p95": 2.3999999910593033,
+        "max": 9.799999974668026
+      },
+      "arrowProbeBatchMs": {
+        "mean": 0.052666666805744174,
+        "p95": 0.19999999552965164,
+        "max": 1
+      },
+      "perceptionMsTotal": 422.2000002115965,
+      "perceptionUpdates": 2973,
+      "processedSignals": 23739,
+      "sensoryLosQueries": 25206,
+      "signalQueue": {
+        "events": 127,
+        "cells": 22
+      },
+      "partHitTestMsTotal": 2.2999999970197678,
+      "partHitQueries": 600,
+      "partIntersections": 7200,
+      "partHitMeanMs": 0.0038333333283662794,
+      "anatomySerializedBytes": 71400,
+      "anatomyStateEstimateBytes": 20800,
+      "drawCalls": 50,
+      "triangles": 33700,
+      "meanTravel": 17.68394151204431,
+      "afterCleanup": {
+        "geometries": 0,
+        "textures": 0
+      }
+    },
+    {
+      "trial": 1,
+      "scenario": "20-mixed",
+      "count": 20,
+      "warmFrames": 60,
+      "measuredFrames": 300,
+      "measuredSimulationSeconds": 10,
+      "frameMs": {
+        "mean": 21.302999999995034,
+        "p95": 31.799999997019768,
+        "max": 96
+      },
+      "updateMs": {
+        "mean": 1.803000000094374,
+        "p95": 3.899999998509884,
+        "max": 6.899999998509884
+      },
+      "animationAndBoundsMs": {
+        "mean": 0.32799999954799813,
+        "p95": 0.6999999955296516,
+        "max": 3.1999999955296516
+      },
+      "renderSubmissionMs": {
+        "mean": 0.5139999999602636,
+        "p95": 1.2999999970197678,
+        "max": 4.100000001490116
+      },
+      "groundAndClearanceMs": {
+        "mean": 0.21766666668156784,
+        "p95": 0.6000000014901161,
+        "max": 1.4999999925494194
+      },
+      "arrowProbeBatchMs": {
+        "mean": 0.03266666648288568,
+        "p95": 0.10000000149011612,
+        "max": 0.6000000014901161
+      },
+      "perceptionMsTotal": 230.20000004023314,
+      "perceptionUpdates": 1190,
+      "processedSignals": 9377,
+      "sensoryLosQueries": 9889,
+      "signalQueue": {
+        "events": 127,
+        "cells": 16
+      },
+      "partHitTestMsTotal": 0.7000000104308128,
+      "partHitQueries": 240,
+      "partIntersections": 2880,
+      "partHitMeanMs": 0.0029166667101283867,
+      "anatomySerializedBytes": 28560,
+      "anatomyStateEstimateBytes": 8320,
+      "drawCalls": 20,
+      "triangles": 13480,
+      "meanTravel": 22.00911873236888,
+      "afterCleanup": {
+        "geometries": 0,
+        "textures": 0
+      }
+    },
+    {
+      "trial": 1,
+      "scenario": "5-mixed",
+      "count": 5,
+      "warmFrames": 60,
+      "measuredFrames": 300,
+      "measuredSimulationSeconds": 10,
+      "frameMs": {
+        "mean": 17.053333333333335,
+        "p95": 18.100000001490116,
+        "max": 40.899999998509884
+      },
+      "updateMs": {
+        "mean": 0.45166666659216087,
+        "p95": 0.8999999985098839,
+        "max": 3.0999999940395355
+      },
+      "animationAndBoundsMs": {
+        "mean": 0.08333333323399227,
+        "p95": 0.20000000298023224,
+        "max": 0.7000000029802322
+      },
+      "renderSubmissionMs": {
+        "mean": 0.2619999997317791,
+        "p95": 0.4000000059604645,
+        "max": 2.7999999970197678
+      },
+      "groundAndClearanceMs": {
+        "mean": 0.05266666650772095,
+        "p95": 0.20000000298023224,
+        "max": 1
+      },
+      "arrowProbeBatchMs": {
+        "mean": 0.01133333330353101,
+        "p95": 0.10000000149011612,
+        "max": 0.20000000298023224
+      },
+      "perceptionMsTotal": 46.19999998807907,
+      "perceptionUpdates": 298,
+      "processedSignals": 1334,
+      "sensoryLosQueries": 1377,
+      "signalQueue": {
+        "events": 35,
+        "cells": 7
+      },
+      "partHitTestMsTotal": 0.30000000447034836,
+      "partHitQueries": 60,
+      "partIntersections": 720,
+      "partHitMeanMs": 0.005000000074505806,
+      "anatomySerializedBytes": 7091,
+      "anatomyStateEstimateBytes": 2080,
+      "drawCalls": 5,
+      "triangles": 3370,
+      "meanTravel": 27.103960940199705,
+      "afterCleanup": {
+        "geometries": 0,
+        "textures": 0
+      }
+    },
+    {
+      "trial": 1,
+      "scenario": "1-injured",
+      "count": 1,
+      "warmFrames": 60,
+      "measuredFrames": 300,
+      "measuredSimulationSeconds": 10,
+      "frameMs": {
+        "mean": 16.6653333333383,
+        "p95": 17.100000001490116,
+        "max": 17.5
+      },
+      "updateMs": {
+        "mean": 0.1296666667610407,
+        "p95": 0.30000000447034836,
+        "max": 0.5
+      },
+      "animationAndBoundsMs": {
+        "mean": 0.026666666716337203,
+        "p95": 0.10000000149011612,
+        "max": 0.20000000298023224
+      },
+      "renderSubmissionMs": {
+        "mean": 0.15499999997516473,
+        "p95": 0.29999999701976776,
+        "max": 0.3999999985098839
+      },
+      "groundAndClearanceMs": {
+        "mean": 0.015333333338300387,
+        "p95": 0.10000000149011612,
+        "max": 0.10000000149011612
+      },
+      "arrowProbeBatchMs": {
+        "mean": 0.009000000009934107,
+        "p95": 0.10000000149011612,
+        "max": 0.20000000298023224
+      },
+      "perceptionMsTotal": 7.19999997317791,
+      "perceptionUpdates": 59,
+      "processedSignals": 60,
+      "sensoryLosQueries": 60,
+      "signalQueue": {
+        "events": 7,
+        "cells": 1
+      },
+      "partHitTestMsTotal": 0,
+      "partHitQueries": 12,
+      "partIntersections": 144,
+      "partHitMeanMs": 0,
+      "anatomySerializedBytes": 1477,
+      "anatomyStateEstimateBytes": 416,
+      "drawCalls": 1,
+      "triangles": 674,
+      "meanTravel": 23.50927259624272,
+      "afterCleanup": {
+        "geometries": 0,
+        "textures": 0
+      }
+    },
+    {
+      "trial": 1,
+      "scenario": "1-healthy",
+      "count": 1,
+      "warmFrames": 60,
+      "measuredFrames": 300,
+      "measuredSimulationSeconds": 10,
+      "frameMs": {
+        "mean": 16.666666666666668,
+        "p95": 17.100000001490116,
+        "max": 17.69999999552965
+      },
+      "updateMs": {
+        "mean": 0.12999999997516473,
+        "p95": 0.29999999701976776,
+        "max": 0.5
+      },
+      "animationAndBoundsMs": {
+        "mean": 0.030666666453083358,
+        "p95": 0.10000000149011612,
+        "max": 0.20000000298023224
+      },
+      "renderSubmissionMs": {
+        "mean": 0.15266666680574417,
+        "p95": 0.29999999701976776,
+        "max": 0.5999999940395355
+      },
+      "groundAndClearanceMs": {
+        "mean": 0.015000000099341075,
+        "p95": 0.10000000149011612,
+        "max": 0.10000000149011612
+      },
+      "arrowProbeBatchMs": {
+        "mean": 0.0073333333432674406,
+        "p95": 0.10000000149011612,
+        "max": 0.10000000149011612
+      },
+      "perceptionMsTotal": 5.699999965727329,
+      "perceptionUpdates": 59,
+      "processedSignals": 60,
+      "sensoryLosQueries": 60,
+      "signalQueue": {
+        "events": 7,
+        "cells": 2
+      },
+      "partHitTestMsTotal": 0.10000000149011612,
+      "partHitQueries": 12,
+      "partIntersections": 144,
+      "partHitMeanMs": 0.008333333457509676,
+      "anatomySerializedBytes": 1379,
+      "anatomyStateEstimateBytes": 416,
+      "drawCalls": 1,
+      "triangles": 674,
+      "meanTravel": 34.55672059120199,
+      "afterCleanup": {
+        "geometries": 0,
+        "textures": 0
+      }
+    }
+  ]
+}

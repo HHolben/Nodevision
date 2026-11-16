@@ -1,0 +1,91 @@
+{
+  "phase": "M1.3",
+  "date": "2026-11-15",
+  "checks": {
+    "anatomy19": {
+      "passed": true,
+      "logSha256": "7780de9d97c8686efe6809483e28d90782a60810f52491a997f17dcb81184b30",
+      "result": "✔ injured navigation retains wall detours and bounded enclosed recovery (20.604479ms)\nℹ tests 19\nℹ suites 0\nℹ pass 19\nℹ fail 0\nℹ cancelled 0\nℹ skipped 0\nℹ todo 0\nℹ duration_ms 129.122844"
+    },
+    "metaworld66": {
+      "passed": true,
+      "logSha256": "2aa9a1e3d5c4094a5accea7df07b86620714ade06b64a61f06724117e13bbb80",
+      "result": "✔ /home/henry/Nodevision/ApplicationSystem/public/MetaWorld/Weather/Weather.test.mjs (655.176893ms)\nℹ tests 66\nℹ suites 0\nℹ pass 66\nℹ fail 0\nℹ cancelled 0\nℹ skipped 0\nℹ todo 0\nℹ duration_ms 16842.678566"
+    },
+    "gameview10": {
+      "passed": true,
+      "logSha256": "cc32cffc6a233d68af04520ffd4a66937ce3d3f859c6929940546ecf7595cc7a",
+      "result": "✔ ApplicationSystem/public/PanelInstances/ViewPanels/GameViewDependencies/worldPauseState.test.mjs (51.376982ms)\nℹ tests 10\nℹ suites 0\nℹ pass 10\nℹ fail 0\nℹ cancelled 0\nℹ skipped 0\nℹ todo 0\nℹ duration_ms 1959.011243"
+    },
+    "productionAnatomy": {
+      "passed": true,
+      "logSha256": "84b0aa75a45234e8e2a969c58a5b9b102f75f35c5c961e389c32c24dc959f6fe",
+      "result": "NV_TEST_PROGRESS Actual healthy/injured/restored flee undefined\nSaved text file: world.html (utf8)\nPASS: actual GameView anatomy inspector, healthy/injured/restored hopping, trusted leg arrow, deduplication, fleeing, severe injury, independent mobs, Editor/Viewer, save/reopen and cleanup"
+    },
+    "productionBow": {
+      "passed": true,
+      "logSha256": "204f1fc04ab9ff174595b9006e826d3f1b7038fd5a146274c0840503439ded54",
+      "result": "NV_TEST_PROGRESS archery voxel\nNV_TEST_PROGRESS archery polygonal\nNV_TEST_PROGRESS archery imported solids and constructions\nSaved text file: world.html (utf8)\nPASS: production Archery Bow inventory, trusted Use/G, draw animation, dotted prediction, both terrain modes, unlimited arrows, collision embedding, cancellation, persistence, Viewer and cleanup"
+    },
+    "productionTarget": {
+      "passed": true,
+      "logSha256": "5d775b08a350e1ef3219d6bff2ef1a1a02c70e4a02554a75a1cc267f980854cd",
+      "result": "NV_TEST_PROGRESS Target insertion undefined\nNV_TEST_PROGRESS Live bow and target scoring verified\nSaved text file: world.html (utf8)\nPASS: production Archery Target insertion, inspector Unicode, transforms, duplication/history, trusted live bow scoring in both modes, embedding/following/deletion, source preservation, save/reopen and Viewer"
+    },
+    "performance10cases": {
+      "passed": true,
+      "logSha256": "3f2812a1a69e842ec225044b367b04f160f94c37dd6eb2dd2bdb7ceda8549fd8",
+      "result": "NV_TEST_PROGRESS Anatomy benchmark 0 5-mixed\nNV_TEST_PROGRESS Anatomy benchmark 0 20-mixed\nNV_TEST_PROGRESS Anatomy benchmark 0 50-mixed\nNV_TEST_PROGRESS Anatomy benchmark 1 50-mixed\nNV_TEST_PROGRESS Anatomy benchmark 1 20-mixed\nNV_TEST_PROGRESS Anatomy benchmark 1 5-mixed\nNV_TEST_PROGRESS Anatomy benchmark 1 1-injured\nNV_TEST_PROGRESS Anatomy benchmark 1 1-healthy\nPASS: anatomy healthy/injured/5/20/50 mixed performance, arrow broad/narrow timing, memory estimates, draw calls and GPU resource cleanup"
+    }
+  },
+  "sourceSha256": {
+    "ApplicationSystem/public/MetaWorld/Mobs/Behavior.mjs": "9e162336790cb57919ca99d05bff85e4ae322797469700936e3e39ba0ff85104",
+    "ApplicationSystem/public/MetaWorld/Mobs/Ground.mjs": "712fb0721a8c98d91915b86e0d2aa8492a2449b0f706c44b6bcf7d8e932bc7a4",
+    "ApplicationSystem/public/MetaWorld/Mobs/Rendering.mjs": "90b75c81648897aea8be796ae9679ea3f796e87b91e9a24de3c73e3c517fc508",
+    "ApplicationSystem/public/MetaWorld/Mobs/Authoring.mjs": "01f4e07267c6c17072e55c06cb0664e6c7465fd6c4c72a592d85a78fd0aa76f1",
+    "ApplicationSystem/public/MetaWorld/Mobs/Navigation.test.mjs": "7de4c3d420a8ab85a78bb6027ca5274709ddb88e409a8befd374295b8f4feb6c",
+    "ApplicationSystem/public/MetaWorld/Mobs/Registry.mjs": "f01884a46a7c9f7bc4bce2412ce7186181a4c1cf3b42abd60f295fa930e7672d",
+    "ApplicationSystem/public/MetaWorld/Mobs/Anatomy.test.mjs": "2238ee5aff30b9ff9f1ac7d7bdfe27c70f906f423c65f63c7ff6c1728c8d4f39",
+    "ApplicationSystem/public/MetaWorld/Mobs/AimPlacement.test.mjs": "3d7ab3c30ae97442652eb7cd5e5a5033595f7ffb0328cb5cdecfd2dc088b7d7f",
+    "ApplicationSystem/public/MetaWorld/Mobs/Assets.mjs": "6c266b9d339984932a145770ed239131cd2623227e1eeb81594b500aec149400",
+    "ApplicationSystem/public/MetaWorld/Mobs/Properties.mjs": "675935549e833c7a88fc4d3b39390640b996240bd36feeae1c45901b9f8fb56c",
+    "ApplicationSystem/public/MetaWorld/Mobs/Navigation.mjs": "36171a109783e0f0cae27ce6b154f80e6b62d3f0861e55c765b7dd955dc70ecb",
+    "ApplicationSystem/public/MetaWorld/Mobs/Mobs.test.mjs": "ac1b32110413a797307caf6be378df4293fb6a73c42969ee4171ad5d61ee2364",
+    "ApplicationSystem/public/MetaWorld/Mobs/BrownHareAnatomy.mjs": "eac4f340b7bf32eddaea83799699c6e6aef4c750714dad7ca624a84f6b6fc1b3",
+    "ApplicationSystem/public/MetaWorld/Mobs/AimPlacement.mjs": "90216c247edbeacb2e797f42720f43cd1a3bd1dfe0a2bfbda18073fb0b6f23a9",
+    "ApplicationSystem/public/MetaWorld/Mobs/Definition.mjs": "fe527a2e677638e6f6de91285c9c00f988c77c67f496ff1603c4d5ecb31154ae",
+    "ApplicationSystem/public/MetaWorld/Mobs/AnatomyCollision.mjs": "ce2b8235a05830adff7194871735f060ae58ba0454a789d91049e03fdcd128fb",
+    "ApplicationSystem/public/MetaWorld/Mobs/AnatomyProperties.mjs": "f296f38253c19737c6f6556a456956468b1b2372f2c97f42a30eb0c848a4eb48",
+    "ApplicationSystem/public/MetaWorld/Mobs/Anatomy.mjs": "ed746f2cd9073be8750d88453d93fb4111d39b56d4dcdd046a32725596354662",
+    "ApplicationSystem/public/MetaWorld/Mobs/Runtime.mjs": "e38060d1807a44cdcb2ae4c7a2722e3894af1d6c3cc372dbcf39babd469e03c1",
+    "ApplicationSystem/public/MetaWorld/Mobs/Placement.mjs": "ba2b36888b6649984759df93bacce4b525709e521e7905eb4f6e5c2caeae5564",
+    "ApplicationSystem/public/PanelInstances/ViewPanels/GameViewDependencies/Archery/Flight.mjs": "8bdce88e4c9ee2aff4820ab0a112fa1c91e096faca0f305c42d6b17db42fdcb6",
+    "scripts/mob-anatomy-browser.mjs": "d348e3d71ef64aeb209237f32b98853e266969c3a663e14041c6dda9073ad062",
+    "scripts/mob-anatomy-performance.mjs": "448a778c5e5e96d07819b5fed28a28cf633621be88adea129c9b1d6f08699a8a",
+    "scripts/test-mob-anatomy.mjs": "daf4ebcd69de3e9f01993bf18f4af1f5d1a5986590df8fe0e49dc58a33578d9b",
+    "docs/MobAnatomyAndDamage.md": "0abca5c2fe631bab99a27e4880051adb960c54d42d768a0e4fcbcb91971b7537",
+    "docs/MobPhaseM1BrownHare.md": "e6db9aea167651ea1a27837cd91cdee260288916c1eed527efeea26ad3354996"
+  },
+  "evidenceSha256": {
+    "docs/MobAnatomyBrowser.json": "d35d48c58e6960b4306fc9863528194c39f5218c3c8405e225f33fade68ef22c",
+    "docs/MobAnatomyPerformance.json": "0d87314fc8d557fb631d0b70e3e521e90a78f0177c5a9f8155e85e21d73a29a2",
+    "docs/ArcheryTargetBrowser.json": "81438fc32d10e22311104cfa27344dda080b74baeb963bd9d331ad3df470e39d",
+    "docs/ArcheryBowBrowserMetrics.json": "77e55006395527fbefb8cfc771e724566cf464214337501f9cfd86ba0e04039e"
+  },
+  "preserved": {
+    "Notebook/test.html": "75533dd604cbacc1de34bd42e1e3c5a5faeef5f4779b51c520a2e0c0edd81292",
+    "ApplicationSystem/public/BuiltIn/Mobs/Mammals/BrownHare/Models/Mesh_Rabbit.mtl": "40b9d69ff8e1e870f79ce57712958a6f906ee26ae60a62311c6f98ba48a8d175",
+    "ApplicationSystem/public/BuiltIn/Mobs/Mammals/BrownHare/Models/Mesh_Rabbit.obj": "a1b98fae32e84b69ad03fc95031b49581771dc104bfdc94e91bafba8a395acec",
+    "ApplicationSystem/public/BuiltIn/Mobs/Mammals/BrownHare/Models/Rabbit by Poly by Google - 9OBTRVYUSmt.glb": "b58fac979a8606d60948625783794e3afbbcb6edfe2f8c98284bbcedaa6cee3a",
+    "ApplicationSystem/public/BuiltIn/Mobs/Mammals/BrownHare/Models/Tex_Rabbit.png": "43ab3622a46b45f15cdf442ce3ae1f2e1b48e4f50420285bfe071bbf9f5630a1",
+    "ApplicationSystem/public/BuiltIn/Mobs/Mammals/BrownHare/Models/licenseNotice.md": "dc816165d5f96006bd96a8b0cae929083f78f49dcdd76728595c395cb0271140"
+  },
+  "persistence": "Session-scoped condition; duplicate/reconstruction/reopen resets injury; no damage authoring writes or undo entries.",
+  "limitations": [
+    "Rigid calibrated box proxies, not segmented skeletal anatomy; approximate gap fallback is explicitly flagged.",
+    "4096 unique damage sources per mob session; further sources are rejected, preserving deduplication.",
+    "Software-renderer isolated mob benchmarks, not hardware GPU timing or terrain/vegetation FPS claims.",
+    "Anatomy memory is serialized bytes and an estimate, not per-instance measured retained JS heap.",
+    "Performance evidence was collected before subsequent input-validation/inspector-refresh and inert-state refinements; measured healthy/partial-injury hot paths are unchanged."
+  ]
+}

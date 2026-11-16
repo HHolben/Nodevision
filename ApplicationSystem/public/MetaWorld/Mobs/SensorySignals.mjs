@@ -1,0 +1,20 @@
+import {actorPerceptible} from '../../PanelInstances/ViewPanels/GameViewDependencies/PlayerModifiers.mjs';
+// World-local transient signals use the existing GameView panel, not a global event bus.
+const worlds=new WeakMap(),types=new Set(['sound','visible','scent','taste']);
+export function createSensorySignals({canSense=()=>true}={}){
+ const cells=new Map(),events=[];let serial=0,clock=0;const size=8,maxEvents=128;
+ const key=p=>`${Math.floor(p[0]/size)},${Math.floor(p[2]/size)}`;
+ function expire(now){if(!Number.isFinite(now))return;clock=Math.max(clock,now);while(events.length&&(events[0].expires<clock||events.length>=maxEvents)){const old=events.shift(),bucket=cells.get(old.cell);bucket?.delete(old);if(!bucket?.size)cells.delete(old.cell);}}
+ return {emit(input,now=clock){if(!input||!types.has(input.type)||typeof input.sourceId!=='string'||!input.sourceId.trim()||input.sourceId.length>128||!Array.isArray(input.position)||input.position.length!==3||!input.position.every(n=>Number.isFinite(n)&&Math.abs(n)<=1e12)||!Number.isFinite(input.intensity)||input.intensity<=0||input.intensity>4||!Number.isFinite(now))return false;
+   if(!canSense(input.sourceId,input.actorId))return false;expire(now);const event={id:++serial,type:input.type,sourceId:input.sourceId,actorId:typeof input.actorId==='string'?input.actorId:null,category:String(input.category||'unknown').slice(0,40),position:[...input.position],intensity:input.intensity,time:clock,expires:clock+1.5,cell:key(input.position),contactId:typeof input.contactId==='string'?input.contactId:null};events.push(event);if(!cells.has(event.cell))cells.set(event.cell,new Set());cells.get(event.cell).add(event);return event.id;
+  },near(position,radius,now=clock){if(!Array.isArray(position)||position.length!==3||!position.every(n=>Number.isFinite(n)&&Math.abs(n)<=1e12))return [];expire(now);radius=Math.max(0,Math.min(32,Number.isFinite(radius)?radius:0));const result=[];for(let x=Math.floor((position[0]-radius)/size);x<=Math.floor((position[0]+radius)/size);x++)for(let z=Math.floor((position[2]-radius)/size);z<=Math.floor((position[2]+radius)/size);z++)for(const e of cells.get(`${x},${z}`)||[]){if(Math.hypot(...e.position.map((n,i)=>n-position[i]))<=radius)result.push(e);}return result.sort((a,b)=>b.id-a.id).slice(0,16);},
+  forgetActor(actor){let count=0;for(let i=events.length-1;i>=0;i--){const e=events[i];if(e.sourceId!==actor&&e.actorId!==actor)continue;events.splice(i,1);const bucket=cells.get(e.cell);bucket?.delete(e);if(!bucket?.size)cells.delete(e.cell);count++;}return count;},
+  get time(){return clock;},advance:expire,snapshot:()=>({events:events.length,cells:cells.size}),dispose(){events.length=0;cells.clear();}
+ };
+}
+export function worldSensorySignals(ctx){if(!worlds.has(ctx)){const signals=createSensorySignals({canSense:(source,actor)=>actorPerceptible(ctx,source,actor)});let previous=null,lastStep=0,lastNow=0,time=0;const handler=e=>signals.emit(e.detail,time);ctx.panel?.addEventListener('mob-sensory-signal',handler);
+ const api={signals,update(now){const dt=lastNow?Math.max(0,Math.min(.1334,(now-lastNow)/1000)):0;lastNow=now;const p=ctx.controls.getObject().getWorldPosition(new ctx.THREE.Vector3()).toArray();if(ctx.movementState.paused){previous=p;return;}time+=dt;signals.advance(time);if(previous&&dt>0){const distance=Math.hypot(p[0]-previous[0],p[2]-previous[2]),speed=distance/dt;
+  // Ignore teleports and airborne/creative flight. Running is a speed approximation, not audio synthesis.
+  if(speed>.25&&speed<12&&ctx.movementState.isGrounded===true&&time-lastStep>(speed>3.5?.28:.5)){signals.emit({type:'sound',sourceId:ctx.movementState.playerCharacter?.id||'session-player',category:speed>3.5?'running':'footstep',position:[p[0],p[1]-(ctx.movementState.playerHeight||1.75),p[2]],intensity:speed>3.5?1:.4},time);lastStep=time;}}
+ previous=p;},dispose(){ctx.panel?.removeEventListener('mob-sensory-signal',handler);signals.dispose();worlds.delete(ctx);}};worlds.set(ctx,api);}return worlds.get(ctx);}
+export function disposeWorldSensorySignals(ctx){worlds.get(ctx)?.dispose();}

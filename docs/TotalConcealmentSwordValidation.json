@@ -1,0 +1,120 @@
+{
+  "passed": true,
+  "generatedAt": "2026-11-16T04:55:43.232Z",
+  "logs": {
+    "focused": {
+      "passed": true,
+      "summary": [
+        "ℹ tests 18",
+        "ℹ pass 18",
+        "ℹ fail 0",
+        "ℹ duration_ms 5091.814112"
+      ]
+    },
+    "metaworld": {
+      "passed": true,
+      "summary": [
+        "ℹ tests 67",
+        "ℹ pass 67",
+        "ℹ fail 0",
+        "ℹ duration_ms 72682.162602"
+      ]
+    },
+    "gameview": {
+      "passed": true,
+      "summary": [
+        "ℹ tests 11",
+        "ℹ pass 11",
+        "ℹ fail 0",
+        "ℹ duration_ms 51879.211436"
+      ]
+    },
+    "bow": {
+      "passed": true,
+      "summary": [
+        "PASS: production Archery Bow inventory, trusted Use/G, draw animation, dotted prediction, both terrain modes, unlimited arrows, collision embedding, cancellation, persistence, Viewer and cleanup"
+      ]
+    },
+    "target": {
+      "passed": true,
+      "summary": [
+        "PASS: production Archery Target insertion, inspector Unicode, transforms, duplication/history, trusted live bow scoring in both modes, embedding/following/deletion, source preservation, save/reopen and Viewer"
+      ]
+    },
+    "teleporter": {
+      "passed": true,
+      "summary": [
+        "PASS: production inventory, trusted primary and controller input, geographic coarse and detailed voxel/polygonal travel, physics, cancellation, permissions, imported GOX/STL/glTF/GLB, constructions, cleanup and save/reopen"
+      ]
+    },
+    "browser": {
+      "passed": true,
+      "summary": [
+        "PASS: M1.4 production inventory concealment, awareness recovery, movement, trusted sword hits, anatomy, bow, tool switching, pause, save/reopen, Viewer and cleanup"
+      ]
+    },
+    "native": {
+      "passed": true,
+      "summary": [
+        "PASS: M1.4 production inventory concealment, awareness recovery, movement, trusted sword hits, anatomy, bow, tool switching, pause, save/reopen, Viewer and cleanup"
+      ]
+    }
+  },
+  "reports": {
+    "Browser": {
+      "file": "docs/TotalConcealmentSwordBrowser.json",
+      "sha256": "1423d19506b8446de0b676fe5ae9a0df11f27607da8d6e9ab726a2b88d0579e4"
+    },
+    "Native": {
+      "file": "docs/TotalConcealmentSwordNative.json",
+      "sha256": "501f583f3530798ce8cb8776d1c0b6976d661708bc2cc24212393ff1b286fdef"
+    },
+    "Performance": {
+      "file": "docs/TotalConcealmentSwordPerformance.json",
+      "sha256": "3d06a64e425cb419af93d18a73ed9b9bdbdee3a371ff035970b6b8ffb91a69a0"
+    }
+  },
+  "preserved": {
+    "Notebook/test.html": "75533dd604cbacc1de34bd42e1e3c5a5faeef5f4779b51c520a2e0c0edd81292",
+    "ApplicationSystem/public/BuiltIn/Mobs/Mammals/BrownHare/Models/Mesh_Rabbit.mtl": "40b9d69ff8e1e870f79ce57712958a6f906ee26ae60a62311c6f98ba48a8d175",
+    "ApplicationSystem/public/BuiltIn/Mobs/Mammals/BrownHare/Models/Mesh_Rabbit.obj": "a1b98fae32e84b69ad03fc95031b49581771dc104bfdc94e91bafba8a395acec",
+    "ApplicationSystem/public/BuiltIn/Mobs/Mammals/BrownHare/Models/Rabbit by Poly by Google - 9OBTRVYUSmt.glb": "b58fac979a8606d60948625783794e3afbbcb6edfe2f8c98284bbcedaa6cee3a",
+    "ApplicationSystem/public/BuiltIn/Mobs/Mammals/BrownHare/Models/Tex_Rabbit.png": "43ab3622a46b45f15cdf442ce3ae1f2e1b48e4f50420285bfe071bbf9f5630a1",
+    "ApplicationSystem/public/BuiltIn/Mobs/Mammals/BrownHare/Models/licenseNotice.md": "dc816165d5f96006bd96a8b0cae929083f78f49dcdd76728595c395cb0271140"
+  },
+  "sourceHashes": {
+    "ApplicationSystem/public/PanelInstances/ViewPanels/GameViewDependencies/PlayerModifiers.mjs": "0e864f3b0c04fccd223f75528e8fb1f72554187632902df5ce862d77f3232fcd",
+    "ApplicationSystem/public/PanelInstances/ViewPanels/GameViewDependencies/playerInventory.mjs": "10e80e81c55bf9739f2b565d62f68254bf860468a4d14d4fff2f42cab5f26a8d",
+    "ApplicationSystem/public/PanelInstances/ViewPanels/GameViewDependencies/Sword/Pose.mjs": "d39fc4f6b48f9bd30b82964a00797ef5f526aeed6c3abd3d4edd778db9cc3b6e",
+    "ApplicationSystem/public/PanelInstances/ViewPanels/GameViewDependencies/Sword/Combat.mjs": "77f2854b20c1f065e79e3d8a6cbbf8b6f11862fc457d96482a401441d710a56d",
+    "ApplicationSystem/public/PanelInstances/ViewPanels/GameViewDependencies/Sword/Visuals.mjs": "1247e47c729974caf7efe131ca6885bf575fc4b1615060c664b53803ac0f77fa",
+    "ApplicationSystem/public/PanelInstances/ViewPanels/GameViewDependencies/Sword/Controller.mjs": "c99993f731d842beeb3657d38663f46d8ae748ec7a047423123ac9d37cb08a33",
+    "ApplicationSystem/public/PanelInstances/ViewPanels/GameViewDependencies/Sword/Sword.test.mjs": "4284a66f6879f790ed1473b79875ba3fa9cf05fd655552a2b988e184162af1f0",
+    "ApplicationSystem/public/PanelInstances/ViewPanels/GameViewDependencies/Abilities/MovementAbilities/SwordAbility.mjs": "359b02e2ff4807e7fdad604475cc28dbacd032cc3ac51bafed845a8417af7070",
+    "ApplicationSystem/public/PanelInstances/ViewPanels/GameViewDependencies/Abilities/CommandAbilities/MovementUpdateLoop.mjs": "15b36de2a26bf1ebffdd1f90687d12c93f89e755bb33d4ad7fadbc475a2666ab",
+    "ApplicationSystem/public/PanelInstances/ViewPanels/GameViewDependencies/movementUpdate.mjs": "8f51ae0cbeff8fe203f2c401f33f4305eda590d2adc077b5633e400a30ff677a",
+    "ApplicationSystem/public/PanelInstances/ViewPanels/GameViewDependencies/initScene.mjs": "161a2055187c0033d8229300c62713991098aa7305751e33bbe174a922d0e785",
+    "ApplicationSystem/public/PanelInstances/ViewPanels/GameViewDependencies/worldPause.mjs": "fe579afc574e89e92541d1827b018aaf3f4171a74fea5c04e35ca91a66c48477",
+    "ApplicationSystem/public/PanelInstances/ViewPanels/GameViewDependencies/Archery/Collision.mjs": "495faf266d54712f2fbf83cb5fd47991c0931d77469ae269f1999b40f0187c5e",
+    "ApplicationSystem/public/PanelInstances/ViewPanels/GameViewDependencies/Archery/Controller.mjs": "2f939a39c12a7adcb355e16aa0df60fcff9c16761e770f84ddf02b69f8e99f66",
+    "ApplicationSystem/public/MetaWorld/Mobs/Runtime.mjs": "ea606f5e0702e5b98300f19573b9209088442c908efce7e6c7a5072060293b4d",
+    "ApplicationSystem/public/MetaWorld/Mobs/Perception.mjs": "63959d8ef698d84c827aa9100a3f5a0b91ae7cdfe4455b6a1d1db916ebfe50e0",
+    "ApplicationSystem/public/MetaWorld/Mobs/SensorySignals.mjs": "dc50b8fb8bb3fdf059b83e45a48e9c1f887c26f3ef8acc845c6636450668b8e8",
+    "ApplicationSystem/public/MetaWorld/Mobs/Behavior.mjs": "f42029ad4db627197e97b5be015104da6e1b397dc97a083fa4b9f3172998aa17",
+    "ApplicationSystem/public/MetaWorld/Mobs/AnatomyCollision.mjs": "57cecaec4505319721e6510d140675dfc004fa131c17caab3baa5cfefce63c23",
+    "ApplicationSystem/public/MetaWorld/Mobs/BrownHareAnatomy.mjs": "22fb98cf0128db39e50fddf2589bf282707c8e2e4e226f46e23fbad2c78e745a",
+    "scripts/test-m14.mjs": "fb863c2ef0b39029e9cebcdf19ec5afb9ac02bbf5f294780450fb0b20d0ec0d2",
+    "scripts/m14-browser.mjs": "b1af679263febb8c4860d32a7e772c34933b7e4205c212b82b360f50f253585c",
+    "scripts/m14-performance.mjs": "5526b71884af72c789ca3372829d7387cd73521fb89004ef31a48e99fa1e122c",
+    "scripts/m14-native.cjs": "9103c22681e2dee52f019c8450036cc80732c57a5a500f650b5783a40a5243f5",
+    "scripts/validate-m14.mjs": "9e36811cc06d0b7cb5ba75dc5ad3c19f6d1c54bfb0797c0d570bbbe75d10a0b7",
+    "docs/TotalConcealmentAndSword.md": "431d7184673374c809d466cc72970effac02ff69eb0b8a368935ed8b90a3e905"
+  },
+  "limits": [
+    "SwiftShader CPU/frame pacing; no hardware GPU timer",
+    "Native visible Electron GameView fixture, not authenticated application shell",
+    "Benchmark excludes terrain/vegetation rendering; damage accumulates and modifies AI workload",
+    "Suppression counter counts filter checks, not unique emitted events",
+    "Finite swept samples and capped catch-up; anatomy proxies remain approximations"
+  ]
+}

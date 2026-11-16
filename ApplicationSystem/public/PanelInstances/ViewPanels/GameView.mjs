@@ -1,3 +1,4 @@
+import {disposeWorldSensorySignals} from '/MetaWorld/Mobs/SensorySignals.mjs';
 // Nodevision/ApplicationSystem/public/PanelInstances/ViewPanels/GameView.mjs
 // This file defines browser-side Game View logic for the Nodevision UI. It hosts either the legacy GameView engine or the reusable MetaWorld runtime.
 
@@ -113,6 +114,7 @@ function cleanupLegacyGameView(panel, state = {}) {
   if (panel._vrMetaWorldMultiplayerClient?.dispose) panel._vrMetaWorldMultiplayerClient.dispose();
   panel._vrMetaWorldMultiplayerClient = null;
   if (window.VRWorldContext?.panel === panel && Array.isArray(window.VRWorldContext.objects)) {
+    disposeWorldSensorySignals(window.VRWorldContext);
     window.VRWorldContext.cancelPathDrawing?.();
     window.VRWorldContext.objects.forEach((object) => {
       try {

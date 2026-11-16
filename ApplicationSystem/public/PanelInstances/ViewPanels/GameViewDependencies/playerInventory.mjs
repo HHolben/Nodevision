@@ -1,3 +1,4 @@
+import {createPlayerModifiers,PLAYER_MODIFIERS} from './PlayerModifiers.mjs';
 // Nodevision/ApplicationSystem/public/PanelInstances/ViewPanels/GameViewDependencies/playerInventory.mjs
 // This file defines browser-side player Inventory logic for the Nodevision UI. It renders interface components and handles user interactions.
 import { createFloatingInventoryPanel } from "/PanelInstances/InfoPanels/PlayerInventory.mjs";
@@ -10,13 +11,14 @@ import { createInventoryHotbar } from "./InventoryHotbar.mjs";
 const GRID_COLUMNS = 9;
 const ICON_SIZE = 30;
 const CELL_MIN_HEIGHT = 62;
-const CATEGORY_ORDER = ["tools", "passive-modifiers", "instruments", "resources", "building-blocks"];
+const CATEGORY_ORDER = ["tools", "passive-modifiers", "instruments", "resources", "building-blocks", "mobs"];
 const CATEGORY_META = {
   "tools": { label: "Tools", emptyText: "No tools carried." },
   "passive-modifiers": { label: "Passive Modifiers", emptyText: "No passive modifiers equipped." },
   "instruments": { label: "Instruments", emptyText: "No instruments carried." },
   "resources": { label: "Resources", emptyText: "No resources carried." },
-  "building-blocks": { label: "Building Blocks", emptyText: "No building blocks carried." }
+  "building-blocks": { label: "Building Blocks", emptyText: "No building blocks carried." },
+  "mobs": { label: "Mobs", emptyText: "No mobs carried." }
 };
 const TOOL_IDS = new Set(["sound", "path", "3d-model", VOXEL_WORLD_TOOL_ID, "hang-glider", "flashlight", "select-object", "select-image", "svg-camera", "tape-measure", "terrain-generator", "temporal-manipulator", "voxel-placer", "voxel-extruder"]);
 const BUILDING_IDS = new Set(["box", "sphere", "cylinder", "flying-carpet", "math-function", "object-file", "image-plane", "iframe", "console", "portal"]);
@@ -69,6 +71,7 @@ function normalizeItem(raw = {}) {
 }
 
 export function createPlayerInventory({ panel }) {
+  const modifiers=createPlayerModifiers();
   const state = {
     menuOpen: false,
     activeCategory: "tools",
@@ -81,6 +84,7 @@ export function createPlayerInventory({ panel }) {
     selectedImageFile: "",
     activeInstruments: new Set([HOTBAR_INSTRUMENT_ID]),
     items: [
+      ...PLAYER_MODIFIERS.map(m=>({id:m.id,label:m.label,category:"passive-modifiers",passive:true,count:1})),
       ...[['add','Add Block'],['brush','Voxel Brush'],['erase','Erase Voxels'],['paint','Paint Voxels'],['pick','Pick Voxel Material'],['revert','Revert to Persistent World']].map(([tool,label])=>({id:'session-voxel-'+tool,label:label+' (temporary; G: settings)',count:1,category:'tools',tool:true})),
       { id: "sound", label: "Sound", sprite: "/icons/SoundTool.svg", count: 1, category: "tools", tool: true },
       { id: "path", label: "Path (G: settings)", sprite: "/icons/PathTool.svg", count: 1, category: "tools", tool: true },
@@ -236,7 +240,7 @@ export function createPlayerInventory({ panel }) {
     const objectInfo = state.selectedObjectFile ? `  |  Object: ${state.selectedObjectFile}` : "";
     const imageInfo = state.selectedImageFile ? `  |  Image: ${state.selectedImageFile}` : "";
     const handLabel = state.activeHand === "off" ? "Off hand" : (state.dominantSlot < 0 ? "Empty hand" : `Dominant ${state.dominantSlot + 1}`);
-    statusHud.textContent = `${handLabel}: ${getEquippedLabel()}${objectInfo}${imageInfo}${temporaryStatus}`;
+    statusHud.textContent = `${handLabel}: ${getEquippedLabel()}${objectInfo}${imageInfo}${temporaryStatus}${modifiers.has("total-concealment")?" | Total Concealment active":""}`;
   }
 
   function styleSlot(slot, selected, compact = false) {
@@ -697,7 +701,7 @@ export function createPlayerInventory({ panel }) {
       if (choice.id === null) count.textContent = "hand";
       else if (choice.instrument) count.textContent = state.activeInstruments.has(choice.id) ? "active" : "inactive";
       else if (choice.tool) count.textContent = "tool";
-      else if (choice.passive) count.textContent = "passive";
+      else if (choice.passive) count.textContent = modifiers.has(choice.id)?"active":"inactive";
       else if (choice.resource) count.textContent = `x${choice.count}`;
       else count.textContent = `x${choice.count}`;
       cell.appendChild(count);
@@ -847,6 +851,7 @@ export function createPlayerInventory({ panel }) {
       });
       return;
     }
+    if(choice.passive&&PLAYER_MODIFIERS.some(m=>m.id===choice.id)){modifiers.toggle(choice.id);render();return;}
     if (choice.instrument) {
       toggleInstrument(choice.id);
       return;
@@ -1019,6 +1024,7 @@ export function createPlayerInventory({ panel }) {
     else if (key >= "1" && key <= "9") selectDominantSlot(Number.parseInt(key, 10) - 1);
   }
 
+  modifiers.subscribe(()=>render());
   const instrumentTimer = window.setInterval(renderInstrumentsHud, 250);
   window.addEventListener("keydown", onKeyDown);
   render();
@@ -1026,6 +1032,7 @@ export function createPlayerInventory({ panel }) {
   let inventory;const disposeResourceDrops=installInventoryResourceDrops({panel,roots:[hotbarHud,menu],getInventory:()=>inventory});
   return inventory={
     setTemporaryVoxelStatus(count,settings,construction){const editing=!!construction;if(editing!==constructionToolMode){constructionToolMode=editing;for(const item of state.items){if(!item.id.startsWith('session-voxel-'))continue;if(!worldToolLabels.has(item.id))worldToolLabels.set(item.id,item.label);const label=worldToolLabels.get(item.id);item.label=editing?(item.id==='session-voxel-revert'?'Revert Construction':label.split(' (')[0])+' (construction; G: settings)':label;}render();}temporaryStatus=editing?` | Construction cells: ${construction.count} (Save Construction) | Ordinary temporary cells: ${count}`:'';temporaryStatus+=editing?` | ${settings.material.materialId} | ${settings.brush.shape} ${settings.brush.size}`:'';if(!editing)temporaryStatus=` | Temporary cells: ${count} (not saved) | ${settings.material.materialId} | ${settings.brush.shape} ${settings.brush.size}`;renderStatus();},
+    modifiers,
     addItem,
     assignItemToSlot,
     equipItemToActiveHand,
@@ -1053,6 +1060,7 @@ export function createPlayerInventory({ panel }) {
     get dominantSlots() { return state.dominantSlots.slice(); },
     get selectedIndex() { return state.selectedMenuIndex; },
     dispose() {
+      modifiers.dispose();
       disposeResourceDrops();
       window.VRWorldContext?.cancelSoundPlacement?.();
       selectionListeners.forEach(listener => listener(null)); selectionListeners.clear();

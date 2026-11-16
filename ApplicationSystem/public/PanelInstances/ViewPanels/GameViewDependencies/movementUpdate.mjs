@@ -1,3 +1,4 @@
+import {installSwordAbility} from './Abilities/MovementAbilities/SwordAbility.mjs';
 // Nodevision/ApplicationSystem/public/PanelInstances/ViewPanels/GameViewDependencies/movementUpdate.mjs
 // This file composes browser-side Game View movement from focused ability modules. It installs movement, attack, inspection, craft, construction, command, and interaction abilities into a shared context so the update loop remains transparent and maintainable.
 
@@ -100,6 +101,7 @@ const ABILITY_INSTALLERS = [
   installVoxelWorldToolAbility,
   installSessionVoxelToolAbility,
   installRaycastingTeleporterAbility,
+  installSwordAbility,
   installArcheryBowAbility,
   installPlacedMeshFactoryAbility,
   installInventoryPlacementAbility

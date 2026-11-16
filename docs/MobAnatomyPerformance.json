@@ -1,0 +1,516 @@
+{
+  "complete": true,
+  "environment": "Chromium/SwiftShader 640x480, actual shared Rabbit GLB. Two trials in reversed count order; 60 warm + 300 measured RAF. One 30Hz fixed simulation step per frame, 10 measured simulation seconds. Per-mob chasing player probe, flat authoritative support, vegetation/terrain rendering excluded. Frame pacing is software-renderer dependent; no hardware FPS claim. Render submission is CPU wall time, not GPU timer. Part query totals include warmup. Each mob receives one potential hit every 30 frames, otherwise broad-phase misses; damage pre-applied once outside timings. State byte fields are serialized bytes and an explicit estimate, not measured JS heap ownership.",
+  "results": [
+    {
+      "trial": 0,
+      "scenario": "1-healthy",
+      "count": 1,
+      "warmFrames": 60,
+      "measuredFrames": 300,
+      "measuredSimulationSeconds": 10,
+      "frameMs": {
+        "mean": 16.665666666651767,
+        "p95": 16.899999998509884,
+        "max": 20.299999997019768
+      },
+      "updateMs": {
+        "mean": 0.10499999990065892,
+        "p95": 0.20000000298023224,
+        "max": 0.5
+      },
+      "animationAndBoundsMs": {
+        "mean": 0.0306666665772597,
+        "p95": 0.10000000149011612,
+        "max": 0.20000000298023224
+      },
+      "renderSubmissionMs": {
+        "mean": 0.11733333307007948,
+        "p95": 0.20000000298023224,
+        "max": 0.8999999985098839
+      },
+      "groundAndClearanceMs": {
+        "mean": 0.01866666664679845,
+        "p95": 0.10000000149011612,
+        "max": 0.19999999552965164
+      },
+      "arrowProbeBatchMs": {
+        "mean": 0.007666666656732559,
+        "p95": 0.10000000149011612,
+        "max": 0.20000000298023224
+      },
+      "partHitTestMsTotal": 0.30000000447034836,
+      "partHitQueries": 12,
+      "partIntersections": 84,
+      "partHitMeanMs": 0.02500000037252903,
+      "anatomySerializedBytes": 878,
+      "anatomyStateEstimateBytes": 224,
+      "drawCalls": 1,
+      "triangles": 674,
+      "meanTravel": 34.55672059120199,
+      "afterCleanup": {
+        "geometries": 0,
+        "textures": 0
+      }
+    },
+    {
+      "trial": 0,
+      "scenario": "1-injured",
+      "count": 1,
+      "warmFrames": 60,
+      "measuredFrames": 300,
+      "measuredSimulationSeconds": 10,
+      "frameMs": {
+        "mean": 16.6660000000149,
+        "p95": 16.899999998509884,
+        "max": 17.69999999552965
+      },
+      "updateMs": {
+        "mean": 0.08333333340783913,
+        "p95": 0.20000000298023224,
+        "max": 0.30000000447034836
+      },
+      "animationAndBoundsMs": {
+        "mean": 0.017666666756073635,
+        "p95": 0.10000000149011612,
+        "max": 0.20000000298023224
+      },
+      "renderSubmissionMs": {
+        "mean": 0.09666666674117247,
+        "p95": 0.20000000298023224,
+        "max": 0.20000000298023224
+      },
+      "groundAndClearanceMs": {
+        "mean": 0.011666666666666667,
+        "p95": 0.10000000149011612,
+        "max": 0.20000000298023224
+      },
+      "arrowProbeBatchMs": {
+        "mean": 0.0089999999354283,
+        "p95": 0.10000000149011612,
+        "max": 0.10000000149011612
+      },
+      "partHitTestMsTotal": 0.09999999403953552,
+      "partHitQueries": 12,
+      "partIntersections": 84,
+      "partHitMeanMs": 0.00833333283662796,
+      "anatomySerializedBytes": 976,
+      "anatomyStateEstimateBytes": 224,
+      "drawCalls": 1,
+      "triangles": 674,
+      "meanTravel": 23.415939262909387,
+      "afterCleanup": {
+        "geometries": 0,
+        "textures": 0
+      }
+    },
+    {
+      "trial": 0,
+      "scenario": "5-mixed",
+      "count": 5,
+      "warmFrames": 60,
+      "measuredFrames": 300,
+      "measuredSimulationSeconds": 10,
+      "frameMs": {
+        "mean": 16.666333333328367,
+        "p95": 17,
+        "max": 18.799999997019768
+      },
+      "updateMs": {
+        "mean": 0.151999999905626,
+        "p95": 0.30000000447034836,
+        "max": 1
+      },
+      "animationAndBoundsMs": {
+        "mean": 0.03900000013411045,
+        "p95": 0.10000000149011612,
+        "max": 0.30000000447034836
+      },
+      "renderSubmissionMs": {
+        "mean": 0.1329999999453624,
+        "p95": 0.20000000298023224,
+        "max": 0.6000000014901161
+      },
+      "groundAndClearanceMs": {
+        "mean": 0.029666666587193805,
+        "p95": 0.10000000149011612,
+        "max": 0.29999999701976776
+      },
+      "arrowProbeBatchMs": {
+        "mean": 0.012666666656732559,
+        "p95": 0.10000000149011612,
+        "max": 0.20000000298023224
+      },
+      "partHitTestMsTotal": 0.3999999985098839,
+      "partHitQueries": 60,
+      "partIntersections": 420,
+      "partHitMeanMs": 0.006666666641831398,
+      "anatomySerializedBytes": 4586,
+      "anatomyStateEstimateBytes": 1120,
+      "drawCalls": 5,
+      "triangles": 3370,
+      "meanTravel": 30.1502456939674,
+      "afterCleanup": {
+        "geometries": 0,
+        "textures": 0
+      }
+    },
+    {
+      "trial": 0,
+      "scenario": "20-mixed",
+      "count": 20,
+      "warmFrames": 60,
+      "measuredFrames": 300,
+      "measuredSimulationSeconds": 10,
+      "frameMs": {
+        "mean": 16.6660000000149,
+        "p95": 17.200000002980232,
+        "max": 21.69999999552965
+      },
+      "updateMs": {
+        "mean": 0.5429999998708566,
+        "p95": 1.1000000014901161,
+        "max": 2.8000000044703484
+      },
+      "animationAndBoundsMs": {
+        "mean": 0.15066666660209496,
+        "p95": 0.3999999985098839,
+        "max": 1.3000000044703484
+      },
+      "renderSubmissionMs": {
+        "mean": 0.258666666696469,
+        "p95": 0.4000000059604645,
+        "max": 2.1999999955296516
+      },
+      "groundAndClearanceMs": {
+        "mean": 0.15199999978144962,
+        "p95": 0.5,
+        "max": 1.3999999910593033
+      },
+      "arrowProbeBatchMs": {
+        "mean": 0.022999999995032945,
+        "p95": 0.10000000149011612,
+        "max": 0.3999999985098839
+      },
+      "partHitTestMsTotal": 1.0999999791383743,
+      "partHitQueries": 240,
+      "partIntersections": 1680,
+      "partHitMeanMs": 0.004583333246409893,
+      "anatomySerializedBytes": 18540,
+      "anatomyStateEstimateBytes": 4480,
+      "drawCalls": 20,
+      "triangles": 13480,
+      "meanTravel": 29.035056578274556,
+      "afterCleanup": {
+        "geometries": 0,
+        "textures": 0
+      }
+    },
+    {
+      "trial": 0,
+      "scenario": "50-mixed",
+      "count": 50,
+      "warmFrames": 60,
+      "measuredFrames": 300,
+      "measuredSimulationSeconds": 10,
+      "frameMs": {
+        "mean": 16.627000000004966,
+        "p95": 17,
+        "max": 21.5
+      },
+      "updateMs": {
+        "mean": 1.1373333333681026,
+        "p95": 2.2999999970197678,
+        "max": 3.5
+      },
+      "animationAndBoundsMs": {
+        "mean": 0.2876666667809089,
+        "p95": 0.6000000014901161,
+        "max": 0.8999999985098839
+      },
+      "renderSubmissionMs": {
+        "mean": 0.3916666668901841,
+        "p95": 0.6000000014901161,
+        "max": 0.8000000044703484
+      },
+      "groundAndClearanceMs": {
+        "mean": 0.4016666666169961,
+        "p95": 1.2000000029802322,
+        "max": 2.1999999955296516
+      },
+      "arrowProbeBatchMs": {
+        "mean": 0.029333333373069762,
+        "p95": 0.10000000149011612,
+        "max": 0.5
+      },
+      "partHitTestMsTotal": 0.8999999910593033,
+      "partHitQueries": 600,
+      "partIntersections": 4200,
+      "partHitMeanMs": 0.0014999999850988388,
+      "anatomySerializedBytes": 46350,
+      "anatomyStateEstimateBytes": 11200,
+      "drawCalls": 50,
+      "triangles": 33700,
+      "meanTravel": 29.02439177671663,
+      "afterCleanup": {
+        "geometries": 0,
+        "textures": 0
+      }
+    },
+    {
+      "trial": 1,
+      "scenario": "50-mixed",
+      "count": 50,
+      "warmFrames": 60,
+      "measuredFrames": 300,
+      "measuredSimulationSeconds": 10,
+      "frameMs": {
+        "mean": 16.666666666666668,
+        "p95": 17,
+        "max": 17.19999999552965
+      },
+      "updateMs": {
+        "mean": 1.2043333335965871,
+        "p95": 2.5,
+        "max": 3.2999999970197678
+      },
+      "animationAndBoundsMs": {
+        "mean": 0.29366666664679847,
+        "p95": 0.5999999940395355,
+        "max": 0.8999999985098839
+      },
+      "renderSubmissionMs": {
+        "mean": 0.38366666649778686,
+        "p95": 0.6000000014901161,
+        "max": 0.7000000029802322
+      },
+      "groundAndClearanceMs": {
+        "mean": 0.42499999977648256,
+        "p95": 1.2999999970197678,
+        "max": 1.8999999985098839
+      },
+      "arrowProbeBatchMs": {
+        "mean": 0.026666666766007742,
+        "p95": 0.10000000149011612,
+        "max": 0.3999999985098839
+      },
+      "partHitTestMsTotal": 0.5,
+      "partHitQueries": 600,
+      "partIntersections": 4200,
+      "partHitMeanMs": 0.0008333333333333334,
+      "anatomySerializedBytes": 46350,
+      "anatomyStateEstimateBytes": 11200,
+      "drawCalls": 50,
+      "triangles": 33700,
+      "meanTravel": 29.02439177671663,
+      "afterCleanup": {
+        "geometries": 0,
+        "textures": 0
+      }
+    },
+    {
+      "trial": 1,
+      "scenario": "20-mixed",
+      "count": 20,
+      "warmFrames": 60,
+      "measuredFrames": 300,
+      "measuredSimulationSeconds": 10,
+      "frameMs": {
+        "mean": 16.720666666651766,
+        "p95": 17.19999999552965,
+        "max": 36.5
+      },
+      "updateMs": {
+        "mean": 0.630666666701436,
+        "p95": 1.2000000029802322,
+        "max": 4
+      },
+      "animationAndBoundsMs": {
+        "mean": 0.1809999997417132,
+        "p95": 0.3999999985098839,
+        "max": 3.7000000029802322
+      },
+      "renderSubmissionMs": {
+        "mean": 0.28633333367606006,
+        "p95": 0.5,
+        "max": 0.8999999985098839
+      },
+      "groundAndClearanceMs": {
+        "mean": 0.1513333333283663,
+        "p95": 0.5,
+        "max": 0.8999999910593033
+      },
+      "arrowProbeBatchMs": {
+        "mean": 0.01700000002980232,
+        "p95": 0.10000000149011612,
+        "max": 0.20000000298023224
+      },
+      "partHitTestMsTotal": 0.19999999552965164,
+      "partHitQueries": 240,
+      "partIntersections": 1680,
+      "partHitMeanMs": 0.0008333333147068819,
+      "anatomySerializedBytes": 18540,
+      "anatomyStateEstimateBytes": 4480,
+      "drawCalls": 20,
+      "triangles": 13480,
+      "meanTravel": 29.035056578274556,
+      "afterCleanup": {
+        "geometries": 0,
+        "textures": 0
+      }
+    },
+    {
+      "trial": 1,
+      "scenario": "5-mixed",
+      "count": 5,
+      "warmFrames": 60,
+      "measuredFrames": 300,
+      "measuredSimulationSeconds": 10,
+      "frameMs": {
+        "mean": 16.66733333334327,
+        "p95": 17.200000002980232,
+        "max": 24.30000000447035
+      },
+      "updateMs": {
+        "mean": 0.21666666651765507,
+        "p95": 0.4000000059604645,
+        "max": 0.6000000014901161
+      },
+      "animationAndBoundsMs": {
+        "mean": 0.05766666673123837,
+        "p95": 0.20000000298023224,
+        "max": 0.30000000447034836
+      },
+      "renderSubmissionMs": {
+        "mean": 0.1773333333681027,
+        "p95": 0.30000000447034836,
+        "max": 0.5
+      },
+      "groundAndClearanceMs": {
+        "mean": 0.034999999875823654,
+        "p95": 0.19999999552965164,
+        "max": 0.30000000447034836
+      },
+      "arrowProbeBatchMs": {
+        "mean": 0.015,
+        "p95": 0.10000000149011612,
+        "max": 0.20000000298023224
+      },
+      "partHitTestMsTotal": 0.30000000447034836,
+      "partHitQueries": 60,
+      "partIntersections": 420,
+      "partHitMeanMs": 0.005000000074505806,
+      "anatomySerializedBytes": 4586,
+      "anatomyStateEstimateBytes": 1120,
+      "drawCalls": 5,
+      "triangles": 3370,
+      "meanTravel": 30.1502456939674,
+      "afterCleanup": {
+        "geometries": 0,
+        "textures": 0
+      }
+    },
+    {
+      "trial": 1,
+      "scenario": "1-injured",
+      "count": 1,
+      "warmFrames": 60,
+      "measuredFrames": 300,
+      "measuredSimulationSeconds": 10,
+      "frameMs": {
+        "mean": 16.665333333313466,
+        "p95": 17.19999999552965,
+        "max": 25.30000000447035
+      },
+      "updateMs": {
+        "mean": 0.08633333345254263,
+        "p95": 0.20000000298023224,
+        "max": 0.6999999955296516
+      },
+      "animationAndBoundsMs": {
+        "mean": 0.022000000129143396,
+        "p95": 0.10000000149011612,
+        "max": 0.10000000149011612
+      },
+      "renderSubmissionMs": {
+        "mean": 0.141333333303531,
+        "p95": 0.20000000298023224,
+        "max": 0.3999999985098839
+      },
+      "groundAndClearanceMs": {
+        "mean": 0.010666666626930237,
+        "p95": 0.10000000149011612,
+        "max": 0.20000000298023224
+      },
+      "arrowProbeBatchMs": {
+        "mean": 0.0073333333432674406,
+        "p95": 0.10000000149011612,
+        "max": 0.10000000149011612
+      },
+      "partHitTestMsTotal": 0,
+      "partHitQueries": 12,
+      "partIntersections": 84,
+      "partHitMeanMs": 0,
+      "anatomySerializedBytes": 976,
+      "anatomyStateEstimateBytes": 224,
+      "drawCalls": 1,
+      "triangles": 674,
+      "meanTravel": 23.415939262909387,
+      "afterCleanup": {
+        "geometries": 0,
+        "textures": 0
+      }
+    },
+    {
+      "trial": 1,
+      "scenario": "1-healthy",
+      "count": 1,
+      "warmFrames": 60,
+      "measuredFrames": 300,
+      "measuredSimulationSeconds": 10,
+      "frameMs": {
+        "mean": 16.666333333328367,
+        "p95": 17.100000001490116,
+        "max": 18.600000001490116
+      },
+      "updateMs": {
+        "mean": 0.11233333334326744,
+        "p95": 0.20000000298023224,
+        "max": 0.30000000447034836
+      },
+      "animationAndBoundsMs": {
+        "mean": 0.024000000034769375,
+        "p95": 0.10000000149011612,
+        "max": 0.20000000298023224
+      },
+      "renderSubmissionMs": {
+        "mean": 0.13933333344757556,
+        "p95": 0.20000000298023224,
+        "max": 0.4000000059604645
+      },
+      "groundAndClearanceMs": {
+        "mean": 0.02066666675110658,
+        "p95": 0.10000000149011612,
+        "max": 0.20000000298023224
+      },
+      "arrowProbeBatchMs": {
+        "mean": 0.016333333278695742,
+        "p95": 0.10000000149011612,
+        "max": 0.20000000298023224
+      },
+      "partHitTestMsTotal": 0,
+      "partHitQueries": 12,
+      "partIntersections": 84,
+      "partHitMeanMs": 0,
+      "anatomySerializedBytes": 878,
+      "anatomyStateEstimateBytes": 224,
+      "drawCalls": 1,
+      "triangles": 674,
+      "meanTravel": 34.55672059120199,
+      "afterCleanup": {
+        "geometries": 0,
+        "textures": 0
+      }
+    }
+  ]
+}

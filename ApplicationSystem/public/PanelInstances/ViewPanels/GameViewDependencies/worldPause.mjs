@@ -6,7 +6,7 @@ import { createWorldPauseState } from './worldPauseState.mjs';
 import { applyOverlayButtonAppearance } from '/OverlayAppearance.mjs';
 
 // Pause-menu presentation inherits user-defined world and overlay theme settings.
-export function installWorldPause({ panel, canvas, controls, movementState, objects, isActive }) {
+export function installWorldPause({ panel, canvas, controls, movementState, objects, isActive, onPauseChange = () => {} }) {
   const menu = document.createElement('div');
   menu.className = 'nv-world-pause-menu';
   menu.setAttribute('role', 'dialog');
@@ -55,6 +55,7 @@ export function installWorldPause({ panel, canvas, controls, movementState, obje
     unlock: releaseCapture,
     onPause(paused) {
       movementState.paused = paused;
+      onPauseChange(paused);
       menu.style.display = paused && active() ? 'block' : 'none';
       if (paused) {
         renderDistance.refresh();

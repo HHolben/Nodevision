@@ -1,0 +1,216 @@
+{
+  "healthy": {
+    "condition": 1,
+    "distance": 14.108064709443624,
+    "maxLift": 0.17962508895577067,
+    "minRoll": 0,
+    "maxRoll": 0,
+    "simulationSeconds": 5.033333333333325,
+    "elapsedMs": 5013.80000000447,
+    "state": "Fleeing"
+  },
+  "injured": {
+    "condition": 0.5,
+    "distance": 9.657541307882411,
+    "maxLift": 0.11922460135402502,
+    "minRoll": -0.03032303875869907,
+    "maxRoll": 0,
+    "simulationSeconds": 5.033333333333316,
+    "elapsedMs": 5015.4000000059605,
+    "state": "Fleeing"
+  },
+  "restored": {
+    "condition": 1,
+    "distance": 14.508064709443083,
+    "maxLift": 0.17962508895577067,
+    "minRoll": 0,
+    "maxRoll": 0,
+    "simulationSeconds": 5.0333333333333155,
+    "elapsedMs": 5221,
+    "state": "Fleeing"
+  },
+  "leftInjured": {
+    "condition": 0.5,
+    "distance": 9.657541307882411,
+    "maxLift": 0.11924555277522697,
+    "minRoll": 0,
+    "maxRoll": 0.030327885611928108,
+    "simulationSeconds": 5.000000000000201,
+    "elapsedMs": 4999.89999999851,
+    "state": "Fleeing"
+  },
+  "arrow": {
+    "arrowId": "arrow-1-1",
+    "shooterId": "session-player",
+    "launchForce": 79.7399999997268,
+    "launchSpeed": 44.64862819833517,
+    "flightDuration": 0.006383538529099065,
+    "traveledDistance": 0.28500231628160255,
+    "point": [
+      19.895,
+      1.0688509630647622,
+      19.725
+    ],
+    "normal": [
+      0,
+      0,
+      -1
+    ],
+    "part": "hindleg-right",
+    "anatomyUncertain": false,
+    "anatomyMethod": "proxy-box",
+    "incomingVelocity": [
+      0,
+      -0.2757531537043946,
+      44.64473140061012
+    ],
+    "simulationTime": 0.006383538529099065,
+    "mobId": "a67129bc-3d60-45b8-97d2-a855bdce5f48",
+    "speciesId": "brown-hare",
+    "bodyPartId": "hindleg-right",
+    "damage": {
+      "applied": true,
+      "bodyPartId": "hindleg-right",
+      "sourceId": "arrow-1-1",
+      "damageType": "piercing",
+      "amount": 0.5655107180318488,
+      "state": "Impaired"
+    }
+  },
+  "arrowInjuredFlee": {
+    "condition": 0.4344892819681512,
+    "distance": 9.474776095991466,
+    "maxLift": 0.11428623357293555,
+    "minRoll": -0.032803250573271374,
+    "maxRoll": 0,
+    "simulationSeconds": 5.000000000000249,
+    "elapsedMs": 4944.9000000059605,
+    "state": "Fleeing"
+  },
+  "severe": {
+    "revision": 25,
+    "state": "Dead",
+    "parts": {
+      "torso": {
+        "condition": 0,
+        "maximum": 1,
+        "capacity": 0,
+        "enabled": false
+      },
+      "head": {
+        "condition": 0,
+        "maximum": 1,
+        "capacity": 0,
+        "enabled": false
+      },
+      "tail": {
+        "condition": 1,
+        "maximum": 1,
+        "capacity": 1,
+        "enabled": true
+      },
+      "foreleg-left": {
+        "condition": 1,
+        "maximum": 1,
+        "capacity": 1,
+        "enabled": true
+      },
+      "foreleg-right": {
+        "condition": 1,
+        "maximum": 1,
+        "capacity": 1,
+        "enabled": true
+      },
+      "hindleg-left": {
+        "condition": 0,
+        "maximum": 1,
+        "capacity": 0,
+        "enabled": false
+      },
+      "hindleg-right": {
+        "condition": 0,
+        "maximum": 1,
+        "capacity": 0,
+        "enabled": false
+      },
+      "eye-left": {
+        "condition": 1,
+        "maximum": 1,
+        "capacity": 1,
+        "enabled": true
+      },
+      "eye-right": {
+        "condition": 1,
+        "maximum": 1,
+        "capacity": 1,
+        "enabled": true
+      },
+      "ear-left": {
+        "condition": 1,
+        "maximum": 1,
+        "capacity": 1,
+        "enabled": true
+      },
+      "ear-right": {
+        "condition": 1,
+        "maximum": 1,
+        "capacity": 1,
+        "enabled": true
+      },
+      "nose": {
+        "condition": 1,
+        "maximum": 1,
+        "capacity": 1,
+        "enabled": true
+      },
+      "tongue": {
+        "condition": 1,
+        "maximum": 1,
+        "capacity": 1,
+        "enabled": true
+      }
+    },
+    "capabilities": {
+      "propulsion": 0.04999999999999993,
+      "jump": 0,
+      "acceleration": 0.09999999999999998,
+      "endurance": 0.09999999999999995,
+      "coordination": 0.15000000000000002,
+      "vitality": 0,
+      "perception": 0,
+      "turning": 0.9,
+      "balance": 0.76,
+      "recovery": 0.6000000000000001,
+      "visionLeft": 1,
+      "visionRight": 1,
+      "hearingLeft": 1,
+      "hearingRight": 1,
+      "smell": 1,
+      "scentDetection": 1,
+      "taste": 1
+    },
+    "movement": {
+      "mobile": false,
+      "speed": 0.018149999999999975,
+      "acceleration": 0.09999999999999998,
+      "jump": 0,
+      "turning": 0.50508,
+      "recovery": 1.5999999999999999,
+      "roll": 0,
+      "sway": 0.006,
+      "asymmetry": 0
+    },
+    "vitality": 0,
+    "lastHit": {
+      "bodyPartId": "hindleg-right",
+      "sourceId": "arrow-1-1",
+      "damageType": "piercing",
+      "amount": 0.5655107180318488
+    },
+    "errors": [],
+    "processedSources": 2,
+    "estimatedStateBytes": 928
+  },
+  "passed": true,
+  "persistence": "session-scoped injuries; authored identity/home unchanged; reopen resets injuries"
+}

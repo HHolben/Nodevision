@@ -1,0 +1,118 @@
+{
+  "vision": {
+    "type": "vision",
+    "direction": [
+      0,
+      0.9745551866148997
+    ],
+    "distance": 3.0783274679604826,
+    "uncertainty": 0,
+    "confidence": 0.8768669012815808,
+    "time": 1.2994000000014903,
+    "sourceId": "session-player",
+    "recognized": "player",
+    "visuallyConfirmed": true
+  },
+  "healthySound": {
+    "type": "sound",
+    "category": "footstep",
+    "direction": [
+      1.2246467991473532e-16,
+      -1
+    ],
+    "distance": null,
+    "distanceBand": "near",
+    "uncertainty": 0,
+    "confidence": 0.510163411717816,
+    "time": 3.2883,
+    "sourceId": null,
+    "recognized": null,
+    "visuallyConfirmed": false,
+    "obstructed": false
+  },
+  "injuredSound": {
+    "type": "sound",
+    "category": "footstep",
+    "direction": [
+      0.4706258881711579,
+      -0.8823328586101216
+    ],
+    "distance": null,
+    "distanceBand": "near",
+    "uncertainty": 0.48999999999999994,
+    "confidence": 0.3009964129135115,
+    "time": 3.4620000000029805,
+    "sourceId": null,
+    "recognized": null,
+    "visuallyConfirmed": false,
+    "obstructed": false
+  },
+  "capabilities": {
+    "eyes": [
+      {
+        "id": "eye-left",
+        "capacity": 0,
+        "field": 1.0995574287564276,
+        "range": 0,
+        "yaw": 1.3962634015954636
+      },
+      {
+        "id": "eye-right",
+        "capacity": 1,
+        "field": 3.141592653589793,
+        "range": 10,
+        "yaw": -1.3962634015954636
+      }
+    ],
+    "visualDetection": 0.5,
+    "visualFieldCoverage": 3.141592653589793,
+    "visualDetectionDistance": 10,
+    "hearingSensitivity": 0.5900000000000001,
+    "hearingBias": -1,
+    "soundLocalization": 0.3,
+    "smellSensitivity": 1,
+    "scentDetection": 1,
+    "tasteDiscrimination": 1
+  },
+  "rustleState": "Alert",
+  "headingFlips": 0,
+  "arrow": {
+    "arrowId": "arrow-1-1",
+    "shooterId": "session-player",
+    "launchForce": 76.49499999986341,
+    "launchSpeed": 43.73071003307156,
+    "flightDuration": 0,
+    "traveledDistance": 0,
+    "point": [
+      19.958,
+      1.4675000000000002,
+      20.170066875
+    ],
+    "normal": [
+      0,
+      1,
+      0
+    ],
+    "part": "ear-right",
+    "anatomyUncertain": false,
+    "anatomyMethod": "proxy-box",
+    "incomingVelocity": [
+      0,
+      -43.73067586849439,
+      -0.05466334483570768
+    ],
+    "simulationTime": 0,
+    "mobId": "a7271236-bbfc-4589-9a0f-501223a94b5c",
+    "speciesId": "brown-hare",
+    "bodyPartId": "ear-right",
+    "damage": {
+      "applied": true,
+      "bodyPartId": "ear-right",
+      "sourceId": "arrow-1-1",
+      "damageType": "piercing",
+      "amount": 0.5539223270855732,
+      "state": "Impaired"
+    }
+  },
+  "passed": true
+}

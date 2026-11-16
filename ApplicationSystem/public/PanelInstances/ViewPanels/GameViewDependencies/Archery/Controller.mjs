@@ -12,7 +12,7 @@ export function createArcheryBow(ctx,world){
  const {THREE,movementState:state}=ctx,inventory=world.inventory,visual=createArcheryVisuals(THREE,ctx.scene),collision=createArrowSweep(ctx);
  let preferences=loadSettings(),drawing=null,dialog=null,disposed=false,lastTime=performance.now(),lastPad=false,blocked=false,revision=state.toolInput?.revision||0,worldPath=world.currentWorldPath;
  const stats={lastForce:0,lastSpeed:0};let aimCache=null;
- const emit=(type,detail)=>world.panel.dispatchEvent(new CustomEvent('nv-archery',{detail:{type,...detail}}));
+ const emit=(type,detail)=>{world.panel.dispatchEvent(new CustomEvent('nv-archery',{detail:{type,...detail}}));if(type==='arrow-hit-object'||type==='arrow-hit-terrain')world.panel.dispatchEvent(new CustomEvent('mob-sensory-signal',{detail:{type:'sound',sourceId:detail.arrowId,actorId:detail.shooterId,category:'impact',position:detail.point,intensity:.8}}));};
  const flight=createFlights({THREE,sweep:collision.sweep,emit,visual,listener:()=>ctx.controls.getObject().position.toArray()}),prediction=createPrediction(collision.sweep,visual);
  const selected=()=>inventory.getSelectedItem()?.id===BOW_ID;
  const allowed=()=>!disposed&&window.VRWorldContext===world&&ctx.api.canUseAbility('allowToolUse')&&state.worldMode!=='2d'&&!state.paused&&!state.textEditing&&!state.textWorldConsoleActive&&!inventory.isMenuOpen()&&!document.activeElement?.closest?.('input,textarea,select,dialog,[contenteditable]:not([contenteditable="false"])');

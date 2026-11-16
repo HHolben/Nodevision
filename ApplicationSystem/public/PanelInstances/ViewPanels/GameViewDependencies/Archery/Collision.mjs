@@ -10,7 +10,7 @@ export function createArrowSweep(ctx){
   const take=hit=>{if(hit&&hit.distance<=length&&(!best||hit.distance<best.distance))best=hit;};
   for(const root of ctx.objects){
    if(excluded(root))continue;const collider=references.has(root.userData?.colliderRef)?root.userData.colliderRef:colliderIndex.get(root);if(!collider||collider.solid===false||collider.enabled===false)continue;
-   if(typeof collider.arrowSweep==='function'){take(collider.arrowSweep(a,b));continue;}
+   if(typeof collider.arrowSweep==='function'){take(collider.arrowSweep(a,b,{allowFallback:ctx.exactAnatomy!==true}));continue;}
    const runtime=root.userData?.terrainRuntime;
    if(runtime?.getVoxelMaterial){
     const origin=runtime.sessionOrigin(),uncertain={};

@@ -1,12 +1,13 @@
 // Session-only, bounded projectile ownership. No world objects, history entries, or collider registrations are created.
 import {advanceSwept,initial,STEP} from './Physics.mjs';
+let flightSerial=0;
 export function createFlights({THREE,sweep,emit,visual,listener=()=>null}){
- const records=[];let serial=0,accumulator=0;const stats={physicsMs:0,steps:0,discardedSeconds:0};
+ const flightId=++flightSerial,records=[];let serial=0,accumulator=0;const stats={physicsMs:0,steps:0,discardedSeconds:0};
  function remove(r,reason){const i=records.indexOf(r);if(i>=0){records.splice(i,1);emit('arrow-removed',{...info(r),reason});}}
  function info(r){return {arrowId:r.id,shooterId:r.shooterId,launchForce:r.force,launchSpeed:r.speed,flightDuration:r.state.time,traveledDistance:r.state.distance};}
  function launch(p,v,{force,speed,shooterId}){
   const flying=records.filter(r=>!r.hit);if(flying.length>=16)remove(flying[0],'flying-budget');
-  const r={id:`arrow-${++serial}`,state:initial(p,v),force,speed,shooterId};records.push(r);emit('arrow-fired',{...info(r),position:[...p],velocity:[...v]});return r;
+  const r={id:`arrow-${flightId}-${++serial}`,state:initial(p,v),force,speed,shooterId};records.push(r);emit('arrow-fired',{...info(r),position:[...p],velocity:[...v]});return r;
  }
  function impact(r,hit){
   if(r.hit)return;
@@ -14,7 +15,7 @@ export function createFlights({THREE,sweep,emit,visual,listener=()=>null}){
   r.hit=hit;r.state.p=[...hit.point];r.state.v=[...r.state.v];
   const object=hit.object||hit.root;if(object){object.updateWorldMatrix(true,false);r.attachment={object,point:object.worldToLocal(new THREE.Vector3(...hit.point)),direction:new THREE.Vector3(...r.state.v).transformDirection(object.matrixWorld.clone().invert())};}
   const incomingVelocity=[...r.state.v],targetHit=hit.root?.userData?.archeryTargetRuntime?.hit({...info(r),point:[...hit.point],normal:[...hit.normal],part:hit.part,incomingVelocity,simulationTime:r.state.time});
-  const mobHit=hit.root?.userData?.mobRuntime?.hit({...info(r),point:[...hit.point],normal:[...hit.normal],incomingVelocity,simulationTime:r.state.time});
+  const mobHit=hit.root?.userData?.mobRuntime?.hit({...info(r),point:[...hit.point],normal:[...hit.normal],part:hit.part,anatomyUncertain:hit.anatomyUncertain,anatomyMethod:hit.anatomyMethod,incomingVelocity,simulationTime:r.state.time});
   emit(hit.terrain?'arrow-hit-terrain':'arrow-hit-object',{...info(r),objectId:hit.root?.userData?.id||hit.root?.userData?.worldObjectId||hit.root?.uuid,object:hit.root,hitObject:object,point:[...hit.point],normal:[...hit.normal],incomingVelocity,targetHit,mobHit,simulationTime:r.state.time});
   const embedded=records.filter(a=>a.hit);if(embedded.length>64){const near=listener(),far=near&&embedded.find(a=>Math.hypot(...a.state.p.map((n,i)=>n-near[i]))>80);remove(far||embedded[0],'embedded-budget');}
  }

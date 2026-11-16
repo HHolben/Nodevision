@@ -1,5 +1,7 @@
 # Phase M1 — Brown Hare
 
+**M1.1 update:** steering commitment, obstacle detours and bounded stuck recovery are implemented. See the navigation correction section below for current before/after evidence and limitations.
+
 ## A. Architecture
 
 Brown Hare (`brown-hare`, *Lepus europaeus*, λαγώς) is the first built-in species. The canonical resource root remains **ApplicationSystem/public/BuiltIn/Mobs/**. No root-level BuiltIn directory, resource-serving endpoint or filesystem asset registry was added. Model URLs use the existing Express public static mount and bundled GLTFLoader.
@@ -12,6 +14,7 @@ Implementation modules under `ApplicationSystem/public/MetaWorld/Mobs/` separate
 - Rendering: per-instance model clone and procedural rigid-body animation; replaceable independently of behavior.
 - Behavior: deterministic, reusable state decisions.
 - Ground: bounded authoritative footprint and existing collision checks.
+- Navigation (M1.1): local waypoint planning, steering commitment, progress tracking and blocked-route recovery.
 - Runtime: individual simulation state, update scheduling, visual ownership, picking/projectile collider and lifecycle.
 - Authoring, Placement and Properties: adapters to the existing world/editor infrastructure.
 
@@ -72,7 +75,7 @@ The per-step height allowance is 0.26 m times instance scale. Footprint height v
 
 The default broad body dimensions are radius 0.20 m, height 0.45 m, length 0.65 m, scaled with the instance. The ground reference remains authoritative; visible/body hop lift is layered above it. Hops have preparation, travel/airborne, landing and recovery portions. Movement is gated during preparation/recovery, accelerates toward the configured speed, and turns at a bounded rate instead of teleporting between destinations. Flee cycles are faster (0.40 s versus 0.65 s). Nominal hop heights are 0.09 m wandering and 0.18 m fleeing at Nodevision’s default flat gravity (0.012 reference-frame units, or 43.2 m/s²). The procedural hop amplitude responds to flat world gravity, including zero-gravity mode, rather than introducing another projectile simulator.
 
-This is conservative local ground navigation, not a full animal rigid-body solver. Large drops are avoided rather than jumped or fallen into; point-mass/curved-surface locomotion is not implemented. Voxel-sized steps may still produce visible ground-height changes. Editing support out from under a stationary mob is not a supported falling simulation; reposition it onto valid ground. See K for further limits.
+This is conservative local ground navigation, not a full animal rigid-body solver. Large drops are avoided rather than jumped or fallen into; point-mass/curved-surface locomotion is not implemented. Voxel-sized steps may still produce visible ground-height changes. Flat-gravity falling after lifting or removing support is now supported (see the gravity follow-up below). See K for further limits.
 
 ## E. Behavior
 
@@ -91,7 +94,7 @@ Decisions run at 5 Hz on fixed simulation time. Seeded randomness derives from s
 
 Movement speeds are cycle targets; preparation/recovery gating reduces average travel speed. Idle alternates with grazing and bounded destinations sampled within the home radius. A blocked or expired wandering goal yields an idle cooldown instead of continuously retrying it. Wandering enforces the home radius; a hare displaced by fleeing can move back inward.
 
-Player proximity causes Alert, then Fleeing when inside the flee threshold. Flee direction is away from the local player; blocked paths rotate the steering direction. Fleeing continues at least 1.5 s after the last close threat and until the player is beyond detection radius +2 m. Recovering lasts 2 s before normal activity resumes. Alert releases beyond detection radius +1 m. These margins/cooldowns prevent threshold oscillation. Detection uses world-space distance, without full line-of-sight, hearing or scent. Networking/multiplayer perception is deferred; the current local player is the threat source.
+Player proximity causes Alert, then Fleeing when inside the flee threshold. Behavior supplies an escape intent away from the local player. M1.1 navigation owns committed detours and recovery; collision rejection no longer rotates the behavior direction. Fleeing continues at least 1.5 s after the last close threat and until the player is beyond detection radius +2 m. Recovering lasts 2 s before normal activity resumes. Alert releases beyond detection radius +1 m. These margins/cooldowns prevent threshold oscillation. Detection uses world-space distance, without full line-of-sight, hearing or scent. Networking/multiplayer perception is deferred; the current local player is the threat source.
 
 ## F. Rendering and animation
 
@@ -111,7 +114,7 @@ Existing terrain picking, construction, target and teleporter paths are retained
 
 Selected-object diagnostics are available through `object.userData.mobRuntime.snapshot()`: state, position, editing flag, steps, behavior/movement CPU, animation CPU, ground/clearance query counts, navigation failures, discarded time, model triangles and load error. Counters are updated during actual work; there is no permanent mob panel or per-frame diagnostic enumeration.
 
-## H. Performance
+## H. Original M1 performance (before M1.1)
 
 [Raw benchmark](MobM1Performance.json): actual installed GLB rendered by Chromium/SwiftShader at 640×480. Each of 1/5/20/50 hares is measured with behavior enabled and disabled, with 30 warm-up and 240 measured RAF frames, in two reversed-order trials (**16 cases**). Active cases use 0.1–0.2 s idle durations to exercise movement within the measurement window; flee is off and the authoritative ground fixture is flat. These are repeatable component measurements, not a populated-world FPS guarantee.
 
@@ -142,7 +145,7 @@ An additional real procedural runtime test samples finite and signed infinite te
 
 Production browser integration uses actual GameView, the real insertion button and inspector, actual GLTFLoader, trusted live bow input, temporary Notebook files and the existing renderer. It covers transforms/configuration/history, all six states, moving hops, active terrain-following in both representations (including smooth-natural polygonal shading), player proximity/flee/recovery, editing/world pause, duplicate identity/shared geometry, deletion undo/redo, hit identity without destruction, saved home/associations, Editor/Viewer reopen, Viewer read-only policy/autonomous behavior, and world-close cleanup. [Browser evidence](MobM1Browser.json), [captured Rabbit](ArcheryVisuals/archery-hare.png).
 
-Final automated checks: **305 MetaWorld tests passed**, **41 GameView tests passed**, and **11 focused mob cases passed** (included in MetaWorld). All sixteen performance cases completed with zero resident geometry/texture counts after cleanup. `git diff --check` and module syntax checks passed.
+Original M1 automated checks (superseded by M1.1 below): **305 MetaWorld tests passed**, **41 GameView tests passed**, and **11 focused mob cases passed** (included in MetaWorld). All sixteen performance cases completed with zero resident geometry/texture counts after cleanup. `git diff --check` and module syntax checks passed.
 
 Commands/results and file hashes are recorded in [MobM1Validation.json](MobM1Validation.json). Existing production archery-target, bow and Raycasting Teleporter regressions passed. Trusted browser input exercises the bow; transform changes use the production authoring bridge and inspector rather than recorded pointer drags of every gizmo handle. Native desktop execution was not performed; Chromium/SwiftShader results are not native Electron or hardware-GPU validation. Full long-distance travel/return with a hare in every geographic/map/hybrid configuration is not claimed. Notebook/test.html remains unchanged.
 
@@ -159,8 +162,131 @@ Commands/results and file hashes are recorded in [MobM1Validation.json](MobM1Val
 
 ## K. Remaining work
 
-Natural spawning/populations, additional species, habitats/ecology, predator–prey behavior, multiplayer perception, health and lesson systems are deferred. So are global pathfinding, species-specific physics, jumping gaps, falling into edited pits, point-mass/curved-world locomotion, limb/ear animation, sprites and wildlife LOD.
+Natural spawning/populations, additional species, habitats/ecology, predator–prey behavior, multiplayer perception, health and lesson systems are deferred. So are global pathfinding, species-specific physics, jumping gaps, point-mass/curved-world locomotion, limb/ear animation, sprites and wildlife LOD.
 
 Current navigation is local and conservative. It may stop or turn repeatedly around an impassable feature; it does not solve routes around large barriers. Fleeing can exceed the home radius, while later wandering permits an inward return. Source readiness/NoData checks can pause navigation at unloaded or unsupported regions. Authored mobs use existing object residency and freeze beyond 64 m; no separate streaming/population manager is added.
 
 Selection intentionally returns a simulated hare to its authored home; editing at the temporary roaming position is not implemented. Geometry-scale changes and a coarse body box are adequate for this initial consumer, not anatomical collision. Ground transitions on voxel stairs can remain visually coarse. Hardware deployment tests, detailed heap/driver profiling and combined large-world benchmarks remain future validation work.
+
+
+## M1.1 — Navigation oscillation and stuck recovery
+
+### Cause and reproduction
+
+The reported chase failure was reproduced before modifying production code. In M1, collision rejection rotated the behavior direction 90° on each failed movement. The 5 Hz threat update then overwrote that avoidance direction with the vector away from the player. The body chased alternating headings, subject to its turn-rate limit. Each rejection also reset speed and hop phase. Finally, the movement block queried ground even during preparation/landing when horizontal travel was zero, allowing stationary support rejection to restart the same loop.
+
+[Recorded M1 sources](MobM11BaselineSources.json) preserve the actual pre-fix runtime and dependencies. Test-only reconstruction serves those sources without installing a second runtime in the application. [Deterministic paired evidence](MobM11Reproduction.json) uses the real ground sampler, triangle ground and owned solid colliders: over 12 fixed-step simulated seconds, M1 made **110 heading reversals**, rejected **169 movement checks**, and moved only **0.678 m net** inside an enclosure. M1.1 makes **zero reversals and zero futile forward checks**, enters Waiting, and performs eight bounded planning passes. The obstacle is genuinely impassable; zero displacement is the correct safe result there. Separate detour and passage tests require substantial movement, so the fix cannot pass merely by disabling movement.
+
+### Ownership and steering rules
+
+Changed production modules are `Mobs/Navigation.mjs` (new), `Runtime.mjs`, `Behavior.mjs` and `Ground.mjs`. Identity, persistent definitions, species registration, assets, renderer ownership, insertion, serialization and existing inventory tools retain their M1 owners.
+
+Behavior continues to decide Idle/Grazing/Wandering/Alert/Fleeing/Recovering and supply desired movement. Navigation independently owns the temporary waypoint and its Following/Blocked/Recovering Navigation/Waiting state. These states are transient and never serialized or added to editing history.
+
+A plan considers at most eight deterministic headings: direct escape, ±0.70, ±1.35, ±1.95 radians, and retreat. Each direction uses five supported/clear samples at 0.24-body-scale-m intervals, validating a 1.2-body-scale-m waypoint. The score favors escape progress, penalizes a recently failed heading, and favors a previously selected avoidance side for two seconds. A directly safe, nonfailed route takes the fast path. Both sides are considered when the direct route fails; lateral/backward detours are permitted rather than forcing forward movement into geometry.
+
+A waypoint is retained for 0.9 simulation seconds unless reached or rejected by the actual movement checks. After that commitment, an escape-intent change exceeding 0.45 radians can replace it. Actual body yaw retains the existing 0.15 radian/fixed-step turn limit. The animal turns into the route before attempting a hop instead of repeatedly testing a forward arc into a wall. If an actual step becomes unsafe, it stops and invalidates the goal immediately; another bounded plan is allowed after a short 150 ms cooldown. A blocked probe cannot permit movement through the obstacle.
+
+### Progress and recovery
+
+Progress tracking accumulates only actual travel attempts, excluding preparation, landing, turning, calm states, pause and editing. It records world-space displacement, rejected steps and waypoint progress over 0.6 seconds of attempted movement. Less than 0.12 m displacement with repeated rejection or insufficient goal progress marks the attempt as stuck. Meaningful movement releases recovery. Authoring reset clears transient goals/progress; pause clears the progress window without advancing navigation time.
+
+No safe candidate produces Waiting rather than random turns or teleportation. Retry intervals back off toward 2.5 seconds, with at most 0.18 s of deterministic ID-based staggering. First planning is staggered too. This spreads simultaneous decisions across mobs without basing randomness on render timing. Failure memory is capped at eight headings and expires after four seconds. There is no global search, new timer, terrain-generation request or population registry.
+
+Preparation/landing now advance the hop cycle without zero-distance collision submissions. A valid route still accelerates, turns, hops and runs using the existing body/visual adapter. Home-radius restrictions apply to ordinary wandering and its probes; fleeing may leave that area, and subsequent movement can return inward.
+
+### Authoritative queries and CPU work
+
+Every probe and actual step uses the existing Ground adapter's source coverage/readiness, footprint support and body-clearance checks. This preserves finite geographic/NoData boundaries and signed procedural coordinates, and rejects cliffs, excessive steps, caves/overhang obstructions, construction cuts and imported solids. Smooth-natural shading does not become collision authority. No distant visual terrain is sampled as exact ground.
+
+The first local-planner prototype exposed large synchronous bursts when many mobs planned together. The final implementation adds deterministic scheduling spread and uses existing collider world bounds to reject distant height rays and body checks before expensive work. Bounds are only a broad phase; nearby checks still use the established collision APIs. The exploratory timing file is explicitly labeled nonisolated/pre-optimization and is not used for final performance comparisons.
+
+### Diagnostics
+
+`mobRuntime.snapshot().navigation` now reports state, current goal, desired/actual heading, recent displacement, waypoint progress, blocked-movement count, stuck flag, recovery attempts, avoidance side, committed/remaining time, retry delay, failure reason, plan/probe counts and remembered-failure count. `stats.navigationMs` measures planning/steering/movement-check CPU. Existing ground/clearance/navigation-failure counters remain available. Lifetime work counters accumulate across edits; per-scenario tests compare deltas. Diagnostic arrays are bounded and there is no new panel.
+
+### Production reproduction and regressions
+
+[Actual Editor evidence](MobM11Browser.json) uses the real insertion button, Google Rabbit GLB, ordinary authored primitive walls and the existing geographic terrain runtime with low hills. Each case runs for 6.5 seconds of real RAF-paced chase. The harness updates the actual player's position to simulate chasing; it does not claim native keyboard walking. Polygonal cases enable smooth-natural ground. Results:
+
+| Terrain | Scenario | M1 reversals / net travel | M1.1 reversals / net travel |
+|---|---|---:|---:|
+| Voxel | Wall with detour | 14 / 13.85 m | 2 / 16.63 m |
+| Voxel | Enclosed | 53 / 0.68 m | 0 / 0 m |
+| Polygonal smooth-natural | Wall with detour | 14 / 12.71 m | 5 / 14.56 m |
+| Polygonal smooth-natural | Enclosed | 53 / 0.68 m | 0 / 0 m |
+
+Moving corrected cases retain approximately 0.18 m running-hop lift. Ground-reference error against a center sample stays within the existing 0.26 m footprint/step allowance; the maximum recorded voxel difference is 0.25 m. The trapped cases wait without hopping/spinning. Existing inspector suspension and unchanged authored source are asserted.
+
+The thirteen focused navigation tests include the deterministic old-runtime reproduction, required left/right detours, narrow passage, changing player, recent rejection/commitment, signed coordinates, 30/60 Hz consistency with identical input, no false stationary/preparation progress failure, steep slopes, small steps, unsupported edges, real imported-mesh clearance, overhangs, geographic/map/hybrid coverage, approach/retreat, pause/editing, and a canonical construction-cut occupancy pit with a safe detour. Existing terrain-aware path/LOD/construction regressions also pass in the complete suite.
+
+Final verification: **318 MetaWorld tests**, **41 GameView tests**, **13 focused navigation cases** and **11 existing focused mob cases** pass (the focused cases are included in MetaWorld). Production M1, archery-target, bow and Raycasting Teleporter regressions pass, including save/reopen, Viewer policy and interactions. Native desktop/hardware GPU validation is not claimed. Original models, license notice and Notebook/test.html remain byte-for-byte unchanged.
+
+Reproduce with:
+
+```sh
+NODEVISION_RECORD_M11=1 node --import ./scripts/register-browser-test-imports.mjs ApplicationSystem/public/MetaWorld/Mobs/Navigation.test.mjs
+node scripts/test-mob-m11.mjs
+node scripts/test-mob-m11.mjs performance
+npm run test:metaworld
+```
+
+### Before/after performance
+
+[Final measurements](MobM11Performance.json) contain 32 isolated Chromium/SwiftShader cases: 1/5/20/50 hares, wall and trap scenes, before/after, two reversed-order trials. Each case warms for 30 RAF frames and measures 180. To equalize trajectory/work despite renderer pacing, each RAF deliberately advances one fixed 30 Hz step: seven simulated seconds over 210 frames. At 60 Hz this is twice real-time simulation pressure, not normal GameView scheduling or a hardware FPS benchmark. Wall/trap geometry and clearance checks are real; support is a flat authoritative fixture. Travel is net world-space displacement from the starting point; the chase deliberately keeps the player near, so travel is not player separation. Each mob receives a local chasing-player probe so all mobs remain under equal pressure; this is not multiplayer support.
+
+The common external timer around all mob updates is the comparable CPU measurement. The legacy inner navigation timer includes all fixed simulation because M1 had no separate navigation timer; the raw file explains that difference. Values below average the two trials, including averaged per-trial p95s:
+
+| Hares | Scene | Mean update ms, before → after | p95 update ms, before → after | Mean net escape travel, before → after |
+|---:|---|---:|---:|---:|
+| 1 | wall | 0.15 → 0.18 | 0.30 → 0.35 | 14.76 → 18.01 m |
+| 1 | trap | 0.20 → 0.12 | 0.40 → 0.20 | 0.68 → 0.00 m |
+| 5 | wall | 0.34 → 0.26 | 0.60 → 0.45 | 14.76 → 17.89 m |
+| 5 | trap | 0.62 → 0.19 | 1.25 → 0.45 | 0.68 → 0.00 m |
+| 20 | wall | 1.81 → 0.71 | 3.75 → 1.30 | 14.76 → 17.87 m |
+| 20 | trap | 4.18 → 0.60 | 8.05 → 1.95 | 0.68 → 0.00 m |
+| 50 | wall | 4.57 → 1.55 | 9.20 → 3.30 | 14.76 → 17.89 m |
+| 50 | trap | 11.17 → 1.17 | 21.05 → 4.80 | 0.68 → 0.00 m |
+
+For 50 hares, whole-run support-height queries are 50,500 → 64,185 around walls and 50,500 → 27,700 in traps; clearance queries are 10,100 → 12,837 and 10,100 → 5,540 respectively. Safe lookahead adds queries in moving scenes, while bounds rejection reduces their cost. Wall-case rejected movement events are 850 → 0; trap events are 4,650 → 0, with unsafe routes rejected during planning instead of issuing futile forward steps. The corrected trap scene makes 277 total plans / 227 recovery retries across 50 hares over seven simulated seconds. M1 has no explicit recovery/plan counter; its values are unavailable, not evidence of zero work. Query/counter totals include warm-up; timing statistics exclude it.
+
+The maximum recorded corrected update in the 50-hare cases is 7.3 ms. Single-hare wall CPU is slightly higher (0.15 → 0.18 ms), within coarse timer/renderer variability and consistent with added lookahead; the fix is not universally free. All benchmark cases return renderer geometry and texture counts to zero after cleanup. The raw measurements also retain frame mean/p95/max, draw calls, triangles, navigation work and resource counts.
+
+These results support lower measured CPU cost with many nearby colliders and stable blocked behavior. They do not establish a hardware-GPU speedup, a hard wall-clock budget, or resolution of the earlier distant-terrain/vegetation deficit. Complex nearby triangle colliders can still cost more than these scenes.
+
+### Remaining navigation limits
+
+This is local steering, not a global route solver. A route requiring a tighter multi-corner maneuver than the 1.2-scaled-m straight waypoint checks can be conservatively rejected even if a global route exists. Truly trapped mobs wait and retry; they never teleport or generate terrain to escape. Very narrow passages, dynamic obstacle timing and terrain changes underneath an already stationary animal remain limited by the original ground-movement model. The existing 64 m simulation distance and authored-home editing policy remain unchanged. Broader long-distance map/hybrid journeys, native desktop input and real-GPU combined-world performance remain unverified.
+
+[Current validation manifest](MobM11Validation.json) records checks, source/evidence hashes and preservation results.
+
+
+### Gravity follow-up: lifted hares settle after editing
+
+The translate tool correctly released its editing hold, but the mob runtime had no vertical velocity or falling integration. Gravity previously affected only cosmetic hop height, and ground navigation could only accept nearby supported steps. An elevated authored home therefore stayed suspended indefinitely.
+
+`Runtime.mjs` now integrates downward velocity at the existing 30 Hz fixed simulation rate, using the world flat-gravity setting (reference-frame acceleration × 3600; default 43.2 m/s²). `Ground.mjs` sweeps the five footprint points through each downward step and lands on the highest crossed surface below the feet. It cannot snap onto an overhead platform. Falling runs with behavior disabled and with animation disabled. Grounded stationary support is rechecked every 0.2 seconds; removing support starts a fall. Moving navigation retains its existing slope, clearance and step checks. The existing four-step/frame catch-up bound remains in force.
+
+Editing holds compose: the hare stays at the authored position while the translate tool or inspector is open, and falls after both release. World pause freezes simulation. Zero gravity clears vertical velocity and leaves an unsupported hare floating. Unready or uncovered terrain freezes descent until support queries are authoritative. The existing 64 m simulation activation distance remains; this is local flat-gravity falling, not a rigid-body solver or point-mass locomotion implementation. Intentional navigation still avoids large drops.
+
+The authored root/home is preserved for undo and save/reopen; the simulated body and its collision bounds fall without writing a new source position every frame. Reopening or reselecting an elevated authored home resets the transient body there, following the existing editing contract, and it falls again when simulation resumes. Cosmetic hops remain separate from the falling body reference.
+
+Validation: `Mobs.test.mjs` now has 13 passing cases, adding raised translation/release with overlapping holds, actual intermediate falling, pause, disabled behavior, landing/collider position, support removal, unavailable terrain, zero gravity/resumption, authored-pose preservation, and swept thin-platform/overhead checks. The complete MetaWorld suite passed (64 test files) and GameView dependency suite passed (10 test files). `node scripts/test-mob-m1.mjs gravity` passed with the actual GameView, Google Rabbit GLB and geographic terrain in voxel and polygonal modes; see `docs/MobGravityBrowser.json`. That browser test invokes production translate pointer handlers with deterministic picking/delta adapters, rather than claiming a trusted physical mouse drag. It also verifies that the inspector hold outlives the translate hold and that the landed collider matches the body. These correctness checks are not a hardware FPS benchmark. Original model assets and `Notebook/test.html` are unchanged.
+
+### Aim-based toolbar insertion
+
+Mob insertion now uses its own aim placement instead of the archery target's level-ground/footprint validation. Clicking Brown Hare accepts the nearest aimed world surface within the active camera's far distance, including walls and imported models without colliders. With no surface hit (including sky aim), its authored feet position is exactly one meter from the active camera along its world facing direction. The hare stays upright; unsupported placement falls after editing is released using the gravity behavior above. Existing mobs and editor helpers are excluded from placement hits. Archery target placement is unchanged.
+
+`AimPlacement.test.mjs` checks transformed-camera sky fallback, distant and noncolliding surfaces, nearest-hit selection, upright orientation, hidden/helper/mob exclusion, and ground aim. The production GameView gravity regression additionally clicks the actual Brown Hare toolbar button while looking upward and checks the one-meter position.
+
+### Phase M1.3 — anatomical damage and functional impairment
+
+Brown Hare now has seven independently damageable anatomical parts. The existing arrow sweep resolves part proxies and applies validated session damage exactly once. Hind-leg injury reduces actual speed/acceleration, hop height and recovery, with opposite roll compensation for left/right injuries. Bilateral functional loss stops navigation/hopping; vital head/torso injuries can incapacitate/kill with an inert rigid pose. Other parts contribute to perception, coordination, endurance, landing/turning and modest balance effects. The existing inspector includes an Anatomy table and Editor-only condition/repair controls. Viewer gameplay damage remains available; debug controls are denied.
+
+The model is still the original shared rigid mesh. Hit proxies follow its procedural visual transform; there are no skeletal limbs, extra rendering nodes or new projectile simulator. Injuries remain session-scoped and do not dirty authored home/configuration or write undo entries. Duplication/reconstruction/reopen starts healthy. See [MobAnatomyAndDamage.md](MobAnatomyAndDamage.md) for schema, formulas, hit-region calibration, persistence, tests, performance and limitations; raw integration/benchmark evidence is in `MobAnatomyBrowser.json` and `MobAnatomyPerformance.json`.
+
+### M1.3 sensory amendment
+
+Current anatomy has 13 components: the seven structural parts plus independent left/right eyes, left/right ears, nose and internal tongue, all attached under the head and using the same injury processor. Hare behavior now consumes bounded sensory observations instead of raw distance-based knowledge of the player. Vision has directional fields and owned-geometry occlusion; hearing uses signals, attenuation, residual external-ear function and uncertain localization. Nose/scent and tongue/contact-taste channels are available without an odor/feeding simulator. Actual grounded movement and arrow impacts produce signals through the existing GameView panel; rustle/visible/scent/contact producers use the same bounded interface.
+
+Editor anatomy controls include a collapsed sensory disclosure and controlled sound-behind test. Session persistence, Viewer restrictions, stable navigation and shared rigid GLB rendering remain unchanged. Details, formulas, proxy policy, validation and performance are documented in [MobAnatomyAndDamage.md](MobAnatomyAndDamage.md), with new `MobSensoryBrowser.json`, `MobSensoryPerformance.json` and `MobSensoryValidation.json` evidence. The initial seven-part report above is historical and superseded by this amendment.

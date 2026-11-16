@@ -15,13 +15,13 @@
     {
       "arrowId": "arrow-1",
       "shooterId": "session-player",
-      "launchForce": 62.04833333306015,
-      "launchSpeed": 39.38538222902634,
-      "flightDuration": 0.027554194699689998,
-      "traveledDistance": 1.0852200935921155,
+      "launchForce": 63.61583333353823,
+      "launchSpeed": 39.87976721770647,
+      "flightDuration": 0.027212603213518108,
+      "traveledDistance": 1.0852111714534,
       "point": [
         21,
-        1.2232834752216968,
+        1.2237138274962878,
         15.914951329862653
       ],
       "normal": [
@@ -31,11 +31,11 @@
       ],
       "incomingVelocity": [
         0,
-        -1.1901395768035261,
-        -39.37229476750137
+        -1.1753855521014254,
+        -39.86651558221875
       ],
-      "simulationTime": 0.027554194699689998,
-      "mobId": "0fa75309-ab1a-4295-b2a2-86bd0601d65a",
+      "simulationTime": 0.027212603213518108,
+      "mobId": "3500a641-c077-4987-afaf-4d0885d38fee",
       "speciesId": "brown-hare"
     }
   ],
@@ -47,7 +47,7 @@
       15.5
     ]
   },
-  "hopLift": 0.04376820852573804,
+  "hopLift": 0.023267743072282743,
   "teleporterWithMobs": true,
   "viewerBehavior": true
 }

@@ -1,0 +1,58 @@
+{
+  "date": "2026-11-15",
+  "checks": {
+    "metaWorldTests": 318,
+    "gameViewTests": 41,
+    "focusedNavigationCases": 13,
+    "existingFocusedMobCases": 11,
+    "productionChaseCases": 8,
+    "productionM1": true,
+    "productionArcheryTarget": true,
+    "productionBow": true,
+    "productionTeleporter": true,
+    "beforeAfterPerformanceCases": 32,
+    "diffCheck": true,
+    "syntaxCheck": true
+  },
+  "notebookSha256": "75533dd604cbacc1de34bd42e1e3c5a5faeef5f4779b51c520a2e0c0edd81292",
+  "originalAssets": {
+    "ApplicationSystem/public/BuiltIn/Mobs/Mammals/BrownHare/Models/Rabbit by Poly by Google - 9OBTRVYUSmt.glb": "b58fac979a8606d60948625783794e3afbbcb6edfe2f8c98284bbcedaa6cee3a",
+    "ApplicationSystem/public/BuiltIn/Mobs/Mammals/BrownHare/Models/Tex_Rabbit.png": "43ab3622a46b45f15cdf442ce3ae1f2e1b48e4f50420285bfe071bbf9f5630a1",
+    "ApplicationSystem/public/BuiltIn/Mobs/Mammals/BrownHare/Models/Mesh_Rabbit.obj": "a1b98fae32e84b69ad03fc95031b49581771dc104bfdc94e91bafba8a395acec",
+    "ApplicationSystem/public/BuiltIn/Mobs/Mammals/BrownHare/Models/licenseNotice.md": "dc816165d5f96006bd96a8b0cae929083f78f49dcdd76728595c395cb0271140",
+    "ApplicationSystem/public/BuiltIn/Mobs/Mammals/BrownHare/Models/Mesh_Rabbit.mtl": "40b9d69ff8e1e870f79ce57712958a6f906ee26ae60a62311c6f98ba48a8d175"
+  },
+  "environment": "Chromium SwiftShader; native/hardware GPU not exercised. Final benchmark isolated from other agent-started browser work; fixed simulation workload per RAF.",
+  "limits": [
+    "Local waypoint planning, not global pathfinding; requires a supported straight segment of 1.2 scaled meters",
+    "Conservative rejection can miss a tight multi-corner route",
+    "Production chase updates real player coordinates programmatically; no native walking claim",
+    "Benchmark CPU is stress-workload timing; not normal GameView scheduling, hardware FPS or a resolution of distant-terrain deficits"
+  ],
+  "artifacts": {
+    "ApplicationSystem/public/MetaWorld/Mobs/Behavior.mjs": "9e162336790cb57919ca99d05bff85e4ae322797469700936e3e39ba0ff85104",
+    "ApplicationSystem/public/MetaWorld/Mobs/Ground.mjs": "1d848d10b2f8ca547f9fbdf288f3e25cf6f0a05b9081d01abd46299cbff7b069",
+    "ApplicationSystem/public/MetaWorld/Mobs/Rendering.mjs": "dfdf45ee1e90f3fb908a76a56a29a66837b33a32b6e5cef5339f11d7bd53bd72",
+    "ApplicationSystem/public/MetaWorld/Mobs/Authoring.mjs": "01f4e07267c6c17072e55c06cb0664e6c7465fd6c4c72a592d85a78fd0aa76f1",
+    "ApplicationSystem/public/MetaWorld/Mobs/Navigation.test.mjs": "7de4c3d420a8ab85a78bb6027ca5274709ddb88e409a8befd374295b8f4feb6c",
+    "ApplicationSystem/public/MetaWorld/Mobs/Registry.mjs": "1d4333e0d4571d92675652a35d3fb8dc2896bb2936fa475f59e88223a6763a85",
+    "ApplicationSystem/public/MetaWorld/Mobs/Assets.mjs": "6c266b9d339984932a145770ed239131cd2623227e1eeb81594b500aec149400",
+    "ApplicationSystem/public/MetaWorld/Mobs/Properties.mjs": "dc5c5bf239fce4ce0e1888a906b6f94fd01c3db3a3c9530804ad54e12a05dc56",
+    "ApplicationSystem/public/MetaWorld/Mobs/Navigation.mjs": "36171a109783e0f0cae27ce6b154f80e6b62d3f0861e55c765b7dd955dc70ecb",
+    "ApplicationSystem/public/MetaWorld/Mobs/Mobs.test.mjs": "76904b05f514908e05a4681516eef624fce7e92334c426423f7046ce2fffbbbe",
+    "ApplicationSystem/public/MetaWorld/Mobs/Definition.mjs": "fe527a2e677638e6f6de91285c9c00f988c77c67f496ff1603c4d5ecb31154ae",
+    "ApplicationSystem/public/MetaWorld/Mobs/Runtime.mjs": "1805d7d2f29af98b2e7a0efd4eb2ba00186114a9b9205cfe4e25d86cc9281955",
+    "ApplicationSystem/public/MetaWorld/Mobs/Placement.mjs": "4d33e941502a8a39c49360b8c6c4e7558e56afdc1aeb68d0bcfec4c71031643e",
+    "scripts/mob-m11-browser.mjs": "ff38134de0f0c444303ba8e53550525e4a69176e2a725e69b6e7a61639713d57",
+    "scripts/mob-m11-baseline.mjs": "607bbde80e1ddfa215df21800e228074c80e2ea5e4d3527183bf18628c7d31c0",
+    "scripts/mob-m11-fixtures.mjs": "adabd47ab037492f79281f3bd3ff232930ef722ac2a28b1c96b7c50e1bb2567b",
+    "scripts/mob-m11-performance.mjs": "f7d0b4dc969bc46334844931ab61b538052ba8390a20048bd152295d8c97c829",
+    "scripts/test-mob-m11.mjs": "518589702e8908d293754ba1777e46ba0e92348ece1fb6a130e265862c6abcbe",
+    "docs/MobPhaseM1BrownHare.md": "8bf959f55ed59e703247a39bfdc8524364e9fe5ab9ca7b3f19f64298056de2c3",
+    "docs/MobM11BaselineSources.json": "dc09b82ad24245856245c487febef0342be11fe507602ec2aafb341dc0eaa764",
+    "docs/MobM11Reproduction.json": "64408fb0f0a97f24ca31fe5e873bb3f4c053f932b62e443b135462fb757af5eb",
+    "docs/MobM11Browser.json": "3c5037d4a486f3718e6bb2c65204f71ce922394bfe400fa7e693c7aa84c32a0a",
+    "docs/MobM11Performance.json": "d1bedc4c346e8b74d6f2f61f7d62324dff88636dd03e79f0f2f9f7884b29f370",
+    "docs/MobM11ExploratoryPerformance.json": "61fcbcf862a2437badb2fdc11442262df685071da4faed906c0d8d804a203108"
+  }
+}

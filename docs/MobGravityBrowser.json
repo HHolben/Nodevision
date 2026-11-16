@@ -1,0 +1,18 @@
+{
+  "passed": true,
+  "fixture": "Actual GameView geographic terrain and GLB; production translate handlers with deterministic picking/delta adapters",
+  "released": 4,
+  "landed": 1,
+  "authoredHome": [
+    20,
+    5,
+    20
+  ],
+  "representations": [
+    "voxel",
+    "polygonal"
+  ],
+  "skyToolbarInsertion": true,
+  "disabledBehaviorFalls": true,
+  "inspectorAndTranslateHolds": true
+}

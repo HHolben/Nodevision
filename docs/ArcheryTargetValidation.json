@@ -30,10 +30,10 @@
     "ApplicationSystem/public/PanelInstances/ViewPanels/GameViewDependencies/Archery/Collision.mjs": "e63a6363b37cf1baf2b29455fef0348ded1433ddd805f537b174206cb34cdfa9",
     "ApplicationSystem/public/PanelInstances/ViewPanels/GameViewDependencies/Archery/Visuals.mjs": "decbcdb23bebbe4fd0d0fd709f0d146a60881ea5561be9804680a41ceaea2439",
     "docs/ArcheryTarget.md": "7b67800021d2f75cfde45f4ef53f7dfdb58e18ae79b8ba1af409c825496d514a",
-    "docs/ArcheryTargetBrowser.json": "5ba7ff7d232a836845467a023e3208ed9d2caededd2cb044cacc682f02b6b824",
+    "docs/ArcheryTargetBrowser.json": "c40e5632a6aacaec09ef446381832de7f448c1eabf01859ab64ac19b6ee15b27",
     "docs/ArcheryTargetPerformance.json": "0984f9ff3ad0e733ed0f7cbcbbe5369aca2f861459fcf896b6c1ac091966dd13",
-    "docs/ArcheryVisuals/archery-target.png": "073476955d78dd436c1a9903203b1c94b839aba0e72b6d2f94cd0a05f2bfb62a",
-    "docs/ArcheryVisuals/archery-target-properties.png": "a61e8886bd72af18e26ba99d4d3c361bc835776627efeaced9618af256d249a8",
+    "docs/ArcheryVisuals/archery-target.png": "68926247aa96760d390f7c0bb2ee0136fe1ebee393088baf178bbef83dba24a5",
+    "docs/ArcheryVisuals/archery-target-properties.png": "8aa5801c576f2fd057ec7160e00f2f2a10436acf41d0b0e2f3168de1b2900007",
     "scripts/test-archery-target.mjs": "13939c3a9a03588de7198fe493e59575254bb2e0d0342f5aaede267c76f271f9",
     "scripts/archery-target-browser.mjs": "02b9f1d18e1190a24a5a2c1b2ca6ab143f3fbf4f622c2173214e3bb0d2fa9b5e",
     "scripts/archery-target-performance.mjs": "2c9002b27ec2a27492e329f78a515239d0c381cf551800c89d714cbc022db6eb"
@@ -62,5 +62,28 @@
         "current": "a61e8886bd72af18e26ba99d4d3c361bc835776627efeaced9618af256d249a8"
       }
     }
+  },
+  "navigationIntegrationRecheck": {
+    "metaWorldTests": 318,
+    "gameViewTests": 41,
+    "productionM1": true,
+    "productionArcheryTarget": true,
+    "productionBow": true,
+    "productionTeleporter": true,
+    "updatedEvidence": {
+      "docs/ArcheryTargetBrowser.json": {
+        "previous": "5ba7ff7d232a836845467a023e3208ed9d2caededd2cb044cacc682f02b6b824",
+        "current": "c40e5632a6aacaec09ef446381832de7f448c1eabf01859ab64ac19b6ee15b27"
+      },
+      "docs/ArcheryVisuals/archery-target.png": {
+        "previous": "073476955d78dd436c1a9903203b1c94b839aba0e72b6d2f94cd0a05f2bfb62a",
+        "current": "68926247aa96760d390f7c0bb2ee0136fe1ebee393088baf178bbef83dba24a5"
+      },
+      "docs/ArcheryVisuals/archery-target-properties.png": {
+        "previous": "a61e8886bd72af18e26ba99d4d3c361bc835776627efeaced9618af256d249a8",
+        "current": "8aa5801c576f2fd057ec7160e00f2f2a10436acf41d0b0e2f3168de1b2900007"
+      }
+    },
+    "note": "Original M1 mob sources archived in docs/MobM11BaselineSources.json; historical benchmark values retained."
   }
 }

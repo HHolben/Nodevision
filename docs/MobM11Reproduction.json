@@ -1,0 +1,2300 @@
+{
+  "before": {
+    "seconds": 12,
+    "headingFlips": 110,
+    "displacement": 0.6778630191110376,
+    "escapeProgress": 0.2658182418884698,
+    "maxLift": 0.3592501779115412,
+    "snapshot": {
+      "steps": 1,
+      "behaviorMs": 0.030967999999987228,
+      "animationMs": 0.005786999999997988,
+      "groundQueries": 1765,
+      "collisionQueries": 353,
+      "navigationFailures": 169,
+      "discardedSeconds": 0,
+      "id": "oscillation",
+      "speciesId": "brown-hare",
+      "state": "Fleeing",
+      "position": [
+        -0.6235695109269326,
+        0,
+        0.2658182418884698
+      ],
+      "editing": false,
+      "triangles": 12,
+      "modelError": null
+    },
+    "poses": [
+      {
+        "t": 0.2,
+        "position": [
+          0,
+          0,
+          0
+        ],
+        "yaw": 0
+      },
+      {
+        "t": 0.4,
+        "position": [
+          0,
+          0,
+          0.24569615912208503
+        ],
+        "yaw": 0
+      },
+      {
+        "t": 0.6,
+        "position": [
+          0,
+          0,
+          0.24569615912208503
+        ],
+        "yaw": -0.6
+      },
+      {
+        "t": 0.8,
+        "position": [
+          -0.03191331854037896,
+          0,
+          0.27102100968126025
+        ],
+        "yaw": -0.9
+      },
+      {
+        "t": 1,
+        "position": [
+          -0.03191331854037896,
+          0,
+          0.27102100968126025
+        ],
+        "yaw": -1.2
+      },
+      {
+        "t": 1.2,
+        "position": [
+          -0.07252633821813122,
+          0,
+          0.26779756606320815
+        ],
+        "yaw": -1.6499999999999997
+      },
+      {
+        "t": 1.4,
+        "position": [
+          -0.36212392415996497,
+          0,
+          0.27463587280080626
+        ],
+        "yaw": -1.3499999999999999
+      },
+      {
+        "t": 1.6,
+        "position": [
+          -0.36212392415996497,
+          0,
+          0.27463587280080626
+        ],
+        "yaw": -1.6499999999999997
+      },
+      {
+        "t": 1.8,
+        "position": [
+          -0.5673966714207598,
+          0,
+          0.2658182418884698
+        ],
+        "yaw": -1.5707963267948966
+      },
+      {
+        "t": 2,
+        "position": [
+          -0.6235695109269326,
+          0,
+          0.2658182418884698
+        ],
+        "yaw": -1.8707963267948964
+      },
+      {
+        "t": 2.2,
+        "position": [
+          -0.6235695109269326,
+          0,
+          0.2658182418884698
+        ],
+        "yaw": -1.8707963267948964
+      },
+      {
+        "t": 2.4,
+        "position": [
+          -0.6235695109269326,
+          0,
+          0.2658182418884698
+        ],
+        "yaw": -1.8707963267948964
+      },
+      {
+        "t": 2.6,
+        "position": [
+          -0.6235695109269326,
+          0,
+          0.2658182418884698
+        ],
+        "yaw": -1.8707963267948964
+      },
+      {
+        "t": 2.8,
+        "position": [
+          -0.6235695109269326,
+          0,
+          0.2658182418884698
+        ],
+        "yaw": -1.8707963267948964
+      },
+      {
+        "t": 3,
+        "position": [
+          -0.6235695109269326,
+          0,
+          0.2658182418884698
+        ],
+        "yaw": -1.8707963267948964
+      },
+      {
+        "t": 3.2,
+        "position": [
+          -0.6235695109269326,
+          0,
+          0.2658182418884698
+        ],
+        "yaw": -1.8707963267948964
+      },
+      {
+        "t": 3.4,
+        "position": [
+          -0.6235695109269326,
+          0,
+          0.2658182418884698
+        ],
+        "yaw": -1.8707963267948964
+      },
+      {
+        "t": 3.6,
+        "position": [
+          -0.6235695109269326,
+          0,
+          0.2658182418884698
+        ],
+        "yaw": -1.8707963267948964
+      },
+      {
+        "t": 3.8,
+        "position": [
+          -0.6235695109269326,
+          0,
+          0.2658182418884698
+        ],
+        "yaw": -1.8707963267948964
+      },
+      {
+        "t": 4,
+        "position": [
+          -0.6235695109269326,
+          0,
+          0.2658182418884698
+        ],
+        "yaw": -1.8707963267948964
+      },
+      {
+        "t": 4.2,
+        "position": [
+          -0.6235695109269326,
+          0,
+          0.2658182418884698
+        ],
+        "yaw": -1.8707963267948964
+      },
+      {
+        "t": 4.4,
+        "position": [
+          -0.6235695109269326,
+          0,
+          0.2658182418884698
+        ],
+        "yaw": -1.8707963267948964
+      },
+      {
+        "t": 4.6,
+        "position": [
+          -0.6235695109269326,
+          0,
+          0.2658182418884698
+        ],
+        "yaw": -1.8707963267948964
+      },
+      {
+        "t": 4.8,
+        "position": [
+          -0.6235695109269326,
+          0,
+          0.2658182418884698
+        ],
+        "yaw": -1.8707963267948964
+      },
+      {
+        "t": 5,
+        "position": [
+          -0.6235695109269326,
+          0,
+          0.2658182418884698
+        ],
+        "yaw": -1.8707963267948964
+      },
+      {
+        "t": 5.2,
+        "position": [
+          -0.6235695109269326,
+          0,
+          0.2658182418884698
+        ],
+        "yaw": -1.8707963267948964
+      },
+      {
+        "t": 5.4,
+        "position": [
+          -0.6235695109269326,
+          0,
+          0.2658182418884698
+        ],
+        "yaw": -1.8707963267948964
+      },
+      {
+        "t": 5.6,
+        "position": [
+          -0.6235695109269326,
+          0,
+          0.2658182418884698
+        ],
+        "yaw": -1.8707963267948964
+      },
+      {
+        "t": 5.8,
+        "position": [
+          -0.6235695109269326,
+          0,
+          0.2658182418884698
+        ],
+        "yaw": -1.8707963267948964
+      },
+      {
+        "t": 6,
+        "position": [
+          -0.6235695109269326,
+          0,
+          0.2658182418884698
+        ],
+        "yaw": -1.8707963267948964
+      },
+      {
+        "t": 6.2,
+        "position": [
+          -0.6235695109269326,
+          0,
+          0.2658182418884698
+        ],
+        "yaw": -1.8707963267948964
+      },
+      {
+        "t": 6.4,
+        "position": [
+          -0.6235695109269326,
+          0,
+          0.2658182418884698
+        ],
+        "yaw": -1.8707963267948964
+      },
+      {
+        "t": 6.6,
+        "position": [
+          -0.6235695109269326,
+          0,
+          0.2658182418884698
+        ],
+        "yaw": -1.8707963267948964
+      },
+      {
+        "t": 6.8,
+        "position": [
+          -0.6235695109269326,
+          0,
+          0.2658182418884698
+        ],
+        "yaw": -1.8707963267948964
+      },
+      {
+        "t": 7,
+        "position": [
+          -0.6235695109269326,
+          0,
+          0.2658182418884698
+        ],
+        "yaw": -1.8707963267948964
+      },
+      {
+        "t": 7.2,
+        "position": [
+          -0.6235695109269326,
+          0,
+          0.2658182418884698
+        ],
+        "yaw": -1.8707963267948964
+      },
+      {
+        "t": 7.4,
+        "position": [
+          -0.6235695109269326,
+          0,
+          0.2658182418884698
+        ],
+        "yaw": -1.8707963267948964
+      },
+      {
+        "t": 7.6,
+        "position": [
+          -0.6235695109269326,
+          0,
+          0.2658182418884698
+        ],
+        "yaw": -1.8707963267948964
+      },
+      {
+        "t": 7.8,
+        "position": [
+          -0.6235695109269326,
+          0,
+          0.2658182418884698
+        ],
+        "yaw": -1.8707963267948964
+      },
+      {
+        "t": 8,
+        "position": [
+          -0.6235695109269326,
+          0,
+          0.2658182418884698
+        ],
+        "yaw": -1.8707963267948964
+      },
+      {
+        "t": 8.2,
+        "position": [
+          -0.6235695109269326,
+          0,
+          0.2658182418884698
+        ],
+        "yaw": -1.8707963267948964
+      },
+      {
+        "t": 8.4,
+        "position": [
+          -0.6235695109269326,
+          0,
+          0.2658182418884698
+        ],
+        "yaw": -1.8707963267948964
+      },
+      {
+        "t": 8.6,
+        "position": [
+          -0.6235695109269326,
+          0,
+          0.2658182418884698
+        ],
+        "yaw": -1.8707963267948964
+      },
+      {
+        "t": 8.8,
+        "position": [
+          -0.6235695109269326,
+          0,
+          0.2658182418884698
+        ],
+        "yaw": -1.8707963267948964
+      },
+      {
+        "t": 9,
+        "position": [
+          -0.6235695109269326,
+          0,
+          0.2658182418884698
+        ],
+        "yaw": -1.8707963267948964
+      },
+      {
+        "t": 9.2,
+        "position": [
+          -0.6235695109269326,
+          0,
+          0.2658182418884698
+        ],
+        "yaw": -1.8707963267948964
+      },
+      {
+        "t": 9.4,
+        "position": [
+          -0.6235695109269326,
+          0,
+          0.2658182418884698
+        ],
+        "yaw": -1.8707963267948964
+      },
+      {
+        "t": 9.6,
+        "position": [
+          -0.6235695109269326,
+          0,
+          0.2658182418884698
+        ],
+        "yaw": -1.8707963267948964
+      },
+      {
+        "t": 9.8,
+        "position": [
+          -0.6235695109269326,
+          0,
+          0.2658182418884698
+        ],
+        "yaw": -1.8707963267948964
+      },
+      {
+        "t": 10,
+        "position": [
+          -0.6235695109269326,
+          0,
+          0.2658182418884698
+        ],
+        "yaw": -1.8707963267948964
+      },
+      {
+        "t": 10.2,
+        "position": [
+          -0.6235695109269326,
+          0,
+          0.2658182418884698
+        ],
+        "yaw": -1.8707963267948964
+      },
+      {
+        "t": 10.4,
+        "position": [
+          -0.6235695109269326,
+          0,
+          0.2658182418884698
+        ],
+        "yaw": -1.8707963267948964
+      },
+      {
+        "t": 10.6,
+        "position": [
+          -0.6235695109269326,
+          0,
+          0.2658182418884698
+        ],
+        "yaw": -1.8707963267948964
+      },
+      {
+        "t": 10.8,
+        "position": [
+          -0.6235695109269326,
+          0,
+          0.2658182418884698
+        ],
+        "yaw": -1.8707963267948964
+      },
+      {
+        "t": 11,
+        "position": [
+          -0.6235695109269326,
+          0,
+          0.2658182418884698
+        ],
+        "yaw": -1.8707963267948964
+      },
+      {
+        "t": 11.2,
+        "position": [
+          -0.6235695109269326,
+          0,
+          0.2658182418884698
+        ],
+        "yaw": -1.8707963267948964
+      },
+      {
+        "t": 11.4,
+        "position": [
+          -0.6235695109269326,
+          0,
+          0.2658182418884698
+        ],
+        "yaw": -1.8707963267948964
+      },
+      {
+        "t": 11.6,
+        "position": [
+          -0.6235695109269326,
+          0,
+          0.2658182418884698
+        ],
+        "yaw": -1.8707963267948964
+      },
+      {
+        "t": 11.8,
+        "position": [
+          -0.6235695109269326,
+          0,
+          0.2658182418884698
+        ],
+        "yaw": -1.8707963267948964
+      },
+      {
+        "t": 12,
+        "position": [
+          -0.6235695109269326,
+          0,
+          0.2658182418884698
+        ],
+        "yaw": -1.8707963267948964
+      }
+    ]
+  },
+  "after": {
+    "seconds": 12,
+    "headingFlips": 0,
+    "displacement": 0,
+    "escapeProgress": 0,
+    "maxLift": 0,
+    "snapshot": {
+      "steps": 1,
+      "behaviorMs": 0.0012090000000029022,
+      "animationMs": 0.0025199999999898637,
+      "groundQueries": 800,
+      "collisionQueries": 160,
+      "navigationFailures": 0,
+      "navigationMs": 0.0007310000000018135,
+      "discardedSeconds": 0,
+      "id": "oscillation",
+      "speciesId": "brown-hare",
+      "state": "Fleeing",
+      "position": [
+        0,
+        0,
+        0
+      ],
+      "editing": false,
+      "triangles": 12,
+      "modelError": null,
+      "navigation": {
+        "state": "Waiting",
+        "goal": null,
+        "desiredHeading": 0,
+        "actualHeading": 0,
+        "recentDisplacement": 0,
+        "goalProgress": 0,
+        "blockedMovementCount": 0,
+        "stuck": true,
+        "recoveryAttempts": 7,
+        "avoidanceDirection": 0,
+        "committedSeconds": 0,
+        "commitRemaining": 0,
+        "retryIn": 2.166621093750001,
+        "recentFailureReason": "No supported clear local route",
+        "plans": 8,
+        "probeCount": 160,
+        "rememberedFailures": 0
+      }
+    },
+    "poses": [
+      {
+        "t": 0.2,
+        "position": [
+          0,
+          0,
+          0
+        ],
+        "yaw": 0,
+        "navigation": {
+          "state": "Idle",
+          "goal": null,
+          "desiredHeading": 0,
+          "actualHeading": 0,
+          "recentDisplacement": 0,
+          "goalProgress": 0,
+          "blockedMovementCount": 0,
+          "stuck": false,
+          "recoveryAttempts": 0,
+          "avoidanceDirection": 0,
+          "committedSeconds": 0,
+          "commitRemaining": 0,
+          "retryIn": 0,
+          "recentFailureReason": "",
+          "plans": 0,
+          "probeCount": 0,
+          "rememberedFailures": 0
+        }
+      },
+      {
+        "t": 0.4,
+        "position": [
+          0,
+          0,
+          0
+        ],
+        "yaw": 0,
+        "navigation": {
+          "state": "Waiting",
+          "goal": null,
+          "desiredHeading": 0,
+          "actualHeading": 0,
+          "recentDisplacement": 0,
+          "goalProgress": 0,
+          "blockedMovementCount": 0,
+          "stuck": true,
+          "recoveryAttempts": 0,
+          "avoidanceDirection": 0,
+          "committedSeconds": 0,
+          "commitRemaining": 0,
+          "retryIn": 0.49995442708333343,
+          "recentFailureReason": "No supported clear local route",
+          "plans": 1,
+          "probeCount": 20,
+          "rememberedFailures": 0
+        }
+      },
+      {
+        "t": 0.6,
+        "position": [
+          0,
+          0,
+          0
+        ],
+        "yaw": 0,
+        "navigation": {
+          "state": "Waiting",
+          "goal": null,
+          "desiredHeading": 0,
+          "actualHeading": 0,
+          "recentDisplacement": 0,
+          "goalProgress": 0,
+          "blockedMovementCount": 0,
+          "stuck": true,
+          "recoveryAttempts": 0,
+          "avoidanceDirection": 0,
+          "committedSeconds": 0,
+          "commitRemaining": 0,
+          "retryIn": 0.2666210937500001,
+          "recentFailureReason": "No supported clear local route",
+          "plans": 1,
+          "probeCount": 20,
+          "rememberedFailures": 0
+        }
+      },
+      {
+        "t": 0.8,
+        "position": [
+          0,
+          0,
+          0
+        ],
+        "yaw": 0,
+        "navigation": {
+          "state": "Waiting",
+          "goal": null,
+          "desiredHeading": 0,
+          "actualHeading": 0,
+          "recentDisplacement": 0,
+          "goalProgress": 0,
+          "blockedMovementCount": 0,
+          "stuck": true,
+          "recoveryAttempts": 0,
+          "avoidanceDirection": 0,
+          "committedSeconds": 0,
+          "commitRemaining": 0,
+          "retryIn": 0.06662109375000014,
+          "recentFailureReason": "No supported clear local route",
+          "plans": 1,
+          "probeCount": 20,
+          "rememberedFailures": 0
+        }
+      },
+      {
+        "t": 1,
+        "position": [
+          0,
+          0,
+          0
+        ],
+        "yaw": 0,
+        "navigation": {
+          "state": "Waiting",
+          "goal": null,
+          "desiredHeading": 0,
+          "actualHeading": 0,
+          "recentDisplacement": 0,
+          "goalProgress": 0,
+          "blockedMovementCount": 0,
+          "stuck": true,
+          "recoveryAttempts": 1,
+          "avoidanceDirection": 0,
+          "committedSeconds": 0,
+          "commitRemaining": 0,
+          "retryIn": 0.7832877604166667,
+          "recentFailureReason": "No supported clear local route",
+          "plans": 2,
+          "probeCount": 40,
+          "rememberedFailures": 0
+        }
+      },
+      {
+        "t": 1.2,
+        "position": [
+          0,
+          0,
+          0
+        ],
+        "yaw": 0,
+        "navigation": {
+          "state": "Waiting",
+          "goal": null,
+          "desiredHeading": 0,
+          "actualHeading": 0,
+          "recentDisplacement": 0,
+          "goalProgress": 0,
+          "blockedMovementCount": 0,
+          "stuck": true,
+          "recoveryAttempts": 1,
+          "avoidanceDirection": 0,
+          "committedSeconds": 0,
+          "commitRemaining": 0,
+          "retryIn": 0.6166210937499996,
+          "recentFailureReason": "No supported clear local route",
+          "plans": 2,
+          "probeCount": 40,
+          "rememberedFailures": 0
+        }
+      },
+      {
+        "t": 1.4,
+        "position": [
+          0,
+          0,
+          0
+        ],
+        "yaw": 0,
+        "navigation": {
+          "state": "Waiting",
+          "goal": null,
+          "desiredHeading": 0,
+          "actualHeading": 0,
+          "recentDisplacement": 0,
+          "goalProgress": 0,
+          "blockedMovementCount": 0,
+          "stuck": true,
+          "recoveryAttempts": 1,
+          "avoidanceDirection": 0,
+          "committedSeconds": 0,
+          "commitRemaining": 0,
+          "retryIn": 0.416621093749999,
+          "recentFailureReason": "No supported clear local route",
+          "plans": 2,
+          "probeCount": 40,
+          "rememberedFailures": 0
+        }
+      },
+      {
+        "t": 1.6,
+        "position": [
+          0,
+          0,
+          0
+        ],
+        "yaw": 0,
+        "navigation": {
+          "state": "Waiting",
+          "goal": null,
+          "desiredHeading": 0,
+          "actualHeading": 0,
+          "recentDisplacement": 0,
+          "goalProgress": 0,
+          "blockedMovementCount": 0,
+          "stuck": true,
+          "recoveryAttempts": 1,
+          "avoidanceDirection": 0,
+          "committedSeconds": 0,
+          "commitRemaining": 0,
+          "retryIn": 0.21662109374999838,
+          "recentFailureReason": "No supported clear local route",
+          "plans": 2,
+          "probeCount": 40,
+          "rememberedFailures": 0
+        }
+      },
+      {
+        "t": 1.8,
+        "position": [
+          0,
+          0,
+          0
+        ],
+        "yaw": 0,
+        "navigation": {
+          "state": "Waiting",
+          "goal": null,
+          "desiredHeading": 0,
+          "actualHeading": 0,
+          "recentDisplacement": 0,
+          "goalProgress": 0,
+          "blockedMovementCount": 0,
+          "stuck": true,
+          "recoveryAttempts": 1,
+          "avoidanceDirection": 0,
+          "committedSeconds": 0,
+          "commitRemaining": 0,
+          "retryIn": 0.016621093749997762,
+          "recentFailureReason": "No supported clear local route",
+          "plans": 2,
+          "probeCount": 40,
+          "rememberedFailures": 0
+        }
+      },
+      {
+        "t": 2,
+        "position": [
+          0,
+          0,
+          0
+        ],
+        "yaw": 0,
+        "navigation": {
+          "state": "Waiting",
+          "goal": null,
+          "desiredHeading": 0,
+          "actualHeading": 0,
+          "recentDisplacement": 0,
+          "goalProgress": 0,
+          "blockedMovementCount": 0,
+          "stuck": true,
+          "recoveryAttempts": 2,
+          "avoidanceDirection": 0,
+          "committedSeconds": 0,
+          "commitRemaining": 0,
+          "retryIn": 1.0999544270833326,
+          "recentFailureReason": "No supported clear local route",
+          "plans": 3,
+          "probeCount": 60,
+          "rememberedFailures": 0
+        }
+      },
+      {
+        "t": 2.2,
+        "position": [
+          0,
+          0,
+          0
+        ],
+        "yaw": 0,
+        "navigation": {
+          "state": "Waiting",
+          "goal": null,
+          "desiredHeading": 0,
+          "actualHeading": 0,
+          "recentDisplacement": 0,
+          "goalProgress": 0,
+          "blockedMovementCount": 0,
+          "stuck": true,
+          "recoveryAttempts": 2,
+          "avoidanceDirection": 0,
+          "committedSeconds": 0,
+          "commitRemaining": 0,
+          "retryIn": 0.8999544270833333,
+          "recentFailureReason": "No supported clear local route",
+          "plans": 3,
+          "probeCount": 60,
+          "rememberedFailures": 0
+        }
+      },
+      {
+        "t": 2.4,
+        "position": [
+          0,
+          0,
+          0
+        ],
+        "yaw": 0,
+        "navigation": {
+          "state": "Waiting",
+          "goal": null,
+          "desiredHeading": 0,
+          "actualHeading": 0,
+          "recentDisplacement": 0,
+          "goalProgress": 0,
+          "blockedMovementCount": 0,
+          "stuck": true,
+          "recoveryAttempts": 2,
+          "avoidanceDirection": 0,
+          "committedSeconds": 0,
+          "commitRemaining": 0,
+          "retryIn": 0.699954427083334,
+          "recentFailureReason": "No supported clear local route",
+          "plans": 3,
+          "probeCount": 60,
+          "rememberedFailures": 0
+        }
+      },
+      {
+        "t": 2.6,
+        "position": [
+          0,
+          0,
+          0
+        ],
+        "yaw": 0,
+        "navigation": {
+          "state": "Waiting",
+          "goal": null,
+          "desiredHeading": 0,
+          "actualHeading": 0,
+          "recentDisplacement": 0,
+          "goalProgress": 0,
+          "blockedMovementCount": 0,
+          "stuck": true,
+          "recoveryAttempts": 2,
+          "avoidanceDirection": 0,
+          "committedSeconds": 0,
+          "commitRemaining": 0,
+          "retryIn": 0.4999544270833347,
+          "recentFailureReason": "No supported clear local route",
+          "plans": 3,
+          "probeCount": 60,
+          "rememberedFailures": 0
+        }
+      },
+      {
+        "t": 2.8,
+        "position": [
+          0,
+          0,
+          0
+        ],
+        "yaw": 0,
+        "navigation": {
+          "state": "Waiting",
+          "goal": null,
+          "desiredHeading": 0,
+          "actualHeading": 0,
+          "recentDisplacement": 0,
+          "goalProgress": 0,
+          "blockedMovementCount": 0,
+          "stuck": true,
+          "recoveryAttempts": 2,
+          "avoidanceDirection": 0,
+          "committedSeconds": 0,
+          "commitRemaining": 0,
+          "retryIn": 0.2999544270833354,
+          "recentFailureReason": "No supported clear local route",
+          "plans": 3,
+          "probeCount": 60,
+          "rememberedFailures": 0
+        }
+      },
+      {
+        "t": 3,
+        "position": [
+          0,
+          0,
+          0
+        ],
+        "yaw": 0,
+        "navigation": {
+          "state": "Waiting",
+          "goal": null,
+          "desiredHeading": 0,
+          "actualHeading": 0,
+          "recentDisplacement": 0,
+          "goalProgress": 0,
+          "blockedMovementCount": 0,
+          "stuck": true,
+          "recoveryAttempts": 2,
+          "avoidanceDirection": 0,
+          "committedSeconds": 0,
+          "commitRemaining": 0,
+          "retryIn": 0.09995442708333613,
+          "recentFailureReason": "No supported clear local route",
+          "plans": 3,
+          "probeCount": 60,
+          "rememberedFailures": 0
+        }
+      },
+      {
+        "t": 3.2,
+        "position": [
+          0,
+          0,
+          0
+        ],
+        "yaw": 0,
+        "navigation": {
+          "state": "Waiting",
+          "goal": null,
+          "desiredHeading": 0,
+          "actualHeading": 0,
+          "recentDisplacement": 0,
+          "goalProgress": 0,
+          "blockedMovementCount": 0,
+          "stuck": true,
+          "recoveryAttempts": 3,
+          "avoidanceDirection": 0,
+          "committedSeconds": 0,
+          "commitRemaining": 0,
+          "retryIn": 1.5166210937500004,
+          "recentFailureReason": "No supported clear local route",
+          "plans": 4,
+          "probeCount": 80,
+          "rememberedFailures": 0
+        }
+      },
+      {
+        "t": 3.4,
+        "position": [
+          0,
+          0,
+          0
+        ],
+        "yaw": 0,
+        "navigation": {
+          "state": "Waiting",
+          "goal": null,
+          "desiredHeading": 0,
+          "actualHeading": 0,
+          "recentDisplacement": 0,
+          "goalProgress": 0,
+          "blockedMovementCount": 0,
+          "stuck": true,
+          "recoveryAttempts": 3,
+          "avoidanceDirection": 0,
+          "committedSeconds": 0,
+          "commitRemaining": 0,
+          "retryIn": 1.3166210937500011,
+          "recentFailureReason": "No supported clear local route",
+          "plans": 4,
+          "probeCount": 80,
+          "rememberedFailures": 0
+        }
+      },
+      {
+        "t": 3.6,
+        "position": [
+          0,
+          0,
+          0
+        ],
+        "yaw": 0,
+        "navigation": {
+          "state": "Waiting",
+          "goal": null,
+          "desiredHeading": 0,
+          "actualHeading": 0,
+          "recentDisplacement": 0,
+          "goalProgress": 0,
+          "blockedMovementCount": 0,
+          "stuck": true,
+          "recoveryAttempts": 3,
+          "avoidanceDirection": 0,
+          "committedSeconds": 0,
+          "commitRemaining": 0,
+          "retryIn": 1.1166210937500018,
+          "recentFailureReason": "No supported clear local route",
+          "plans": 4,
+          "probeCount": 80,
+          "rememberedFailures": 0
+        }
+      },
+      {
+        "t": 3.8,
+        "position": [
+          0,
+          0,
+          0
+        ],
+        "yaw": 0,
+        "navigation": {
+          "state": "Waiting",
+          "goal": null,
+          "desiredHeading": 0,
+          "actualHeading": 0,
+          "recentDisplacement": 0,
+          "goalProgress": 0,
+          "blockedMovementCount": 0,
+          "stuck": true,
+          "recoveryAttempts": 3,
+          "avoidanceDirection": 0,
+          "committedSeconds": 0,
+          "commitRemaining": 0,
+          "retryIn": 0.9166210937500026,
+          "recentFailureReason": "No supported clear local route",
+          "plans": 4,
+          "probeCount": 80,
+          "rememberedFailures": 0
+        }
+      },
+      {
+        "t": 4,
+        "position": [
+          0,
+          0,
+          0
+        ],
+        "yaw": 0,
+        "navigation": {
+          "state": "Waiting",
+          "goal": null,
+          "desiredHeading": 0,
+          "actualHeading": 0,
+          "recentDisplacement": 0,
+          "goalProgress": 0,
+          "blockedMovementCount": 0,
+          "stuck": true,
+          "recoveryAttempts": 3,
+          "avoidanceDirection": 0,
+          "committedSeconds": 0,
+          "commitRemaining": 0,
+          "retryIn": 0.7166210937500033,
+          "recentFailureReason": "No supported clear local route",
+          "plans": 4,
+          "probeCount": 80,
+          "rememberedFailures": 0
+        }
+      },
+      {
+        "t": 4.2,
+        "position": [
+          0,
+          0,
+          0
+        ],
+        "yaw": 0,
+        "navigation": {
+          "state": "Waiting",
+          "goal": null,
+          "desiredHeading": 0,
+          "actualHeading": 0,
+          "recentDisplacement": 0,
+          "goalProgress": 0,
+          "blockedMovementCount": 0,
+          "stuck": true,
+          "recoveryAttempts": 3,
+          "avoidanceDirection": 0,
+          "committedSeconds": 0,
+          "commitRemaining": 0,
+          "retryIn": 0.516621093750004,
+          "recentFailureReason": "No supported clear local route",
+          "plans": 4,
+          "probeCount": 80,
+          "rememberedFailures": 0
+        }
+      },
+      {
+        "t": 4.4,
+        "position": [
+          0,
+          0,
+          0
+        ],
+        "yaw": 0,
+        "navigation": {
+          "state": "Waiting",
+          "goal": null,
+          "desiredHeading": 0,
+          "actualHeading": 0,
+          "recentDisplacement": 0,
+          "goalProgress": 0,
+          "blockedMovementCount": 0,
+          "stuck": true,
+          "recoveryAttempts": 3,
+          "avoidanceDirection": 0,
+          "committedSeconds": 0,
+          "commitRemaining": 0,
+          "retryIn": 0.3166210937500047,
+          "recentFailureReason": "No supported clear local route",
+          "plans": 4,
+          "probeCount": 80,
+          "rememberedFailures": 0
+        }
+      },
+      {
+        "t": 4.6,
+        "position": [
+          0,
+          0,
+          0
+        ],
+        "yaw": 0,
+        "navigation": {
+          "state": "Waiting",
+          "goal": null,
+          "desiredHeading": 0,
+          "actualHeading": 0,
+          "recentDisplacement": 0,
+          "goalProgress": 0,
+          "blockedMovementCount": 0,
+          "stuck": true,
+          "recoveryAttempts": 3,
+          "avoidanceDirection": 0,
+          "committedSeconds": 0,
+          "commitRemaining": 0,
+          "retryIn": 0.1166210937500054,
+          "recentFailureReason": "No supported clear local route",
+          "plans": 4,
+          "probeCount": 80,
+          "rememberedFailures": 0
+        }
+      },
+      {
+        "t": 4.8,
+        "position": [
+          0,
+          0,
+          0
+        ],
+        "yaw": 0,
+        "navigation": {
+          "state": "Waiting",
+          "goal": null,
+          "desiredHeading": 0,
+          "actualHeading": 0,
+          "recentDisplacement": 0,
+          "goalProgress": 0,
+          "blockedMovementCount": 0,
+          "stuck": true,
+          "recoveryAttempts": 4,
+          "avoidanceDirection": 0,
+          "committedSeconds": 0,
+          "commitRemaining": 0,
+          "retryIn": 1.8999544270833333,
+          "recentFailureReason": "No supported clear local route",
+          "plans": 5,
+          "probeCount": 100,
+          "rememberedFailures": 0
+        }
+      },
+      {
+        "t": 5,
+        "position": [
+          0,
+          0,
+          0
+        ],
+        "yaw": 0,
+        "navigation": {
+          "state": "Waiting",
+          "goal": null,
+          "desiredHeading": 0,
+          "actualHeading": 0,
+          "recentDisplacement": 0,
+          "goalProgress": 0,
+          "blockedMovementCount": 0,
+          "stuck": true,
+          "recoveryAttempts": 4,
+          "avoidanceDirection": 0,
+          "committedSeconds": 0,
+          "commitRemaining": 0,
+          "retryIn": 1.699954427083334,
+          "recentFailureReason": "No supported clear local route",
+          "plans": 5,
+          "probeCount": 100,
+          "rememberedFailures": 0
+        }
+      },
+      {
+        "t": 5.2,
+        "position": [
+          0,
+          0,
+          0
+        ],
+        "yaw": 0,
+        "navigation": {
+          "state": "Waiting",
+          "goal": null,
+          "desiredHeading": 0,
+          "actualHeading": 0,
+          "recentDisplacement": 0,
+          "goalProgress": 0,
+          "blockedMovementCount": 0,
+          "stuck": true,
+          "recoveryAttempts": 4,
+          "avoidanceDirection": 0,
+          "committedSeconds": 0,
+          "commitRemaining": 0,
+          "retryIn": 1.4999544270833347,
+          "recentFailureReason": "No supported clear local route",
+          "plans": 5,
+          "probeCount": 100,
+          "rememberedFailures": 0
+        }
+      },
+      {
+        "t": 5.4,
+        "position": [
+          0,
+          0,
+          0
+        ],
+        "yaw": 0,
+        "navigation": {
+          "state": "Waiting",
+          "goal": null,
+          "desiredHeading": 0,
+          "actualHeading": 0,
+          "recentDisplacement": 0,
+          "goalProgress": 0,
+          "blockedMovementCount": 0,
+          "stuck": true,
+          "recoveryAttempts": 4,
+          "avoidanceDirection": 0,
+          "committedSeconds": 0,
+          "commitRemaining": 0,
+          "retryIn": 1.2999544270833354,
+          "recentFailureReason": "No supported clear local route",
+          "plans": 5,
+          "probeCount": 100,
+          "rememberedFailures": 0
+        }
+      },
+      {
+        "t": 5.6,
+        "position": [
+          0,
+          0,
+          0
+        ],
+        "yaw": 0,
+        "navigation": {
+          "state": "Waiting",
+          "goal": null,
+          "desiredHeading": 0,
+          "actualHeading": 0,
+          "recentDisplacement": 0,
+          "goalProgress": 0,
+          "blockedMovementCount": 0,
+          "stuck": true,
+          "recoveryAttempts": 4,
+          "avoidanceDirection": 0,
+          "committedSeconds": 0,
+          "commitRemaining": 0,
+          "retryIn": 1.0999544270833361,
+          "recentFailureReason": "No supported clear local route",
+          "plans": 5,
+          "probeCount": 100,
+          "rememberedFailures": 0
+        }
+      },
+      {
+        "t": 5.8,
+        "position": [
+          0,
+          0,
+          0
+        ],
+        "yaw": 0,
+        "navigation": {
+          "state": "Waiting",
+          "goal": null,
+          "desiredHeading": 0,
+          "actualHeading": 0,
+          "recentDisplacement": 0,
+          "goalProgress": 0,
+          "blockedMovementCount": 0,
+          "stuck": true,
+          "recoveryAttempts": 4,
+          "avoidanceDirection": 0,
+          "committedSeconds": 0,
+          "commitRemaining": 0,
+          "retryIn": 0.8999544270833368,
+          "recentFailureReason": "No supported clear local route",
+          "plans": 5,
+          "probeCount": 100,
+          "rememberedFailures": 0
+        }
+      },
+      {
+        "t": 6,
+        "position": [
+          0,
+          0,
+          0
+        ],
+        "yaw": 0,
+        "navigation": {
+          "state": "Waiting",
+          "goal": null,
+          "desiredHeading": 0,
+          "actualHeading": 0,
+          "recentDisplacement": 0,
+          "goalProgress": 0,
+          "blockedMovementCount": 0,
+          "stuck": true,
+          "recoveryAttempts": 4,
+          "avoidanceDirection": 0,
+          "committedSeconds": 0,
+          "commitRemaining": 0,
+          "retryIn": 0.6999544270833375,
+          "recentFailureReason": "No supported clear local route",
+          "plans": 5,
+          "probeCount": 100,
+          "rememberedFailures": 0
+        }
+      },
+      {
+        "t": 6.2,
+        "position": [
+          0,
+          0,
+          0
+        ],
+        "yaw": 0,
+        "navigation": {
+          "state": "Waiting",
+          "goal": null,
+          "desiredHeading": 0,
+          "actualHeading": 0,
+          "recentDisplacement": 0,
+          "goalProgress": 0,
+          "blockedMovementCount": 0,
+          "stuck": true,
+          "recoveryAttempts": 4,
+          "avoidanceDirection": 0,
+          "committedSeconds": 0,
+          "commitRemaining": 0,
+          "retryIn": 0.49995442708333826,
+          "recentFailureReason": "No supported clear local route",
+          "plans": 5,
+          "probeCount": 100,
+          "rememberedFailures": 0
+        }
+      },
+      {
+        "t": 6.4,
+        "position": [
+          0,
+          0,
+          0
+        ],
+        "yaw": 0,
+        "navigation": {
+          "state": "Waiting",
+          "goal": null,
+          "desiredHeading": 0,
+          "actualHeading": 0,
+          "recentDisplacement": 0,
+          "goalProgress": 0,
+          "blockedMovementCount": 0,
+          "stuck": true,
+          "recoveryAttempts": 4,
+          "avoidanceDirection": 0,
+          "committedSeconds": 0,
+          "commitRemaining": 0,
+          "retryIn": 0.29995442708333897,
+          "recentFailureReason": "No supported clear local route",
+          "plans": 5,
+          "probeCount": 100,
+          "rememberedFailures": 0
+        }
+      },
+      {
+        "t": 6.6,
+        "position": [
+          0,
+          0,
+          0
+        ],
+        "yaw": 0,
+        "navigation": {
+          "state": "Waiting",
+          "goal": null,
+          "desiredHeading": 0,
+          "actualHeading": 0,
+          "recentDisplacement": 0,
+          "goalProgress": 0,
+          "blockedMovementCount": 0,
+          "stuck": true,
+          "recoveryAttempts": 4,
+          "avoidanceDirection": 0,
+          "committedSeconds": 0,
+          "commitRemaining": 0,
+          "retryIn": 0.09995442708333968,
+          "recentFailureReason": "No supported clear local route",
+          "plans": 5,
+          "probeCount": 100,
+          "rememberedFailures": 0
+        }
+      },
+      {
+        "t": 6.8,
+        "position": [
+          0,
+          0,
+          0
+        ],
+        "yaw": 0,
+        "navigation": {
+          "state": "Waiting",
+          "goal": null,
+          "desiredHeading": 0,
+          "actualHeading": 0,
+          "recentDisplacement": 0,
+          "goalProgress": 0,
+          "blockedMovementCount": 0,
+          "stuck": true,
+          "recoveryAttempts": 5,
+          "avoidanceDirection": 0,
+          "committedSeconds": 0,
+          "commitRemaining": 0,
+          "retryIn": 2.2166210937500006,
+          "recentFailureReason": "No supported clear local route",
+          "plans": 6,
+          "probeCount": 120,
+          "rememberedFailures": 0
+        }
+      },
+      {
+        "t": 7,
+        "position": [
+          0,
+          0,
+          0
+        ],
+        "yaw": 0,
+        "navigation": {
+          "state": "Waiting",
+          "goal": null,
+          "desiredHeading": 0,
+          "actualHeading": 0,
+          "recentDisplacement": 0,
+          "goalProgress": 0,
+          "blockedMovementCount": 0,
+          "stuck": true,
+          "recoveryAttempts": 5,
+          "avoidanceDirection": 0,
+          "committedSeconds": 0,
+          "commitRemaining": 0,
+          "retryIn": 2.0166210937500013,
+          "recentFailureReason": "No supported clear local route",
+          "plans": 6,
+          "probeCount": 120,
+          "rememberedFailures": 0
+        }
+      },
+      {
+        "t": 7.2,
+        "position": [
+          0,
+          0,
+          0
+        ],
+        "yaw": 0,
+        "navigation": {
+          "state": "Waiting",
+          "goal": null,
+          "desiredHeading": 0,
+          "actualHeading": 0,
+          "recentDisplacement": 0,
+          "goalProgress": 0,
+          "blockedMovementCount": 0,
+          "stuck": true,
+          "recoveryAttempts": 5,
+          "avoidanceDirection": 0,
+          "committedSeconds": 0,
+          "commitRemaining": 0,
+          "retryIn": 1.816621093750002,
+          "recentFailureReason": "No supported clear local route",
+          "plans": 6,
+          "probeCount": 120,
+          "rememberedFailures": 0
+        }
+      },
+      {
+        "t": 7.4,
+        "position": [
+          0,
+          0,
+          0
+        ],
+        "yaw": 0,
+        "navigation": {
+          "state": "Waiting",
+          "goal": null,
+          "desiredHeading": 0,
+          "actualHeading": 0,
+          "recentDisplacement": 0,
+          "goalProgress": 0,
+          "blockedMovementCount": 0,
+          "stuck": true,
+          "recoveryAttempts": 5,
+          "avoidanceDirection": 0,
+          "committedSeconds": 0,
+          "commitRemaining": 0,
+          "retryIn": 1.6166210937500027,
+          "recentFailureReason": "No supported clear local route",
+          "plans": 6,
+          "probeCount": 120,
+          "rememberedFailures": 0
+        }
+      },
+      {
+        "t": 7.6,
+        "position": [
+          0,
+          0,
+          0
+        ],
+        "yaw": 0,
+        "navigation": {
+          "state": "Waiting",
+          "goal": null,
+          "desiredHeading": 0,
+          "actualHeading": 0,
+          "recentDisplacement": 0,
+          "goalProgress": 0,
+          "blockedMovementCount": 0,
+          "stuck": true,
+          "recoveryAttempts": 5,
+          "avoidanceDirection": 0,
+          "committedSeconds": 0,
+          "commitRemaining": 0,
+          "retryIn": 1.4166210937500034,
+          "recentFailureReason": "No supported clear local route",
+          "plans": 6,
+          "probeCount": 120,
+          "rememberedFailures": 0
+        }
+      },
+      {
+        "t": 7.8,
+        "position": [
+          0,
+          0,
+          0
+        ],
+        "yaw": 0,
+        "navigation": {
+          "state": "Waiting",
+          "goal": null,
+          "desiredHeading": 0,
+          "actualHeading": 0,
+          "recentDisplacement": 0,
+          "goalProgress": 0,
+          "blockedMovementCount": 0,
+          "stuck": true,
+          "recoveryAttempts": 5,
+          "avoidanceDirection": 0,
+          "committedSeconds": 0,
+          "commitRemaining": 0,
+          "retryIn": 1.2166210937500042,
+          "recentFailureReason": "No supported clear local route",
+          "plans": 6,
+          "probeCount": 120,
+          "rememberedFailures": 0
+        }
+      },
+      {
+        "t": 8,
+        "position": [
+          0,
+          0,
+          0
+        ],
+        "yaw": 0,
+        "navigation": {
+          "state": "Waiting",
+          "goal": null,
+          "desiredHeading": 0,
+          "actualHeading": 0,
+          "recentDisplacement": 0,
+          "goalProgress": 0,
+          "blockedMovementCount": 0,
+          "stuck": true,
+          "recoveryAttempts": 5,
+          "avoidanceDirection": 0,
+          "committedSeconds": 0,
+          "commitRemaining": 0,
+          "retryIn": 1.0166210937500049,
+          "recentFailureReason": "No supported clear local route",
+          "plans": 6,
+          "probeCount": 120,
+          "rememberedFailures": 0
+        }
+      },
+      {
+        "t": 8.2,
+        "position": [
+          0,
+          0,
+          0
+        ],
+        "yaw": 0,
+        "navigation": {
+          "state": "Waiting",
+          "goal": null,
+          "desiredHeading": 0,
+          "actualHeading": 0,
+          "recentDisplacement": 0,
+          "goalProgress": 0,
+          "blockedMovementCount": 0,
+          "stuck": true,
+          "recoveryAttempts": 5,
+          "avoidanceDirection": 0,
+          "committedSeconds": 0,
+          "commitRemaining": 0,
+          "retryIn": 0.8166210937500047,
+          "recentFailureReason": "No supported clear local route",
+          "plans": 6,
+          "probeCount": 120,
+          "rememberedFailures": 0
+        }
+      },
+      {
+        "t": 8.4,
+        "position": [
+          0,
+          0,
+          0
+        ],
+        "yaw": 0,
+        "navigation": {
+          "state": "Waiting",
+          "goal": null,
+          "desiredHeading": 0,
+          "actualHeading": 0,
+          "recentDisplacement": 0,
+          "goalProgress": 0,
+          "blockedMovementCount": 0,
+          "stuck": true,
+          "recoveryAttempts": 5,
+          "avoidanceDirection": 0,
+          "committedSeconds": 0,
+          "commitRemaining": 0,
+          "retryIn": 0.6166210937500054,
+          "recentFailureReason": "No supported clear local route",
+          "plans": 6,
+          "probeCount": 120,
+          "rememberedFailures": 0
+        }
+      },
+      {
+        "t": 8.6,
+        "position": [
+          0,
+          0,
+          0
+        ],
+        "yaw": 0,
+        "navigation": {
+          "state": "Waiting",
+          "goal": null,
+          "desiredHeading": 0,
+          "actualHeading": 0,
+          "recentDisplacement": 0,
+          "goalProgress": 0,
+          "blockedMovementCount": 0,
+          "stuck": true,
+          "recoveryAttempts": 5,
+          "avoidanceDirection": 0,
+          "committedSeconds": 0,
+          "commitRemaining": 0,
+          "retryIn": 0.4166210937500061,
+          "recentFailureReason": "No supported clear local route",
+          "plans": 6,
+          "probeCount": 120,
+          "rememberedFailures": 0
+        }
+      },
+      {
+        "t": 8.8,
+        "position": [
+          0,
+          0,
+          0
+        ],
+        "yaw": 0,
+        "navigation": {
+          "state": "Waiting",
+          "goal": null,
+          "desiredHeading": 0,
+          "actualHeading": 0,
+          "recentDisplacement": 0,
+          "goalProgress": 0,
+          "blockedMovementCount": 0,
+          "stuck": true,
+          "recoveryAttempts": 5,
+          "avoidanceDirection": 0,
+          "committedSeconds": 0,
+          "commitRemaining": 0,
+          "retryIn": 0.21662109375000682,
+          "recentFailureReason": "No supported clear local route",
+          "plans": 6,
+          "probeCount": 120,
+          "rememberedFailures": 0
+        }
+      },
+      {
+        "t": 9,
+        "position": [
+          0,
+          0,
+          0
+        ],
+        "yaw": 0,
+        "navigation": {
+          "state": "Waiting",
+          "goal": null,
+          "desiredHeading": 0,
+          "actualHeading": 0,
+          "recentDisplacement": 0,
+          "goalProgress": 0,
+          "blockedMovementCount": 0,
+          "stuck": true,
+          "recoveryAttempts": 5,
+          "avoidanceDirection": 0,
+          "committedSeconds": 0,
+          "commitRemaining": 0,
+          "retryIn": 0.016621093750007532,
+          "recentFailureReason": "No supported clear local route",
+          "plans": 6,
+          "probeCount": 120,
+          "rememberedFailures": 0
+        }
+      },
+      {
+        "t": 9.2,
+        "position": [
+          0,
+          0,
+          0
+        ],
+        "yaw": 0,
+        "navigation": {
+          "state": "Waiting",
+          "goal": null,
+          "desiredHeading": 0,
+          "actualHeading": 0,
+          "recentDisplacement": 0,
+          "goalProgress": 0,
+          "blockedMovementCount": 0,
+          "stuck": true,
+          "recoveryAttempts": 6,
+          "avoidanceDirection": 0,
+          "committedSeconds": 0,
+          "commitRemaining": 0,
+          "retryIn": 2.3999544270833333,
+          "recentFailureReason": "No supported clear local route",
+          "plans": 7,
+          "probeCount": 140,
+          "rememberedFailures": 0
+        }
+      },
+      {
+        "t": 9.4,
+        "position": [
+          0,
+          0,
+          0
+        ],
+        "yaw": 0,
+        "navigation": {
+          "state": "Waiting",
+          "goal": null,
+          "desiredHeading": 0,
+          "actualHeading": 0,
+          "recentDisplacement": 0,
+          "goalProgress": 0,
+          "blockedMovementCount": 0,
+          "stuck": true,
+          "recoveryAttempts": 6,
+          "avoidanceDirection": 0,
+          "committedSeconds": 0,
+          "commitRemaining": 0,
+          "retryIn": 2.199954427083334,
+          "recentFailureReason": "No supported clear local route",
+          "plans": 7,
+          "probeCount": 140,
+          "rememberedFailures": 0
+        }
+      },
+      {
+        "t": 9.6,
+        "position": [
+          0,
+          0,
+          0
+        ],
+        "yaw": 0,
+        "navigation": {
+          "state": "Waiting",
+          "goal": null,
+          "desiredHeading": 0,
+          "actualHeading": 0,
+          "recentDisplacement": 0,
+          "goalProgress": 0,
+          "blockedMovementCount": 0,
+          "stuck": true,
+          "recoveryAttempts": 6,
+          "avoidanceDirection": 0,
+          "committedSeconds": 0,
+          "commitRemaining": 0,
+          "retryIn": 1.9999544270833347,
+          "recentFailureReason": "No supported clear local route",
+          "plans": 7,
+          "probeCount": 140,
+          "rememberedFailures": 0
+        }
+      },
+      {
+        "t": 9.8,
+        "position": [
+          0,
+          0,
+          0
+        ],
+        "yaw": 0,
+        "navigation": {
+          "state": "Waiting",
+          "goal": null,
+          "desiredHeading": 0,
+          "actualHeading": 0,
+          "recentDisplacement": 0,
+          "goalProgress": 0,
+          "blockedMovementCount": 0,
+          "stuck": true,
+          "recoveryAttempts": 6,
+          "avoidanceDirection": 0,
+          "committedSeconds": 0,
+          "commitRemaining": 0,
+          "retryIn": 1.7999544270833354,
+          "recentFailureReason": "No supported clear local route",
+          "plans": 7,
+          "probeCount": 140,
+          "rememberedFailures": 0
+        }
+      },
+      {
+        "t": 10,
+        "position": [
+          0,
+          0,
+          0
+        ],
+        "yaw": 0,
+        "navigation": {
+          "state": "Waiting",
+          "goal": null,
+          "desiredHeading": 0,
+          "actualHeading": 0,
+          "recentDisplacement": 0,
+          "goalProgress": 0,
+          "blockedMovementCount": 0,
+          "stuck": true,
+          "recoveryAttempts": 6,
+          "avoidanceDirection": 0,
+          "committedSeconds": 0,
+          "commitRemaining": 0,
+          "retryIn": 1.5999544270833361,
+          "recentFailureReason": "No supported clear local route",
+          "plans": 7,
+          "probeCount": 140,
+          "rememberedFailures": 0
+        }
+      },
+      {
+        "t": 10.2,
+        "position": [
+          0,
+          0,
+          0
+        ],
+        "yaw": 0,
+        "navigation": {
+          "state": "Waiting",
+          "goal": null,
+          "desiredHeading": 0,
+          "actualHeading": 0,
+          "recentDisplacement": 0,
+          "goalProgress": 0,
+          "blockedMovementCount": 0,
+          "stuck": true,
+          "recoveryAttempts": 6,
+          "avoidanceDirection": 0,
+          "committedSeconds": 0,
+          "commitRemaining": 0,
+          "retryIn": 1.3999544270833368,
+          "recentFailureReason": "No supported clear local route",
+          "plans": 7,
+          "probeCount": 140,
+          "rememberedFailures": 0
+        }
+      },
+      {
+        "t": 10.4,
+        "position": [
+          0,
+          0,
+          0
+        ],
+        "yaw": 0,
+        "navigation": {
+          "state": "Waiting",
+          "goal": null,
+          "desiredHeading": 0,
+          "actualHeading": 0,
+          "recentDisplacement": 0,
+          "goalProgress": 0,
+          "blockedMovementCount": 0,
+          "stuck": true,
+          "recoveryAttempts": 6,
+          "avoidanceDirection": 0,
+          "committedSeconds": 0,
+          "commitRemaining": 0,
+          "retryIn": 1.1999544270833375,
+          "recentFailureReason": "No supported clear local route",
+          "plans": 7,
+          "probeCount": 140,
+          "rememberedFailures": 0
+        }
+      },
+      {
+        "t": 10.6,
+        "position": [
+          0,
+          0,
+          0
+        ],
+        "yaw": 0,
+        "navigation": {
+          "state": "Waiting",
+          "goal": null,
+          "desiredHeading": 0,
+          "actualHeading": 0,
+          "recentDisplacement": 0,
+          "goalProgress": 0,
+          "blockedMovementCount": 0,
+          "stuck": true,
+          "recoveryAttempts": 6,
+          "avoidanceDirection": 0,
+          "committedSeconds": 0,
+          "commitRemaining": 0,
+          "retryIn": 0.9999544270833383,
+          "recentFailureReason": "No supported clear local route",
+          "plans": 7,
+          "probeCount": 140,
+          "rememberedFailures": 0
+        }
+      },
+      {
+        "t": 10.8,
+        "position": [
+          0,
+          0,
+          0
+        ],
+        "yaw": 0,
+        "navigation": {
+          "state": "Waiting",
+          "goal": null,
+          "desiredHeading": 0,
+          "actualHeading": 0,
+          "recentDisplacement": 0,
+          "goalProgress": 0,
+          "blockedMovementCount": 0,
+          "stuck": true,
+          "recoveryAttempts": 6,
+          "avoidanceDirection": 0,
+          "committedSeconds": 0,
+          "commitRemaining": 0,
+          "retryIn": 0.799954427083339,
+          "recentFailureReason": "No supported clear local route",
+          "plans": 7,
+          "probeCount": 140,
+          "rememberedFailures": 0
+        }
+      },
+      {
+        "t": 11,
+        "position": [
+          0,
+          0,
+          0
+        ],
+        "yaw": 0,
+        "navigation": {
+          "state": "Waiting",
+          "goal": null,
+          "desiredHeading": 0,
+          "actualHeading": 0,
+          "recentDisplacement": 0,
+          "goalProgress": 0,
+          "blockedMovementCount": 0,
+          "stuck": true,
+          "recoveryAttempts": 6,
+          "avoidanceDirection": 0,
+          "committedSeconds": 0,
+          "commitRemaining": 0,
+          "retryIn": 0.5999544270833397,
+          "recentFailureReason": "No supported clear local route",
+          "plans": 7,
+          "probeCount": 140,
+          "rememberedFailures": 0
+        }
+      },
+      {
+        "t": 11.2,
+        "position": [
+          0,
+          0,
+          0
+        ],
+        "yaw": 0,
+        "navigation": {
+          "state": "Waiting",
+          "goal": null,
+          "desiredHeading": 0,
+          "actualHeading": 0,
+          "recentDisplacement": 0,
+          "goalProgress": 0,
+          "blockedMovementCount": 0,
+          "stuck": true,
+          "recoveryAttempts": 6,
+          "avoidanceDirection": 0,
+          "committedSeconds": 0,
+          "commitRemaining": 0,
+          "retryIn": 0.3999544270833404,
+          "recentFailureReason": "No supported clear local route",
+          "plans": 7,
+          "probeCount": 140,
+          "rememberedFailures": 0
+        }
+      },
+      {
+        "t": 11.4,
+        "position": [
+          0,
+          0,
+          0
+        ],
+        "yaw": 0,
+        "navigation": {
+          "state": "Waiting",
+          "goal": null,
+          "desiredHeading": 0,
+          "actualHeading": 0,
+          "recentDisplacement": 0,
+          "goalProgress": 0,
+          "blockedMovementCount": 0,
+          "stuck": true,
+          "recoveryAttempts": 6,
+          "avoidanceDirection": 0,
+          "committedSeconds": 0,
+          "commitRemaining": 0,
+          "retryIn": 0.1999544270833411,
+          "recentFailureReason": "No supported clear local route",
+          "plans": 7,
+          "probeCount": 140,
+          "rememberedFailures": 0
+        }
+      },
+      {
+        "t": 11.6,
+        "position": [
+          0,
+          0,
+          0
+        ],
+        "yaw": 0,
+        "navigation": {
+          "state": "Waiting",
+          "goal": null,
+          "desiredHeading": 0,
+          "actualHeading": 0,
+          "recentDisplacement": 0,
+          "goalProgress": 0,
+          "blockedMovementCount": 0,
+          "stuck": true,
+          "recoveryAttempts": 7,
+          "avoidanceDirection": 0,
+          "committedSeconds": 0,
+          "commitRemaining": 0,
+          "retryIn": 2.5666210937499994,
+          "recentFailureReason": "No supported clear local route",
+          "plans": 8,
+          "probeCount": 160,
+          "rememberedFailures": 0
+        }
+      },
+      {
+        "t": 11.8,
+        "position": [
+          0,
+          0,
+          0
+        ],
+        "yaw": 0,
+        "navigation": {
+          "state": "Waiting",
+          "goal": null,
+          "desiredHeading": 0,
+          "actualHeading": 0,
+          "recentDisplacement": 0,
+          "goalProgress": 0,
+          "blockedMovementCount": 0,
+          "stuck": true,
+          "recoveryAttempts": 7,
+          "avoidanceDirection": 0,
+          "committedSeconds": 0,
+          "commitRemaining": 0,
+          "retryIn": 2.36662109375,
+          "recentFailureReason": "No supported clear local route",
+          "plans": 8,
+          "probeCount": 160,
+          "rememberedFailures": 0
+        }
+      },
+      {
+        "t": 12,
+        "position": [
+          0,
+          0,
+          0
+        ],
+        "yaw": 0,
+        "navigation": {
+          "state": "Waiting",
+          "goal": null,
+          "desiredHeading": 0,
+          "actualHeading": 0,
+          "recentDisplacement": 0,
+          "goalProgress": 0,
+          "blockedMovementCount": 0,
+          "stuck": true,
+          "recoveryAttempts": 7,
+          "avoidanceDirection": 0,
+          "committedSeconds": 0,
+          "commitRemaining": 0,
+          "retryIn": 2.166621093750001,
+          "recentFailureReason": "No supported clear local route",
+          "plans": 8,
+          "probeCount": 160,
+          "rememberedFailures": 0
+        }
+      }
+    ]
+  }
+}

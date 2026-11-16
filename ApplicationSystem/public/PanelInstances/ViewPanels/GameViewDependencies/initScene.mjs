@@ -1,3 +1,4 @@
+import {worldSensorySignals} from '/MetaWorld/Mobs/SensorySignals.mjs';
 // Nodevision/ApplicationSystem/public/PanelInstances/ViewPanels/GameViewDependencies/initScene.mjs
 // This file builds the scene context and wires input, rendering, and resizing.
 
@@ -560,6 +561,10 @@ export function initScene({ THREE, PointerLockControls, panel, canvas, state, lo
   window.VRWorldContext.textWorldConsole = textWorldConsole;
 
   const pause = installWorldPause({ panel, canvas, controls, movementState, objects,
+    onPauseChange(paused) {
+      const world = window.VRWorldContext;
+      if (paused && world?.panel === panel) { world.sword?.suspend(); world.archeryBow?.suspend(); }
+    },
     isActive: () => window.VRWorldContext?.panel === panel && panel.isConnected
       && /^Virtual World (Viewing|Editing)$/.test(window.NodevisionState?.currentMode || "")
   });
@@ -609,9 +614,10 @@ export function initScene({ THREE, PointerLockControls, panel, canvas, state, lo
   const update = () => {
     temporalController.update();
     window.VRWorldContext?.updatePathTransforms?.();
+    if(window.VRWorldContext)worldSensorySignals(window.VRWorldContext).update(performance.now());
     objects.forEach(object=>object.userData?.mobRuntime?.tick(performance.now(),window.VRWorldContext));
     objects.forEach(object => object.userData?.proceduralVoxelRuntime?.update((viewController.getActiveCamera() || camera).getWorldPosition(voxelStreamPosition),window.VRWorldContext?.astronomy??null));
-    if (movementState.paused) { window.VRWorldContext?.archeryBow?.suspend(); flashlightTool.update(); hangGliderTool.update(); return; }
+    if (movementState.paused) { window.VRWorldContext?.sword?.suspend(); window.VRWorldContext?.archeryBow?.suspend(); flashlightTool.update(); hangGliderTool.update(); return; }
     consolePanels.updateEnvironmentLighting?.(temporalController.getTimeSeconds?.() ?? 0);
     movementUpdate();
     viewController.update();

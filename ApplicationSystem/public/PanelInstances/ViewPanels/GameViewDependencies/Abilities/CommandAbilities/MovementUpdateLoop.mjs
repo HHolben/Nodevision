@@ -7,7 +7,7 @@ export function createMovementUpdateLoop(ctx) {
   return function update() {
     ctx.api.tickArchery?.();
     ctx.api.updateVoxelWorldPreview?.({cleanupOnly:true});
-    if (ctx.api.runFramePreflight().stop) {ctx.api.updateArcheryBow?.({cleanupOnly:true});ctx.api.updateSessionVoxelTools?.({cleanupOnly:true});ctx.api.updateRaycastingTeleporter?.({cleanupOnly:true});return;}
+    if (ctx.api.runFramePreflight().stop) {ctx.api.updateSword?.({cleanupOnly:true});ctx.api.updateArcheryBow?.({cleanupOnly:true});ctx.api.updateSessionVoxelTools?.({cleanupOnly:true});ctx.api.updateRaycastingTeleporter?.({cleanupOnly:true});return;}
     const nowMs = performance.now();
     const baseSpeed = 0.2;
     const bindings = getBindings();
@@ -16,8 +16,8 @@ export function createMovementUpdateLoop(ctx) {
     ctx.api.handleInventoryToggles(inputState, inventory);
     applySkipClickFrame(ctx, inputState);
     if (ctx.api.handleStlEditUse(inputState.use)) return;
-    if (ctx.api.handleInventoryMenu(inputState, inventory)) {ctx.api.updateArcheryBow?.({cleanupOnly:true});ctx.api.updateSessionVoxelTools?.({cleanupOnly:true});ctx.api.updateRaycastingTeleporter?.({cleanupOnly:true});return;}
-    if(ctx.api.raycastingTeleportPending?.()&&ctx.api.updateRaycastingTeleporter?.(inputState))return;
+    if (ctx.api.handleInventoryMenu(inputState, inventory)) {ctx.api.updateSword?.({cleanupOnly:true});ctx.api.updateArcheryBow?.({cleanupOnly:true});ctx.api.updateSessionVoxelTools?.({cleanupOnly:true});ctx.api.updateRaycastingTeleporter?.({cleanupOnly:true});return;}
+    if(ctx.api.raycastingTeleportPending?.()&&ctx.api.updateRaycastingTeleporter?.(inputState)){ctx.api.updateSword?.({cleanupOnly:true});return;}
     const crouching = inputState.crouch;
     const crawling = inputState.crawl;
     const inEditorMode = ctx.api.playerMode() === "creative";
@@ -34,6 +34,7 @@ export function createMovementUpdateLoop(ctx) {
       speed: baseSpeed
     });
     ctx.api.handleCameraCommands(inputState);
+    if(ctx.api.updateSword?.(inputState))return;
     const bowActive=ctx.api.updateArcheryBow?.(inputState);
     if(bowActive)return;
     if(ctx.api.updateRaycastingTeleporter?.(inputState))return;

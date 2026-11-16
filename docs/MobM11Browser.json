@@ -1,0 +1,4879 @@
+{
+  "complete": true,
+  "method": "Actual GameView, geographic low hills, ordinary authored box walls, actual GLB, 6.5s RAF-paced chase per case. Script updates real player position; no native walking claim.",
+  "cases": [
+    {
+      "mode": "voxel",
+      "kind": "wall",
+      "variant": "before",
+      "headingFlips": 14,
+      "displacement": 13.847249219191365,
+      "escapeProgress": 13.832630917817553,
+      "maxLift": 0.17962508895577056,
+      "maxGroundError": 0.25,
+      "snapshot": {
+        "steps": 2,
+        "behaviorMs": 0.19999999925494194,
+        "animationMs": 0,
+        "groundQueries": 950,
+        "collisionQueries": 190,
+        "navigationFailures": 14,
+        "discardedSeconds": 0,
+        "id": "legacy-navigation",
+        "speciesId": "brown-hare",
+        "state": "Fleeing",
+        "position": [
+          19.363892438471474,
+          0.5,
+          33.83263091781755
+        ],
+        "editing": false,
+        "triangles": 674,
+        "modelError": null
+      },
+      "planDelta": 0,
+      "poses": [
+        {
+          "time": 2434.300000000745,
+          "position": [
+            20,
+            0.75,
+            20
+          ],
+          "yaw": 0
+        },
+        {
+          "time": 2665.599999997765,
+          "position": [
+            20,
+            0.75,
+            20
+          ],
+          "yaw": -0.1363395694813711
+        },
+        {
+          "time": 2870.199999999255,
+          "position": [
+            19.96660557483946,
+            0.75,
+            20.243416135405074
+          ],
+          "yaw": -0.11683764516172727
+        },
+        {
+          "time": 3075.89999999851,
+          "position": [
+            19.939838749187444,
+            0.75,
+            20.274130057339907
+          ],
+          "yaw": -0.7168376451617273
+        },
+        {
+          "time": 3311.800000000745,
+          "position": [
+            19.939838749187444,
+            0.75,
+            20.274130057339907
+          ],
+          "yaw": -1.1668376451617273
+        },
+        {
+          "time": 3544.099999997765,
+          "position": [
+            19.939838749187444,
+            0.75,
+            20.274130057339907
+          ],
+          "yaw": -1.616837645161727
+        },
+        {
+          "time": 3776.800000000745,
+          "position": [
+            19.51841868554776,
+            0.75,
+            20.263376539686245
+          ],
+          "yaw": -1.1668376451617273
+        },
+        {
+          "time": 3977.300000000745,
+          "position": [
+            19.352694622789073,
+            0.75,
+            20.26839336216992
+          ],
+          "yaw": -1.5644939110970897
+        },
+        {
+          "time": 4184.199999999255,
+          "position": [
+            19.107095849553826,
+            0.75,
+            20.274533957206707
+          ],
+          "yaw": -1.5368150858354472
+        },
+        {
+          "time": 4395.5,
+          "position": [
+            18.59305518639884,
+            0.75,
+            20.515204645665396
+          ],
+          "yaw": -0.7868150858354475
+        },
+        {
+          "time": 4600.89999999851,
+          "position": [
+            18.586595949995598,
+            0.75,
+            21.013185255881982
+          ],
+          "yaw": 0.08281493987201691
+        },
+        {
+          "time": 4818.599999997765,
+          "position": [
+            18.65523553038941,
+            0.75,
+            21.65823737657952
+          ],
+          "yaw": 0.10601043946812137
+        },
+        {
+          "time": 5050.699999999255,
+          "position": [
+            18.74118808336164,
+            0.5,
+            22.315112607369443
+          ],
+          "yaw": 0.1420896637548933
+        },
+        {
+          "time": 5254,
+          "position": [
+            18.816508582242065,
+            0.5,
+            22.841631705332013
+          ],
+          "yaw": 0.15438599776051556
+        },
+        {
+          "time": 5484.199999999255,
+          "position": [
+            18.941389759321897,
+            0.5,
+            23.631291847832163
+          ],
+          "yaw": 0.16176592099237183
+        },
+        {
+          "time": 5716.699999999255,
+          "position": [
+            19.027690660607085,
+            0.5,
+            24.15746907984155
+          ],
+          "yaw": 0.1649717064525304
+        },
+        {
+          "time": 5930.199999999255,
+          "position": [
+            19.180187882160556,
+            0.5,
+            25.078206106245844
+          ],
+          "yaw": 0.1635077609256668
+        },
+        {
+          "time": 6134.199999999255,
+          "position": [
+            19.243976654260045,
+            0.5,
+            25.47307945220132
+          ],
+          "yaw": 0.1584842860225936
+        },
+        {
+          "time": 6362.89999999851,
+          "position": [
+            19.38460119832235,
+            0.5,
+            26.395743197583613
+          ],
+          "yaw": 0.14835284766756526
+        },
+        {
+          "time": 6588.599999997765,
+          "position": [
+            19.438378824256663,
+            0.5,
+            26.79211120115164
+          ],
+          "yaw": 0.1348525704621257
+        },
+        {
+          "time": 6812,
+          "position": [
+            19.5328388032177,
+            0.5,
+            27.5864925910871
+          ],
+          "yaw": 0.11505487483195119
+        },
+        {
+          "time": 7029.300000000745,
+          "position": [
+            19.592925221317262,
+            0.5,
+            28.2504192253573
+          ],
+          "yaw": 0.07240776139302209
+        },
+        {
+          "time": 7234.39999999851,
+          "position": [
+            19.631508956550384,
+            0.5,
+            28.78235504131062
+          ],
+          "yaw": 0.04592315666000619
+        },
+        {
+          "time": 7463.199999999255,
+          "position": [
+            19.66104831218441,
+            0.5,
+            29.581744820015206
+          ],
+          "yaw": 0.018959687178667296
+        },
+        {
+          "time": 7665.300000000745,
+          "position": [
+            19.668631732664583,
+            0.5,
+            29.98167292625901
+          ],
+          "yaw": -0.00949146984448229
+        },
+        {
+          "time": 7889.599999997765,
+          "position": [
+            19.65400772232135,
+            0.5,
+            30.78147741319455
+          ],
+          "yaw": -0.03586507257886681
+        },
+        {
+          "time": 8109.199999999255,
+          "position": [
+            19.631322044619647,
+            0.5,
+            31.314292253288446
+          ],
+          "yaw": -0.06261133021448852
+        },
+        {
+          "time": 8333.099999997765,
+          "position": [
+            19.55861941942182,
+            0.5,
+            32.24470673311327
+          ],
+          "yaw": -0.08950907424204321
+        },
+        {
+          "time": 8547.800000000745,
+          "position": [
+            19.51714944291753,
+            0.5,
+            32.64253050074022
+          ],
+          "yaw": -0.11104569155683662
+        },
+        {
+          "time": 8750.099999997765,
+          "position": [
+            19.419230239931267,
+            0.5,
+            33.4364878589268
+          ],
+          "yaw": -0.12854340300756106
+        }
+      ]
+    },
+    {
+      "mode": "voxel",
+      "kind": "wall",
+      "variant": "after",
+      "headingFlips": 2,
+      "displacement": 16.62518976344668,
+      "escapeProgress": 16.620280470826444,
+      "maxLift": 0.17962508895577056,
+      "maxGroundError": 0.25,
+      "snapshot": {
+        "steps": 1,
+        "behaviorMs": 0.19999999925494194,
+        "animationMs": 0,
+        "groundQueries": 1220,
+        "collisionQueries": 244,
+        "navigationFailures": 0,
+        "navigationMs": 0.19999999925494194,
+        "discardedSeconds": 0,
+        "id": "679a2bde-c167-41ae-b4d2-d2ef5f8b3609",
+        "speciesId": "brown-hare",
+        "state": "Fleeing",
+        "position": [
+          19.59600527023554,
+          0.75,
+          36.620280470826444
+        ],
+        "editing": false,
+        "triangles": 674,
+        "modelError": null,
+        "navigation": {
+          "state": "Following",
+          "goal": [
+            19.57670971307309,
+            0.75,
+            37.15326464124638
+          ],
+          "desiredHeading": -0.03618706701290671,
+          "actualHeading": -0.036187067012907165,
+          "recentDisplacement": 1.0662725047015895,
+          "goalProgress": 1.0661936897921525,
+          "blockedMovementCount": 0,
+          "stuck": false,
+          "recoveryAttempts": 0,
+          "avoidanceDirection": -1,
+          "committedSeconds": 0.13333333333333286,
+          "commitRemaining": 0.7666666666666675,
+          "retryIn": 0.016666666666667496,
+          "recentFailureReason": "",
+          "plans": 17,
+          "probeCount": 110,
+          "rememberedFailures": 0
+        }
+      },
+      "planDelta": 17,
+      "poses": [
+        {
+          "time": 9008.39999999851,
+          "position": [
+            20,
+            0.75,
+            20
+          ],
+          "yaw": 0,
+          "navigation": {
+            "state": "Idle",
+            "goal": null,
+            "desiredHeading": 0,
+            "actualHeading": 0,
+            "recentDisplacement": 0,
+            "goalProgress": 0,
+            "blockedMovementCount": 0,
+            "stuck": false,
+            "recoveryAttempts": 0,
+            "avoidanceDirection": 0,
+            "committedSeconds": 0,
+            "commitRemaining": 0,
+            "retryIn": 0,
+            "recentFailureReason": "",
+            "plans": 0,
+            "probeCount": 0,
+            "rememberedFailures": 0
+          }
+        },
+        {
+          "time": 9223.800000000745,
+          "position": [
+            20,
+            0.75,
+            20
+          ],
+          "yaw": -0.15,
+          "navigation": {
+            "state": "Following",
+            "goal": [
+              18.802184845673285,
+              0.75,
+              20.07237994242375
+            ],
+            "desiredHeading": -0.16044307517701453,
+            "actualHeading": -0.15,
+            "recentDisplacement": 0,
+            "goalProgress": 0,
+            "blockedMovementCount": 0,
+            "stuck": false,
+            "recoveryAttempts": 0,
+            "avoidanceDirection": -1,
+            "committedSeconds": 0,
+            "commitRemaining": 0.9000000000000001,
+            "retryIn": 0.14999999999999997,
+            "recentFailureReason": "",
+            "plans": 1,
+            "probeCount": 30,
+            "rememberedFailures": 0
+          }
+        },
+        {
+          "time": 9454.5,
+          "position": [
+            20,
+            0.75,
+            20
+          ],
+          "yaw": -1.2,
+          "navigation": {
+            "state": "Following",
+            "goal": [
+              18.802184845673285,
+              0.75,
+              20.07237994242375
+            ],
+            "desiredHeading": -0.1649282237211889,
+            "actualHeading": -1.2,
+            "recentDisplacement": 0,
+            "goalProgress": 0,
+            "blockedMovementCount": 0,
+            "stuck": false,
+            "recoveryAttempts": 0,
+            "avoidanceDirection": -1,
+            "committedSeconds": 0.23333333333333328,
+            "commitRemaining": 0.6666666666666667,
+            "retryIn": 0,
+            "recentFailureReason": "",
+            "plans": 1,
+            "probeCount": 30,
+            "rememberedFailures": 0
+          }
+        },
+        {
+          "time": 9675.199999999255,
+          "position": [
+            19.27297623460623,
+            0.75,
+            20.044456515026567
+          ],
+          "yaw": -1.5115540524418136,
+          "navigation": {
+            "state": "Following",
+            "goal": [
+              18.802184845673285,
+              0.75,
+              20.07237994242375
+            ],
+            "desiredHeading": -0.16437152770436725,
+            "actualHeading": -1.5115540524418136,
+            "recentDisplacement": 0.7283817249050417,
+            "goalProgress": 0.7283812453994035,
+            "blockedMovementCount": 0,
+            "stuck": false,
+            "recoveryAttempts": 0,
+            "avoidanceDirection": -1,
+            "committedSeconds": 0.4666666666666666,
+            "commitRemaining": 0.43333333333333346,
+            "retryIn": 0,
+            "recentFailureReason": "",
+            "plans": 1,
+            "probeCount": 30,
+            "rememberedFailures": 0
+          }
+        },
+        {
+          "time": 9885.89999999851,
+          "position": [
+            18.888842661047892,
+            0.75,
+            20.06724012195784
+          ],
+          "yaw": -1.061554052441814,
+          "navigation": {
+            "state": "Following",
+            "goal": [
+              18.699042945266584,
+              0.75,
+              21.252135082656608
+            ],
+            "desiredHeading": -0.15883343109495715,
+            "actualHeading": -1.061554052441814,
+            "recentDisplacement": 1.1131899505062173,
+            "goalProgress": 1.1131898927548094,
+            "blockedMovementCount": 0,
+            "stuck": false,
+            "recoveryAttempts": 0,
+            "avoidanceDirection": -1,
+            "committedSeconds": 0.06666666666666665,
+            "commitRemaining": 0.8333333333333334,
+            "retryIn": 0.08333333333333337,
+            "recentFailureReason": "",
+            "plans": 2,
+            "probeCount": 35,
+            "rememberedFailures": 0
+          }
+        },
+        {
+          "time": 10095,
+          "position": [
+            18.86752580291105,
+            0.75,
+            20.198038945679077
+          ],
+          "yaw": -0.16155405244181378,
+          "navigation": {
+            "state": "Following",
+            "goal": [
+              18.699042945266584,
+              0.75,
+              21.252135082656608
+            ],
+            "desiredHeading": -0.15129699402260216,
+            "actualHeading": -0.16155405244181378,
+            "recentDisplacement": 1.1496596153113938,
+            "goalProgress": 0.7381627528308348,
+            "blockedMovementCount": 0,
+            "stuck": false,
+            "recoveryAttempts": 0,
+            "avoidanceDirection": -1,
+            "committedSeconds": 0.26666666666666694,
+            "commitRemaining": 0.6333333333333331,
+            "retryIn": 0,
+            "recentFailureReason": "",
+            "plans": 2,
+            "probeCount": 35,
+            "rememberedFailures": 0
+          }
+        },
+        {
+          "time": 10298.800000000745,
+          "position": [
+            18.720675251968288,
+            0.75,
+            21.11679472075287
+          ],
+          "yaw": -0.1584956731490823,
+          "navigation": {
+            "state": "Following",
+            "goal": [
+              18.699042945266584,
+              0.75,
+              21.252135082656608
+            ],
+            "desiredHeading": -0.13750686010093202,
+            "actualHeading": -0.1584956731490823,
+            "recentDisplacement": 1.6982055998105432,
+            "goalProgress": 1.6685805399263103,
+            "blockedMovementCount": 0,
+            "stuck": false,
+            "recoveryAttempts": 0,
+            "avoidanceDirection": -1,
+            "committedSeconds": 0.500000000000001,
+            "commitRemaining": 0.399999999999999,
+            "retryIn": 0,
+            "recentFailureReason": "",
+            "plans": 2,
+            "probeCount": 35,
+            "rememberedFailures": 0
+          }
+        },
+        {
+          "time": 10502.699999999255,
+          "position": [
+            18.665894259855136,
+            0.75,
+            21.512667968350105
+          ],
+          "yaw": -0.13750686010093066,
+          "navigation": {
+            "state": "Following",
+            "goal": [
+              18.55618652815532,
+              0.75,
+              22.30546770342657
+            ],
+            "desiredHeading": -0.12008921592960516,
+            "actualHeading": -0.13750686010093066,
+            "recentDisplacement": 0.26650035208433887,
+            "goalProgress": 0.26650035208433887,
+            "blockedMovementCount": 0,
+            "stuck": false,
+            "recoveryAttempts": 0,
+            "avoidanceDirection": -1,
+            "committedSeconds": 0.16666666666666718,
+            "commitRemaining": 0.733333333333333,
+            "retryIn": 0,
+            "recentFailureReason": "",
+            "plans": 3,
+            "probeCount": 40,
+            "rememberedFailures": 0
+          }
+        },
+        {
+          "time": 10705.599999997765,
+          "position": [
+            18.56133010630693,
+            0.5,
+            22.305469534346404
+          ],
+          "yaw": -0.09927570525700892,
+          "navigation": {
+            "state": "Following",
+            "goal": [
+              18.45560736850481,
+              0.5,
+              23.366909354457118
+            ],
+            "desiredHeading": -0.09927570525700985,
+            "actualHeading": -0.09927570525700892,
+            "recentDisplacement": 1.06616371609453,
+            "goalProgress": 1.0658653791252046,
+            "blockedMovementCount": 0,
+            "stuck": false,
+            "recoveryAttempts": 0,
+            "avoidanceDirection": -1,
+            "committedSeconds": 0,
+            "commitRemaining": 0.8999999999999999,
+            "retryIn": 0.1499999999999999,
+            "recentFailureReason": "",
+            "plans": 4,
+            "probeCount": 45,
+            "rememberedFailures": 0
+          }
+        },
+        {
+          "time": 10927.800000000745,
+          "position": [
+            18.521688960458636,
+            0.5,
+            22.703460464140058
+          ],
+          "yaw": -0.09927570525700936,
+          "navigation": {
+            "state": "Following",
+            "goal": [
+              18.45560736850481,
+              0.5,
+              23.366909354457118
+            ],
+            "desiredHeading": -0.07598183401576114,
+            "actualHeading": -0.09927570525700936,
+            "recentDisplacement": 1.4659612342638726,
+            "goalProgress": 1.4658256279527384,
+            "blockedMovementCount": 0,
+            "stuck": false,
+            "recoveryAttempts": 0,
+            "avoidanceDirection": -1,
+            "committedSeconds": 0.20000000000000062,
+            "commitRemaining": 0.6999999999999993,
+            "retryIn": 0,
+            "recentFailureReason": "",
+            "plans": 4,
+            "probeCount": 45,
+            "rememberedFailures": 0
+          }
+        },
+        {
+          "time": 11152.699999999255,
+          "position": [
+            18.44990453457086,
+            0.5,
+            23.63368929792599
+          ],
+          "yaw": -0.04733491098933332,
+          "navigation": {
+            "state": "Following",
+            "goal": [
+              18.412050337749392,
+              0.5,
+              24.432801831304985
+            ],
+            "desiredHeading": -0.04733491098933169,
+            "actualHeading": -0.04733491098933332,
+            "recentDisplacement": 2.398337051080956,
+            "goalProgress": 2.3973229094003115,
+            "blockedMovementCount": 0,
+            "stuck": false,
+            "recoveryAttempts": 0,
+            "avoidanceDirection": -1,
+            "committedSeconds": 0.06666666666666643,
+            "commitRemaining": 0.8333333333333335,
+            "retryIn": 0.08333333333333348,
+            "recentFailureReason": "",
+            "plans": 5,
+            "probeCount": 50,
+            "rememberedFailures": 0
+          }
+        },
+        {
+          "time": 11370.199999999255,
+          "position": [
+            18.424668842795274,
+            0.5,
+            24.166421710172635
+          ],
+          "yaw": -0.047334910989330826,
+          "navigation": {
+            "state": "Following",
+            "goal": [
+              18.412050337749392,
+              0.5,
+              24.432801831304985
+            ],
+            "desiredHeading": 0.0036200393576052677,
+            "actualHeading": -0.047334910989330826,
+            "recentDisplacement": 0.5333297884025621,
+            "goalProgress": 0.5333297884025621,
+            "blockedMovementCount": 0,
+            "stuck": false,
+            "recoveryAttempts": 0,
+            "avoidanceDirection": -1,
+            "committedSeconds": 0.29999999999999893,
+            "commitRemaining": 0.600000000000001,
+            "retryIn": 0,
+            "recentFailureReason": "",
+            "plans": 5,
+            "probeCount": 50,
+            "rememberedFailures": 0
+          }
+        },
+        {
+          "time": 11588.199999999255,
+          "position": [
+            18.42029058224019,
+            0.5,
+            24.83293356290803
+          ],
+          "yaw": 0.0036200393576053614,
+          "navigation": {
+            "state": "Following",
+            "goal": [
+              18.422703941698078,
+              0.5,
+              25.499597285969987
+            ],
+            "desiredHeading": 0.033502706927266326,
+            "actualHeading": 0.0036200393576053614,
+            "recentDisplacement": 1.1996098504367796,
+            "goalProgress": 1.1994381468649888,
+            "blockedMovementCount": 0,
+            "stuck": false,
+            "recoveryAttempts": 0,
+            "avoidanceDirection": -1,
+            "committedSeconds": 0.13333333333333286,
+            "commitRemaining": 0.766666666666667,
+            "retryIn": 0.01666666666666705,
+            "recentFailureReason": "",
+            "plans": 6,
+            "probeCount": 55,
+            "rememberedFailures": 0
+          }
+        },
+        {
+          "time": 11795.800000000745,
+          "position": [
+            18.42222126424146,
+            0.5,
+            25.36626300407755
+          ],
+          "yaw": 0.003620039357603303,
+          "navigation": {
+            "state": "Following",
+            "goal": [
+              18.422703941698078,
+              0.5,
+              25.499597285969987
+            ],
+            "desiredHeading": 0.06068206455627949,
+            "actualHeading": 0.003620039357603303,
+            "recentDisplacement": 1.7327948553432053,
+            "goalProgress": 1.7327710826107416,
+            "blockedMovementCount": 0,
+            "stuck": false,
+            "recoveryAttempts": 0,
+            "avoidanceDirection": -1,
+            "committedSeconds": 0.33333333333333215,
+            "commitRemaining": 0.5666666666666678,
+            "retryIn": 0,
+            "recentFailureReason": "",
+            "plans": 6,
+            "probeCount": 55,
+            "rememberedFailures": 0
+          }
+        },
+        {
+          "time": 12027.300000000745,
+          "position": [
+            18.462651137266434,
+            0.5,
+            26.03170238860015
+          ],
+          "yaw": 0.06068206455628086,
+          "navigation": {
+            "state": "Following",
+            "goal": [
+              18.49499505986588,
+              0.5,
+              26.564054294190488
+            ],
+            "desiredHeading": 0.08616142504725846,
+            "actualHeading": 0.06068206455628086,
+            "recentDisplacement": 2.3980469676228005,
+            "goalProgress": 2.397378332538692,
+            "blockedMovementCount": 0,
+            "stuck": false,
+            "recoveryAttempts": 0,
+            "avoidanceDirection": -1,
+            "committedSeconds": 0.1999999999999993,
+            "commitRemaining": 0.7000000000000006,
+            "retryIn": 0,
+            "recentFailureReason": "",
+            "plans": 7,
+            "probeCount": 60,
+            "rememberedFailures": 0
+          }
+        },
+        {
+          "time": 12255.099999997765,
+          "position": [
+            18.52985596780252,
+            0.5,
+            26.828653866265388
+          ],
+          "yaw": 0.10757461870700995,
+          "navigation": {
+            "state": "Following",
+            "goal": [
+              18.615749776289668,
+              0.5,
+              27.624029429921237
+            ],
+            "desiredHeading": 0.10757461870701057,
+            "actualHeading": 0.10757461870700995,
+            "recentDisplacement": 0.7997800616420689,
+            "goalProgress": 0.7996701324374401,
+            "blockedMovementCount": 0,
+            "stuck": false,
+            "recoveryAttempts": 0,
+            "avoidanceDirection": -1,
+            "committedSeconds": 0.06666666666666643,
+            "commitRemaining": 0.8333333333333339,
+            "retryIn": 0.08333333333333348,
+            "recentFailureReason": "",
+            "plans": 8,
+            "probeCount": 65,
+            "rememberedFailures": 0
+          }
+        },
+        {
+          "time": 12477.699999999255,
+          "position": [
+            18.587118503813368,
+            0.5,
+            27.358904214435807
+          ],
+          "yaw": 0.10757461870701285,
+          "navigation": {
+            "state": "Following",
+            "goal": [
+              18.615749776289668,
+              0.5,
+              27.624029429921237
+            ],
+            "desiredHeading": 0.12670275754309057,
+            "actualHeading": 0.10757461870701285,
+            "recentDisplacement": 1.3330254355550135,
+            "goalProgress": 1.3330034520090235,
+            "blockedMovementCount": 0,
+            "stuck": false,
+            "recoveryAttempts": 0,
+            "avoidanceDirection": -1,
+            "committedSeconds": 0.29999999999999893,
+            "commitRemaining": 0.6000000000000014,
+            "retryIn": 0,
+            "recentFailureReason": "",
+            "plans": 8,
+            "probeCount": 65,
+            "rememberedFailures": 0
+          }
+        },
+        {
+          "time": 12697.199999999255,
+          "position": [
+            18.68567682012846,
+            0.5,
+            28.152789424990893
+          ],
+          "yaw": 0.12670275754308993,
+          "navigation": {
+            "state": "Following",
+            "goal": [
+              18.753070966710702,
+              0.5,
+              28.681847529295776
+            ],
+            "desiredHeading": 0.1414343391282666,
+            "actualHeading": 0.12670275754308993,
+            "recentDisplacement": 2.132780033468276,
+            "goalProgress": 2.132677342319231,
+            "blockedMovementCount": 0,
+            "stuck": false,
+            "recoveryAttempts": 0,
+            "avoidanceDirection": -1,
+            "committedSeconds": 0.13333333333333286,
+            "commitRemaining": 0.7666666666666675,
+            "retryIn": 0.01666666666666705,
+            "recentFailureReason": "",
+            "plans": 9,
+            "probeCount": 70,
+            "rememberedFailures": 0
+          }
+        },
+        {
+          "time": 12898.300000000745,
+          "position": [
+            18.755843232424706,
+            0.5,
+            28.681464771415097
+          ],
+          "yaw": 0.14769237289244602,
+          "navigation": {
+            "state": "Following",
+            "goal": [
+              18.912809655557822,
+              0.5,
+              29.736518950169714
+            ],
+            "desiredHeading": 0.14769237289244452,
+            "actualHeading": 0.14769237289244602,
+            "recentDisplacement": 0.26665198100535276,
+            "goalProgress": 0.2666402332069633,
+            "blockedMovementCount": 0,
+            "stuck": false,
+            "recoveryAttempts": 0,
+            "avoidanceDirection": -1,
+            "committedSeconds": 0,
+            "commitRemaining": 0.9000000000000004,
+            "retryIn": 0.15000000000000036,
+            "recentFailureReason": "",
+            "plans": 10,
+            "probeCount": 75,
+            "rememberedFailures": 0
+          }
+        },
+        {
+          "time": 13120.199999999255,
+          "position": [
+            18.8735680496843,
+            0.5,
+            29.472755404874484
+          ],
+          "yaw": 0.1476923728924382,
+          "navigation": {
+            "state": "Following",
+            "goal": [
+              18.912809655557822,
+              0.5,
+              29.736518950169714
+            ],
+            "desiredHeading": 0.16205304217337604,
+            "actualHeading": 0.1476923728924382,
+            "recentDisplacement": 1.0666409669052992,
+            "goalProgress": 1.0666402327065645,
+            "blockedMovementCount": 0,
+            "stuck": false,
+            "recoveryAttempts": 0,
+            "avoidanceDirection": -1,
+            "committedSeconds": 0.1999999999999993,
+            "commitRemaining": 0.7000000000000011,
+            "retryIn": 0,
+            "recentFailureReason": "",
+            "plans": 10,
+            "probeCount": 75,
+            "rememberedFailures": 0
+          }
+        },
+        {
+          "time": 13352.5,
+          "position": [
+            18.95890965378337,
+            0.5,
+            29.999201210297176
+          ],
+          "yaw": 0.16505035619976338,
+          "navigation": {
+            "state": "Following",
+            "goal": [
+              19.090351256241348,
+              0.5,
+              30.788329276725676
+            ],
+            "desiredHeading": 0.16505035619976416,
+            "actualHeading": 0.16505035619976338,
+            "recentDisplacement": 1.5999157387174963,
+            "goalProgress": 1.599857585106603,
+            "blockedMovementCount": 0,
+            "stuck": false,
+            "recoveryAttempts": 0,
+            "avoidanceDirection": -1,
+            "committedSeconds": 0.16666666666666607,
+            "commitRemaining": 0.7333333333333343,
+            "retryIn": 0,
+            "recentFailureReason": "",
+            "plans": 11,
+            "probeCount": 80,
+            "rememberedFailures": 0
+          }
+        },
+        {
+          "time": 13567.800000000745,
+          "position": [
+            19.090179963745392,
+            0.5,
+            30.7883576934515
+          ],
+          "yaw": 0.16374810405572054,
+          "navigation": {
+            "state": "Following",
+            "goal": [
+              19.264065093839967,
+              0.5,
+              31.840755783206426
+            ],
+            "desiredHeading": 0.15869093571919138,
+            "actualHeading": 0.16374810405572054,
+            "recentDisplacement": 2.3998591876689024,
+            "goalProgress": 2.3998317844994865,
+            "blockedMovementCount": 0,
+            "stuck": false,
+            "recoveryAttempts": 0,
+            "avoidanceDirection": -1,
+            "committedSeconds": 0.033333333333333215,
+            "commitRemaining": 0.8666666666666671,
+            "retryIn": 0.11666666666666714,
+            "recentFailureReason": "",
+            "plans": 12,
+            "probeCount": 85,
+            "rememberedFailures": 0
+          }
+        },
+        {
+          "time": 13773.5,
+          "position": [
+            19.177122528791145,
+            0.5,
+            31.314556738319677
+          ],
+          "yaw": 0.16374810405572046,
+          "navigation": {
+            "state": "Following",
+            "goal": [
+              19.264065093839967,
+              0.5,
+              31.840755783206426
+            ],
+            "desiredHeading": 0.14836020529791413,
+            "actualHeading": 0.16374810405572046,
+            "recentDisplacement": 0.5333333333262776,
+            "goalProgress": 0.5333333333262776,
+            "blockedMovementCount": 0,
+            "stuck": false,
+            "recoveryAttempts": 0,
+            "avoidanceDirection": -1,
+            "committedSeconds": 0.2333333333333325,
+            "commitRemaining": 0.6666666666666679,
+            "retryIn": 0,
+            "recentFailureReason": "",
+            "plans": 12,
+            "probeCount": 85,
+            "rememberedFailures": 0
+          }
+        },
+        {
+          "time": 13995.199999999255,
+          "position": [
+            19.28174719943197,
+            0.5,
+            31.97294330099028
+          ],
+          "yaw": 0.14836020529791666,
+          "navigation": {
+            "state": "Following",
+            "goal": [
+              19.419709313429085,
+              0.5,
+              32.89602377755488
+            ],
+            "desiredHeading": 0.1346560362997756,
+            "actualHeading": 0.14836020529791666,
+            "recentDisplacement": 1.1999754444890205,
+            "goalProgress": 1.199937843610114,
+            "blockedMovementCount": 0,
+            "stuck": false,
+            "recoveryAttempts": 0,
+            "avoidanceDirection": -1,
+            "committedSeconds": 0.06666666666666643,
+            "commitRemaining": 0.8333333333333339,
+            "retryIn": 0.08333333333333393,
+            "recentFailureReason": "",
+            "plans": 13,
+            "probeCount": 90,
+            "rememberedFailures": 0
+          }
+        },
+        {
+          "time": 14220.699999999255,
+          "position": [
+            19.380291566572506,
+            0.5,
+            32.63228649853469
+          ],
+          "yaw": 0.14836020529791435,
+          "navigation": {
+            "state": "Following",
+            "goal": [
+              19.419709313429085,
+              0.5,
+              32.89602377755488
+            ],
+            "desiredHeading": 0.1171614296730685,
+            "actualHeading": 0.14836020529791435,
+            "recentDisplacement": 1.8666114165274044,
+            "goalProgress": 1.8666045102758582,
+            "blockedMovementCount": 0,
+            "stuck": false,
+            "recoveryAttempts": 0,
+            "avoidanceDirection": -1,
+            "committedSeconds": 0.29999999999999893,
+            "commitRemaining": 0.6000000000000014,
+            "retryIn": 0,
+            "recentFailureReason": "",
+            "plans": 13,
+            "probeCount": 90,
+            "rememberedFailures": 0
+          }
+        },
+        {
+          "time": 14443.599999997765,
+          "position": [
+            19.44675786866071,
+            0.5,
+            33.16141291690384
+          ],
+          "yaw": 0.11716142967306804,
+          "navigation": {
+            "state": "Following",
+            "goal": [
+              19.54027272598096,
+              0.5,
+              33.95592847462484
+            ],
+            "desiredHeading": 0.09377900165732748,
+            "actualHeading": 0.11716142967306804,
+            "recentDisplacement": 2.3996955839914884,
+            "goalProgress": 2.3993887147951556,
+            "blockedMovementCount": 0,
+            "stuck": false,
+            "recoveryAttempts": 0,
+            "avoidanceDirection": -1,
+            "committedSeconds": 0.16666666666666607,
+            "commitRemaining": 0.7333333333333343,
+            "retryIn": 0,
+            "recentFailureReason": "",
+            "plans": 14,
+            "probeCount": 95,
+            "rememberedFailures": 0
+          }
+        },
+        {
+          "time": 14662.89999999851,
+          "position": [
+            19.53395424009953,
+            0.5,
+            33.956520096099645
+          ],
+          "yaw": 0.06956101184572212,
+          "navigation": {
+            "state": "Following",
+            "goal": [
+              19.608092829475353,
+              0.5,
+              35.020607144861714
+            ],
+            "desiredHeading": 0.06956101184572167,
+            "actualHeading": 0.06956101184572212,
+            "recentDisplacement": 0.7998741360994258,
+            "goalProgress": 0.7995145000084445,
+            "blockedMovementCount": 0,
+            "stuck": false,
+            "recoveryAttempts": 0,
+            "avoidanceDirection": -1,
+            "committedSeconds": 0,
+            "commitRemaining": 0.9000000000000004,
+            "retryIn": 0.15000000000000036,
+            "recentFailureReason": "",
+            "plans": 15,
+            "probeCount": 100,
+            "rememberedFailures": 0
+          }
+        },
+        {
+          "time": 14878,
+          "position": [
+            19.57102353478744,
+            0.5,
+            34.48856362048065
+          ],
+          "yaw": 0.06956101184572103,
+          "navigation": {
+            "state": "Following",
+            "goal": [
+              19.608092829475353,
+              0.5,
+              35.020607144861714
+            ],
+            "desiredHeading": 0.04441860619261166,
+            "actualHeading": 0.06956101184572103,
+            "recentDisplacement": 1.3329557178624984,
+            "goalProgress": 1.3328478333417524,
+            "blockedMovementCount": 0,
+            "stuck": false,
+            "recoveryAttempts": 0,
+            "avoidanceDirection": -1,
+            "committedSeconds": 0.2333333333333325,
+            "commitRemaining": 0.6666666666666679,
+            "retryIn": 0,
+            "recentFailureReason": "",
+            "plans": 15,
+            "probeCount": 100,
+            "rememberedFailures": 0
+          }
+        },
+        {
+          "time": 15101.89999999851,
+          "position": [
+            19.609475111245988,
+            0.75,
+            35.420823260783955
+          ],
+          "yaw": 0.019969337388650373,
+          "navigation": {
+            "state": "Following",
+            "goal": [
+              19.62278711804926,
+              0.5,
+              36.08735700705591
+            ],
+            "desiredHeading": 0.01996933738865064,
+            "actualHeading": 0.019969337388650373,
+            "recentDisplacement": 2.2652620164270196,
+            "goalProgress": 2.264567734628469,
+            "blockedMovementCount": 0,
+            "stuck": false,
+            "recoveryAttempts": 0,
+            "avoidanceDirection": -1,
+            "committedSeconds": 0.09999999999999964,
+            "commitRemaining": 0.8000000000000007,
+            "retryIn": 0.05000000000000071,
+            "recentFailureReason": "",
+            "plans": 16,
+            "probeCount": 105,
+            "rememberedFailures": 0
+          }
+        },
+        {
+          "time": 15316,
+          "position": [
+            19.617462315327952,
+            0.75,
+            35.82074350854712
+          ],
+          "yaw": 0.019969337388654456,
+          "navigation": {
+            "state": "Following",
+            "goal": [
+              19.62278711804926,
+              0.5,
+              36.08735700705591
+            ],
+            "desiredHeading": -0.010223119252992147,
+            "actualHeading": 0.019969337388654456,
+            "recentDisplacement": 0.26666666666666367,
+            "goalProgress": 0.26666666666666367,
+            "blockedMovementCount": 0,
+            "stuck": false,
+            "recoveryAttempts": 0,
+            "avoidanceDirection": -1,
+            "committedSeconds": 0.29999999999999893,
+            "commitRemaining": 0.6000000000000014,
+            "retryIn": 0,
+            "recentFailureReason": "",
+            "plans": 16,
+            "probeCount": 105,
+            "rememberedFailures": 0
+          }
+        }
+      ]
+    },
+    {
+      "mode": "voxel",
+      "kind": "enclosed",
+      "variant": "before",
+      "headingFlips": 53,
+      "displacement": 0.6778630191110432,
+      "escapeProgress": 0.26581824188847136,
+      "maxLift": 0.17962508895577056,
+      "maxGroundError": 0,
+      "snapshot": {
+        "steps": 2,
+        "behaviorMs": 0.30000000074505806,
+        "animationMs": 0,
+        "groundQueries": 945,
+        "collisionQueries": 189,
+        "navigationFailures": 87,
+        "discardedSeconds": 0,
+        "id": "legacy-navigation",
+        "speciesId": "brown-hare",
+        "state": "Fleeing",
+        "position": [
+          19.376430489073062,
+          0.75,
+          20.26581824188847
+        ],
+        "editing": false,
+        "triangles": 674,
+        "modelError": null
+      },
+      "planDelta": 0,
+      "poses": [
+        {
+          "time": 15971.599999997765,
+          "position": [
+            20,
+            0.75,
+            20
+          ],
+          "yaw": 0
+        },
+        {
+          "time": 16212.39999999851,
+          "position": [
+            20,
+            0.75,
+            20
+          ],
+          "yaw": 0
+        },
+        {
+          "time": 16442.39999999851,
+          "position": [
+            20,
+            0.75,
+            20.245696159122083
+          ],
+          "yaw": 0
+        },
+        {
+          "time": 16653.199999999255,
+          "position": [
+            20,
+            0.75,
+            20.245696159122083
+          ],
+          "yaw": -0.44999999999999996
+        },
+        {
+          "time": 16873.300000000745,
+          "position": [
+            19.96808668145962,
+            0.75,
+            20.27102100968126
+          ],
+          "yaw": -1.05
+        },
+        {
+          "time": 17092.89999999851,
+          "position": [
+            19.96808668145962,
+            0.75,
+            20.27102100968126
+          ],
+          "yaw": -1.4999999999999998
+        },
+        {
+          "time": 17307.39999999851,
+          "position": [
+            19.63787607584003,
+            0.75,
+            20.274635872800808
+          ],
+          "yaw": -1.2
+        },
+        {
+          "time": 17512.699999999255,
+          "position": [
+            19.63787607584003,
+            0.75,
+            20.274635872800808
+          ],
+          "yaw": -1.4999999999999998
+        },
+        {
+          "time": 17718.699999999255,
+          "position": [
+            19.432603328579233,
+            0.75,
+            20.26581824188847
+          ],
+          "yaw": -1.5707963267948966
+        },
+        {
+          "time": 17937.800000000745,
+          "position": [
+            19.376430489073062,
+            0.75,
+            20.26581824188847
+          ],
+          "yaw": -1.8707963267948964
+        },
+        {
+          "time": 18161,
+          "position": [
+            19.376430489073062,
+            0.75,
+            20.26581824188847
+          ],
+          "yaw": -2.0207963267948963
+        },
+        {
+          "time": 18391.39999999851,
+          "position": [
+            19.376430489073062,
+            0.75,
+            20.26581824188847
+          ],
+          "yaw": -1.8707963267948964
+        },
+        {
+          "time": 18621.5,
+          "position": [
+            19.376430489073062,
+            0.75,
+            20.26581824188847
+          ],
+          "yaw": -1.7207963267948965
+        },
+        {
+          "time": 18835.599999997765,
+          "position": [
+            19.376430489073062,
+            0.75,
+            20.26581824188847
+          ],
+          "yaw": -1.7207963267948965
+        },
+        {
+          "time": 19050.599999997765,
+          "position": [
+            19.376430489073062,
+            0.75,
+            20.26581824188847
+          ],
+          "yaw": -1.5707963267948966
+        },
+        {
+          "time": 19267.599999997765,
+          "position": [
+            19.376430489073062,
+            0.75,
+            20.26581824188847
+          ],
+          "yaw": -1.5707963267948966
+        },
+        {
+          "time": 19482.599999997765,
+          "position": [
+            19.376430489073062,
+            0.75,
+            20.26581824188847
+          ],
+          "yaw": -1.7207963267948965
+        },
+        {
+          "time": 19733.39999999851,
+          "position": [
+            19.376430489073062,
+            0.75,
+            20.26581824188847
+          ],
+          "yaw": -1.8707963267948964
+        },
+        {
+          "time": 19940.599999997765,
+          "position": [
+            19.376430489073062,
+            0.75,
+            20.26581824188847
+          ],
+          "yaw": -1.8707963267948964
+        },
+        {
+          "time": 20153.5,
+          "position": [
+            19.376430489073062,
+            0.75,
+            20.26581824188847
+          ],
+          "yaw": -2.0207963267948963
+        },
+        {
+          "time": 20405.39999999851,
+          "position": [
+            19.376430489073062,
+            0.75,
+            20.26581824188847
+          ],
+          "yaw": -1.8707963267948964
+        },
+        {
+          "time": 20638.599999997765,
+          "position": [
+            19.376430489073062,
+            0.75,
+            20.26581824188847
+          ],
+          "yaw": -1.7207963267948965
+        },
+        {
+          "time": 20849.699999999255,
+          "position": [
+            19.376430489073062,
+            0.75,
+            20.26581824188847
+          ],
+          "yaw": -1.5707963267948966
+        },
+        {
+          "time": 21057.39999999851,
+          "position": [
+            19.376430489073062,
+            0.75,
+            20.26581824188847
+          ],
+          "yaw": -1.5707963267948966
+        },
+        {
+          "time": 21277.300000000745,
+          "position": [
+            19.376430489073062,
+            0.75,
+            20.26581824188847
+          ],
+          "yaw": -1.5707963267948966
+        },
+        {
+          "time": 21490.300000000745,
+          "position": [
+            19.376430489073062,
+            0.75,
+            20.26581824188847
+          ],
+          "yaw": -1.7207963267948965
+        },
+        {
+          "time": 21707.89999999851,
+          "position": [
+            19.376430489073062,
+            0.75,
+            20.26581824188847
+          ],
+          "yaw": -1.7207963267948965
+        },
+        {
+          "time": 21948.300000000745,
+          "position": [
+            19.376430489073062,
+            0.75,
+            20.26581824188847
+          ],
+          "yaw": -2.0207963267948963
+        },
+        {
+          "time": 22181.099999997765,
+          "position": [
+            19.376430489073062,
+            0.75,
+            20.26581824188847
+          ],
+          "yaw": -1.8707963267948964
+        },
+        {
+          "time": 22406.599999997765,
+          "position": [
+            19.376430489073062,
+            0.75,
+            20.26581824188847
+          ],
+          "yaw": -1.8707963267948964
+        }
+      ]
+    },
+    {
+      "mode": "voxel",
+      "kind": "enclosed",
+      "variant": "after",
+      "headingFlips": 0,
+      "displacement": 0,
+      "escapeProgress": 0,
+      "maxLift": 0,
+      "maxGroundError": 0,
+      "snapshot": {
+        "steps": 2,
+        "behaviorMs": 0.10000000149011612,
+        "animationMs": 0.09999999776482582,
+        "groundQueries": 1815,
+        "collisionQueries": 363,
+        "navigationFailures": 0,
+        "navigationMs": 0.10000000149011612,
+        "discardedSeconds": 0.020400000000745072,
+        "id": "679a2bde-c167-41ae-b4d2-d2ef5f8b3609",
+        "speciesId": "brown-hare",
+        "state": "Fleeing",
+        "position": [
+          20,
+          0.75,
+          20
+        ],
+        "editing": false,
+        "triangles": 674,
+        "modelError": null,
+        "navigation": {
+          "state": "Waiting",
+          "goal": null,
+          "desiredHeading": 0,
+          "actualHeading": 0,
+          "recentDisplacement": 0,
+          "goalProgress": 0,
+          "blockedMovementCount": 0,
+          "stuck": true,
+          "recoveryAttempts": 5,
+          "avoidanceDirection": 0,
+          "committedSeconds": 0,
+          "commitRemaining": 0,
+          "retryIn": 1.8559765625000022,
+          "recentFailureReason": "No supported clear local route",
+          "plans": 23,
+          "probeCount": 229,
+          "rememberedFailures": 0
+        }
+      },
+      "planDelta": 6,
+      "poses": [
+        {
+          "time": 22630.89999999851,
+          "position": [
+            20,
+            0.75,
+            20
+          ],
+          "yaw": 0,
+          "navigation": {
+            "state": "Waiting",
+            "goal": null,
+            "desiredHeading": 0.46783825212886354,
+            "actualHeading": 0,
+            "recentDisplacement": 0,
+            "goalProgress": 0,
+            "blockedMovementCount": 0,
+            "stuck": true,
+            "recoveryAttempts": 0,
+            "avoidanceDirection": 0,
+            "committedSeconds": 0,
+            "commitRemaining": 0,
+            "retryIn": 0.43930989583333346,
+            "recentFailureReason": "No supported clear local route",
+            "plans": 18,
+            "probeCount": 129,
+            "rememberedFailures": 0
+          }
+        },
+        {
+          "time": 22854.699999999255,
+          "position": [
+            20,
+            0.75,
+            20
+          ],
+          "yaw": 0,
+          "navigation": {
+            "state": "Waiting",
+            "goal": null,
+            "desiredHeading": 0,
+            "actualHeading": 0,
+            "recentDisplacement": 0,
+            "goalProgress": 0,
+            "blockedMovementCount": 0,
+            "stuck": true,
+            "recoveryAttempts": 0,
+            "avoidanceDirection": 0,
+            "committedSeconds": 0,
+            "commitRemaining": 0,
+            "retryIn": 0.23930989583333417,
+            "recentFailureReason": "No supported clear local route",
+            "plans": 18,
+            "probeCount": 129,
+            "rememberedFailures": 0
+          }
+        },
+        {
+          "time": 23072.89999999851,
+          "position": [
+            20,
+            0.75,
+            20
+          ],
+          "yaw": 0,
+          "navigation": {
+            "state": "Waiting",
+            "goal": null,
+            "desiredHeading": 0,
+            "actualHeading": 0,
+            "recentDisplacement": 0,
+            "goalProgress": 0,
+            "blockedMovementCount": 0,
+            "stuck": true,
+            "recoveryAttempts": 0,
+            "avoidanceDirection": 0,
+            "committedSeconds": 0,
+            "commitRemaining": 0,
+            "retryIn": 0.00597656250000167,
+            "recentFailureReason": "No supported clear local route",
+            "plans": 18,
+            "probeCount": 129,
+            "rememberedFailures": 0
+          }
+        },
+        {
+          "time": 23289,
+          "position": [
+            20,
+            0.75,
+            20
+          ],
+          "yaw": 0,
+          "navigation": {
+            "state": "Waiting",
+            "goal": null,
+            "desiredHeading": 0,
+            "actualHeading": 0,
+            "recentDisplacement": 0,
+            "goalProgress": 0,
+            "blockedMovementCount": 0,
+            "stuck": true,
+            "recoveryAttempts": 1,
+            "avoidanceDirection": 0,
+            "committedSeconds": 0,
+            "commitRemaining": 0,
+            "retryIn": 0.6893098958333352,
+            "recentFailureReason": "No supported clear local route",
+            "plans": 19,
+            "probeCount": 149,
+            "rememberedFailures": 0
+          }
+        },
+        {
+          "time": 23508,
+          "position": [
+            20,
+            0.75,
+            20
+          ],
+          "yaw": 0,
+          "navigation": {
+            "state": "Waiting",
+            "goal": null,
+            "desiredHeading": 0,
+            "actualHeading": 0,
+            "recentDisplacement": 0,
+            "goalProgress": 0,
+            "blockedMovementCount": 0,
+            "stuck": true,
+            "recoveryAttempts": 1,
+            "avoidanceDirection": 0,
+            "committedSeconds": 0,
+            "commitRemaining": 0,
+            "retryIn": 0.45597656250000274,
+            "recentFailureReason": "No supported clear local route",
+            "plans": 19,
+            "probeCount": 149,
+            "rememberedFailures": 0
+          }
+        },
+        {
+          "time": 23724.5,
+          "position": [
+            20,
+            0.75,
+            20
+          ],
+          "yaw": 0,
+          "navigation": {
+            "state": "Waiting",
+            "goal": null,
+            "desiredHeading": 0,
+            "actualHeading": 0,
+            "recentDisplacement": 0,
+            "goalProgress": 0,
+            "blockedMovementCount": 0,
+            "stuck": true,
+            "recoveryAttempts": 1,
+            "avoidanceDirection": 0,
+            "committedSeconds": 0,
+            "commitRemaining": 0,
+            "retryIn": 0.25597656250000345,
+            "recentFailureReason": "No supported clear local route",
+            "plans": 19,
+            "probeCount": 149,
+            "rememberedFailures": 0
+          }
+        },
+        {
+          "time": 23937.5,
+          "position": [
+            20,
+            0.75,
+            20
+          ],
+          "yaw": 0,
+          "navigation": {
+            "state": "Waiting",
+            "goal": null,
+            "desiredHeading": 0,
+            "actualHeading": 0,
+            "recentDisplacement": 0,
+            "goalProgress": 0,
+            "blockedMovementCount": 0,
+            "stuck": true,
+            "recoveryAttempts": 1,
+            "avoidanceDirection": 0,
+            "committedSeconds": 0,
+            "commitRemaining": 0,
+            "retryIn": 0.022643229166670942,
+            "recentFailureReason": "No supported clear local route",
+            "plans": 19,
+            "probeCount": 149,
+            "rememberedFailures": 0
+          }
+        },
+        {
+          "time": 24148.89999999851,
+          "position": [
+            20,
+            0.75,
+            20
+          ],
+          "yaw": 0,
+          "navigation": {
+            "state": "Waiting",
+            "goal": null,
+            "desiredHeading": 0,
+            "actualHeading": 0,
+            "recentDisplacement": 0,
+            "goalProgress": 0,
+            "blockedMovementCount": 0,
+            "stuck": true,
+            "recoveryAttempts": 2,
+            "avoidanceDirection": 0,
+            "committedSeconds": 0,
+            "commitRemaining": 0,
+            "retryIn": 1.039309895833334,
+            "recentFailureReason": "No supported clear local route",
+            "plans": 20,
+            "probeCount": 169,
+            "rememberedFailures": 0
+          }
+        },
+        {
+          "time": 24369.39999999851,
+          "position": [
+            20,
+            0.75,
+            20
+          ],
+          "yaw": 0,
+          "navigation": {
+            "state": "Waiting",
+            "goal": null,
+            "desiredHeading": 0,
+            "actualHeading": 0,
+            "recentDisplacement": 0,
+            "goalProgress": 0,
+            "blockedMovementCount": 0,
+            "stuck": true,
+            "recoveryAttempts": 2,
+            "avoidanceDirection": 0,
+            "committedSeconds": 0,
+            "commitRemaining": 0,
+            "retryIn": 0.8059765625000015,
+            "recentFailureReason": "No supported clear local route",
+            "plans": 20,
+            "probeCount": 169,
+            "rememberedFailures": 0
+          }
+        },
+        {
+          "time": 24597.199999999255,
+          "position": [
+            20,
+            0.75,
+            20
+          ],
+          "yaw": 0,
+          "navigation": {
+            "state": "Waiting",
+            "goal": null,
+            "desiredHeading": 0,
+            "actualHeading": 0,
+            "recentDisplacement": 0,
+            "goalProgress": 0,
+            "blockedMovementCount": 0,
+            "stuck": true,
+            "recoveryAttempts": 2,
+            "avoidanceDirection": 0,
+            "committedSeconds": 0,
+            "commitRemaining": 0,
+            "retryIn": 0.572643229166669,
+            "recentFailureReason": "No supported clear local route",
+            "plans": 20,
+            "probeCount": 169,
+            "rememberedFailures": 0
+          }
+        },
+        {
+          "time": 24819.599999997765,
+          "position": [
+            20,
+            0.75,
+            20
+          ],
+          "yaw": 0,
+          "navigation": {
+            "state": "Waiting",
+            "goal": null,
+            "desiredHeading": 0,
+            "actualHeading": 0,
+            "recentDisplacement": 0,
+            "goalProgress": 0,
+            "blockedMovementCount": 0,
+            "stuck": true,
+            "recoveryAttempts": 2,
+            "avoidanceDirection": 0,
+            "committedSeconds": 0,
+            "commitRemaining": 0,
+            "retryIn": 0.3726432291666697,
+            "recentFailureReason": "No supported clear local route",
+            "plans": 20,
+            "probeCount": 169,
+            "rememberedFailures": 0
+          }
+        },
+        {
+          "time": 25036.89999999851,
+          "position": [
+            20,
+            0.75,
+            20
+          ],
+          "yaw": 0,
+          "navigation": {
+            "state": "Waiting",
+            "goal": null,
+            "desiredHeading": 0,
+            "actualHeading": 0,
+            "recentDisplacement": 0,
+            "goalProgress": 0,
+            "blockedMovementCount": 0,
+            "stuck": true,
+            "recoveryAttempts": 2,
+            "avoidanceDirection": 0,
+            "committedSeconds": 0,
+            "commitRemaining": 0,
+            "retryIn": 0.1393098958333372,
+            "recentFailureReason": "No supported clear local route",
+            "plans": 20,
+            "probeCount": 169,
+            "rememberedFailures": 0
+          }
+        },
+        {
+          "time": 25261.800000000745,
+          "position": [
+            20,
+            0.75,
+            20
+          ],
+          "yaw": 0,
+          "navigation": {
+            "state": "Waiting",
+            "goal": null,
+            "desiredHeading": 0,
+            "actualHeading": 0,
+            "recentDisplacement": 0,
+            "goalProgress": 0,
+            "blockedMovementCount": 0,
+            "stuck": true,
+            "recoveryAttempts": 3,
+            "avoidanceDirection": 0,
+            "committedSeconds": 0,
+            "commitRemaining": 0,
+            "retryIn": 1.5226432291666683,
+            "recentFailureReason": "No supported clear local route",
+            "plans": 21,
+            "probeCount": 189,
+            "rememberedFailures": 0
+          }
+        },
+        {
+          "time": 25474.699999999255,
+          "position": [
+            20,
+            0.75,
+            20
+          ],
+          "yaw": 0,
+          "navigation": {
+            "state": "Waiting",
+            "goal": null,
+            "desiredHeading": 0,
+            "actualHeading": 0,
+            "recentDisplacement": 0,
+            "goalProgress": 0,
+            "blockedMovementCount": 0,
+            "stuck": true,
+            "recoveryAttempts": 3,
+            "avoidanceDirection": 0,
+            "committedSeconds": 0,
+            "commitRemaining": 0,
+            "retryIn": 1.2893098958333358,
+            "recentFailureReason": "No supported clear local route",
+            "plans": 21,
+            "probeCount": 189,
+            "rememberedFailures": 0
+          }
+        },
+        {
+          "time": 25689.300000000745,
+          "position": [
+            20,
+            0.75,
+            20
+          ],
+          "yaw": 0,
+          "navigation": {
+            "state": "Waiting",
+            "goal": null,
+            "desiredHeading": 0,
+            "actualHeading": 0,
+            "recentDisplacement": 0,
+            "goalProgress": 0,
+            "blockedMovementCount": 0,
+            "stuck": true,
+            "recoveryAttempts": 3,
+            "avoidanceDirection": 0,
+            "committedSeconds": 0,
+            "commitRemaining": 0,
+            "retryIn": 1.0893098958333365,
+            "recentFailureReason": "No supported clear local route",
+            "plans": 21,
+            "probeCount": 189,
+            "rememberedFailures": 0
+          }
+        },
+        {
+          "time": 25896.199999999255,
+          "position": [
+            20,
+            0.75,
+            20
+          ],
+          "yaw": 0,
+          "navigation": {
+            "state": "Waiting",
+            "goal": null,
+            "desiredHeading": 0,
+            "actualHeading": 0,
+            "recentDisplacement": 0,
+            "goalProgress": 0,
+            "blockedMovementCount": 0,
+            "stuck": true,
+            "recoveryAttempts": 3,
+            "avoidanceDirection": 0,
+            "committedSeconds": 0,
+            "commitRemaining": 0,
+            "retryIn": 0.8893098958333372,
+            "recentFailureReason": "No supported clear local route",
+            "plans": 21,
+            "probeCount": 189,
+            "rememberedFailures": 0
+          }
+        },
+        {
+          "time": 26109.300000000745,
+          "position": [
+            20,
+            0.75,
+            20
+          ],
+          "yaw": 0,
+          "navigation": {
+            "state": "Waiting",
+            "goal": null,
+            "desiredHeading": 0,
+            "actualHeading": 0,
+            "recentDisplacement": 0,
+            "goalProgress": 0,
+            "blockedMovementCount": 0,
+            "stuck": true,
+            "recoveryAttempts": 3,
+            "avoidanceDirection": 0,
+            "committedSeconds": 0,
+            "commitRemaining": 0,
+            "retryIn": 0.6559765625000047,
+            "recentFailureReason": "No supported clear local route",
+            "plans": 21,
+            "probeCount": 189,
+            "rememberedFailures": 0
+          }
+        },
+        {
+          "time": 26318.39999999851,
+          "position": [
+            20,
+            0.75,
+            20
+          ],
+          "yaw": 0,
+          "navigation": {
+            "state": "Waiting",
+            "goal": null,
+            "desiredHeading": 0,
+            "actualHeading": 0,
+            "recentDisplacement": 0,
+            "goalProgress": 0,
+            "blockedMovementCount": 0,
+            "stuck": true,
+            "recoveryAttempts": 3,
+            "avoidanceDirection": 0,
+            "committedSeconds": 0,
+            "commitRemaining": 0,
+            "retryIn": 0.4559765625000054,
+            "recentFailureReason": "No supported clear local route",
+            "plans": 21,
+            "probeCount": 189,
+            "rememberedFailures": 0
+          }
+        },
+        {
+          "time": 26527.89999999851,
+          "position": [
+            20,
+            0.75,
+            20
+          ],
+          "yaw": 0,
+          "navigation": {
+            "state": "Waiting",
+            "goal": null,
+            "desiredHeading": 0,
+            "actualHeading": 0,
+            "recentDisplacement": 0,
+            "goalProgress": 0,
+            "blockedMovementCount": 0,
+            "stuck": true,
+            "recoveryAttempts": 3,
+            "avoidanceDirection": 0,
+            "committedSeconds": 0,
+            "commitRemaining": 0,
+            "retryIn": 0.2559765625000061,
+            "recentFailureReason": "No supported clear local route",
+            "plans": 21,
+            "probeCount": 189,
+            "rememberedFailures": 0
+          }
+        },
+        {
+          "time": 26736.5,
+          "position": [
+            20,
+            0.75,
+            20
+          ],
+          "yaw": 0,
+          "navigation": {
+            "state": "Waiting",
+            "goal": null,
+            "desiredHeading": 0,
+            "actualHeading": 0,
+            "recentDisplacement": 0,
+            "goalProgress": 0,
+            "blockedMovementCount": 0,
+            "stuck": true,
+            "recoveryAttempts": 3,
+            "avoidanceDirection": 0,
+            "committedSeconds": 0,
+            "commitRemaining": 0,
+            "retryIn": 0.022643229166673606,
+            "recentFailureReason": "No supported clear local route",
+            "plans": 21,
+            "probeCount": 189,
+            "rememberedFailures": 0
+          }
+        },
+        {
+          "time": 26944,
+          "position": [
+            20,
+            0.75,
+            20
+          ],
+          "yaw": 0,
+          "navigation": {
+            "state": "Waiting",
+            "goal": null,
+            "desiredHeading": 0,
+            "actualHeading": 0,
+            "recentDisplacement": 0,
+            "goalProgress": 0,
+            "blockedMovementCount": 0,
+            "stuck": true,
+            "recoveryAttempts": 4,
+            "avoidanceDirection": 0,
+            "committedSeconds": 0,
+            "commitRemaining": 0,
+            "retryIn": 1.739309895833335,
+            "recentFailureReason": "No supported clear local route",
+            "plans": 22,
+            "probeCount": 209,
+            "rememberedFailures": 0
+          }
+        },
+        {
+          "time": 27155.39999999851,
+          "position": [
+            20,
+            0.75,
+            20
+          ],
+          "yaw": 0,
+          "navigation": {
+            "state": "Waiting",
+            "goal": null,
+            "desiredHeading": 0,
+            "actualHeading": 0,
+            "recentDisplacement": 0,
+            "goalProgress": 0,
+            "blockedMovementCount": 0,
+            "stuck": true,
+            "recoveryAttempts": 4,
+            "avoidanceDirection": 0,
+            "committedSeconds": 0,
+            "commitRemaining": 0,
+            "retryIn": 1.5393098958333358,
+            "recentFailureReason": "No supported clear local route",
+            "plans": 22,
+            "probeCount": 209,
+            "rememberedFailures": 0
+          }
+        },
+        {
+          "time": 27366.800000000745,
+          "position": [
+            20,
+            0.75,
+            20
+          ],
+          "yaw": 0,
+          "navigation": {
+            "state": "Waiting",
+            "goal": null,
+            "desiredHeading": 0,
+            "actualHeading": 0,
+            "recentDisplacement": 0,
+            "goalProgress": 0,
+            "blockedMovementCount": 0,
+            "stuck": true,
+            "recoveryAttempts": 4,
+            "avoidanceDirection": 0,
+            "committedSeconds": 0,
+            "commitRemaining": 0,
+            "retryIn": 1.3059765625000033,
+            "recentFailureReason": "No supported clear local route",
+            "plans": 22,
+            "probeCount": 209,
+            "rememberedFailures": 0
+          }
+        },
+        {
+          "time": 27575.800000000745,
+          "position": [
+            20,
+            0.75,
+            20
+          ],
+          "yaw": 0,
+          "navigation": {
+            "state": "Waiting",
+            "goal": null,
+            "desiredHeading": 0,
+            "actualHeading": 0,
+            "recentDisplacement": 0,
+            "goalProgress": 0,
+            "blockedMovementCount": 0,
+            "stuck": true,
+            "recoveryAttempts": 4,
+            "avoidanceDirection": 0,
+            "committedSeconds": 0,
+            "commitRemaining": 0,
+            "retryIn": 1.105976562500004,
+            "recentFailureReason": "No supported clear local route",
+            "plans": 22,
+            "probeCount": 209,
+            "rememberedFailures": 0
+          }
+        },
+        {
+          "time": 27787.199999999255,
+          "position": [
+            20,
+            0.75,
+            20
+          ],
+          "yaw": 0,
+          "navigation": {
+            "state": "Waiting",
+            "goal": null,
+            "desiredHeading": 0,
+            "actualHeading": 0,
+            "recentDisplacement": 0,
+            "goalProgress": 0,
+            "blockedMovementCount": 0,
+            "stuck": true,
+            "recoveryAttempts": 4,
+            "avoidanceDirection": 0,
+            "committedSeconds": 0,
+            "commitRemaining": 0,
+            "retryIn": 0.9059765625000047,
+            "recentFailureReason": "No supported clear local route",
+            "plans": 22,
+            "probeCount": 209,
+            "rememberedFailures": 0
+          }
+        },
+        {
+          "time": 28003.699999999255,
+          "position": [
+            20,
+            0.75,
+            20
+          ],
+          "yaw": 0,
+          "navigation": {
+            "state": "Waiting",
+            "goal": null,
+            "desiredHeading": 0,
+            "actualHeading": 0,
+            "recentDisplacement": 0,
+            "goalProgress": 0,
+            "blockedMovementCount": 0,
+            "stuck": true,
+            "recoveryAttempts": 4,
+            "avoidanceDirection": 0,
+            "committedSeconds": 0,
+            "commitRemaining": 0,
+            "retryIn": 0.6726432291666722,
+            "recentFailureReason": "No supported clear local route",
+            "plans": 22,
+            "probeCount": 209,
+            "rememberedFailures": 0
+          }
+        },
+        {
+          "time": 28219.699999999255,
+          "position": [
+            20,
+            0.75,
+            20
+          ],
+          "yaw": 0,
+          "navigation": {
+            "state": "Waiting",
+            "goal": null,
+            "desiredHeading": 0,
+            "actualHeading": 0,
+            "recentDisplacement": 0,
+            "goalProgress": 0,
+            "blockedMovementCount": 0,
+            "stuck": true,
+            "recoveryAttempts": 4,
+            "avoidanceDirection": 0,
+            "committedSeconds": 0,
+            "commitRemaining": 0,
+            "retryIn": 0.4726432291666729,
+            "recentFailureReason": "No supported clear local route",
+            "plans": 22,
+            "probeCount": 209,
+            "rememberedFailures": 0
+          }
+        },
+        {
+          "time": 28447.300000000745,
+          "position": [
+            20,
+            0.75,
+            20
+          ],
+          "yaw": 0,
+          "navigation": {
+            "state": "Waiting",
+            "goal": null,
+            "desiredHeading": 0,
+            "actualHeading": 0,
+            "recentDisplacement": 0,
+            "goalProgress": 0,
+            "blockedMovementCount": 0,
+            "stuck": true,
+            "recoveryAttempts": 4,
+            "avoidanceDirection": 0,
+            "committedSeconds": 0,
+            "commitRemaining": 0,
+            "retryIn": 0.2393098958333404,
+            "recentFailureReason": "No supported clear local route",
+            "plans": 22,
+            "probeCount": 209,
+            "rememberedFailures": 0
+          }
+        },
+        {
+          "time": 28674.099999997765,
+          "position": [
+            20,
+            0.75,
+            20
+          ],
+          "yaw": 0,
+          "navigation": {
+            "state": "Waiting",
+            "goal": null,
+            "desiredHeading": 0,
+            "actualHeading": 0,
+            "recentDisplacement": 0,
+            "goalProgress": 0,
+            "blockedMovementCount": 0,
+            "stuck": true,
+            "recoveryAttempts": 4,
+            "avoidanceDirection": 0,
+            "committedSeconds": 0,
+            "commitRemaining": 0,
+            "retryIn": 0.005976562500007887,
+            "recentFailureReason": "No supported clear local route",
+            "plans": 22,
+            "probeCount": 209,
+            "rememberedFailures": 0
+          }
+        },
+        {
+          "time": 28894.199999999255,
+          "position": [
+            20,
+            0.75,
+            20
+          ],
+          "yaw": 0,
+          "navigation": {
+            "state": "Waiting",
+            "goal": null,
+            "desiredHeading": 0,
+            "actualHeading": 0,
+            "recentDisplacement": 0,
+            "goalProgress": 0,
+            "blockedMovementCount": 0,
+            "stuck": true,
+            "recoveryAttempts": 5,
+            "avoidanceDirection": 0,
+            "committedSeconds": 0,
+            "commitRemaining": 0,
+            "retryIn": 2.0893098958333347,
+            "recentFailureReason": "No supported clear local route",
+            "plans": 23,
+            "probeCount": 229,
+            "rememberedFailures": 0
+          }
+        },
+        {
+          "time": 29115.5,
+          "position": [
+            20,
+            0.75,
+            20
+          ],
+          "yaw": 0,
+          "navigation": {
+            "state": "Waiting",
+            "goal": null,
+            "desiredHeading": 0,
+            "actualHeading": 0,
+            "recentDisplacement": 0,
+            "goalProgress": 0,
+            "blockedMovementCount": 0,
+            "stuck": true,
+            "recoveryAttempts": 5,
+            "avoidanceDirection": 0,
+            "committedSeconds": 0,
+            "commitRemaining": 0,
+            "retryIn": 1.8559765625000022,
+            "recentFailureReason": "No supported clear local route",
+            "plans": 23,
+            "probeCount": 229,
+            "rememberedFailures": 0
+          }
+        }
+      ]
+    },
+    {
+      "mode": "polygonal",
+      "kind": "wall",
+      "variant": "before",
+      "headingFlips": 14,
+      "displacement": 12.712525309994346,
+      "escapeProgress": 12.500377016015129,
+      "maxLift": 0.17962508895577056,
+      "maxGroundError": 0.12260687928397229,
+      "snapshot": {
+        "steps": 1,
+        "behaviorMs": 11,
+        "animationMs": 0.10000000149011612,
+        "groundQueries": 955,
+        "collisionQueries": 191,
+        "navigationFailures": 20,
+        "discardedSeconds": 0,
+        "id": "legacy-navigation",
+        "speciesId": "brown-hare",
+        "state": "Fleeing",
+        "position": [
+          17.68723667126799,
+          0.5,
+          32.50037701601513
+        ],
+        "editing": false,
+        "triangles": 674,
+        "modelError": null
+      },
+      "planDelta": 0,
+      "poses": [
+        {
+          "time": 57105.5,
+          "position": [
+            20,
+            0.75,
+            20
+          ],
+          "yaw": 0
+        },
+        {
+          "time": 57358.39999999851,
+          "position": [
+            20.003742718446055,
+            0.75,
+            20.040568460837672
+          ],
+          "yaw": 0.09199643684698146
+        },
+        {
+          "time": 57618,
+          "position": [
+            20.022571301605023,
+            0.75,
+            20.24465718659218
+          ],
+          "yaw": -0.3354092125542426
+        },
+        {
+          "time": 57820,
+          "position": [
+            20.022571301605023,
+            0.75,
+            20.24465718659218
+          ],
+          "yaw": -0.6354092125542427
+        },
+        {
+          "time": 58023,
+          "position": [
+            19.993762929253734,
+            0.75,
+            20.273464922334053
+          ],
+          "yaw": -1.2354092125542426
+        },
+        {
+          "time": 58226.300000000745,
+          "position": [
+            19.95304769460375,
+            0.75,
+            20.27490631870602
+          ],
+          "yaw": -1.5354092125542425
+        },
+        {
+          "time": 58434.800000000745,
+          "position": [
+            19.828253694640637,
+            0.75,
+            20.270924639625836
+          ],
+          "yaw": -1.5939759576886123
+        },
+        {
+          "time": 58642.300000000745,
+          "position": [
+            19.663486087396905,
+            0.75,
+            20.271333769918215
+          ],
+          "yaw": -1.4311410825347615
+        },
+        {
+          "time": 58845,
+          "position": [
+            19.56925785553097,
+            0.75,
+            20.249842212021363
+          ],
+          "yaw": -1.8580756956647932
+        },
+        {
+          "time": 59045.5,
+          "position": [
+            19.29337459650134,
+            0.75,
+            20.26209468866865
+          ],
+          "yaw": -1.4150752656717647
+        },
+        {
+          "time": 59248.699999999255,
+          "position": [
+            19.212809292057354,
+            0.75,
+            20.261649893354598
+          ],
+          "yaw": -1.7263171995575273
+        },
+        {
+          "time": 59457.599999997765,
+          "position": [
+            18.77705813546187,
+            0.75,
+            20.455726782487915
+          ],
+          "yaw": -0.8263171995575276
+        },
+        {
+          "time": 59658,
+          "position": [
+            18.66266428705602,
+            0.75,
+            20.758841861068458
+          ],
+          "yaw": 0.07368280044247247
+        },
+        {
+          "time": 59922.5,
+          "position": [
+            18.745612357022214,
+            0.5559175811006203,
+            21.782247256698138
+          ],
+          "yaw": 0.06286777671574031
+        },
+        {
+          "time": 60150,
+          "position": [
+            18.77033139429707,
+            0.5,
+            22.31136221256418
+          ],
+          "yaw": 0.041303423345860873
+        },
+        {
+          "time": 60384.89999999851,
+          "position": [
+            18.78875762275479,
+            0.5,
+            22.975665886503837
+          ],
+          "yaw": 0.00739728812745845
+        },
+        {
+          "time": 60617.800000000745,
+          "position": [
+            18.778279164366097,
+            0.5,
+            23.7750423093623
+          ],
+          "yaw": -0.01720661397728667
+        },
+        {
+          "time": 60818.89999999851,
+          "position": [
+            18.765565602514116,
+            0.5,
+            24.174708273880523
+          ],
+          "yaw": -0.0390955523158369
+        },
+        {
+          "time": 61055.699999999255,
+          "position": [
+            18.70836261501699,
+            0.5,
+            25.106184978892713
+          ],
+          "yaw": -0.06503998862511937
+        },
+        {
+          "time": 61282.89999999851,
+          "position": [
+            18.655209362467065,
+            0.5,
+            25.63683833497134
+          ],
+          "yaw": -0.11240359204501278
+        },
+        {
+          "time": 61528.599999997765,
+          "position": [
+            18.54429987841671,
+            0.5,
+            26.563500480174305
+          ],
+          "yaw": -0.13591315266645707
+        },
+        {
+          "time": 61762.5,
+          "position": [
+            18.466834733788954,
+            0.5,
+            27.091168730277182
+          ],
+          "yaw": -0.14904929466171776
+        },
+        {
+          "time": 62007.800000000745,
+          "position": [
+            18.365388439567447,
+            0.5,
+            27.750064371777217
+          ],
+          "yaw": -0.15833750976993996
+        },
+        {
+          "time": 62214,
+          "position": [
+            18.2355674685065,
+            0.5,
+            28.539458825811302
+          ],
+          "yaw": -0.16392935210366844
+        },
+        {
+          "time": 62432.699999999255,
+          "position": [
+            18.17000036903846,
+            0.5,
+            28.934048357681263
+          ],
+          "yaw": -0.16502659892418683
+        },
+        {
+          "time": 62646.099999997765,
+          "position": [
+            18.019668497175733,
+            0.5,
+            29.855194320818754
+          ],
+          "yaw": -0.16123274061272766
+        },
+        {
+          "time": 62851,
+          "position": [
+            17.958214911591753,
+            0.5,
+            30.250445450686737
+          ],
+          "yaw": -0.1542448561515978
+        },
+        {
+          "time": 63078.699999999255,
+          "position": [
+            17.827733885568588,
+            0.5,
+            31.17460399192863
+          ],
+          "yaw": -0.1295041481671538
+        },
+        {
+          "time": 63316.599999997765,
+          "position": [
+            17.765434094320003,
+            0.5,
+            31.70424475293924
+          ],
+          "yaw": -0.10467279302609961
+        },
+        {
+          "time": 63531.5,
+          "position": [
+            17.68723667126799,
+            0.5,
+            32.50037701601513
+          ],
+          "yaw": -0.08437690388442727
+        }
+      ]
+    },
+    {
+      "mode": "polygonal",
+      "kind": "wall",
+      "variant": "after",
+      "headingFlips": 5,
+      "displacement": 14.562043734339982,
+      "escapeProgress": 13.75089709943662,
+      "maxLift": 0.17962508895577056,
+      "maxGroundError": 0.0358597664771404,
+      "snapshot": {
+        "steps": 2,
+        "behaviorMs": 16.199999999254942,
+        "animationMs": 0,
+        "groundQueries": 3620,
+        "collisionQueries": 724,
+        "navigationFailures": 0,
+        "navigationMs": 16.199999999254942,
+        "discardedSeconds": 0.461399999999255,
+        "id": "679a2bde-c167-41ae-b4d2-d2ef5f8b3609",
+        "speciesId": "brown-hare",
+        "state": "Fleeing",
+        "position": [
+          24.79227990433946,
+          0.75,
+          33.75089709943662
+        ],
+        "editing": false,
+        "triangles": 674,
+        "modelError": null,
+        "navigation": {
+          "state": "Following",
+          "goal": [
+            24.66178563052701,
+            0.75,
+            34.54018237391104
+          ],
+          "desiredHeading": -0.1563623674778117,
+          "actualHeading": -0.163850000755653,
+          "recentDisplacement": 2.133316059679317,
+          "goalProgress": 2.133315162768721,
+          "blockedMovementCount": 0,
+          "stuck": false,
+          "recoveryAttempts": 5,
+          "avoidanceDirection": 1,
+          "committedSeconds": 0.06666666666666998,
+          "commitRemaining": 0.8333333333333286,
+          "retryIn": 0.0833333333333286,
+          "recentFailureReason": "",
+          "plans": 39,
+          "probeCount": 466,
+          "rememberedFailures": 0
+        }
+      },
+      "planDelta": 16,
+      "poses": [
+        {
+          "time": 63890.099999997765,
+          "position": [
+            20,
+            0.75,
+            20
+          ],
+          "yaw": 0.3,
+          "navigation": {
+            "state": "Following",
+            "goal": [
+              21.17086802939199,
+              0.75,
+              20.26280802451165
+            ],
+            "desiredHeading": 0,
+            "actualHeading": 0.3,
+            "recentDisplacement": 0,
+            "goalProgress": 0,
+            "blockedMovementCount": 0,
+            "stuck": false,
+            "recoveryAttempts": 5,
+            "avoidanceDirection": 1,
+            "committedSeconds": 0.033333333333333215,
+            "commitRemaining": 0.8666666666666671,
+            "retryIn": 0.11666666666666714,
+            "recentFailureReason": "",
+            "plans": 24,
+            "probeCount": 260,
+            "rememberedFailures": 0
+          }
+        },
+        {
+          "time": 64118.199999999255,
+          "position": [
+            20.337177439287338,
+            0.75,
+            20.075681404312505
+          ],
+          "yaw": 1.350000000000001,
+          "navigation": {
+            "state": "Following",
+            "goal": [
+              21.17086802939199,
+              0.75,
+              20.26280802451165
+            ],
+            "desiredHeading": -0.022990440985082638,
+            "actualHeading": 1.350000000000001,
+            "recentDisplacement": 0.3455666368778663,
+            "goalProgress": 0.3455666368778664,
+            "blockedMovementCount": 0,
+            "stuck": false,
+            "recoveryAttempts": 5,
+            "avoidanceDirection": 1,
+            "committedSeconds": 0.33333333333333215,
+            "commitRemaining": 0.5666666666666682,
+            "retryIn": 0,
+            "recentFailureReason": "",
+            "plans": 24,
+            "probeCount": 260,
+            "rememberedFailures": 0
+          }
+        },
+        {
+          "time": 64394.39999999851,
+          "position": [
+            21.069233000949005,
+            0.75,
+            20.23999546120325
+          ],
+          "yaw": 1.0500000000000054,
+          "navigation": {
+            "state": "Following",
+            "goal": [
+              21.166409719358025,
+              0.75,
+              21.43605427472341
+            ],
+            "desiredHeading": 0.031603680487908146,
+            "actualHeading": 1.0500000000000054,
+            "recentDisplacement": 1.095836224860529,
+            "goalProgress": 1.095836224860529,
+            "blockedMovementCount": 0,
+            "stuck": false,
+            "recoveryAttempts": 5,
+            "avoidanceDirection": 1,
+            "committedSeconds": 0.033333333333333215,
+            "commitRemaining": 0.8666666666666671,
+            "retryIn": 0.11666666666666714,
+            "recentFailureReason": "",
+            "plans": 25,
+            "probeCount": 265,
+            "rememberedFailures": 0
+          }
+        },
+        {
+          "time": 64631.300000000745,
+          "position": [
+            21.090683726090727,
+            0.75,
+            20.50401269992256
+          ],
+          "yaw": 0.08106937076331679,
+          "navigation": {
+            "state": "Following",
+            "goal": [
+              21.166409719358025,
+              0.75,
+              21.43605427472341
+            ],
+            "desiredHeading": 0.05604715476237168,
+            "actualHeading": 0.08106937076331679,
+            "recentDisplacement": 1.2015073000370742,
+            "goalProgress": 0.9149584320975553,
+            "blockedMovementCount": 0,
+            "stuck": false,
+            "recoveryAttempts": 5,
+            "avoidanceDirection": 1,
+            "committedSeconds": 0.29999999999999893,
+            "commitRemaining": 0.6000000000000014,
+            "retryIn": 0,
+            "recentFailureReason": "",
+            "plans": 25,
+            "probeCount": 265,
+            "rememberedFailures": 0
+          }
+        },
+        {
+          "time": 64853.699999999255,
+          "position": [
+            21.15525038234676,
+            0.75,
+            21.298704263281504
+          ],
+          "yaw": 0.08106937076332175,
+          "navigation": {
+            "state": "Following",
+            "goal": [
+              21.166409719358025,
+              0.75,
+              21.43605427472341
+            ],
+            "desiredHeading": 0.08205930018917659,
+            "actualHeading": 0.08106937076332175,
+            "recentDisplacement": 1.738170362587595,
+            "goalProgress": 1.7122686188968774,
+            "blockedMovementCount": 0,
+            "stuck": false,
+            "recoveryAttempts": 5,
+            "avoidanceDirection": 1,
+            "committedSeconds": 0.4999999999999982,
+            "commitRemaining": 0.40000000000000213,
+            "retryIn": 0,
+            "recentFailureReason": "",
+            "plans": 25,
+            "probeCount": 265,
+            "rememberedFailures": 0
+          }
+        },
+        {
+          "time": 65105.199999999255,
+          "position": [
+            21.15525038234676,
+            0.75,
+            21.298704263281504
+          ],
+          "yaw": 0.3810693707633217,
+          "navigation": {
+            "state": "Following",
+            "goal": [
+              22.000940675960692,
+              0.75,
+              22.150060785126016
+            ],
+            "desiredHeading": 0.08205930018917659,
+            "actualHeading": 0.3810693707633217,
+            "recentDisplacement": 1.738170362587595,
+            "goalProgress": 1.7122686188968774,
+            "blockedMovementCount": 0,
+            "stuck": false,
+            "recoveryAttempts": 5,
+            "avoidanceDirection": 1,
+            "committedSeconds": 0.033333333333333215,
+            "commitRemaining": 0.8666666666666671,
+            "retryIn": 0.11666666666666714,
+            "recentFailureReason": "",
+            "plans": 26,
+            "probeCount": 301,
+            "rememberedFailures": 0
+          }
+        },
+        {
+          "time": 65330.300000000745,
+          "position": [
+            21.812677652848866,
+            0.75,
+            21.960536376771405
+          ],
+          "yaw": 0.7820593001891759,
+          "navigation": {
+            "state": "Following",
+            "goal": [
+              22.000940675960692,
+              0.75,
+              22.150060785126016
+            ],
+            "desiredHeading": 0.13670993278292776,
+            "actualHeading": 0.7820593001891759,
+            "recentDisplacement": 0.7996379834592984,
+            "goalProgress": 0.7996379834592984,
+            "blockedMovementCount": 0,
+            "stuck": false,
+            "recoveryAttempts": 5,
+            "avoidanceDirection": 1,
+            "committedSeconds": 0.33333333333333215,
+            "commitRemaining": 0.5666666666666682,
+            "retryIn": 0,
+            "recentFailureReason": "",
+            "plans": 26,
+            "probeCount": 301,
+            "rememberedFailures": 0
+          }
+        },
+        {
+          "time": 65582,
+          "position": [
+            22.005595446342777,
+            0.75,
+            22.1444142492596
+          ],
+          "yaw": 0.8367099327829287,
+          "navigation": {
+            "state": "Following",
+            "goal": [
+              22.797553545692704,
+              0.75,
+              22.85900095350136
+            ],
+            "desiredHeading": 0.13670993278292776,
+            "actualHeading": 0.8367099327829287,
+            "recentDisplacement": 1.0660747952591767,
+            "goalProgress": 1.0654651816606502,
+            "blockedMovementCount": 0,
+            "stuck": false,
+            "recoveryAttempts": 5,
+            "avoidanceDirection": 1,
+            "committedSeconds": 0.033333333333333215,
+            "commitRemaining": 0.8666666666666671,
+            "retryIn": 0.11666666666666714,
+            "recentFailureReason": "",
+            "plans": 27,
+            "probeCount": 334,
+            "rememberedFailures": 0
+          }
+        },
+        {
+          "time": 65851.59999999776,
+          "position": [
+            22.698503126199455,
+            0.75,
+            22.76962739588822
+          ],
+          "yaw": 0.8367099327829293,
+          "navigation": {
+            "state": "Following",
+            "goal": [
+              22.797553545692704,
+              0.75,
+              22.85900095350136
+            ],
+            "desiredHeading": 0.16289527959119274,
+            "actualHeading": 0.8367099327829293,
+            "recentDisplacement": 1.9987863576611453,
+            "goalProgress": 1.998745703005452,
+            "blockedMovementCount": 0,
+            "stuck": false,
+            "recoveryAttempts": 5,
+            "avoidanceDirection": 1,
+            "committedSeconds": 0.33333333333333215,
+            "commitRemaining": 0.5666666666666682,
+            "retryIn": 0,
+            "recentFailureReason": "",
+            "plans": 27,
+            "probeCount": 334,
+            "rememberedFailures": 0
+          }
+        },
+        {
+          "time": 66092.5,
+          "position": [
+            23.103684938395183,
+            0.75,
+            23.116416672394863
+          ],
+          "yaw": 0.8628952795911946,
+          "navigation": {
+            "state": "Following",
+            "goal": [
+              23.610177173538226,
+              0.75,
+              23.54991608054855
+            ],
+            "desiredHeading": 0.164922721167897,
+            "actualHeading": 0.8628952795911946,
+            "recentDisplacement": 0.13333219219317308,
+            "goalProgress": 0.13333219219317316,
+            "blockedMovementCount": 0,
+            "stuck": false,
+            "recoveryAttempts": 5,
+            "avoidanceDirection": 1,
+            "committedSeconds": 0.1999999999999993,
+            "commitRemaining": 0.7000000000000011,
+            "retryIn": 0,
+            "recentFailureReason": "",
+            "plans": 28,
+            "probeCount": 361,
+            "rememberedFailures": 0
+          }
+        },
+        {
+          "time": 66447,
+          "position": [
+            23.711252039101765,
+            0.75,
+            23.636854884512715
+          ],
+          "yaw": 0.86166940861289,
+          "navigation": {
+            "state": "Following",
+            "goal": [
+              24.41958798887039,
+              0.75,
+              24.244615415317117
+            ],
+            "desiredHeading": 0.16166940861289053,
+            "actualHeading": 0.86166940861289,
+            "recentDisplacement": 0.9333282542006371,
+            "goalProgress": 0.9333280753013821,
+            "blockedMovementCount": 0,
+            "stuck": false,
+            "recoveryAttempts": 5,
+            "avoidanceDirection": 1,
+            "committedSeconds": 0.033333333333333215,
+            "commitRemaining": 0.8666666666666654,
+            "retryIn": 0.11666666666666714,
+            "recentFailureReason": "",
+            "plans": 29,
+            "probeCount": 392,
+            "rememberedFailures": 0
+          }
+        },
+        {
+          "time": 66736.30000000075,
+          "position": [
+            24.31839593197778,
+            0.75,
+            24.15779144678872
+          ],
+          "yaw": 0.711669408612884,
+          "navigation": {
+            "state": "Following",
+            "goal": [
+              24.55074603601668,
+              0.75,
+              25.335082162437626
+            ],
+            "desiredHeading": 0.1948558212263728,
+            "actualHeading": 0.711669408612884,
+            "recentDisplacement": 1.733327219420392,
+            "goalProgress": 1.733327205658774,
+            "blockedMovementCount": 0,
+            "stuck": false,
+            "recoveryAttempts": 5,
+            "avoidanceDirection": 1,
+            "committedSeconds": 0,
+            "commitRemaining": 0.9000000000000004,
+            "retryIn": 0.15000000000000036,
+            "recentFailureReason": "",
+            "plans": 30,
+            "probeCount": 397,
+            "rememberedFailures": 0
+          }
+        },
+        {
+          "time": 66999.89999999851,
+          "position": [
+            24.447479302427336,
+            0.75,
+            24.811841739572273
+          ],
+          "yaw": 0.19485582122637152,
+          "navigation": {
+            "state": "Following",
+            "goal": [
+              24.55074603601668,
+              0.75,
+              25.335082162437626
+            ],
+            "desiredHeading": 0.12851735134980266,
+            "actualHeading": 0.19485582122637152,
+            "recentDisplacement": 2.2943952384493764,
+            "goalProgress": 2.2437353920289826,
+            "blockedMovementCount": 0,
+            "stuck": false,
+            "recoveryAttempts": 5,
+            "avoidanceDirection": 1,
+            "committedSeconds": 0.26666666666667105,
+            "commitRemaining": 0.6333333333333293,
+            "retryIn": 0,
+            "recentFailureReason": "",
+            "plans": 30,
+            "probeCount": 397,
+            "rememberedFailures": 0
+          }
+        },
+        {
+          "time": 67243.19999999925,
+          "position": [
+            24.52492933125222,
+            0.75,
+            25.204271948456576
+          ],
+          "yaw": 0.3448558212263654,
+          "navigation": {
+            "state": "Following",
+            "goal": [
+              25.393587211760128,
+              0.75,
+              26.032181053752268
+            ],
+            "desiredHeading": 0.10941191735898442,
+            "actualHeading": 0.3448558212263654,
+            "recentDisplacement": 0.39999996976244007,
+            "goalProgress": 0.3999999697624401,
+            "blockedMovementCount": 0,
+            "stuck": false,
+            "recoveryAttempts": 5,
+            "avoidanceDirection": 1,
+            "committedSeconds": 0,
+            "commitRemaining": 0.8999999999999986,
+            "retryIn": 0.14999999999999858,
+            "recentFailureReason": "",
+            "plans": 31,
+            "probeCount": 426,
+            "rememberedFailures": 0
+          }
+        },
+        {
+          "time": 67482.69999999925,
+          "position": [
+            25.200206174661872,
+            0.75,
+            25.84854181480508
+          ],
+          "yaw": 0.8112313389608379,
+          "navigation": {
+            "state": "Following",
+            "goal": [
+              25.393587211760128,
+              0.75,
+              26.032181053752268
+            ],
+            "desiredHeading": 0.13075400557788067,
+            "actualHeading": 0.8112313389608379,
+            "recentDisplacement": 1.281149792245894,
+            "goalProgress": 1.277450909870897,
+            "blockedMovementCount": 0,
+            "stuck": false,
+            "recoveryAttempts": 5,
+            "avoidanceDirection": 1,
+            "committedSeconds": 0.3000000000000149,
+            "commitRemaining": 0.5999999999999837,
+            "retryIn": 0,
+            "recentFailureReason": "",
+            "plans": 31,
+            "probeCount": 426,
+            "rememberedFailures": 0
+          }
+        },
+        {
+          "time": 67696,
+          "position": [
+            25.33165939096428,
+            0.75,
+            26.204746320077305
+          ],
+          "yaw": 0.13075400557787997,
+          "navigation": {
+            "state": "Following",
+            "goal": [
+              25.453349023375957,
+              0.75,
+              27.130112596754955
+            ],
+            "desiredHeading": 0.10881576116434004,
+            "actualHeading": 0.13075400557787997,
+            "recentDisplacement": 1.649835627981496,
+            "goalProgress": 1.593750689531854,
+            "blockedMovementCount": 0,
+            "stuck": false,
+            "recoveryAttempts": 5,
+            "avoidanceDirection": 1,
+            "committedSeconds": 0.16666666666667496,
+            "commitRemaining": 0.7333333333333236,
+            "retryIn": 0,
+            "recentFailureReason": "",
+            "plans": 32,
+            "probeCount": 431,
+            "rememberedFailures": 0
+          }
+        },
+        {
+          "time": 67945.5,
+          "position": [
+            25.440145013653673,
+            0.75,
+            27.131185201042058
+          ],
+          "yaw": 0.03135681637329661,
+          "navigation": {
+            "state": "Following",
+            "goal": [
+              25.473586803553466,
+              0.75,
+              28.197327510815473
+            ],
+            "desiredHeading": 0.031356816373297416,
+            "actualHeading": 0.03135681637329661,
+            "recentDisplacement": 0.26633740750913976,
+            "goalProgress": 0.2660742346398466,
+            "blockedMovementCount": 0,
+            "stuck": false,
+            "recoveryAttempts": 5,
+            "avoidanceDirection": 1,
+            "committedSeconds": 0,
+            "commitRemaining": 0.8999999999999986,
+            "retryIn": 0.14999999999999858,
+            "recentFailureReason": "",
+            "plans": 33,
+            "probeCount": 436,
+            "rememberedFailures": 0
+          }
+        },
+        {
+          "time": 68184.59999999776,
+          "position": [
+            25.461046132333326,
+            0.75,
+            27.79752414440441
+          ],
+          "yaw": 0.03135681637329793,
+          "navigation": {
+            "state": "Following",
+            "goal": [
+              25.473586803553466,
+              0.75,
+              28.197327510815473
+            ],
+            "desiredHeading": -0.03782924963583585,
+            "actualHeading": 0.03135681637329793,
+            "recentDisplacement": 0.9327690669426542,
+            "goalProgress": 0.9327409011256669,
+            "blockedMovementCount": 0,
+            "stuck": false,
+            "recoveryAttempts": 5,
+            "avoidanceDirection": 1,
+            "committedSeconds": 0.26666666666667993,
+            "commitRemaining": 0.6333333333333186,
+            "retryIn": 0,
+            "recentFailureReason": "",
+            "plans": 33,
+            "probeCount": 436,
+            "rememberedFailures": 0
+          }
+        },
+        {
+          "time": 68403.89999999851,
+          "position": [
+            25.459321185760146,
+            0.75,
+            28.330535604228515
+          ],
+          "yaw": -0.03782924963583525,
+          "navigation": {
+            "state": "Following",
+            "goal": [
+              25.424022306594246,
+              0.75,
+              29.26320119289836
+            ],
+            "desiredHeading": -0.06053569902879724,
+            "actualHeading": -0.03782924963583525,
+            "recentDisplacement": 1.465379820832359,
+            "goalProgress": 1.4641518050224702,
+            "blockedMovementCount": 0,
+            "stuck": false,
+            "recoveryAttempts": 5,
+            "avoidanceDirection": 1,
+            "committedSeconds": 0.13333333333333997,
+            "commitRemaining": 0.7666666666666586,
+            "retryIn": 0.016666666666658614,
+            "recentFailureReason": "",
+            "plans": 34,
+            "probeCount": 441,
+            "rememberedFailures": 0
+          }
+        },
+        {
+          "time": 68624.89999999851,
+          "position": [
+            25.429065003619634,
+            0.75,
+            29.12996325161519
+          ],
+          "yaw": -0.037829249635826095,
+          "navigation": {
+            "state": "Following",
+            "goal": [
+              25.424022306594246,
+              0.75,
+              29.26320119289836
+            ],
+            "desiredHeading": -0.08845239972044074,
+            "actualHeading": -0.037829249635826095,
+            "recentDisplacement": 2.264265295023783,
+            "goalProgress": 2.264151804999917,
+            "blockedMovementCount": 0,
+            "stuck": false,
+            "recoveryAttempts": 5,
+            "avoidanceDirection": 1,
+            "committedSeconds": 0.3333333333333499,
+            "commitRemaining": 0.5666666666666487,
+            "retryIn": 0,
+            "recentFailureReason": "",
+            "plans": 34,
+            "probeCount": 441,
+            "rememberedFailures": 0
+          }
+        },
+        {
+          "time": 68864.80000000075,
+          "position": [
+            25.381951880712002,
+            0.75,
+            29.661211590990057
+          ],
+          "yaw": -0.08845239972044167,
+          "navigation": {
+            "state": "Following",
+            "goal": [
+              25.323060477076385,
+              0.75,
+              30.32527201522079
+            ],
+            "desiredHeading": -0.11089481192511016,
+            "actualHeading": -0.08845239972044167,
+            "recentDisplacement": 0.3999999999964719,
+            "goalProgress": 0.39999999999647184,
+            "blockedMovementCount": 0,
+            "stuck": false,
+            "recoveryAttempts": 5,
+            "avoidanceDirection": 1,
+            "committedSeconds": 0.20000000000000995,
+            "commitRemaining": 0.6999999999999886,
+            "retryIn": 0,
+            "recentFailureReason": "",
+            "plans": 35,
+            "probeCount": 446,
+            "rememberedFailures": 0
+          }
+        },
+        {
+          "time": 69118.30000000075,
+          "position": [
+            25.266808821552146,
+            0.75,
+            30.721436652178983
+          ],
+          "yaw": -0.12790458963202775,
+          "navigation": {
+            "state": "Following",
+            "goal": [
+              25.18177140123706,
+              0.75,
+              31.382657554443615
+            ],
+            "desiredHeading": -0.1279045896320281,
+            "actualHeading": -0.12790458963202775,
+            "recentDisplacement": 1.4664025479968537,
+            "goalProgress": 1.466258105767011,
+            "blockedMovementCount": 0,
+            "stuck": false,
+            "recoveryAttempts": 5,
+            "avoidanceDirection": 1,
+            "committedSeconds": 0.10000000000000497,
+            "commitRemaining": 0.7999999999999936,
+            "retryIn": 0.049999999999993605,
+            "recentFailureReason": "",
+            "plans": 36,
+            "probeCount": 451,
+            "rememberedFailures": 0
+          }
+        },
+        {
+          "time": 69342.89999999851,
+          "position": [
+            25.21578636936318,
+            0.75,
+            31.118169193537113
+          ],
+          "yaw": -0.12790458963202794,
+          "navigation": {
+            "state": "Following",
+            "goal": [
+              25.18177140123706,
+              0.75,
+              31.382657554443615
+            ],
+            "desiredHeading": -0.14353505461863164,
+            "actualHeading": -0.12790458963202794,
+            "recentDisplacement": 1.866303500869588,
+            "goalProgress": 1.8662581057668308,
+            "blockedMovementCount": 0,
+            "stuck": false,
+            "recoveryAttempts": 5,
+            "avoidanceDirection": 1,
+            "committedSeconds": 0.3000000000000149,
+            "commitRemaining": 0.5999999999999837,
+            "retryIn": 0,
+            "recentFailureReason": "",
+            "plans": 36,
+            "probeCount": 451,
+            "rememberedFailures": 0
+          }
+        },
+        {
+          "time": 69556.89999999851,
+          "position": [
+            25.09509006205672,
+            0.75,
+            31.90896714732856
+          ],
+          "yaw": -0.15616723435559485,
+          "navigation": {
+            "state": "Following",
+            "goal": [
+              25.012139003461915,
+              0.75,
+              32.435810165999754
+            ],
+            "desiredHeading": -0.16224798596713516,
+            "actualHeading": -0.15616723435559485,
+            "recentDisplacement": 0.26666666666663047,
+            "goalProgress": 0.2666666666666305,
+            "blockedMovementCount": 0,
+            "stuck": false,
+            "recoveryAttempts": 5,
+            "avoidanceDirection": 1,
+            "committedSeconds": 0.16666666666667496,
+            "commitRemaining": 0.7333333333333236,
+            "retryIn": 0,
+            "recentFailureReason": "",
+            "plans": 37,
+            "probeCount": 456,
+            "rememberedFailures": 0
+          }
+        },
+        {
+          "time": 69808,
+          "position": [
+            24.98903933639439,
+            0.75,
+            32.567138174048736
+          ],
+          "yaw": -0.16513994017185185,
+          "navigation": {
+            "state": "Following",
+            "goal": [
+              24.835608325387554,
+              0.75,
+              33.487773843557875
+            ],
+            "desiredHeading": -0.16513994017185374,
+            "actualHeading": -0.16513994017185185,
+            "recentDisplacement": 0.9333256657865853,
+            "goalProgress": 0.9333160813443676,
+            "blockedMovementCount": 0,
+            "stuck": false,
+            "recoveryAttempts": 5,
+            "avoidanceDirection": 1,
+            "committedSeconds": 0.03333333333333499,
+            "commitRemaining": 0.8666666666666636,
+            "retryIn": 0.11666666666666359,
+            "recentFailureReason": "",
+            "plans": 38,
+            "probeCount": 461,
+            "rememberedFailures": 0
+          }
+        },
+        {
+          "time": 70019.59999999776,
+          "position": [
+            24.901364472961916,
+            0.75,
+            33.09321569948251
+          ],
+          "yaw": -0.1651399401718511,
+          "navigation": {
+            "state": "Following",
+            "goal": [
+              24.835608325387554,
+              0.75,
+              33.487773843557875
+            ],
+            "desiredHeading": -0.16385000075564957,
+            "actualHeading": -0.1651399401718511,
+            "recentDisplacement": 1.466652028609996,
+            "goalProgress": 1.4666494146776874,
+            "blockedMovementCount": 0,
+            "stuck": false,
+            "recoveryAttempts": 5,
+            "avoidanceDirection": 1,
+            "committedSeconds": 0.26666666666667993,
+            "commitRemaining": 0.6333333333333186,
+            "retryIn": 0,
+            "recentFailureReason": "",
+            "plans": 38,
+            "probeCount": 461,
+            "rememberedFailures": 0
+          }
+        }
+      ]
+    },
+    {
+      "mode": "polygonal",
+      "kind": "enclosed",
+      "variant": "before",
+      "headingFlips": 53,
+      "displacement": 0.676824478690296,
+      "escapeProgress": 0.26323985635867686,
+      "maxLift": 0.16412158642512564,
+      "maxGroundError": 0,
+      "snapshot": {
+        "steps": 3,
+        "behaviorMs": 29.699999999254942,
+        "animationMs": 0,
+        "groundQueries": 950,
+        "collisionQueries": 190,
+        "navigationFailures": 87,
+        "discardedSeconds": 0,
+        "id": "legacy-navigation",
+        "speciesId": "brown-hare",
+        "state": "Fleeing",
+        "position": [
+          19.376464794114515,
+          0.75,
+          20.263239856358677
+        ],
+        "editing": false,
+        "triangles": 674,
+        "modelError": null
+      },
+      "planDelta": 0,
+      "poses": [
+        {
+          "time": 70832.09999999776,
+          "position": [
+            20,
+            0.75,
+            20
+          ],
+          "yaw": 0
+        },
+        {
+          "time": 71095.69999999925,
+          "position": [
+            20,
+            0.75,
+            20.04074074074074
+          ],
+          "yaw": 0
+        },
+        {
+          "time": 71299.89999999851,
+          "position": [
+            20,
+            0.75,
+            20.245696159122083
+          ],
+          "yaw": 0
+        },
+        {
+          "time": 71585.39999999851,
+          "position": [
+            20,
+            0.75,
+            20.245696159122083
+          ],
+          "yaw": -0.75
+        },
+        {
+          "time": 71834.59999999776,
+          "position": [
+            19.96808668145962,
+            0.75,
+            20.27102100968126
+          ],
+          "yaw": -1.2
+        },
+        {
+          "time": 72107.5,
+          "position": [
+            19.724403486438792,
+            0.75,
+            20.25521430070666
+          ],
+          "yaw": -1.4999999999999998
+        },
+        {
+          "time": 72380.09999999776,
+          "position": [
+            19.63787607584003,
+            0.75,
+            20.274635872800808
+          ],
+          "yaw": -1.4999999999999998
+        },
+        {
+          "time": 72641.80000000075,
+          "position": [
+            19.376464794114515,
+            0.75,
+            20.263239856358677
+          ],
+          "yaw": -1.5974044635990168
+        },
+        {
+          "time": 72910.89999999851,
+          "position": [
+            19.376464794114515,
+            0.75,
+            20.263239856358677
+          ],
+          "yaw": -1.5707963267948966
+        },
+        {
+          "time": 73152.89999999851,
+          "position": [
+            19.376464794114515,
+            0.75,
+            20.263239856358677
+          ],
+          "yaw": -1.7207963267948965
+        },
+        {
+          "time": 73403.80000000075,
+          "position": [
+            19.376464794114515,
+            0.75,
+            20.263239856358677
+          ],
+          "yaw": -1.8707963267948964
+        },
+        {
+          "time": 73647,
+          "position": [
+            19.376464794114515,
+            0.75,
+            20.263239856358677
+          ],
+          "yaw": -1.8707963267948964
+        },
+        {
+          "time": 73903.19999999925,
+          "position": [
+            19.376464794114515,
+            0.75,
+            20.263239856358677
+          ],
+          "yaw": -1.7207963267948965
+        },
+        {
+          "time": 74150.59999999776,
+          "position": [
+            19.376464794114515,
+            0.75,
+            20.263239856358677
+          ],
+          "yaw": -1.7207963267948965
+        },
+        {
+          "time": 74418,
+          "position": [
+            19.376464794114515,
+            0.75,
+            20.263239856358677
+          ],
+          "yaw": -2.0207963267948963
+        },
+        {
+          "time": 74661.59999999776,
+          "position": [
+            19.376464794114515,
+            0.75,
+            20.263239856358677
+          ],
+          "yaw": -1.8707963267948964
+        },
+        {
+          "time": 74898.80000000075,
+          "position": [
+            19.376464794114515,
+            0.75,
+            20.263239856358677
+          ],
+          "yaw": -1.7207963267948965
+        },
+        {
+          "time": 75168.30000000075,
+          "position": [
+            19.376464794114515,
+            0.75,
+            20.263239856358677
+          ],
+          "yaw": -1.7207963267948965
+        },
+        {
+          "time": 75400.80000000075,
+          "position": [
+            19.376464794114515,
+            0.75,
+            20.263239856358677
+          ],
+          "yaw": -1.8707963267948964
+        },
+        {
+          "time": 75637.09999999776,
+          "position": [
+            19.376464794114515,
+            0.75,
+            20.263239856358677
+          ],
+          "yaw": -2.0207963267948963
+        },
+        {
+          "time": 75868.59999999776,
+          "position": [
+            19.376464794114515,
+            0.75,
+            20.263239856358677
+          ],
+          "yaw": -1.8707963267948964
+        },
+        {
+          "time": 76115.80000000075,
+          "position": [
+            19.376464794114515,
+            0.75,
+            20.263239856358677
+          ],
+          "yaw": -1.5707963267948966
+        },
+        {
+          "time": 76367.5,
+          "position": [
+            19.376464794114515,
+            0.75,
+            20.263239856358677
+          ],
+          "yaw": -1.7207963267948965
+        },
+        {
+          "time": 76600.30000000075,
+          "position": [
+            19.376464794114515,
+            0.75,
+            20.263239856358677
+          ],
+          "yaw": -1.8707963267948964
+        },
+        {
+          "time": 76856.89999999851,
+          "position": [
+            19.376464794114515,
+            0.75,
+            20.263239856358677
+          ],
+          "yaw": -1.8707963267948964
+        },
+        {
+          "time": 77100.19999999925,
+          "position": [
+            19.376464794114515,
+            0.75,
+            20.263239856358677
+          ],
+          "yaw": -1.7207963267948965
+        },
+        {
+          "time": 77380.69999999925,
+          "position": [
+            19.376464794114515,
+            0.75,
+            20.263239856358677
+          ],
+          "yaw": -1.7207963267948965
+        }
+      ]
+    },
+    {
+      "mode": "polygonal",
+      "kind": "enclosed",
+      "variant": "after",
+      "headingFlips": 0,
+      "displacement": 0,
+      "escapeProgress": 0,
+      "maxLift": 0,
+      "maxGroundError": 0,
+      "snapshot": {
+        "steps": 2,
+        "behaviorMs": 0,
+        "animationMs": 0,
+        "groundQueries": 3920,
+        "collisionQueries": 784,
+        "navigationFailures": 0,
+        "navigationMs": 0,
+        "discardedSeconds": 0.6048000000029803,
+        "id": "679a2bde-c167-41ae-b4d2-d2ef5f8b3609",
+        "speciesId": "brown-hare",
+        "state": "Fleeing",
+        "position": [
+          20,
+          0.75,
+          20
+        ],
+        "editing": false,
+        "triangles": 674,
+        "modelError": null,
+        "navigation": {
+          "state": "Waiting",
+          "goal": null,
+          "desiredHeading": 0,
+          "actualHeading": 0,
+          "recentDisplacement": 0,
+          "goalProgress": 0,
+          "blockedMovementCount": 0,
+          "stuck": true,
+          "recoveryAttempts": 7,
+          "avoidanceDirection": 0,
+          "committedSeconds": 0,
+          "commitRemaining": 0,
+          "retryIn": 0.8726432291665844,
+          "recentFailureReason": "No supported clear local route",
+          "plans": 42,
+          "probeCount": 526,
+          "rememberedFailures": 0
+        }
+      },
+      "planDelta": 3,
+      "poses": [
+        {
+          "time": 77619.19999999925,
+          "position": [
+            20,
+            0.75,
+            20
+          ],
+          "yaw": 0,
+          "navigation": {
+            "state": "Waiting",
+            "goal": null,
+            "desiredHeading": -0.1563623674778117,
+            "actualHeading": 0,
+            "recentDisplacement": 0,
+            "goalProgress": 0,
+            "blockedMovementCount": 0,
+            "stuck": true,
+            "recoveryAttempts": 5,
+            "avoidanceDirection": 0,
+            "committedSeconds": 0,
+            "commitRemaining": 0,
+            "retryIn": 2.189309895833329,
+            "recentFailureReason": "No supported clear local route",
+            "plans": 40,
+            "probeCount": 486,
+            "rememberedFailures": 0
+          }
+        },
+        {
+          "time": 77821.80000000075,
+          "position": [
+            20,
+            0.75,
+            20
+          ],
+          "yaw": 0,
+          "navigation": {
+            "state": "Waiting",
+            "goal": null,
+            "desiredHeading": 0,
+            "actualHeading": 0,
+            "recentDisplacement": 0,
+            "goalProgress": 0,
+            "blockedMovementCount": 0,
+            "stuck": true,
+            "recoveryAttempts": 5,
+            "avoidanceDirection": 0,
+            "committedSeconds": 0,
+            "commitRemaining": 0,
+            "retryIn": 1.922643229166649,
+            "recentFailureReason": "No supported clear local route",
+            "plans": 40,
+            "probeCount": 486,
+            "rememberedFailures": 0
+          }
+        },
+        {
+          "time": 78032.69999999925,
+          "position": [
+            20,
+            0.75,
+            20
+          ],
+          "yaw": 0,
+          "navigation": {
+            "state": "Waiting",
+            "goal": null,
+            "desiredHeading": 0,
+            "actualHeading": 0,
+            "recentDisplacement": 0,
+            "goalProgress": 0,
+            "blockedMovementCount": 0,
+            "stuck": true,
+            "recoveryAttempts": 5,
+            "avoidanceDirection": 0,
+            "committedSeconds": 0,
+            "commitRemaining": 0,
+            "retryIn": 1.7226432291666391,
+            "recentFailureReason": "No supported clear local route",
+            "plans": 40,
+            "probeCount": 486,
+            "rememberedFailures": 0
+          }
+        },
+        {
+          "time": 78260.19999999925,
+          "position": [
+            20,
+            0.75,
+            20
+          ],
+          "yaw": 0,
+          "navigation": {
+            "state": "Waiting",
+            "goal": null,
+            "desiredHeading": 0,
+            "actualHeading": 0,
+            "recentDisplacement": 0,
+            "goalProgress": 0,
+            "blockedMovementCount": 0,
+            "stuck": true,
+            "recoveryAttempts": 5,
+            "avoidanceDirection": 0,
+            "committedSeconds": 0,
+            "commitRemaining": 0,
+            "retryIn": 1.4893098958332942,
+            "recentFailureReason": "No supported clear local route",
+            "plans": 40,
+            "probeCount": 486,
+            "rememberedFailures": 0
+          }
+        },
+        {
+          "time": 78485.5,
+          "position": [
+            20,
+            0.75,
+            20
+          ],
+          "yaw": 0,
+          "navigation": {
+            "state": "Waiting",
+            "goal": null,
+            "desiredHeading": 0,
+            "actualHeading": 0,
+            "recentDisplacement": 0,
+            "goalProgress": 0,
+            "blockedMovementCount": 0,
+            "stuck": true,
+            "recoveryAttempts": 5,
+            "avoidanceDirection": 0,
+            "committedSeconds": 0,
+            "commitRemaining": 0,
+            "retryIn": 1.2559765624999493,
+            "recentFailureReason": "No supported clear local route",
+            "plans": 40,
+            "probeCount": 486,
+            "rememberedFailures": 0
+          }
+        },
+        {
+          "time": 78711,
+          "position": [
+            20,
+            0.75,
+            20
+          ],
+          "yaw": 0,
+          "navigation": {
+            "state": "Waiting",
+            "goal": null,
+            "desiredHeading": 0,
+            "actualHeading": 0,
+            "recentDisplacement": 0,
+            "goalProgress": 0,
+            "blockedMovementCount": 0,
+            "stuck": true,
+            "recoveryAttempts": 5,
+            "avoidanceDirection": 0,
+            "committedSeconds": 0,
+            "commitRemaining": 0,
+            "retryIn": 1.0559765624999393,
+            "recentFailureReason": "No supported clear local route",
+            "plans": 40,
+            "probeCount": 486,
+            "rememberedFailures": 0
+          }
+        },
+        {
+          "time": 78926.09999999776,
+          "position": [
+            20,
+            0.75,
+            20
+          ],
+          "yaw": 0,
+          "navigation": {
+            "state": "Waiting",
+            "goal": null,
+            "desiredHeading": 0,
+            "actualHeading": 0,
+            "recentDisplacement": 0,
+            "goalProgress": 0,
+            "blockedMovementCount": 0,
+            "stuck": true,
+            "recoveryAttempts": 5,
+            "avoidanceDirection": 0,
+            "committedSeconds": 0,
+            "commitRemaining": 0,
+            "retryIn": 0.8226432291665944,
+            "recentFailureReason": "No supported clear local route",
+            "plans": 40,
+            "probeCount": 486,
+            "rememberedFailures": 0
+          }
+        },
+        {
+          "time": 79130.89999999851,
+          "position": [
+            20,
+            0.75,
+            20
+          ],
+          "yaw": 0,
+          "navigation": {
+            "state": "Waiting",
+            "goal": null,
+            "desiredHeading": 0,
+            "actualHeading": 0,
+            "recentDisplacement": 0,
+            "goalProgress": 0,
+            "blockedMovementCount": 0,
+            "stuck": true,
+            "recoveryAttempts": 5,
+            "avoidanceDirection": 0,
+            "committedSeconds": 0,
+            "commitRemaining": 0,
+            "retryIn": 0.6226432291665844,
+            "recentFailureReason": "No supported clear local route",
+            "plans": 40,
+            "probeCount": 486,
+            "rememberedFailures": 0
+          }
+        },
+        {
+          "time": 79353.19999999925,
+          "position": [
+            20,
+            0.75,
+            20
+          ],
+          "yaw": 0,
+          "navigation": {
+            "state": "Waiting",
+            "goal": null,
+            "desiredHeading": 0,
+            "actualHeading": 0,
+            "recentDisplacement": 0,
+            "goalProgress": 0,
+            "blockedMovementCount": 0,
+            "stuck": true,
+            "recoveryAttempts": 5,
+            "avoidanceDirection": 0,
+            "committedSeconds": 0,
+            "commitRemaining": 0,
+            "retryIn": 0.3893098958332395,
+            "recentFailureReason": "No supported clear local route",
+            "plans": 40,
+            "probeCount": 486,
+            "rememberedFailures": 0
+          }
+        },
+        {
+          "time": 79569.69999999925,
+          "position": [
+            20,
+            0.75,
+            20
+          ],
+          "yaw": 0,
+          "navigation": {
+            "state": "Waiting",
+            "goal": null,
+            "desiredHeading": 0,
+            "actualHeading": 0,
+            "recentDisplacement": 0,
+            "goalProgress": 0,
+            "blockedMovementCount": 0,
+            "stuck": true,
+            "recoveryAttempts": 5,
+            "avoidanceDirection": 0,
+            "committedSeconds": 0,
+            "commitRemaining": 0,
+            "retryIn": 0.18930989583322955,
+            "recentFailureReason": "No supported clear local route",
+            "plans": 40,
+            "probeCount": 486,
+            "rememberedFailures": 0
+          }
+        },
+        {
+          "time": 79899.39999999851,
+          "position": [
+            20,
+            0.75,
+            20
+          ],
+          "yaw": 0,
+          "navigation": {
+            "state": "Waiting",
+            "goal": null,
+            "desiredHeading": 0,
+            "actualHeading": 0,
+            "recentDisplacement": 0,
+            "goalProgress": 0,
+            "blockedMovementCount": 0,
+            "stuck": true,
+            "recoveryAttempts": 6,
+            "avoidanceDirection": 0,
+            "committedSeconds": 0,
+            "commitRemaining": 0,
+            "retryIn": 2.472643229166664,
+            "recentFailureReason": "No supported clear local route",
+            "plans": 41,
+            "probeCount": 506,
+            "rememberedFailures": 0
+          }
+        },
+        {
+          "time": 80172.09999999776,
+          "position": [
+            20,
+            0.75,
+            20
+          ],
+          "yaw": 0,
+          "navigation": {
+            "state": "Waiting",
+            "goal": null,
+            "desiredHeading": 0,
+            "actualHeading": 0,
+            "recentDisplacement": 0,
+            "goalProgress": 0,
+            "blockedMovementCount": 0,
+            "stuck": true,
+            "recoveryAttempts": 6,
+            "avoidanceDirection": 0,
+            "committedSeconds": 0,
+            "commitRemaining": 0,
+            "retryIn": 2.139309895833314,
+            "recentFailureReason": "No supported clear local route",
+            "plans": 41,
+            "probeCount": 506,
+            "rememberedFailures": 0
+          }
+        },
+        {
+          "time": 80379.80000000075,
+          "position": [
+            20,
+            0.75,
+            20
+          ],
+          "yaw": 0,
+          "navigation": {
+            "state": "Waiting",
+            "goal": null,
+            "desiredHeading": 0,
+            "actualHeading": 0,
+            "recentDisplacement": 0,
+            "goalProgress": 0,
+            "blockedMovementCount": 0,
+            "stuck": true,
+            "recoveryAttempts": 6,
+            "avoidanceDirection": 0,
+            "committedSeconds": 0,
+            "commitRemaining": 0,
+            "retryIn": 1.9393098958333042,
+            "recentFailureReason": "No supported clear local route",
+            "plans": 41,
+            "probeCount": 506,
+            "rememberedFailures": 0
+          }
+        },
+        {
+          "time": 80591.5,
+          "position": [
+            20,
+            0.75,
+            20
+          ],
+          "yaw": 0,
+          "navigation": {
+            "state": "Waiting",
+            "goal": null,
+            "desiredHeading": 0,
+            "actualHeading": 0,
+            "recentDisplacement": 0,
+            "goalProgress": 0,
+            "blockedMovementCount": 0,
+            "stuck": true,
+            "recoveryAttempts": 6,
+            "avoidanceDirection": 0,
+            "committedSeconds": 0,
+            "commitRemaining": 0,
+            "retryIn": 1.7059765624999592,
+            "recentFailureReason": "No supported clear local route",
+            "plans": 41,
+            "probeCount": 506,
+            "rememberedFailures": 0
+          }
+        },
+        {
+          "time": 80813.89999999851,
+          "position": [
+            20,
+            0.75,
+            20
+          ],
+          "yaw": 0,
+          "navigation": {
+            "state": "Waiting",
+            "goal": null,
+            "desiredHeading": 0,
+            "actualHeading": 0,
+            "recentDisplacement": 0,
+            "goalProgress": 0,
+            "blockedMovementCount": 0,
+            "stuck": true,
+            "recoveryAttempts": 6,
+            "avoidanceDirection": 0,
+            "committedSeconds": 0,
+            "commitRemaining": 0,
+            "retryIn": 1.5059765624999493,
+            "recentFailureReason": "No supported clear local route",
+            "plans": 41,
+            "probeCount": 506,
+            "rememberedFailures": 0
+          }
+        },
+        {
+          "time": 81029.5,
+          "position": [
+            20,
+            0.75,
+            20
+          ],
+          "yaw": 0,
+          "navigation": {
+            "state": "Waiting",
+            "goal": null,
+            "desiredHeading": 0,
+            "actualHeading": 0,
+            "recentDisplacement": 0,
+            "goalProgress": 0,
+            "blockedMovementCount": 0,
+            "stuck": true,
+            "recoveryAttempts": 6,
+            "avoidanceDirection": 0,
+            "committedSeconds": 0,
+            "commitRemaining": 0,
+            "retryIn": 1.2726432291666043,
+            "recentFailureReason": "No supported clear local route",
+            "plans": 41,
+            "probeCount": 506,
+            "rememberedFailures": 0
+          }
+        },
+        {
+          "time": 81278.39999999851,
+          "position": [
+            20,
+            0.75,
+            20
+          ],
+          "yaw": 0,
+          "navigation": {
+            "state": "Waiting",
+            "goal": null,
+            "desiredHeading": 0,
+            "actualHeading": 0,
+            "recentDisplacement": 0,
+            "goalProgress": 0,
+            "blockedMovementCount": 0,
+            "stuck": true,
+            "recoveryAttempts": 6,
+            "avoidanceDirection": 0,
+            "committedSeconds": 0,
+            "commitRemaining": 0,
+            "retryIn": 1.0393098958332594,
+            "recentFailureReason": "No supported clear local route",
+            "plans": 41,
+            "probeCount": 506,
+            "rememberedFailures": 0
+          }
+        },
+        {
+          "time": 81515.5,
+          "position": [
+            20,
+            0.75,
+            20
+          ],
+          "yaw": 0,
+          "navigation": {
+            "state": "Waiting",
+            "goal": null,
+            "desiredHeading": 0,
+            "actualHeading": 0,
+            "recentDisplacement": 0,
+            "goalProgress": 0,
+            "blockedMovementCount": 0,
+            "stuck": true,
+            "recoveryAttempts": 6,
+            "avoidanceDirection": 0,
+            "committedSeconds": 0,
+            "commitRemaining": 0,
+            "retryIn": 0.8059765624999145,
+            "recentFailureReason": "No supported clear local route",
+            "plans": 41,
+            "probeCount": 506,
+            "rememberedFailures": 0
+          }
+        },
+        {
+          "time": 81729.19999999925,
+          "position": [
+            20,
+            0.75,
+            20
+          ],
+          "yaw": 0,
+          "navigation": {
+            "state": "Waiting",
+            "goal": null,
+            "desiredHeading": 0,
+            "actualHeading": 0,
+            "recentDisplacement": 0,
+            "goalProgress": 0,
+            "blockedMovementCount": 0,
+            "stuck": true,
+            "recoveryAttempts": 6,
+            "avoidanceDirection": 0,
+            "committedSeconds": 0,
+            "commitRemaining": 0,
+            "retryIn": 0.5726432291665695,
+            "recentFailureReason": "No supported clear local route",
+            "plans": 41,
+            "probeCount": 506,
+            "rememberedFailures": 0
+          }
+        },
+        {
+          "time": 81951.5,
+          "position": [
+            20,
+            0.75,
+            20
+          ],
+          "yaw": 0,
+          "navigation": {
+            "state": "Waiting",
+            "goal": null,
+            "desiredHeading": 0,
+            "actualHeading": 0,
+            "recentDisplacement": 0,
+            "goalProgress": 0,
+            "blockedMovementCount": 0,
+            "stuck": true,
+            "recoveryAttempts": 6,
+            "avoidanceDirection": 0,
+            "committedSeconds": 0,
+            "commitRemaining": 0,
+            "retryIn": 0.3393098958332246,
+            "recentFailureReason": "No supported clear local route",
+            "plans": 41,
+            "probeCount": 506,
+            "rememberedFailures": 0
+          }
+        },
+        {
+          "time": 82180.80000000075,
+          "position": [
+            20,
+            0.75,
+            20
+          ],
+          "yaw": 0,
+          "navigation": {
+            "state": "Waiting",
+            "goal": null,
+            "desiredHeading": 0,
+            "actualHeading": 0,
+            "recentDisplacement": 0,
+            "goalProgress": 0,
+            "blockedMovementCount": 0,
+            "stuck": true,
+            "recoveryAttempts": 6,
+            "avoidanceDirection": 0,
+            "committedSeconds": 0,
+            "commitRemaining": 0,
+            "retryIn": 0.13930989583321463,
+            "recentFailureReason": "No supported clear local route",
+            "plans": 41,
+            "probeCount": 506,
+            "rememberedFailures": 0
+          }
+        },
+        {
+          "time": 82434,
+          "position": [
+            20,
+            0.75,
+            20
+          ],
+          "yaw": 0,
+          "navigation": {
+            "state": "Waiting",
+            "goal": null,
+            "desiredHeading": 0,
+            "actualHeading": 0,
+            "recentDisplacement": 0,
+            "goalProgress": 0,
+            "blockedMovementCount": 0,
+            "stuck": true,
+            "recoveryAttempts": 7,
+            "avoidanceDirection": 0,
+            "committedSeconds": 0,
+            "commitRemaining": 0,
+            "retryIn": 2.505976562499999,
+            "recentFailureReason": "No supported clear local route",
+            "plans": 42,
+            "probeCount": 526,
+            "rememberedFailures": 0
+          }
+        },
+        {
+          "time": 82639.69999999925,
+          "position": [
+            20,
+            0.75,
+            20
+          ],
+          "yaw": 0,
+          "navigation": {
+            "state": "Waiting",
+            "goal": null,
+            "desiredHeading": 0,
+            "actualHeading": 0,
+            "recentDisplacement": 0,
+            "goalProgress": 0,
+            "blockedMovementCount": 0,
+            "stuck": true,
+            "recoveryAttempts": 7,
+            "avoidanceDirection": 0,
+            "committedSeconds": 0,
+            "commitRemaining": 0,
+            "retryIn": 2.239309895833319,
+            "recentFailureReason": "No supported clear local route",
+            "plans": 42,
+            "probeCount": 526,
+            "rememberedFailures": 0
+          }
+        },
+        {
+          "time": 82861.30000000075,
+          "position": [
+            20,
+            0.75,
+            20
+          ],
+          "yaw": 0,
+          "navigation": {
+            "state": "Waiting",
+            "goal": null,
+            "desiredHeading": 0,
+            "actualHeading": 0,
+            "recentDisplacement": 0,
+            "goalProgress": 0,
+            "blockedMovementCount": 0,
+            "stuck": true,
+            "recoveryAttempts": 7,
+            "avoidanceDirection": 0,
+            "committedSeconds": 0,
+            "commitRemaining": 0,
+            "retryIn": 2.039309895833309,
+            "recentFailureReason": "No supported clear local route",
+            "plans": 42,
+            "probeCount": 526,
+            "rememberedFailures": 0
+          }
+        },
+        {
+          "time": 83125.09999999776,
+          "position": [
+            20,
+            0.75,
+            20
+          ],
+          "yaw": 0,
+          "navigation": {
+            "state": "Waiting",
+            "goal": null,
+            "desiredHeading": 0,
+            "actualHeading": 0,
+            "recentDisplacement": 0,
+            "goalProgress": 0,
+            "blockedMovementCount": 0,
+            "stuck": true,
+            "recoveryAttempts": 7,
+            "avoidanceDirection": 0,
+            "committedSeconds": 0,
+            "commitRemaining": 0,
+            "retryIn": 1.7726432291666292,
+            "recentFailureReason": "No supported clear local route",
+            "plans": 42,
+            "probeCount": 526,
+            "rememberedFailures": 0
+          }
+        },
+        {
+          "time": 83349,
+          "position": [
+            20,
+            0.75,
+            20
+          ],
+          "yaw": 0,
+          "navigation": {
+            "state": "Waiting",
+            "goal": null,
+            "desiredHeading": 0,
+            "actualHeading": 0,
+            "recentDisplacement": 0,
+            "goalProgress": 0,
+            "blockedMovementCount": 0,
+            "stuck": true,
+            "recoveryAttempts": 7,
+            "avoidanceDirection": 0,
+            "committedSeconds": 0,
+            "commitRemaining": 0,
+            "retryIn": 1.5393098958332843,
+            "recentFailureReason": "No supported clear local route",
+            "plans": 42,
+            "probeCount": 526,
+            "rememberedFailures": 0
+          }
+        },
+        {
+          "time": 83564.69999999925,
+          "position": [
+            20,
+            0.75,
+            20
+          ],
+          "yaw": 0,
+          "navigation": {
+            "state": "Waiting",
+            "goal": null,
+            "desiredHeading": 0,
+            "actualHeading": 0,
+            "recentDisplacement": 0,
+            "goalProgress": 0,
+            "blockedMovementCount": 0,
+            "stuck": true,
+            "recoveryAttempts": 7,
+            "avoidanceDirection": 0,
+            "committedSeconds": 0,
+            "commitRemaining": 0,
+            "retryIn": 1.3059765624999393,
+            "recentFailureReason": "No supported clear local route",
+            "plans": 42,
+            "probeCount": 526,
+            "rememberedFailures": 0
+          }
+        },
+        {
+          "time": 83786.39999999851,
+          "position": [
+            20,
+            0.75,
+            20
+          ],
+          "yaw": 0,
+          "navigation": {
+            "state": "Waiting",
+            "goal": null,
+            "desiredHeading": 0,
+            "actualHeading": 0,
+            "recentDisplacement": 0,
+            "goalProgress": 0,
+            "blockedMovementCount": 0,
+            "stuck": true,
+            "recoveryAttempts": 7,
+            "avoidanceDirection": 0,
+            "committedSeconds": 0,
+            "commitRemaining": 0,
+            "retryIn": 1.1059765624999294,
+            "recentFailureReason": "No supported clear local route",
+            "plans": 42,
+            "probeCount": 526,
+            "rememberedFailures": 0
+          }
+        },
+        {
+          "time": 84013.5,
+          "position": [
+            20,
+            0.75,
+            20
+          ],
+          "yaw": 0,
+          "navigation": {
+            "state": "Waiting",
+            "goal": null,
+            "desiredHeading": 0,
+            "actualHeading": 0,
+            "recentDisplacement": 0,
+            "goalProgress": 0,
+            "blockedMovementCount": 0,
+            "stuck": true,
+            "recoveryAttempts": 7,
+            "avoidanceDirection": 0,
+            "committedSeconds": 0,
+            "commitRemaining": 0,
+            "retryIn": 0.8726432291665844,
+            "recentFailureReason": "No supported clear local route",
+            "plans": 42,
+            "probeCount": 526,
+            "rememberedFailures": 0
+          }
+        }
+      ]
+    }
+  ]
+}

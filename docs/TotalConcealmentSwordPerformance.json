@@ -1,0 +1,1414 @@
+{
+  "complete": true,
+  "environment": "Chromium SwiftShader 640x480. Two reversed-order trials. Each case 60 warm + 300 measured RAF, 30Hz simulation, 10 measured simulation seconds. Real Rabbit GLB, moving mobs, repeated sword swings at first moving mob, synthetic per-mob player probe and attributed running signals. Flat support, terrain/vegetation rendering excluded. CPU wall-clock timings, no GPU timer or native hardware FPS claim. Diagnostic totals include warmup; frame summaries exclude warmup. Resource counts are renderer allocations; anatomy bytes are estimates, not JS heap measurement.",
+  "results": [
+    {
+      "trial": 0,
+      "count": 1,
+      "concealed": false,
+      "warmFrames": 60,
+      "measuredFrames": 300,
+      "simulationSeconds": 10,
+      "frameMs": {
+        "mean": 16.775333333313466,
+        "p95": 17.200000002980232,
+        "max": 34.19999999552965
+      },
+      "mobUpdateMs": {
+        "mean": 0.2599999997764826,
+        "p95": 0.7000000029802322,
+        "max": 1
+      },
+      "renderSubmissionMs": {
+        "mean": 0.35200000015397864,
+        "p95": 0.6000000014901161,
+        "max": 2.7999999970197678
+      },
+      "swordUpdateMs": {
+        "mean": 0.12700000002980233,
+        "p95": 0.5,
+        "max": 0.9000000059604645
+      },
+      "melee": {
+        "attacks": 12,
+        "queries": 2229,
+        "queryMs": 26.099999994039536,
+        "duplicateRejections": 345,
+        "discardedSeconds": 0,
+        "lastHit": {
+          "entityId": "sword-bench-0",
+          "bodyPartId": "hindleg-right",
+          "damage": {
+            "applied": true,
+            "bodyPartId": "hindleg-right",
+            "sourceId": "sword-1-12",
+            "damageType": "slashing",
+            "amount": 0.30000000000000004,
+            "state": "Impaired"
+          },
+          "anatomyUncertain": false
+        },
+        "attackId": null,
+        "phase": "ready",
+        "elapsed": 0,
+        "duration": 0.65,
+        "trackedTargets": 0
+      },
+      "perceptionMs": 14.200000010430813,
+      "perceptionUpdates": 55,
+      "processedSignals": 55,
+      "losQueries": 92,
+      "anatomyIntersectionMs": 5.800000004470348,
+      "anatomyQueries": 1141,
+      "modifiers": {
+        "active": [],
+        "revision": 0,
+        "suppressedSignals": 0,
+        "awarenessInvalidations": 0
+      },
+      "signalQueue": {
+        "events": 7,
+        "cells": 1
+      },
+      "drawCalls": 6,
+      "triangles": 794,
+      "resources": {
+        "geometries": 7,
+        "textures": 1
+      },
+      "swordResources": {
+        "geometries": 5,
+        "materials": 3,
+        "visible": true,
+        "geometryBytes": 5024
+      },
+      "estimatedAnatomyBytes": 3488,
+      "cleanup": {
+        "geometries": 0,
+        "textures": 0,
+        "trackedTargets": 0
+      }
+    },
+    {
+      "trial": 0,
+      "count": 1,
+      "concealed": true,
+      "warmFrames": 60,
+      "measuredFrames": 300,
+      "simulationSeconds": 10,
+      "frameMs": {
+        "mean": 16.722000000004968,
+        "p95": 17.200000002980232,
+        "max": 34.599999994039536
+      },
+      "mobUpdateMs": {
+        "mean": 0.20133333365122477,
+        "p95": 0.4000000059604645,
+        "max": 0.5
+      },
+      "renderSubmissionMs": {
+        "mean": 0.31700000000496703,
+        "p95": 0.5,
+        "max": 1.1000000014901161
+      },
+      "swordUpdateMs": {
+        "mean": 0.10033333336313566,
+        "p95": 0.3999999985098839,
+        "max": 0.6999999955296516
+      },
+      "melee": {
+        "attacks": 12,
+        "queries": 2270,
+        "queryMs": 17.200000017881393,
+        "duplicateRejections": 386,
+        "discardedSeconds": 0,
+        "lastHit": {
+          "entityId": "sword-bench-0",
+          "bodyPartId": "hindleg-left",
+          "damage": {
+            "applied": true,
+            "bodyPartId": "hindleg-left",
+            "sourceId": "sword-2-12",
+            "damageType": "slashing",
+            "amount": 0,
+            "state": "Impaired"
+          },
+          "anatomyUncertain": false
+        },
+        "attackId": null,
+        "phase": "ready",
+        "elapsed": 0,
+        "duration": 0.65,
+        "trackedTargets": 0
+      },
+      "perceptionMs": 7.300000011920929,
+      "perceptionUpdates": 60,
+      "processedSignals": 0,
+      "losQueries": 0,
+      "anatomyIntersectionMs": 4.000000014901161,
+      "anatomyQueries": 1144,
+      "modifiers": {
+        "active": [
+          "total-concealment"
+        ],
+        "revision": 1,
+        "suppressedSignals": 120,
+        "awarenessInvalidations": 0
+      },
+      "signalQueue": {
+        "events": 0,
+        "cells": 0
+      },
+      "drawCalls": 6,
+      "triangles": 794,
+      "resources": {
+        "geometries": 7,
+        "textures": 1
+      },
+      "swordResources": {
+        "geometries": 5,
+        "materials": 3,
+        "visible": true,
+        "geometryBytes": 5024
+      },
+      "estimatedAnatomyBytes": 3488,
+      "cleanup": {
+        "geometries": 0,
+        "textures": 0,
+        "trackedTargets": 0
+      }
+    },
+    {
+      "trial": 0,
+      "count": 5,
+      "concealed": false,
+      "warmFrames": 60,
+      "measuredFrames": 300,
+      "simulationSeconds": 10,
+      "frameMs": {
+        "mean": 16.661333333328365,
+        "p95": 17.200000002980232,
+        "max": 17.899999998509884
+      },
+      "mobUpdateMs": {
+        "mean": 0.6889999997367462,
+        "p95": 1.5,
+        "max": 2.600000001490116
+      },
+      "renderSubmissionMs": {
+        "mean": 0.3376666666318973,
+        "p95": 0.5,
+        "max": 1.1999999955296516
+      },
+      "swordUpdateMs": {
+        "mean": 0.10266666675607364,
+        "p95": 0.5,
+        "max": 0.8999999985098839
+      },
+      "melee": {
+        "attacks": 12,
+        "queries": 2227,
+        "queryMs": 21.60000003129244,
+        "duplicateRejections": 343,
+        "discardedSeconds": 0,
+        "lastHit": {
+          "entityId": "sword-bench-0",
+          "bodyPartId": "hindleg-right",
+          "damage": {
+            "applied": true,
+            "bodyPartId": "hindleg-right",
+            "sourceId": "sword-3-12",
+            "damageType": "slashing",
+            "amount": 0.30000000000000004,
+            "state": "Impaired"
+          },
+          "anatomyUncertain": false
+        },
+        "attackId": null,
+        "phase": "ready",
+        "elapsed": 0,
+        "duration": 0.65,
+        "trackedTargets": 0
+      },
+      "perceptionMs": 55.1000000089407,
+      "perceptionUpdates": 293,
+      "processedSignals": 1348,
+      "losQueries": 1453,
+      "anatomyIntersectionMs": 3.800000011920929,
+      "anatomyQueries": 1141,
+      "modifiers": {
+        "active": [],
+        "revision": 0,
+        "suppressedSignals": 0,
+        "awarenessInvalidations": 0
+      },
+      "signalQueue": {
+        "events": 35,
+        "cells": 6
+      },
+      "drawCalls": 10,
+      "triangles": 3490,
+      "resources": {
+        "geometries": 11,
+        "textures": 1
+      },
+      "swordResources": {
+        "geometries": 5,
+        "materials": 3,
+        "visible": true,
+        "geometryBytes": 5024
+      },
+      "estimatedAnatomyBytes": 5152,
+      "cleanup": {
+        "geometries": 0,
+        "textures": 0,
+        "trackedTargets": 0
+      }
+    },
+    {
+      "trial": 0,
+      "count": 5,
+      "concealed": true,
+      "warmFrames": 60,
+      "measuredFrames": 300,
+      "simulationSeconds": 10,
+      "frameMs": {
+        "mean": 16.6653333333383,
+        "p95": 17.100000001490116,
+        "max": 17.899999998509884
+      },
+      "mobUpdateMs": {
+        "mean": 0.37999999987582367,
+        "p95": 0.7000000029802322,
+        "max": 1.6000000014901161
+      },
+      "renderSubmissionMs": {
+        "mean": 0.333000000094374,
+        "p95": 0.5,
+        "max": 1
+      },
+      "swordUpdateMs": {
+        "mean": 0.10933333332339923,
+        "p95": 0.5,
+        "max": 1.2000000029802322
+      },
+      "melee": {
+        "attacks": 12,
+        "queries": 2270,
+        "queryMs": 24.999999970197678,
+        "duplicateRejections": 386,
+        "discardedSeconds": 0,
+        "lastHit": {
+          "entityId": "sword-bench-0",
+          "bodyPartId": "hindleg-left",
+          "damage": {
+            "applied": true,
+            "bodyPartId": "hindleg-left",
+            "sourceId": "sword-4-12",
+            "damageType": "slashing",
+            "amount": 0,
+            "state": "Impaired"
+          },
+          "anatomyUncertain": false
+        },
+        "attackId": null,
+        "phase": "ready",
+        "elapsed": 0,
+        "duration": 0.65,
+        "trackedTargets": 0
+      },
+      "perceptionMs": 21.59999993443489,
+      "perceptionUpdates": 298,
+      "processedSignals": 0,
+      "losQueries": 0,
+      "anatomyIntersectionMs": 2.699999988079071,
+      "anatomyQueries": 1144,
+      "modifiers": {
+        "active": [
+          "total-concealment"
+        ],
+        "revision": 1,
+        "suppressedSignals": 598,
+        "awarenessInvalidations": 0
+      },
+      "signalQueue": {
+        "events": 0,
+        "cells": 0
+      },
+      "drawCalls": 10,
+      "triangles": 3490,
+      "resources": {
+        "geometries": 11,
+        "textures": 1
+      },
+      "swordResources": {
+        "geometries": 5,
+        "materials": 3,
+        "visible": true,
+        "geometryBytes": 5024
+      },
+      "estimatedAnatomyBytes": 5152,
+      "cleanup": {
+        "geometries": 0,
+        "textures": 0,
+        "trackedTargets": 0
+      }
+    },
+    {
+      "trial": 0,
+      "count": 20,
+      "concealed": false,
+      "warmFrames": 60,
+      "measuredFrames": 300,
+      "simulationSeconds": 10,
+      "frameMs": {
+        "mean": 16.666333333328367,
+        "p95": 17.299999997019768,
+        "max": 20.5
+      },
+      "mobUpdateMs": {
+        "mean": 1.891666666790843,
+        "p95": 3.899999998509884,
+        "max": 5.300000004470348
+      },
+      "renderSubmissionMs": {
+        "mean": 0.39600000033775967,
+        "p95": 0.6000000014901161,
+        "max": 1.2000000029802322
+      },
+      "swordUpdateMs": {
+        "mean": 0.0923333332190911,
+        "p95": 0.6999999955296516,
+        "max": 1.2000000029802322
+      },
+      "melee": {
+        "attacks": 12,
+        "queries": 1157,
+        "queryMs": 23.700000010430813,
+        "duplicateRejections": 209,
+        "discardedSeconds": 0,
+        "lastHit": {
+          "entityId": "sword-bench-1",
+          "bodyPartId": "hindleg-left",
+          "damage": {
+            "applied": true,
+            "bodyPartId": "hindleg-left",
+            "sourceId": "sword-5-12",
+            "damageType": "slashing",
+            "amount": 0.30000000000000004,
+            "state": "Impaired"
+          },
+          "anatomyUncertain": false
+        },
+        "attackId": null,
+        "phase": "ready",
+        "elapsed": 0,
+        "duration": 0.65,
+        "trackedTargets": 0
+      },
+      "perceptionMs": 181.0999998897314,
+      "perceptionUpdates": 1162,
+      "processedSignals": 9007,
+      "losQueries": 9714,
+      "anatomyIntersectionMs": 1.9000000208616257,
+      "anatomyQueries": 981,
+      "modifiers": {
+        "active": [],
+        "revision": 0,
+        "suppressedSignals": 0,
+        "awarenessInvalidations": 0
+      },
+      "signalQueue": {
+        "events": 127,
+        "cells": 17
+      },
+      "drawCalls": 25,
+      "triangles": 13600,
+      "resources": {
+        "geometries": 26,
+        "textures": 1
+      },
+      "swordResources": {
+        "geometries": 5,
+        "materials": 3,
+        "visible": true,
+        "geometryBytes": 5024
+      },
+      "estimatedAnatomyBytes": 13952,
+      "cleanup": {
+        "geometries": 0,
+        "textures": 0,
+        "trackedTargets": 0
+      }
+    },
+    {
+      "trial": 0,
+      "count": 20,
+      "concealed": true,
+      "warmFrames": 60,
+      "measuredFrames": 300,
+      "simulationSeconds": 10,
+      "frameMs": {
+        "mean": 16.665999999990067,
+        "p95": 17.100000001490116,
+        "max": 19.399999998509884
+      },
+      "mobUpdateMs": {
+        "mean": 0.8243333330502113,
+        "p95": 1.6000000014901161,
+        "max": 2.7000000029802322
+      },
+      "renderSubmissionMs": {
+        "mean": 0.4109999999155601,
+        "p95": 0.6000000014901161,
+        "max": 0.8000000044703484
+      },
+      "swordUpdateMs": {
+        "mean": 0.15233333344260852,
+        "p95": 0.7000000029802322,
+        "max": 1.2000000029802322
+      },
+      "melee": {
+        "attacks": 12,
+        "queries": 2270,
+        "queryMs": 39.50000002980232,
+        "duplicateRejections": 386,
+        "discardedSeconds": 0,
+        "lastHit": {
+          "entityId": "sword-bench-0",
+          "bodyPartId": "hindleg-left",
+          "damage": {
+            "applied": true,
+            "bodyPartId": "hindleg-left",
+            "sourceId": "sword-6-12",
+            "damageType": "slashing",
+            "amount": 0,
+            "state": "Impaired"
+          },
+          "anatomyUncertain": false
+        },
+        "attackId": null,
+        "phase": "ready",
+        "elapsed": 0,
+        "duration": 0.65,
+        "trackedTargets": 0
+      },
+      "perceptionMs": 37.09999996423721,
+      "perceptionUpdates": 1192,
+      "processedSignals": 0,
+      "losQueries": 0,
+      "anatomyIntersectionMs": 2.6000000163912773,
+      "anatomyQueries": 1144,
+      "modifiers": {
+        "active": [
+          "total-concealment"
+        ],
+        "revision": 1,
+        "suppressedSignals": 2392,
+        "awarenessInvalidations": 0
+      },
+      "signalQueue": {
+        "events": 0,
+        "cells": 0
+      },
+      "drawCalls": 25,
+      "triangles": 13600,
+      "resources": {
+        "geometries": 26,
+        "textures": 1
+      },
+      "swordResources": {
+        "geometries": 5,
+        "materials": 3,
+        "visible": true,
+        "geometryBytes": 5024
+      },
+      "estimatedAnatomyBytes": 11392,
+      "cleanup": {
+        "geometries": 0,
+        "textures": 0,
+        "trackedTargets": 0
+      }
+    },
+    {
+      "trial": 0,
+      "count": 50,
+      "concealed": false,
+      "warmFrames": 60,
+      "measuredFrames": 300,
+      "simulationSeconds": 10,
+      "frameMs": {
+        "mean": 17.055333333313467,
+        "p95": 21.30000000447035,
+        "max": 33.399999998509884
+      },
+      "mobUpdateMs": {
+        "mean": 3.401666666443149,
+        "p95": 6.899999998509884,
+        "max": 9.800000004470348
+      },
+      "renderSubmissionMs": {
+        "mean": 0.5283333333333333,
+        "p95": 0.7999999970197678,
+        "max": 1.5
+      },
+      "swordUpdateMs": {
+        "mean": 0.20800000004470348,
+        "p95": 1,
+        "max": 2.5
+      },
+      "melee": {
+        "attacks": 12,
+        "queries": 2217,
+        "queryMs": 61.10000003874302,
+        "duplicateRejections": 338,
+        "discardedSeconds": 0,
+        "lastHit": {
+          "entityId": "sword-bench-0",
+          "bodyPartId": "hindleg-left",
+          "damage": {
+            "applied": true,
+            "bodyPartId": "hindleg-left",
+            "sourceId": "sword-7-12",
+            "damageType": "slashing",
+            "amount": 0,
+            "state": "Impaired"
+          },
+          "anatomyUncertain": false
+        },
+        "attackId": null,
+        "phase": "ready",
+        "elapsed": 0,
+        "duration": 0.65,
+        "trackedTargets": 0
+      },
+      "perceptionMs": 319.0000002011657,
+      "perceptionUpdates": 2977,
+      "processedSignals": 23438,
+      "losQueries": 25788,
+      "anatomyIntersectionMs": 2.6999999955296516,
+      "anatomyQueries": 1204,
+      "modifiers": {
+        "active": [],
+        "revision": 0,
+        "suppressedSignals": 0,
+        "awarenessInvalidations": 0
+      },
+      "signalQueue": {
+        "events": 127,
+        "cells": 30
+      },
+      "drawCalls": 54,
+      "triangles": 33146,
+      "resources": {
+        "geometries": 56,
+        "textures": 1
+      },
+      "swordResources": {
+        "geometries": 5,
+        "materials": 3,
+        "visible": true,
+        "geometryBytes": 5024
+      },
+      "estimatedAnatomyBytes": 23872,
+      "cleanup": {
+        "geometries": 0,
+        "textures": 0,
+        "trackedTargets": 0
+      }
+    },
+    {
+      "trial": 0,
+      "count": 50,
+      "concealed": true,
+      "warmFrames": 60,
+      "measuredFrames": 300,
+      "simulationSeconds": 10,
+      "frameMs": {
+        "mean": 16.6656666666766,
+        "p95": 16.900000005960464,
+        "max": 19.700000002980232
+      },
+      "mobUpdateMs": {
+        "mean": 1.4969999999552965,
+        "p95": 2.600000001490116,
+        "max": 4.100000001490116
+      },
+      "renderSubmissionMs": {
+        "mean": 0.5203333334128062,
+        "p95": 0.7000000029802322,
+        "max": 0.8000000044703484
+      },
+      "swordUpdateMs": {
+        "mean": 0.19633333332836628,
+        "p95": 1,
+        "max": 2.2000000029802322
+      },
+      "melee": {
+        "attacks": 12,
+        "queries": 2270,
+        "queryMs": 61.80000004172325,
+        "duplicateRejections": 386,
+        "discardedSeconds": 0,
+        "lastHit": {
+          "entityId": "sword-bench-0",
+          "bodyPartId": "hindleg-left",
+          "damage": {
+            "applied": true,
+            "bodyPartId": "hindleg-left",
+            "sourceId": "sword-8-12",
+            "damageType": "slashing",
+            "amount": 0,
+            "state": "Impaired"
+          },
+          "anatomyUncertain": false
+        },
+        "attackId": null,
+        "phase": "ready",
+        "elapsed": 0,
+        "duration": 0.65,
+        "trackedTargets": 0
+      },
+      "perceptionMs": 54.69999995827675,
+      "perceptionUpdates": 2977,
+      "processedSignals": 0,
+      "losQueries": 0,
+      "anatomyIntersectionMs": 2.600000001490116,
+      "anatomyQueries": 1144,
+      "modifiers": {
+        "active": [
+          "total-concealment"
+        ],
+        "revision": 1,
+        "suppressedSignals": 5977,
+        "awarenessInvalidations": 0
+      },
+      "signalQueue": {
+        "events": 0,
+        "cells": 0
+      },
+      "drawCalls": 55,
+      "triangles": 33820,
+      "resources": {
+        "geometries": 56,
+        "textures": 1
+      },
+      "swordResources": {
+        "geometries": 5,
+        "materials": 3,
+        "visible": true,
+        "geometryBytes": 5024
+      },
+      "estimatedAnatomyBytes": 23872,
+      "cleanup": {
+        "geometries": 0,
+        "textures": 0,
+        "trackedTargets": 0
+      }
+    },
+    {
+      "trial": 1,
+      "count": 50,
+      "concealed": true,
+      "warmFrames": 60,
+      "measuredFrames": 300,
+      "simulationSeconds": 10,
+      "frameMs": {
+        "mean": 17.165666666651767,
+        "p95": 17.100000001490116,
+        "max": 44.29999999701977
+      },
+      "mobUpdateMs": {
+        "mean": 1.5733333334575097,
+        "p95": 3.100000001490116,
+        "max": 8.799999997019768
+      },
+      "renderSubmissionMs": {
+        "mean": 0.602333333293597,
+        "p95": 0.8000000044703484,
+        "max": 6.700000002980232
+      },
+      "swordUpdateMs": {
+        "mean": 0.18166666671633722,
+        "p95": 0.8999999985098839,
+        "max": 1.2000000029802322
+      },
+      "melee": {
+        "attacks": 12,
+        "queries": 2270,
+        "queryMs": 53.89999996870756,
+        "duplicateRejections": 386,
+        "discardedSeconds": 0,
+        "lastHit": {
+          "entityId": "sword-bench-0",
+          "bodyPartId": "hindleg-left",
+          "damage": {
+            "applied": true,
+            "bodyPartId": "hindleg-left",
+            "sourceId": "sword-9-12",
+            "damageType": "slashing",
+            "amount": 0,
+            "state": "Impaired"
+          },
+          "anatomyUncertain": false
+        },
+        "attackId": null,
+        "phase": "ready",
+        "elapsed": 0,
+        "duration": 0.65,
+        "trackedTargets": 0
+      },
+      "perceptionMs": 47.69999996572733,
+      "perceptionUpdates": 2977,
+      "processedSignals": 0,
+      "losQueries": 0,
+      "anatomyIntersectionMs": 1.8999999910593033,
+      "anatomyQueries": 1144,
+      "modifiers": {
+        "active": [
+          "total-concealment"
+        ],
+        "revision": 1,
+        "suppressedSignals": 5977,
+        "awarenessInvalidations": 0
+      },
+      "signalQueue": {
+        "events": 0,
+        "cells": 0
+      },
+      "drawCalls": 55,
+      "triangles": 33820,
+      "resources": {
+        "geometries": 56,
+        "textures": 1
+      },
+      "swordResources": {
+        "geometries": 5,
+        "materials": 3,
+        "visible": true,
+        "geometryBytes": 5024
+      },
+      "estimatedAnatomyBytes": 23872,
+      "cleanup": {
+        "geometries": 0,
+        "textures": 0,
+        "trackedTargets": 0
+      }
+    },
+    {
+      "trial": 1,
+      "count": 50,
+      "concealed": false,
+      "warmFrames": 60,
+      "measuredFrames": 300,
+      "simulationSeconds": 10,
+      "frameMs": {
+        "mean": 17.38800000001987,
+        "p95": 22.69999999552965,
+        "max": 50.599999994039536
+      },
+      "mobUpdateMs": {
+        "mean": 3.30366666679581,
+        "p95": 7.100000001490116,
+        "max": 17.600000001490116
+      },
+      "renderSubmissionMs": {
+        "mean": 0.5263333333283663,
+        "p95": 0.7999999970197678,
+        "max": 2.899999998509884
+      },
+      "swordUpdateMs": {
+        "mean": 0.17866666667163372,
+        "p95": 0.8000000044703484,
+        "max": 2
+      },
+      "melee": {
+        "attacks": 12,
+        "queries": 2217,
+        "queryMs": 52.600000001490116,
+        "duplicateRejections": 338,
+        "discardedSeconds": 0,
+        "lastHit": {
+          "entityId": "sword-bench-0",
+          "bodyPartId": "hindleg-left",
+          "damage": {
+            "applied": true,
+            "bodyPartId": "hindleg-left",
+            "sourceId": "sword-10-12",
+            "damageType": "slashing",
+            "amount": 0,
+            "state": "Impaired"
+          },
+          "anatomyUncertain": false
+        },
+        "attackId": null,
+        "phase": "ready",
+        "elapsed": 0,
+        "duration": 0.65,
+        "trackedTargets": 0
+      },
+      "perceptionMs": 314.1999999806285,
+      "perceptionUpdates": 2977,
+      "processedSignals": 23438,
+      "losQueries": 25788,
+      "anatomyIntersectionMs": 2.599999986588955,
+      "anatomyQueries": 1204,
+      "modifiers": {
+        "active": [],
+        "revision": 0,
+        "suppressedSignals": 0,
+        "awarenessInvalidations": 0
+      },
+      "signalQueue": {
+        "events": 127,
+        "cells": 30
+      },
+      "drawCalls": 54,
+      "triangles": 33146,
+      "resources": {
+        "geometries": 56,
+        "textures": 1
+      },
+      "swordResources": {
+        "geometries": 5,
+        "materials": 3,
+        "visible": true,
+        "geometryBytes": 5024
+      },
+      "estimatedAnatomyBytes": 23872,
+      "cleanup": {
+        "geometries": 0,
+        "textures": 0,
+        "trackedTargets": 0
+      }
+    },
+    {
+      "trial": 1,
+      "count": 20,
+      "concealed": true,
+      "warmFrames": 60,
+      "measuredFrames": 300,
+      "simulationSeconds": 10,
+      "frameMs": {
+        "mean": 16.776666666666667,
+        "p95": 17.200000002980232,
+        "max": 27.299999997019768
+      },
+      "mobUpdateMs": {
+        "mean": 0.7549999999254942,
+        "p95": 1.3000000044703484,
+        "max": 6.199999995529652
+      },
+      "renderSubmissionMs": {
+        "mean": 0.419333333397905,
+        "p95": 0.6000000014901161,
+        "max": 3.5
+      },
+      "swordUpdateMs": {
+        "mean": 0.12899999998509884,
+        "p95": 0.6000000014901161,
+        "max": 1.2000000029802322
+      },
+      "melee": {
+        "attacks": 12,
+        "queries": 2270,
+        "queryMs": 33.600000001490116,
+        "duplicateRejections": 386,
+        "discardedSeconds": 0,
+        "lastHit": {
+          "entityId": "sword-bench-0",
+          "bodyPartId": "hindleg-left",
+          "damage": {
+            "applied": true,
+            "bodyPartId": "hindleg-left",
+            "sourceId": "sword-11-12",
+            "damageType": "slashing",
+            "amount": 0,
+            "state": "Impaired"
+          },
+          "anatomyUncertain": false
+        },
+        "attackId": null,
+        "phase": "ready",
+        "elapsed": 0,
+        "duration": 0.65,
+        "trackedTargets": 0
+      },
+      "perceptionMs": 35.00000002980232,
+      "perceptionUpdates": 1192,
+      "processedSignals": 0,
+      "losQueries": 0,
+      "anatomyIntersectionMs": 3.1999999806284904,
+      "anatomyQueries": 1144,
+      "modifiers": {
+        "active": [
+          "total-concealment"
+        ],
+        "revision": 1,
+        "suppressedSignals": 2392,
+        "awarenessInvalidations": 0
+      },
+      "signalQueue": {
+        "events": 0,
+        "cells": 0
+      },
+      "drawCalls": 25,
+      "triangles": 13600,
+      "resources": {
+        "geometries": 26,
+        "textures": 1
+      },
+      "swordResources": {
+        "geometries": 5,
+        "materials": 3,
+        "visible": true,
+        "geometryBytes": 5024
+      },
+      "estimatedAnatomyBytes": 11392,
+      "cleanup": {
+        "geometries": 0,
+        "textures": 0,
+        "trackedTargets": 0
+      }
+    },
+    {
+      "trial": 1,
+      "count": 20,
+      "concealed": false,
+      "warmFrames": 60,
+      "measuredFrames": 300,
+      "simulationSeconds": 10,
+      "frameMs": {
+        "mean": 16.832333333343268,
+        "p95": 17.19999999552965,
+        "max": 42.400000005960464
+      },
+      "mobUpdateMs": {
+        "mean": 1.5726666667312383,
+        "p95": 3.100000001490116,
+        "max": 9.199999995529652
+      },
+      "renderSubmissionMs": {
+        "mean": 0.38366666689515116,
+        "p95": 0.5,
+        "max": 3.899999998509884
+      },
+      "swordUpdateMs": {
+        "mean": 0.07400000003476938,
+        "p95": 0.5,
+        "max": 0.8000000044703484
+      },
+      "melee": {
+        "attacks": 12,
+        "queries": 1157,
+        "queryMs": 16.19999997317791,
+        "duplicateRejections": 209,
+        "discardedSeconds": 0,
+        "lastHit": {
+          "entityId": "sword-bench-1",
+          "bodyPartId": "hindleg-left",
+          "damage": {
+            "applied": true,
+            "bodyPartId": "hindleg-left",
+            "sourceId": "sword-12-12",
+            "damageType": "slashing",
+            "amount": 0.30000000000000004,
+            "state": "Impaired"
+          },
+          "anatomyUncertain": false
+        },
+        "attackId": null,
+        "phase": "ready",
+        "elapsed": 0,
+        "duration": 0.65,
+        "trackedTargets": 0
+      },
+      "perceptionMs": 162.70000008493662,
+      "perceptionUpdates": 1162,
+      "processedSignals": 9007,
+      "losQueries": 9714,
+      "anatomyIntersectionMs": 1.5,
+      "anatomyQueries": 981,
+      "modifiers": {
+        "active": [],
+        "revision": 0,
+        "suppressedSignals": 0,
+        "awarenessInvalidations": 0
+      },
+      "signalQueue": {
+        "events": 127,
+        "cells": 17
+      },
+      "drawCalls": 25,
+      "triangles": 13600,
+      "resources": {
+        "geometries": 26,
+        "textures": 1
+      },
+      "swordResources": {
+        "geometries": 5,
+        "materials": 3,
+        "visible": true,
+        "geometryBytes": 5024
+      },
+      "estimatedAnatomyBytes": 13952,
+      "cleanup": {
+        "geometries": 0,
+        "textures": 0,
+        "trackedTargets": 0
+      }
+    },
+    {
+      "trial": 1,
+      "count": 5,
+      "concealed": true,
+      "warmFrames": 60,
+      "measuredFrames": 300,
+      "simulationSeconds": 10,
+      "frameMs": {
+        "mean": 16.664666666686536,
+        "p95": 17.19999999552965,
+        "max": 25.600000001490116
+      },
+      "mobUpdateMs": {
+        "mean": 0.2573333332439264,
+        "p95": 0.5,
+        "max": 0.9000000059604645
+      },
+      "renderSubmissionMs": {
+        "mean": 0.3373333333184322,
+        "p95": 0.5,
+        "max": 3.8000000044703484
+      },
+      "swordUpdateMs": {
+        "mean": 0.08300000006953875,
+        "p95": 0.3999999985098839,
+        "max": 0.5
+      },
+      "melee": {
+        "attacks": 12,
+        "queries": 2270,
+        "queryMs": 16.999999977648258,
+        "duplicateRejections": 386,
+        "discardedSeconds": 0,
+        "lastHit": {
+          "entityId": "sword-bench-0",
+          "bodyPartId": "hindleg-left",
+          "damage": {
+            "applied": true,
+            "bodyPartId": "hindleg-left",
+            "sourceId": "sword-13-12",
+            "damageType": "slashing",
+            "amount": 0,
+            "state": "Impaired"
+          },
+          "anatomyUncertain": false
+        },
+        "attackId": null,
+        "phase": "ready",
+        "elapsed": 0,
+        "duration": 0.65,
+        "trackedTargets": 0
+      },
+      "perceptionMs": 15.500000052154064,
+      "perceptionUpdates": 298,
+      "processedSignals": 0,
+      "losQueries": 0,
+      "anatomyIntersectionMs": 3.4999999925494194,
+      "anatomyQueries": 1144,
+      "modifiers": {
+        "active": [
+          "total-concealment"
+        ],
+        "revision": 1,
+        "suppressedSignals": 598,
+        "awarenessInvalidations": 0
+      },
+      "signalQueue": {
+        "events": 0,
+        "cells": 0
+      },
+      "drawCalls": 10,
+      "triangles": 3490,
+      "resources": {
+        "geometries": 11,
+        "textures": 1
+      },
+      "swordResources": {
+        "geometries": 5,
+        "materials": 3,
+        "visible": true,
+        "geometryBytes": 5024
+      },
+      "estimatedAnatomyBytes": 5152,
+      "cleanup": {
+        "geometries": 0,
+        "textures": 0,
+        "trackedTargets": 0
+      }
+    },
+    {
+      "trial": 1,
+      "count": 5,
+      "concealed": false,
+      "warmFrames": 60,
+      "measuredFrames": 300,
+      "simulationSeconds": 10,
+      "frameMs": {
+        "mean": 16.66733333331843,
+        "p95": 17.100000001490116,
+        "max": 17.700000002980232
+      },
+      "mobUpdateMs": {
+        "mean": 0.4990000002582868,
+        "p95": 1,
+        "max": 1.3000000044703484
+      },
+      "renderSubmissionMs": {
+        "mean": 0.27466666636367637,
+        "p95": 0.4000000059604645,
+        "max": 0.7000000029802322
+      },
+      "swordUpdateMs": {
+        "mean": 0.07866666679581007,
+        "p95": 0.30000000447034836,
+        "max": 1.1000000014901161
+      },
+      "melee": {
+        "attacks": 12,
+        "queries": 2227,
+        "queryMs": 15.599999979138374,
+        "duplicateRejections": 343,
+        "discardedSeconds": 0,
+        "lastHit": {
+          "entityId": "sword-bench-0",
+          "bodyPartId": "hindleg-right",
+          "damage": {
+            "applied": true,
+            "bodyPartId": "hindleg-right",
+            "sourceId": "sword-14-12",
+            "damageType": "slashing",
+            "amount": 0.30000000000000004,
+            "state": "Impaired"
+          },
+          "anatomyUncertain": false
+        },
+        "attackId": null,
+        "phase": "ready",
+        "elapsed": 0,
+        "duration": 0.65,
+        "trackedTargets": 0
+      },
+      "perceptionMs": 33.800000101327896,
+      "perceptionUpdates": 293,
+      "processedSignals": 1348,
+      "losQueries": 1453,
+      "anatomyIntersectionMs": 2.3999999687075615,
+      "anatomyQueries": 1141,
+      "modifiers": {
+        "active": [],
+        "revision": 0,
+        "suppressedSignals": 0,
+        "awarenessInvalidations": 0
+      },
+      "signalQueue": {
+        "events": 35,
+        "cells": 6
+      },
+      "drawCalls": 10,
+      "triangles": 3490,
+      "resources": {
+        "geometries": 11,
+        "textures": 1
+      },
+      "swordResources": {
+        "geometries": 5,
+        "materials": 3,
+        "visible": true,
+        "geometryBytes": 5024
+      },
+      "estimatedAnatomyBytes": 5152,
+      "cleanup": {
+        "geometries": 0,
+        "textures": 0,
+        "trackedTargets": 0
+      }
+    },
+    {
+      "trial": 1,
+      "count": 1,
+      "concealed": true,
+      "warmFrames": 60,
+      "measuredFrames": 300,
+      "simulationSeconds": 10,
+      "frameMs": {
+        "mean": 16.66699999998013,
+        "p95": 17,
+        "max": 21.600000001490116
+      },
+      "mobUpdateMs": {
+        "mean": 0.11066666613022487,
+        "p95": 0.20000000298023224,
+        "max": 0.30000000447034836
+      },
+      "renderSubmissionMs": {
+        "mean": 0.22800000024338563,
+        "p95": 0.3999999985098839,
+        "max": 0.8000000044703484
+      },
+      "swordUpdateMs": {
+        "mean": 0.062333333492279056,
+        "p95": 0.29999999701976776,
+        "max": 0.6000000014901161
+      },
+      "melee": {
+        "attacks": 12,
+        "queries": 2270,
+        "queryMs": 9.700000025331974,
+        "duplicateRejections": 386,
+        "discardedSeconds": 0,
+        "lastHit": {
+          "entityId": "sword-bench-0",
+          "bodyPartId": "hindleg-left",
+          "damage": {
+            "applied": true,
+            "bodyPartId": "hindleg-left",
+            "sourceId": "sword-15-12",
+            "damageType": "slashing",
+            "amount": 0,
+            "state": "Impaired"
+          },
+          "anatomyUncertain": false
+        },
+        "attackId": null,
+        "phase": "ready",
+        "elapsed": 0,
+        "duration": 0.65,
+        "trackedTargets": 0
+      },
+      "perceptionMs": 4.100000008940697,
+      "perceptionUpdates": 60,
+      "processedSignals": 0,
+      "losQueries": 0,
+      "anatomyIntersectionMs": 1.9000000059604645,
+      "anatomyQueries": 1144,
+      "modifiers": {
+        "active": [
+          "total-concealment"
+        ],
+        "revision": 1,
+        "suppressedSignals": 120,
+        "awarenessInvalidations": 0
+      },
+      "signalQueue": {
+        "events": 0,
+        "cells": 0
+      },
+      "drawCalls": 6,
+      "triangles": 794,
+      "resources": {
+        "geometries": 7,
+        "textures": 1
+      },
+      "swordResources": {
+        "geometries": 5,
+        "materials": 3,
+        "visible": true,
+        "geometryBytes": 5024
+      },
+      "estimatedAnatomyBytes": 3488,
+      "cleanup": {
+        "geometries": 0,
+        "textures": 0,
+        "trackedTargets": 0
+      }
+    },
+    {
+      "trial": 1,
+      "count": 1,
+      "concealed": false,
+      "warmFrames": 60,
+      "measuredFrames": 300,
+      "simulationSeconds": 10,
+      "frameMs": {
+        "mean": 16.665,
+        "p95": 17.100000001490116,
+        "max": 19.5
+      },
+      "mobUpdateMs": {
+        "mean": 0.1293333334972461,
+        "p95": 0.4000000059604645,
+        "max": 0.6999999955296516
+      },
+      "renderSubmissionMs": {
+        "mean": 0.248666666696469,
+        "p95": 0.3999999985098839,
+        "max": 3.5
+      },
+      "swordUpdateMs": {
+        "mean": 0.06366666669646899,
+        "p95": 0.29999999701976776,
+        "max": 0.5
+      },
+      "melee": {
+        "attacks": 12,
+        "queries": 2229,
+        "queryMs": 11.600000016391277,
+        "duplicateRejections": 345,
+        "discardedSeconds": 0,
+        "lastHit": {
+          "entityId": "sword-bench-0",
+          "bodyPartId": "hindleg-right",
+          "damage": {
+            "applied": true,
+            "bodyPartId": "hindleg-right",
+            "sourceId": "sword-16-12",
+            "damageType": "slashing",
+            "amount": 0.30000000000000004,
+            "state": "Impaired"
+          },
+          "anatomyUncertain": false
+        },
+        "attackId": null,
+        "phase": "ready",
+        "elapsed": 0,
+        "duration": 0.65,
+        "trackedTargets": 0
+      },
+      "perceptionMs": 6.700000047683716,
+      "perceptionUpdates": 55,
+      "processedSignals": 55,
+      "losQueries": 92,
+      "anatomyIntersectionMs": 3.1000000163912773,
+      "anatomyQueries": 1141,
+      "modifiers": {
+        "active": [],
+        "revision": 0,
+        "suppressedSignals": 0,
+        "awarenessInvalidations": 0
+      },
+      "signalQueue": {
+        "events": 7,
+        "cells": 1
+      },
+      "drawCalls": 6,
+      "triangles": 794,
+      "resources": {
+        "geometries": 7,
+        "textures": 1
+      },
+      "swordResources": {
+        "geometries": 5,
+        "materials": 3,
+        "visible": true,
+        "geometryBytes": 5024
+      },
+      "estimatedAnatomyBytes": 3488,
+      "cleanup": {
+        "geometries": 0,
+        "textures": 0,
+        "trackedTargets": 0
+      }
+    }
+  ]
+}

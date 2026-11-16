@@ -2,32 +2,32 @@
   "modes": [
     {
       "mode": "voxel",
-      "lastForce": 64.20000000018626,
-      "lastSpeed": 40.062451248078375,
-      "physicsMs": 0.10000000149011612,
+      "lastForce": 78.22500000149012,
+      "lastSpeed": 44.22244905064907,
+      "physicsMs": 0.20000000298023224,
       "steps": 0,
       "discardedSeconds": 0,
       "flying": 0,
       "embedded": 5,
       "predictionMs": 0,
       "dots": 0,
-      "recomputations": 35,
-      "collisionQueries": 1320,
+      "recomputations": 31,
+      "collisionQueries": 1101,
       "bufferBytes": 8292
     },
     {
       "mode": "polygonal",
-      "lastForce": 70.05000000074506,
-      "lastSpeed": 41.847939017574404,
-      "physicsMs": 0,
+      "lastForce": 90,
+      "lastSpeed": 47.43416490252569,
+      "physicsMs": 0.10000000149011612,
       "steps": 0,
       "discardedSeconds": 0,
       "flying": 0,
       "embedded": 9,
       "predictionMs": 0,
       "dots": 0,
-      "recomputations": 62,
-      "collisionQueries": 2163,
+      "recomputations": 60,
+      "collisionQueries": 1994,
       "bufferBytes": 8292
     }
   ],
@@ -37,10 +37,10 @@
     },
     {
       "type": "arrow-fired",
-      "arrowId": "arrow-1",
+      "arrowId": "arrow-1-1",
       "shooterId": "session-player",
-      "launchForce": 76.33916666659837,
-      "launchSpeed": 43.686143874974356,
+      "launchForce": 100.79583333333333,
+      "launchSpeed": 50.198564056488046,
       "flightDuration": 0,
       "traveledDistance": 0,
       "position": [
@@ -50,23 +50,23 @@
       ],
       "velocity": [
         0,
-        -43.686143656543635,
-        -0.004368614365651941
+        -50.198563805495226,
+        -0.005019856380546739
       ]
     },
     {
       "type": "arrow-hit-terrain",
-      "arrowId": "arrow-1",
+      "arrowId": "arrow-1-1",
       "shooterId": "session-player",
-      "launchForce": 76.33916666659837,
-      "launchSpeed": 43.686143874974356,
-      "flightDuration": 0.15354914889670226,
-      "traveledDistance": 7.210000031389215,
-      "objectId": "1291e241-1b55-438d-9158-24c8f7ee8c4c",
+      "launchForce": 100.79583333333333,
+      "launchSpeed": 50.198564056488046,
+      "flightDuration": 0.13583682958322071,
+      "traveledDistance": 7.210000032407246,
+      "objectId": "39fd87a3-d648-4873-9719-db7cf0190475",
       "point": [
         20,
         1,
-        19.999150926306246
+        19.999139857804103
       ],
       "normal": [
         0,
@@ -75,10 +75,10 @@
       ],
       "incomingVelocity": [
         0,
-        -50.21561857443668,
-        -0.004358978840503183
+        -55.94939967200827,
+        -0.005008784460422996
       ],
-      "simulationTime": 0.15354914889670226
+      "simulationTime": 0.13583682958322071
     },
     {
       "type": "bow-draw-started"
@@ -88,7 +88,7 @@
     },
     {
       "type": "arrow-fired",
-      "arrowId": "arrow-2",
+      "arrowId": "arrow-1-2",
       "shooterId": "session-player",
       "launchForce": 90,
       "launchSpeed": 47.43416490252569,
@@ -107,13 +107,13 @@
     },
     {
       "type": "arrow-hit-terrain",
-      "arrowId": "arrow-2",
+      "arrowId": "arrow-1-2",
       "shooterId": "session-player",
       "launchForce": 90,
       "launchSpeed": 47.43416490252569,
       "flightDuration": 0.14286352520031953,
       "traveledDistance": 7.210000032017178,
-      "objectId": "1291e241-1b55-438d-9158-24c8f7ee8c4c",
+      "objectId": "39fd87a3-d648-4873-9719-db7cf0190475",
       "point": [
         20,
         1,
@@ -136,10 +136,10 @@
     },
     {
       "type": "arrow-fired",
-      "arrowId": "arrow-3",
+      "arrowId": "arrow-1-3",
       "shooterId": "session-player",
-      "launchForce": 87.82499999925494,
-      "launchSpeed": 46.85749673191445,
+      "launchForce": 87.17500000074507,
+      "launchSpeed": 46.68377662548979,
       "flightDuration": 0,
       "traveledDistance": 0,
       "position": [
@@ -149,23 +149,23 @@
       ],
       "velocity": [
         0,
-        -46.85749649762697,
-        -0.004685749649760098
+        -46.68377639207091,
+        -0.004668377639204501
       ]
     },
     {
       "type": "arrow-hit-terrain",
-      "arrowId": "arrow-3",
+      "arrowId": "arrow-1-3",
       "shooterId": "session-player",
-      "launchForce": 87.82499999925494,
-      "launchSpeed": 46.85749673191445,
-      "flightDuration": 0.14441327347330568,
-      "traveledDistance": 7.2100000319273585,
-      "objectId": "1291e241-1b55-438d-9158-24c8f7ee8c4c",
+      "launchForce": 87.17500000074507,
+      "launchSpeed": 46.68377662548979,
+      "flightDuration": 0.14488673598791837,
+      "traveledDistance": 7.21000003189994,
+      "objectId": "39fd87a3-d648-4873-9719-db7cf0190475",
       "point": [
         20,
         1,
-        19.999145047267685
+        19.99914534532607
       ],
       "normal": [
         0,
@@ -174,20 +174,20 @@
       ],
       "incomingVelocity": [
         0,
-        -52.985771259982,
-        -0.004675414643170422
+        -52.83286353727311,
+        -0.0046580809493781605
       ],
-      "simulationTime": 0.14441327347330568
+      "simulationTime": 0.14488673598791837
     },
     {
       "type": "bow-draw-started"
     },
     {
       "type": "arrow-fired",
-      "arrowId": "arrow-4",
+      "arrowId": "arrow-1-4",
       "shooterId": "session-player",
-      "launchForce": 66.27500000037253,
-      "launchSpeed": 40.70472945505612,
+      "launchForce": 78.70000000111759,
+      "launchSpeed": 44.3565102327487,
       "flightDuration": 0,
       "traveledDistance": 0,
       "position": [
@@ -197,23 +197,23 @@
       ],
       "velocity": [
         0,
-        -40.70472925153247,
-        -0.004070472925150989
+        -44.35651001096615,
+        -0.004435651001094155
       ]
     },
     {
       "type": "arrow-hit-terrain",
-      "arrowId": "arrow-4",
+      "arrowId": "arrow-1-4",
       "shooterId": "session-player",
-      "launchForce": 66.27500000037253,
-      "launchSpeed": 40.70472945505612,
-      "flightDuration": 0.16317666035080766,
-      "traveledDistance": 7.210000030793623,
-      "objectId": "1291e241-1b55-438d-9158-24c8f7ee8c4c",
+      "launchForce": 78.70000000111759,
+      "launchSpeed": 44.3565102327487,
+      "flightDuration": 0.1515316216284852,
+      "traveledDistance": 7.210000031511559,
+      "objectId": "39fd87a3-d648-4873-9719-db7cf0190475",
       "point": [
         20,
         1,
-        19.999157507745355
+        19.999149583643142
       ],
       "normal": [
         0,
@@ -222,20 +222,20 @@
       ],
       "incomingVelocity": [
         0,
-        -47.65619572915192,
-        -0.004061494987357188
+        -50.79745422515548,
+        -0.004425867614974312
       ],
-      "simulationTime": 0.16317666035080766
+      "simulationTime": 0.1515316216284852
     },
     {
       "type": "bow-draw-started"
     },
     {
       "type": "arrow-fired",
-      "arrowId": "arrow-5",
+      "arrowId": "arrow-1-5",
       "shooterId": "session-player",
-      "launchForce": 64.20000000018626,
-      "launchSpeed": 40.062451248078375,
+      "launchForce": 78.22500000149012,
+      "launchSpeed": 44.22244905064907,
       "flightDuration": 0,
       "traveledDistance": 0,
       "position": [
@@ -245,23 +245,23 @@
       ],
       "velocity": [
         0,
-        -40.06245104776612,
-        -0.00400624510477439
+        -44.22244882953682,
+        -0.004422244882951229
       ]
     },
     {
       "type": "arrow-hit-terrain",
-      "arrowId": "arrow-5",
+      "arrowId": "arrow-1-5",
       "shooterId": "session-player",
-      "launchForce": 64.20000000018626,
-      "launchSpeed": 40.062451248078375,
-      "flightDuration": 0.16540236498939542,
-      "traveledDistance": 7.210000030653312,
-      "objectId": "1291e241-1b55-438d-9158-24c8f7ee8c4c",
+      "launchForce": 78.22500000149012,
+      "launchSpeed": 44.22244905064907,
+      "flightDuration": 0.15193084316959776,
+      "traveledDistance": 7.210000031487331,
+      "objectId": "39fd87a3-d648-4873-9719-db7cf0190475",
       "point": [
         20,
         1,
-        19.999159069068536
+        19.999149849322546
       ],
       "normal": [
         0,
@@ -270,10 +270,10 @@
       ],
       "incomingVelocity": [
         0,
-        -47.11137267635555,
-        -0.003997408825992237
+        -50.68091409880282,
+        -0.004412491066718785
       ],
-      "simulationTime": 0.16540236498939542
+      "simulationTime": 0.15193084316959776
     },
     {
       "type": "bow-draw-started"
@@ -289,7 +289,7 @@
     },
     {
       "type": "arrow-fired",
-      "arrowId": "arrow-6",
+      "arrowId": "arrow-1-6",
       "shooterId": "session-player",
       "launchForce": 90,
       "launchSpeed": 47.43416490252569,
@@ -308,13 +308,13 @@
     },
     {
       "type": "arrow-hit-terrain",
-      "arrowId": "arrow-6",
+      "arrowId": "arrow-1-6",
       "shooterId": "session-player",
       "launchForce": 90,
       "launchSpeed": 47.43416490252569,
       "flightDuration": 0.14286352520031953,
       "traveledDistance": 7.210000032017178,
-      "objectId": "1291e241-1b55-438d-9158-24c8f7ee8c4c",
+      "objectId": "39fd87a3-d648-4873-9719-db7cf0190475",
       "point": [
         20,
         1,
@@ -337,160 +337,7 @@
     },
     {
       "type": "arrow-fired",
-      "arrowId": "arrow-7",
-      "shooterId": "session-player",
-      "launchForce": 75.125,
-      "launchSpeed": 43.33733955839929,
-      "flightDuration": 0,
-      "traveledDistance": 0,
-      "position": [
-        20,
-        8.2100000002,
-        19.99982100000002
-      ],
-      "velocity": [
-        0,
-        -43.3373393417126,
-        -0.004333733934168856
-      ]
-    },
-    {
-      "type": "arrow-hit-terrain",
-      "arrowId": "arrow-7",
-      "shooterId": "session-player",
-      "launchForce": 75.125,
-      "launchSpeed": 43.33733955839929,
-      "flightDuration": 0.15462027984026033,
-      "traveledDistance": 7.210000031324355,
-      "objectId": "1291e241-1b55-438d-9158-24c8f7ee8c4c",
-      "point": [
-        20,
-        1,
-        19.999151639154636
-      ],
-      "normal": [
-        0,
-        1,
-        0
-      ],
-      "incomingVelocity": [
-        0,
-        -49.91380176775874,
-        -0.004324175342140791
-      ],
-      "simulationTime": 0.15462027984026033
-    },
-    {
-      "type": "bow-draw-started"
-    },
-    {
-      "type": "arrow-fired",
-      "arrowId": "arrow-8",
-      "shooterId": "session-player",
-      "launchForce": 74.57500000018626,
-      "launchSpeed": 43.17840895638301,
-      "flightDuration": 0,
-      "traveledDistance": 0,
-      "position": [
-        20,
-        8.2100000002,
-        19.99982100000002
-      ],
-      "velocity": [
-        0,
-        -43.178408740490966,
-        -0.004317840874046701
-      ]
-    },
-    {
-      "type": "arrow-hit-terrain",
-      "arrowId": "arrow-8",
-      "shooterId": "session-player",
-      "launchForce": 74.57500000018626,
-      "launchSpeed": 43.17840895638301,
-      "flightDuration": 0.1551133005612675,
-      "traveledDistance": 7.210000031294526,
-      "objectId": "1291e241-1b55-438d-9158-24c8f7ee8c4c",
-      "point": [
-        20,
-        1,
-        19.999151967267476
-      ],
-      "normal": [
-        0,
-        1,
-        0
-      ],
-      "incomingVelocity": [
-        0,
-        -49.7764952838705,
-        -0.004308317335749866
-      ],
-      "simulationTime": 0.1551133005612675
-    },
-    {
-      "type": "bow-draw-started"
-    },
-    {
-      "type": "arrow-fired",
-      "arrowId": "arrow-9",
-      "shooterId": "session-player",
-      "launchForce": 70.05000000074506,
-      "launchSpeed": 41.847939017574404,
-      "flightDuration": 0,
-      "traveledDistance": 0,
-      "position": [
-        20,
-        8.2100000002,
-        19.99982100000002
-      ],
-      "velocity": [
-        0,
-        -41.84793880833471,
-        -0.00418479388083115
-      ]
-    },
-    {
-      "type": "arrow-hit-terrain",
-      "arrowId": "arrow-9",
-      "shooterId": "session-player",
-      "launchForce": 70.05000000074506,
-      "launchSpeed": 41.847939017574404,
-      "flightDuration": 0.1593596431152966,
-      "traveledDistance": 7.2100000310349825,
-      "objectId": "1291e241-1b55-438d-9158-24c8f7ee8c4c",
-      "point": [
-        20,
-        1,
-        19.999154830201256
-      ],
-      "normal": [
-        0,
-        1,
-        0
-      ],
-      "incomingVelocity": [
-        0,
-        -48.6321877293767,
-        -0.004175563789838829
-      ],
-      "simulationTime": 0.1593596431152966
-    },
-    {
-      "type": "bow-draw-started"
-    },
-    {
-      "type": "bow-draw-started"
-    },
-    {
-      "type": "bow-draw-started"
-    },
-    {
-      "type": "bow-fully-drawn"
-    },
-    {
-      "type": "arrow-fired",
-      "arrowId": "arrow-10",
+      "arrowId": "arrow-1-7",
       "shooterId": "session-player",
       "launchForce": 90,
       "launchSpeed": 47.43416490252569,
@@ -509,13 +356,166 @@
     },
     {
       "type": "arrow-hit-terrain",
-      "arrowId": "arrow-10",
+      "arrowId": "arrow-1-7",
       "shooterId": "session-player",
       "launchForce": 90,
       "launchSpeed": 47.43416490252569,
       "flightDuration": 0.14286352520031953,
       "traveledDistance": 7.210000032017178,
-      "objectId": "1291e241-1b55-438d-9158-24c8f7ee8c4c",
+      "objectId": "39fd87a3-d648-4873-9719-db7cf0190475",
+      "point": [
+        20,
+        1,
+        19.99914407166713
+      ],
+      "normal": [
+        0,
+        1,
+        0
+      ],
+      "incomingVelocity": [
+        0,
+        -53.494299226174704,
+        -0.0047329542644388165
+      ],
+      "simulationTime": 0.14286352520031953
+    },
+    {
+      "type": "bow-draw-started"
+    },
+    {
+      "type": "arrow-fired",
+      "arrowId": "arrow-1-8",
+      "shooterId": "session-player",
+      "launchForce": 90,
+      "launchSpeed": 47.43416490252569,
+      "flightDuration": 0,
+      "traveledDistance": 0,
+      "position": [
+        20,
+        8.2100000002,
+        19.99982100000002
+      ],
+      "velocity": [
+        0,
+        -47.434164665354864,
+        -0.004743416466532855
+      ]
+    },
+    {
+      "type": "arrow-hit-terrain",
+      "arrowId": "arrow-1-8",
+      "shooterId": "session-player",
+      "launchForce": 90,
+      "launchSpeed": 47.43416490252569,
+      "flightDuration": 0.14286352520031953,
+      "traveledDistance": 7.210000032017178,
+      "objectId": "39fd87a3-d648-4873-9719-db7cf0190475",
+      "point": [
+        20,
+        1,
+        19.99914407166713
+      ],
+      "normal": [
+        0,
+        1,
+        0
+      ],
+      "incomingVelocity": [
+        0,
+        -53.494299226174704,
+        -0.0047329542644388165
+      ],
+      "simulationTime": 0.14286352520031953
+    },
+    {
+      "type": "bow-draw-started"
+    },
+    {
+      "type": "arrow-fired",
+      "arrowId": "arrow-1-9",
+      "shooterId": "session-player",
+      "launchForce": 90,
+      "launchSpeed": 47.43416490252569,
+      "flightDuration": 0,
+      "traveledDistance": 0,
+      "position": [
+        20,
+        8.2100000002,
+        19.99982100000002
+      ],
+      "velocity": [
+        0,
+        -47.434164665354864,
+        -0.004743416466532855
+      ]
+    },
+    {
+      "type": "arrow-hit-terrain",
+      "arrowId": "arrow-1-9",
+      "shooterId": "session-player",
+      "launchForce": 90,
+      "launchSpeed": 47.43416490252569,
+      "flightDuration": 0.14286352520031953,
+      "traveledDistance": 7.210000032017178,
+      "objectId": "39fd87a3-d648-4873-9719-db7cf0190475",
+      "point": [
+        20,
+        1,
+        19.99914407166713
+      ],
+      "normal": [
+        0,
+        1,
+        0
+      ],
+      "incomingVelocity": [
+        0,
+        -53.494299226174704,
+        -0.0047329542644388165
+      ],
+      "simulationTime": 0.14286352520031953
+    },
+    {
+      "type": "bow-draw-started"
+    },
+    {
+      "type": "bow-draw-started"
+    },
+    {
+      "type": "bow-draw-started"
+    },
+    {
+      "type": "bow-fully-drawn"
+    },
+    {
+      "type": "arrow-fired",
+      "arrowId": "arrow-1-10",
+      "shooterId": "session-player",
+      "launchForce": 90,
+      "launchSpeed": 47.43416490252569,
+      "flightDuration": 0,
+      "traveledDistance": 0,
+      "position": [
+        20,
+        8.2100000002,
+        19.99982100000002
+      ],
+      "velocity": [
+        0,
+        -47.434164665354864,
+        -0.004743416466532855
+      ]
+    },
+    {
+      "type": "arrow-hit-terrain",
+      "arrowId": "arrow-1-10",
+      "shooterId": "session-player",
+      "launchForce": 90,
+      "launchSpeed": 47.43416490252569,
+      "flightDuration": 0.14286352520031953,
+      "traveledDistance": 7.210000032017178,
+      "objectId": "39fd87a3-d648-4873-9719-db7cf0190475",
       "point": [
         20,
         1,
@@ -541,7 +541,7 @@
     },
     {
       "type": "arrow-fired",
-      "arrowId": "arrow-11",
+      "arrowId": "arrow-1-11",
       "shooterId": "session-player",
       "launchForce": 90,
       "launchSpeed": 47.43416490252569,
@@ -560,13 +560,13 @@
     },
     {
       "type": "arrow-hit-terrain",
-      "arrowId": "arrow-11",
+      "arrowId": "arrow-1-11",
       "shooterId": "session-player",
       "launchForce": 90,
       "launchSpeed": 47.43416490252569,
       "flightDuration": 0.14286352520031953,
       "traveledDistance": 7.210000032017178,
-      "objectId": "1291e241-1b55-438d-9158-24c8f7ee8c4c",
+      "objectId": "39fd87a3-d648-4873-9719-db7cf0190475",
       "point": [
         20,
         1,
@@ -586,57 +586,17 @@
     },
     {
       "type": "arrow-removed",
-      "arrowId": "arrow-1",
+      "arrowId": "arrow-1-1",
       "shooterId": "session-player",
-      "launchForce": 76.33916666659837,
-      "launchSpeed": 43.686143874974356,
-      "flightDuration": 0.15354914889670226,
-      "traveledDistance": 7.210000031389215,
+      "launchForce": 100.79583333333333,
+      "launchSpeed": 50.198564056488046,
+      "flightDuration": 0.13583682958322071,
+      "traveledDistance": 7.210000032407246,
       "reason": "world-closed"
     },
     {
       "type": "arrow-removed",
-      "arrowId": "arrow-2",
-      "shooterId": "session-player",
-      "launchForce": 90,
-      "launchSpeed": 47.43416490252569,
-      "flightDuration": 0.14286352520031953,
-      "traveledDistance": 7.210000032017178,
-      "reason": "world-closed"
-    },
-    {
-      "type": "arrow-removed",
-      "arrowId": "arrow-3",
-      "shooterId": "session-player",
-      "launchForce": 87.82499999925494,
-      "launchSpeed": 46.85749673191445,
-      "flightDuration": 0.14441327347330568,
-      "traveledDistance": 7.2100000319273585,
-      "reason": "world-closed"
-    },
-    {
-      "type": "arrow-removed",
-      "arrowId": "arrow-4",
-      "shooterId": "session-player",
-      "launchForce": 66.27500000037253,
-      "launchSpeed": 40.70472945505612,
-      "flightDuration": 0.16317666035080766,
-      "traveledDistance": 7.210000030793623,
-      "reason": "world-closed"
-    },
-    {
-      "type": "arrow-removed",
-      "arrowId": "arrow-5",
-      "shooterId": "session-player",
-      "launchForce": 64.20000000018626,
-      "launchSpeed": 40.062451248078375,
-      "flightDuration": 0.16540236498939542,
-      "traveledDistance": 7.210000030653312,
-      "reason": "world-closed"
-    },
-    {
-      "type": "arrow-removed",
-      "arrowId": "arrow-6",
+      "arrowId": "arrow-1-2",
       "shooterId": "session-player",
       "launchForce": 90,
       "launchSpeed": 47.43416490252569,
@@ -646,37 +606,37 @@
     },
     {
       "type": "arrow-removed",
-      "arrowId": "arrow-7",
+      "arrowId": "arrow-1-3",
       "shooterId": "session-player",
-      "launchForce": 75.125,
-      "launchSpeed": 43.33733955839929,
-      "flightDuration": 0.15462027984026033,
-      "traveledDistance": 7.210000031324355,
+      "launchForce": 87.17500000074507,
+      "launchSpeed": 46.68377662548979,
+      "flightDuration": 0.14488673598791837,
+      "traveledDistance": 7.21000003189994,
       "reason": "world-closed"
     },
     {
       "type": "arrow-removed",
-      "arrowId": "arrow-8",
+      "arrowId": "arrow-1-4",
       "shooterId": "session-player",
-      "launchForce": 74.57500000018626,
-      "launchSpeed": 43.17840895638301,
-      "flightDuration": 0.1551133005612675,
-      "traveledDistance": 7.210000031294526,
+      "launchForce": 78.70000000111759,
+      "launchSpeed": 44.3565102327487,
+      "flightDuration": 0.1515316216284852,
+      "traveledDistance": 7.210000031511559,
       "reason": "world-closed"
     },
     {
       "type": "arrow-removed",
-      "arrowId": "arrow-9",
+      "arrowId": "arrow-1-5",
       "shooterId": "session-player",
-      "launchForce": 70.05000000074506,
-      "launchSpeed": 41.847939017574404,
-      "flightDuration": 0.1593596431152966,
-      "traveledDistance": 7.2100000310349825,
+      "launchForce": 78.22500000149012,
+      "launchSpeed": 44.22244905064907,
+      "flightDuration": 0.15193084316959776,
+      "traveledDistance": 7.210000031487331,
       "reason": "world-closed"
     },
     {
       "type": "arrow-removed",
-      "arrowId": "arrow-10",
+      "arrowId": "arrow-1-6",
       "shooterId": "session-player",
       "launchForce": 90,
       "launchSpeed": 47.43416490252569,
@@ -686,7 +646,47 @@
     },
     {
       "type": "arrow-removed",
-      "arrowId": "arrow-11",
+      "arrowId": "arrow-1-7",
+      "shooterId": "session-player",
+      "launchForce": 90,
+      "launchSpeed": 47.43416490252569,
+      "flightDuration": 0.14286352520031953,
+      "traveledDistance": 7.210000032017178,
+      "reason": "world-closed"
+    },
+    {
+      "type": "arrow-removed",
+      "arrowId": "arrow-1-8",
+      "shooterId": "session-player",
+      "launchForce": 90,
+      "launchSpeed": 47.43416490252569,
+      "flightDuration": 0.14286352520031953,
+      "traveledDistance": 7.210000032017178,
+      "reason": "world-closed"
+    },
+    {
+      "type": "arrow-removed",
+      "arrowId": "arrow-1-9",
+      "shooterId": "session-player",
+      "launchForce": 90,
+      "launchSpeed": 47.43416490252569,
+      "flightDuration": 0.14286352520031953,
+      "traveledDistance": 7.210000032017178,
+      "reason": "world-closed"
+    },
+    {
+      "type": "arrow-removed",
+      "arrowId": "arrow-1-10",
+      "shooterId": "session-player",
+      "launchForce": 90,
+      "launchSpeed": 47.43416490252569,
+      "flightDuration": 0.14286352520031953,
+      "traveledDistance": 7.210000032017178,
+      "reason": "world-closed"
+    },
+    {
+      "type": "arrow-removed",
+      "arrowId": "arrow-1-11",
       "shooterId": "session-player",
       "launchForce": 90,
       "launchSpeed": 47.43416490252569,
@@ -699,26 +699,26 @@
     {
       "trace": false,
       "frames": 120,
-      "meanFrameMs": 48.10250000000621,
+      "meanFrameMs": 76.4108333333085,
       "snapshot": {
-        "lastForce": 70.05000000074506,
-        "lastSpeed": 41.847939017574404,
-        "physicsMs": 0.10000000149011612,
+        "lastForce": 90,
+        "lastSpeed": 47.43416490252569,
+        "physicsMs": 0,
         "steps": 0,
         "discardedSeconds": 0,
         "flying": 0,
         "embedded": 9,
         "predictionMs": 0,
         "dots": 0,
-        "recomputations": 62,
-        "collisionQueries": 2163,
+        "recomputations": 60,
+        "collisionQueries": 1994,
         "bufferBytes": 8292
       }
     },
     {
       "trace": true,
       "frames": 120,
-      "meanFrameMs": 48.25083333334575,
+      "meanFrameMs": 117.96333333334574,
       "snapshot": {
         "lastForce": 90,
         "lastSpeed": 47.43416490252569,
@@ -729,8 +729,8 @@
         "embedded": 10,
         "predictionMs": 0,
         "dots": 1,
-        "recomputations": 69,
-        "collisionQueries": 2348,
+        "recomputations": 64,
+        "collisionQueries": 2110,
         "bufferBytes": 8292
       }
     }

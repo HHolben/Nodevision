@@ -1,0 +1,1068 @@
+{
+  "complete": true,
+  "environment": "Chromium SwiftShader 640x480; 30 warm +180 measured RAF frames, one fixed 30Hz simulation step per frame, two reversed variant/count trials. Flat authoritative support and real wall box clearance. Each mob has a local chasing player probe for equal pressure; no multiplayer claim.",
+  "results": [
+    {
+      "trial": 0,
+      "count": 1,
+      "scenario": "wall",
+      "variant": "before",
+      "frames": 180,
+      "simulatedSeconds": 7,
+      "frameMs": {
+        "mean": 16.66499999999586,
+        "p95": 17,
+        "max": 17.100000001490116
+      },
+      "updateMs": {
+        "mean": 0.20388888884335757,
+        "p95": 0.3999999985098839,
+        "max": 0.6000000014901161
+      },
+      "navigationMs": {
+        "mean": 0.11166666646798452,
+        "p95": 0.30000000074505806,
+        "max": 0.5
+      },
+      "groundQueries": 1010,
+      "clearanceQueries": 202,
+      "blockedEvents": 17,
+      "recoveryAttempts": null,
+      "navigationPlans": null,
+      "progressMean": 14.75729646490561,
+      "drawCalls": 2,
+      "triangles": 686,
+      "afterCleanupGeometries": 0,
+      "afterCleanupTextures": 0
+    },
+    {
+      "trial": 0,
+      "count": 1,
+      "scenario": "wall",
+      "variant": "after",
+      "frames": 180,
+      "simulatedSeconds": 7,
+      "frameMs": {
+        "mean": 16.666111111102833,
+        "p95": 17.099999997764826,
+        "max": 17.199999999254942
+      },
+      "updateMs": {
+        "mean": 0.19944444460173447,
+        "p95": 0.3999999985098839,
+        "max": 0.6000000014901161
+      },
+      "navigationMs": {
+        "mean": 0.08277777793506781,
+        "p95": 0.20000000298023224,
+        "max": 0.30000000074505806
+      },
+      "groundQueries": 1290,
+      "clearanceQueries": 258,
+      "blockedEvents": 0,
+      "recoveryAttempts": 0,
+      "navigationPlans": 18,
+      "progressMean": 18.005515352715012,
+      "drawCalls": 2,
+      "triangles": 686,
+      "afterCleanupGeometries": 0,
+      "afterCleanupTextures": 0
+    },
+    {
+      "trial": 0,
+      "count": 1,
+      "scenario": "trap",
+      "variant": "before",
+      "frames": 180,
+      "simulatedSeconds": 7,
+      "frameMs": {
+        "mean": 16.6672222222305,
+        "p95": 17,
+        "max": 17.400000002235174
+      },
+      "updateMs": {
+        "mean": 0.20166666665010982,
+        "p95": 0.3999999985098839,
+        "max": 0.5
+      },
+      "navigationMs": {
+        "mean": 0.11888888883921835,
+        "p95": 0.29999999701976776,
+        "max": 0.3999999985098839
+      },
+      "groundQueries": 1010,
+      "clearanceQueries": 202,
+      "blockedEvents": 93,
+      "recoveryAttempts": null,
+      "navigationPlans": null,
+      "progressMean": 0.6778630191110424,
+      "drawCalls": 5,
+      "triangles": 722,
+      "afterCleanupGeometries": 0,
+      "afterCleanupTextures": 0
+    },
+    {
+      "trial": 0,
+      "count": 1,
+      "scenario": "trap",
+      "variant": "after",
+      "frames": 180,
+      "simulatedSeconds": 7,
+      "frameMs": {
+        "mean": 16.666666666666668,
+        "p95": 17,
+        "max": 17.300000000745058
+      },
+      "updateMs": {
+        "mean": 0.12666666662941375,
+        "p95": 0.20000000298023224,
+        "max": 1
+      },
+      "navigationMs": {
+        "mean": 0.036111111028326884,
+        "p95": 0.10000000149011612,
+        "max": 0.9000000022351742
+      },
+      "groundQueries": 600,
+      "clearanceQueries": 120,
+      "blockedEvents": 0,
+      "recoveryAttempts": 5,
+      "navigationPlans": 6,
+      "progressMean": 0,
+      "drawCalls": 5,
+      "triangles": 722,
+      "afterCleanupGeometries": 0,
+      "afterCleanupTextures": 0
+    },
+    {
+      "trial": 0,
+      "count": 5,
+      "scenario": "wall",
+      "variant": "before",
+      "frames": 180,
+      "simulatedSeconds": 7,
+      "frameMs": {
+        "mean": 16.666666666666668,
+        "p95": 17.100000001490116,
+        "max": 19.100000001490116
+      },
+      "updateMs": {
+        "mean": 0.39222222220980457,
+        "p95": 0.6999999992549419,
+        "max": 0.8000000007450581
+      },
+      "navigationMs": {
+        "mean": 0.26555555566317507,
+        "p95": 0.5999999977648258,
+        "max": 0.6999999992549419
+      },
+      "groundQueries": 5050,
+      "clearanceQueries": 1010,
+      "blockedEvents": 85,
+      "recoveryAttempts": null,
+      "navigationPlans": null,
+      "progressMean": 14.757296464905611,
+      "drawCalls": 10,
+      "triangles": 3430,
+      "afterCleanupGeometries": 0,
+      "afterCleanupTextures": 0
+    },
+    {
+      "trial": 0,
+      "count": 5,
+      "scenario": "wall",
+      "variant": "after",
+      "frames": 180,
+      "simulatedSeconds": 7,
+      "frameMs": {
+        "mean": 16.665555555538997,
+        "p95": 17,
+        "max": 17.200000002980232
+      },
+      "updateMs": {
+        "mean": 0.286666666633553,
+        "p95": 0.5,
+        "max": 0.6999999992549419
+      },
+      "navigationMs": {
+        "mean": 0.13277777772810723,
+        "p95": 0.30000000074505806,
+        "max": 0.4000000022351742
+      },
+      "groundQueries": 6420,
+      "clearanceQueries": 1284,
+      "blockedEvents": 0,
+      "recoveryAttempts": 0,
+      "navigationPlans": 90,
+      "progressMean": 17.888883485209185,
+      "drawCalls": 10,
+      "triangles": 3430,
+      "afterCleanupGeometries": 0,
+      "afterCleanupTextures": 0
+    },
+    {
+      "trial": 0,
+      "count": 5,
+      "scenario": "trap",
+      "variant": "before",
+      "frames": 180,
+      "simulatedSeconds": 7,
+      "frameMs": {
+        "mean": 16.668333333337472,
+        "p95": 17.099999997764826,
+        "max": 17.300000000745058
+      },
+      "updateMs": {
+        "mean": 0.6466666666376922,
+        "p95": 1.300000000745058,
+        "max": 2
+      },
+      "navigationMs": {
+        "mean": 0.5233333334326744,
+        "p95": 1.1000000014901161,
+        "max": 1.9000000022351742
+      },
+      "groundQueries": 5050,
+      "clearanceQueries": 1010,
+      "blockedEvents": 465,
+      "recoveryAttempts": null,
+      "navigationPlans": null,
+      "progressMean": 0.6778630191110391,
+      "drawCalls": 25,
+      "triangles": 3610,
+      "afterCleanupGeometries": 0,
+      "afterCleanupTextures": 0
+    },
+    {
+      "trial": 0,
+      "count": 5,
+      "scenario": "trap",
+      "variant": "after",
+      "frames": 180,
+      "simulatedSeconds": 7,
+      "frameMs": {
+        "mean": 16.663888888888888,
+        "p95": 17.100000001490116,
+        "max": 17.799999997019768
+      },
+      "updateMs": {
+        "mean": 0.20555555547277132,
+        "p95": 0.5,
+        "max": 0.8000000007450581
+      },
+      "navigationMs": {
+        "mean": 0.054999999991721574,
+        "p95": 0.3999999985098839,
+        "max": 0.6000000014901161
+      },
+      "groundQueries": 2800,
+      "clearanceQueries": 560,
+      "blockedEvents": 0,
+      "recoveryAttempts": 23,
+      "navigationPlans": 28,
+      "progressMean": 0,
+      "drawCalls": 25,
+      "triangles": 3610,
+      "afterCleanupGeometries": 0,
+      "afterCleanupTextures": 0
+    },
+    {
+      "trial": 0,
+      "count": 20,
+      "scenario": "wall",
+      "variant": "before",
+      "frames": 180,
+      "simulatedSeconds": 7,
+      "frameMs": {
+        "mean": 16.666111111102833,
+        "p95": 17,
+        "max": 17.300000000745058
+      },
+      "updateMs": {
+        "mean": 1.8694444445479248,
+        "p95": 3.7000000029802322,
+        "max": 4.899999998509884
+      },
+      "navigationMs": {
+        "mean": 1.5938888891496592,
+        "p95": 3.4000000059604645,
+        "max": 4.600000005215406
+      },
+      "groundQueries": 20200,
+      "clearanceQueries": 4040,
+      "blockedEvents": 340,
+      "recoveryAttempts": null,
+      "navigationPlans": null,
+      "progressMean": 14.757296464905608,
+      "drawCalls": 40,
+      "triangles": 13720,
+      "afterCleanupGeometries": 0,
+      "afterCleanupTextures": 0
+    },
+    {
+      "trial": 0,
+      "count": 20,
+      "scenario": "wall",
+      "variant": "after",
+      "frames": 180,
+      "simulatedSeconds": 7,
+      "frameMs": {
+        "mean": 16.666111111123527,
+        "p95": 17,
+        "max": 17.699999999254942
+      },
+      "updateMs": {
+        "mean": 0.7500000000620882,
+        "p95": 1.4000000022351742,
+        "max": 2.300000000745058
+      },
+      "navigationMs": {
+        "mean": 0.3861111108627584,
+        "p95": 0.9000000022351742,
+        "max": 2.0000000037252903
+      },
+      "groundQueries": 25665,
+      "clearanceQueries": 5133,
+      "blockedEvents": 0,
+      "recoveryAttempts": 0,
+      "navigationPlans": 360,
+      "progressMean": 17.87441270122347,
+      "drawCalls": 40,
+      "triangles": 13720,
+      "afterCleanupGeometries": 0,
+      "afterCleanupTextures": 0
+    },
+    {
+      "trial": 0,
+      "count": 20,
+      "scenario": "trap",
+      "variant": "before",
+      "frames": 180,
+      "simulatedSeconds": 7,
+      "frameMs": {
+        "mean": 16.666111111123527,
+        "p95": 17,
+        "max": 17.900000002235174
+      },
+      "updateMs": {
+        "mean": 4.375555555750099,
+        "p95": 8.900000002235174,
+        "max": 11.100000001490116
+      },
+      "navigationMs": {
+        "mean": 4.140000000057949,
+        "p95": 8.599999997764826,
+        "max": 10.800000000745058
+      },
+      "groundQueries": 20200,
+      "clearanceQueries": 4040,
+      "blockedEvents": 1860,
+      "recoveryAttempts": null,
+      "navigationPlans": null,
+      "progressMean": 0.6778630191110395,
+      "drawCalls": 100,
+      "triangles": 14440,
+      "afterCleanupGeometries": 0,
+      "afterCleanupTextures": 0
+    },
+    {
+      "trial": 0,
+      "count": 20,
+      "scenario": "trap",
+      "variant": "after",
+      "frames": 180,
+      "simulatedSeconds": 7,
+      "frameMs": {
+        "mean": 16.666111111102833,
+        "p95": 17,
+        "max": 17.100000001490116
+      },
+      "updateMs": {
+        "mean": 0.5944444444444444,
+        "p95": 1.8999999985098839,
+        "max": 2.800000000745058
+      },
+      "navigationMs": {
+        "mean": 0.2899999999337726,
+        "p95": 1.6000000014901161,
+        "max": 2.400000002235174
+      },
+      "groundQueries": 11100,
+      "clearanceQueries": 2220,
+      "blockedEvents": 0,
+      "recoveryAttempts": 91,
+      "navigationPlans": 111,
+      "progressMean": 0,
+      "drawCalls": 100,
+      "triangles": 14440,
+      "afterCleanupGeometries": 0,
+      "afterCleanupTextures": 0
+    },
+    {
+      "trial": 0,
+      "count": 50,
+      "scenario": "wall",
+      "variant": "before",
+      "frames": 180,
+      "simulatedSeconds": 7,
+      "frameMs": {
+        "mean": 16.71166666665425,
+        "p95": 18.300000000745058,
+        "max": 24.599999997764826
+      },
+      "updateMs": {
+        "mean": 4.541111111061441,
+        "p95": 9.300000000745058,
+        "max": 16
+      },
+      "navigationMs": {
+        "mean": 4.241111111206313,
+        "p95": 8.900000009685755,
+        "max": 15.399999994784594
+      },
+      "groundQueries": 50500,
+      "clearanceQueries": 10100,
+      "blockedEvents": 850,
+      "recoveryAttempts": null,
+      "navigationPlans": null,
+      "progressMean": 14.757296464905608,
+      "drawCalls": 100,
+      "triangles": 34300,
+      "afterCleanupGeometries": 0,
+      "afterCleanupTextures": 0
+    },
+    {
+      "trial": 0,
+      "count": 50,
+      "scenario": "wall",
+      "variant": "after",
+      "frames": 180,
+      "simulatedSeconds": 7,
+      "frameMs": {
+        "mean": 16.66499999999586,
+        "p95": 16.900000002235174,
+        "max": 17.199999999254942
+      },
+      "updateMs": {
+        "mean": 1.507777777666019,
+        "p95": 3,
+        "max": 4
+      },
+      "navigationMs": {
+        "mean": 1.001111111106972,
+        "p95": 2.4999999962747097,
+        "max": 3.4999999962747097
+      },
+      "groundQueries": 64185,
+      "clearanceQueries": 12837,
+      "blockedEvents": 0,
+      "recoveryAttempts": 0,
+      "navigationPlans": 900,
+      "progressMean": 17.887017836626914,
+      "drawCalls": 100,
+      "triangles": 34300,
+      "afterCleanupGeometries": 0,
+      "afterCleanupTextures": 0
+    },
+    {
+      "trial": 0,
+      "count": 50,
+      "scenario": "trap",
+      "variant": "before",
+      "frames": 180,
+      "simulatedSeconds": 7,
+      "frameMs": {
+        "mean": 20.386111111111113,
+        "p95": 30.699999999254942,
+        "max": 34.599999997764826
+      },
+      "updateMs": {
+        "mean": 11.36611111122701,
+        "p95": 21.699999999254942,
+        "max": 24.699999999254942
+      },
+      "navigationMs": {
+        "mean": 11.05944444441961,
+        "p95": 21.400000002235174,
+        "max": 24.5
+      },
+      "groundQueries": 50500,
+      "clearanceQueries": 10100,
+      "blockedEvents": 4650,
+      "recoveryAttempts": null,
+      "navigationPlans": null,
+      "progressMean": 0.6778630191110386,
+      "drawCalls": 250,
+      "triangles": 36100,
+      "afterCleanupGeometries": 0,
+      "afterCleanupTextures": 0
+    },
+    {
+      "trial": 0,
+      "count": 50,
+      "scenario": "trap",
+      "variant": "after",
+      "frames": 180,
+      "simulatedSeconds": 7,
+      "frameMs": {
+        "mean": 16.665555555538997,
+        "p95": 16.900000002235174,
+        "max": 21.199999999254942
+      },
+      "updateMs": {
+        "mean": 1.1561111110986935,
+        "p95": 4.5,
+        "max": 7.300000000745058
+      },
+      "navigationMs": {
+        "mean": 0.7505555557914906,
+        "p95": 4.100000001490116,
+        "max": 6.599999997764826
+      },
+      "groundQueries": 27700,
+      "clearanceQueries": 5540,
+      "blockedEvents": 0,
+      "recoveryAttempts": 227,
+      "navigationPlans": 277,
+      "progressMean": 0,
+      "drawCalls": 250,
+      "triangles": 36100,
+      "afterCleanupGeometries": 0,
+      "afterCleanupTextures": 0
+    },
+    {
+      "trial": 1,
+      "count": 50,
+      "scenario": "wall",
+      "variant": "after",
+      "frames": 180,
+      "simulatedSeconds": 7,
+      "frameMs": {
+        "mean": 16.66499999999586,
+        "p95": 16.900000002235174,
+        "max": 17.899999998509884
+      },
+      "updateMs": {
+        "mean": 1.5944444445479247,
+        "p95": 3.599999997764826,
+        "max": 7.100000001490116
+      },
+      "navigationMs": {
+        "mean": 1.1155555556217829,
+        "p95": 2.899999998509884,
+        "max": 6.5
+      },
+      "groundQueries": 64185,
+      "clearanceQueries": 12837,
+      "blockedEvents": 0,
+      "recoveryAttempts": 0,
+      "navigationPlans": 900,
+      "progressMean": 17.887017836626914,
+      "drawCalls": 100,
+      "triangles": 34300,
+      "afterCleanupGeometries": 0,
+      "afterCleanupTextures": 0
+    },
+    {
+      "trial": 1,
+      "count": 50,
+      "scenario": "wall",
+      "variant": "before",
+      "frames": 180,
+      "simulatedSeconds": 7,
+      "frameMs": {
+        "mean": 16.66500000001656,
+        "p95": 19.5,
+        "max": 24.600000001490116
+      },
+      "updateMs": {
+        "mean": 4.608333333147069,
+        "p95": 9.100000001490116,
+        "max": 17.300000000745058
+      },
+      "navigationMs": {
+        "mean": 4.291111111289097,
+        "p95": 8.50000000745058,
+        "max": 16.80000000819564
+      },
+      "groundQueries": 50500,
+      "clearanceQueries": 10100,
+      "blockedEvents": 850,
+      "recoveryAttempts": null,
+      "navigationPlans": null,
+      "progressMean": 14.757296464905608,
+      "drawCalls": 100,
+      "triangles": 34300,
+      "afterCleanupGeometries": 0,
+      "afterCleanupTextures": 0
+    },
+    {
+      "trial": 1,
+      "count": 50,
+      "scenario": "trap",
+      "variant": "after",
+      "frames": 180,
+      "simulatedSeconds": 7,
+      "frameMs": {
+        "mean": 16.665555555559695,
+        "p95": 18.099999997764826,
+        "max": 19.100000001490116
+      },
+      "updateMs": {
+        "mean": 1.1872222223215634,
+        "p95": 5.100000001490116,
+        "max": 7
+      },
+      "navigationMs": {
+        "mean": 0.7888888888888889,
+        "p95": 4.699999999254942,
+        "max": 6.600000001490116
+      },
+      "groundQueries": 27700,
+      "clearanceQueries": 5540,
+      "blockedEvents": 0,
+      "recoveryAttempts": 227,
+      "navigationPlans": 277,
+      "progressMean": 0,
+      "drawCalls": 250,
+      "triangles": 36100,
+      "afterCleanupGeometries": 0,
+      "afterCleanupTextures": 0
+    },
+    {
+      "trial": 1,
+      "count": 50,
+      "scenario": "trap",
+      "variant": "before",
+      "frames": 180,
+      "simulatedSeconds": 7,
+      "frameMs": {
+        "mean": 19.90111111110697,
+        "p95": 30,
+        "max": 37.30000000074506
+      },
+      "updateMs": {
+        "mean": 10.972777777786057,
+        "p95": 20.399999998509884,
+        "max": 25.900000002235174
+      },
+      "navigationMs": {
+        "mean": 10.69666666669978,
+        "p95": 20.199999999254942,
+        "max": 25.700000006705523
+      },
+      "groundQueries": 50500,
+      "clearanceQueries": 10100,
+      "blockedEvents": 4650,
+      "recoveryAttempts": null,
+      "navigationPlans": null,
+      "progressMean": 0.6778630191110386,
+      "drawCalls": 250,
+      "triangles": 36100,
+      "afterCleanupGeometries": 0,
+      "afterCleanupTextures": 0
+    },
+    {
+      "trial": 1,
+      "count": 20,
+      "scenario": "wall",
+      "variant": "after",
+      "frames": 180,
+      "simulatedSeconds": 7,
+      "frameMs": {
+        "mean": 16.666666666666668,
+        "p95": 17,
+        "max": 17.199999999254942
+      },
+      "updateMs": {
+        "mean": 0.6738888887274597,
+        "p95": 1.2000000029802322,
+        "max": 2
+      },
+      "navigationMs": {
+        "mean": 0.37444444441547,
+        "p95": 0.9000000059604645,
+        "max": 1.4999999962747097
+      },
+      "groundQueries": 25665,
+      "clearanceQueries": 5133,
+      "blockedEvents": 0,
+      "recoveryAttempts": 0,
+      "navigationPlans": 360,
+      "progressMean": 17.87441270122347,
+      "drawCalls": 40,
+      "triangles": 13720,
+      "afterCleanupGeometries": 0,
+      "afterCleanupTextures": 0
+    },
+    {
+      "trial": 1,
+      "count": 20,
+      "scenario": "wall",
+      "variant": "before",
+      "frames": 180,
+      "simulatedSeconds": 7,
+      "frameMs": {
+        "mean": 16.665555555559695,
+        "p95": 17,
+        "max": 17.400000002235174
+      },
+      "updateMs": {
+        "mean": 1.758888888835079,
+        "p95": 3.800000000745058,
+        "max": 5
+      },
+      "navigationMs": {
+        "mean": 1.5027777777363858,
+        "p95": 3.5000000037252903,
+        "max": 4.600000001490116
+      },
+      "groundQueries": 20200,
+      "clearanceQueries": 4040,
+      "blockedEvents": 340,
+      "recoveryAttempts": null,
+      "navigationPlans": null,
+      "progressMean": 14.757296464905608,
+      "drawCalls": 40,
+      "triangles": 13720,
+      "afterCleanupGeometries": 0,
+      "afterCleanupTextures": 0
+    },
+    {
+      "trial": 1,
+      "count": 20,
+      "scenario": "trap",
+      "variant": "after",
+      "frames": 180,
+      "simulatedSeconds": 7,
+      "frameMs": {
+        "mean": 16.667777777794335,
+        "p95": 17,
+        "max": 17.100000001490116
+      },
+      "updateMs": {
+        "mean": 0.6061111110986934,
+        "p95": 2,
+        "max": 2.699999999254942
+      },
+      "navigationMs": {
+        "mean": 0.29388888877713015,
+        "p95": 1.7000000029802322,
+        "max": 2.3000000044703484
+      },
+      "groundQueries": 11100,
+      "clearanceQueries": 2220,
+      "blockedEvents": 0,
+      "recoveryAttempts": 91,
+      "navigationPlans": 111,
+      "progressMean": 0,
+      "drawCalls": 100,
+      "triangles": 14440,
+      "afterCleanupGeometries": 0,
+      "afterCleanupTextures": 0
+    },
+    {
+      "trial": 1,
+      "count": 20,
+      "scenario": "trap",
+      "variant": "before",
+      "frames": 180,
+      "simulatedSeconds": 7,
+      "frameMs": {
+        "mean": 16.666666666666668,
+        "p95": 17,
+        "max": 17.5
+      },
+      "updateMs": {
+        "mean": 3.976111111376021,
+        "p95": 7.199999999254942,
+        "max": 10.399999998509884
+      },
+      "navigationMs": {
+        "mean": 3.7655555557666553,
+        "p95": 7.100000001490116,
+        "max": 10.299999997019768
+      },
+      "groundQueries": 20200,
+      "clearanceQueries": 4040,
+      "blockedEvents": 1860,
+      "recoveryAttempts": null,
+      "navigationPlans": null,
+      "progressMean": 0.6778630191110395,
+      "drawCalls": 100,
+      "triangles": 14440,
+      "afterCleanupGeometries": 0,
+      "afterCleanupTextures": 0
+    },
+    {
+      "trial": 1,
+      "count": 5,
+      "scenario": "wall",
+      "variant": "after",
+      "frames": 180,
+      "simulatedSeconds": 7,
+      "frameMs": {
+        "mean": 16.662222222218084,
+        "p95": 17.100000001490116,
+        "max": 17.5
+      },
+      "updateMs": {
+        "mean": 0.23277777791437176,
+        "p95": 0.4000000022351742,
+        "max": 0.6000000014901161
+      },
+      "navigationMs": {
+        "mean": 0.0844444445023934,
+        "p95": 0.30000000074505806,
+        "max": 0.4000000022351742
+      },
+      "groundQueries": 6420,
+      "clearanceQueries": 1284,
+      "blockedEvents": 0,
+      "recoveryAttempts": 0,
+      "navigationPlans": 90,
+      "progressMean": 17.888883485209185,
+      "drawCalls": 10,
+      "triangles": 3430,
+      "afterCleanupGeometries": 0,
+      "afterCleanupTextures": 0
+    },
+    {
+      "trial": 1,
+      "count": 5,
+      "scenario": "wall",
+      "variant": "before",
+      "frames": 180,
+      "simulatedSeconds": 7,
+      "frameMs": {
+        "mean": 16.66499999999586,
+        "p95": 17,
+        "max": 17.299999997019768
+      },
+      "updateMs": {
+        "mean": 0.2844444442126486,
+        "p95": 0.5,
+        "max": 0.7000000029802322
+      },
+      "navigationMs": {
+        "mean": 0.1788888886777891,
+        "p95": 0.4000000022351742,
+        "max": 0.6000000014901161
+      },
+      "groundQueries": 5050,
+      "clearanceQueries": 1010,
+      "blockedEvents": 85,
+      "recoveryAttempts": null,
+      "navigationPlans": null,
+      "progressMean": 14.757296464905611,
+      "drawCalls": 10,
+      "triangles": 3430,
+      "afterCleanupGeometries": 0,
+      "afterCleanupTextures": 0
+    },
+    {
+      "trial": 1,
+      "count": 5,
+      "scenario": "trap",
+      "variant": "after",
+      "frames": 180,
+      "simulatedSeconds": 7,
+      "frameMs": {
+        "mean": 16.666666666666668,
+        "p95": 17.100000001490116,
+        "max": 17.300000000745058
+      },
+      "updateMs": {
+        "mean": 0.17999999986754522,
+        "p95": 0.4000000022351742,
+        "max": 0.5999999977648258
+      },
+      "navigationMs": {
+        "mean": 0.04888888885163599,
+        "p95": 0.30000000074505806,
+        "max": 0.5
+      },
+      "groundQueries": 2800,
+      "clearanceQueries": 560,
+      "blockedEvents": 0,
+      "recoveryAttempts": 23,
+      "navigationPlans": 28,
+      "progressMean": 0,
+      "drawCalls": 25,
+      "triangles": 3610,
+      "afterCleanupGeometries": 0,
+      "afterCleanupTextures": 0
+    },
+    {
+      "trial": 1,
+      "count": 5,
+      "scenario": "trap",
+      "variant": "before",
+      "frames": 180,
+      "simulatedSeconds": 7,
+      "frameMs": {
+        "mean": 16.66444444443203,
+        "p95": 17.099999997764826,
+        "max": 17.399999998509884
+      },
+      "updateMs": {
+        "mean": 0.587777777761221,
+        "p95": 1.199999999254942,
+        "max": 1.6000000014901161
+      },
+      "navigationMs": {
+        "mean": 0.4733333332464099,
+        "p95": 1.0999999977648258,
+        "max": 1.5
+      },
+      "groundQueries": 5050,
+      "clearanceQueries": 1010,
+      "blockedEvents": 465,
+      "recoveryAttempts": null,
+      "navigationPlans": null,
+      "progressMean": 0.6778630191110391,
+      "drawCalls": 25,
+      "triangles": 3610,
+      "afterCleanupGeometries": 0,
+      "afterCleanupTextures": 0
+    },
+    {
+      "trial": 1,
+      "count": 1,
+      "scenario": "wall",
+      "variant": "after",
+      "frames": 180,
+      "simulatedSeconds": 7,
+      "frameMs": {
+        "mean": 16.666666666666668,
+        "p95": 17,
+        "max": 17.199999999254942
+      },
+      "updateMs": {
+        "mean": 0.15666666676600774,
+        "p95": 0.30000000074505806,
+        "max": 0.4000000022351742
+      },
+      "navigationMs": {
+        "mean": 0.07111111121873061,
+        "p95": 0.19999999925494194,
+        "max": 0.30000000074505806
+      },
+      "groundQueries": 1290,
+      "clearanceQueries": 258,
+      "blockedEvents": 0,
+      "recoveryAttempts": 0,
+      "navigationPlans": 18,
+      "progressMean": 18.005515352715012,
+      "drawCalls": 2,
+      "triangles": 686,
+      "afterCleanupGeometries": 0,
+      "afterCleanupTextures": 0
+    },
+    {
+      "trial": 1,
+      "count": 1,
+      "scenario": "wall",
+      "variant": "before",
+      "frames": 180,
+      "simulatedSeconds": 7,
+      "frameMs": {
+        "mean": 16.66499999999586,
+        "p95": 17.199999999254942,
+        "max": 17.5
+      },
+      "updateMs": {
+        "mean": 0.09666666641003556,
+        "p95": 0.19999999925494194,
+        "max": 0.3999999985098839
+      },
+      "navigationMs": {
+        "mean": 0.04111111095796029,
+        "p95": 0.10000000149011612,
+        "max": 0.30000000074505806
+      },
+      "groundQueries": 1010,
+      "clearanceQueries": 202,
+      "blockedEvents": 17,
+      "recoveryAttempts": null,
+      "navigationPlans": null,
+      "progressMean": 14.75729646490561,
+      "drawCalls": 2,
+      "triangles": 686,
+      "afterCleanupGeometries": 0,
+      "afterCleanupTextures": 0
+    },
+    {
+      "trial": 1,
+      "count": 1,
+      "scenario": "trap",
+      "variant": "after",
+      "frames": 180,
+      "simulatedSeconds": 7,
+      "frameMs": {
+        "mean": 16.66500000001656,
+        "p95": 17,
+        "max": 31.5
+      },
+      "updateMs": {
+        "mean": 0.11777777777363857,
+        "p95": 0.20000000298023224,
+        "max": 0.6000000014901161
+      },
+      "navigationMs": {
+        "mean": 0.034444444398913115,
+        "p95": 0.10000000149011612,
+        "max": 0.5
+      },
+      "groundQueries": 600,
+      "clearanceQueries": 120,
+      "blockedEvents": 0,
+      "recoveryAttempts": 5,
+      "navigationPlans": 6,
+      "progressMean": 0,
+      "drawCalls": 5,
+      "triangles": 722,
+      "afterCleanupGeometries": 0,
+      "afterCleanupTextures": 0
+    },
+    {
+      "trial": 1,
+      "count": 1,
+      "scenario": "trap",
+      "variant": "before",
+      "frames": 180,
+      "simulatedSeconds": 7,
+      "frameMs": {
+        "mean": 16.665555555559695,
+        "p95": 17.099999997764826,
+        "max": 17.400000002235174
+      },
+      "updateMs": {
+        "mean": 0.2033333332174354,
+        "p95": 0.3999999985098839,
+        "max": 0.5
+      },
+      "navigationMs": {
+        "mean": 0.1266666665673256,
+        "p95": 0.30000000074505806,
+        "max": 0.5
+      },
+      "groundQueries": 1010,
+      "clearanceQueries": 202,
+      "blockedEvents": 93,
+      "recoveryAttempts": null,
+      "navigationPlans": null,
+      "progressMean": 0.6778630191110424,
+      "drawCalls": 5,
+      "triangles": 722,
+      "afterCleanupGeometries": 0,
+      "afterCleanupTextures": 0
+    }
+  ],
+  "timingScopes": {
+    "updateMs": "Same external timer around all mob ticks, before and after; use for like-for-like CPU comparisons.",
+    "navigationMs": "M1 baseline lacks separate navigation timing, so baseline uses behaviorMs (entire fixed simulation), while corrected runtime uses navigationMs (planning, steering and movement checks). These inner timer scopes are not identical.",
+    "queries": "Totals include warmup and all 210 fixed steps; frames/CPU statistics exclude 30 warmup frames.",
+    "legacyCounters": "Before M1.1 recoveryAttempts and navigationPlans are unavailable (null); M1 had no explicit navigation recovery controller."
+  }
+}

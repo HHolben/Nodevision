@@ -1,0 +1,6 @@
+export const PLAYER_MODIFIERS=Object.freeze([{id:'total-concealment',label:'Total Concealment',effect:'concealment'}]);
+export function createPlayerModifiers(){const active=new Set(),listeners=new Set(),stats={suppressedSignals:0,awarenessInvalidations:0};let revision=0;
+ return {has:id=>active.has(id),toggle(id){if(!PLAYER_MODIFIERS.some(m=>m.id===id))return false;if(active.has(id))active.delete(id);else active.add(id);revision++;for(const listener of listeners)listener(id,active.has(id));return active.has(id);},subscribe(fn){listeners.add(fn);return ()=>listeners.delete(fn);},recordSuppression(count=1){stats.suppressedSignals+=count;},recordInvalidation(count=1){stats.awarenessInvalidations+=count;},snapshot(){return {active:[...active],revision,...stats};},dispose(){active.clear();listeners.clear();}};
+}
+export const playerActorId=ctx=>ctx.movementState?.playerCharacter?.id||'session-player';
+export function actorPerceptible(ctx,sourceId,actorId){const modifiers=ctx.movementState?.playerModifiers||ctx.inventory?.modifiers;const player=playerActorId(ctx);if(modifiers?.has('total-concealment')&&(sourceId===player||actorId===player||sourceId==='session-player'||actorId==='session-player')){modifiers.recordSuppression();return false;}return true;}

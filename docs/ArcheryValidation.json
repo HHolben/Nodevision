@@ -27,8 +27,8 @@
     "ApplicationSystem/public/PanelInstances/ViewPanels/GameViewDependencies/Abilities/MovementAbilities/ArcheryBowAbility.mjs": "986d8d6dcb60348806398dbab27660942e6cfda52f69b406c715602df52d5adb",
     "docs/ArcheryAccuracy.json": "2dfda1d9e78a8bf45af6c81299eb3131f56ff62a168ece7647f528dafdb10784",
     "docs/ArcheryPerformance.json": "ab661b3a5ea12b58e2ae9c960af2ac4125d6e3b4612ee8ae15f6da323f6ee5ac",
-    "docs/ArcheryBowBrowserMetrics.json": "990e4b59580dd4b25bad5b9bc7fb8bb6d4ae2ff44ba0abdd82b671320720ec91",
-    "docs/ArcheryVisuals/archery-voxel.png": "477affc57b304c9bd51a3d12da188056083e20c93ffcb920ee86c22ca3aa954c",
+    "docs/ArcheryBowBrowserMetrics.json": "d60f1912e4962e247241324fd838e7378d07835d300b05149faed1641b4b9d31",
+    "docs/ArcheryVisuals/archery-voxel.png": "448f17ecfb737cbdfa33ea6896448bab8c6e57bd9cbcc9f4677ba055b0279294",
     "docs/ArcheryVisuals/archery-polygonal.png": "ef982eb6adb1e2f7ed7b8cc583e2d00d89cdb49ff413b3c1199e82d256da74b0"
   },
   "e2IntegrationRecheck": {
@@ -96,5 +96,24 @@
         "current": "477affc57b304c9bd51a3d12da188056083e20c93ffcb920ee86c22ca3aa954c"
       }
     }
+  },
+  "navigationIntegrationRecheck": {
+    "metaWorldTests": 318,
+    "gameViewTests": 41,
+    "productionM1": true,
+    "productionArcheryTarget": true,
+    "productionBow": true,
+    "productionTeleporter": true,
+    "updatedEvidence": {
+      "docs/ArcheryBowBrowserMetrics.json": {
+        "previous": "990e4b59580dd4b25bad5b9bc7fb8bb6d4ae2ff44ba0abdd82b671320720ec91",
+        "current": "d60f1912e4962e247241324fd838e7378d07835d300b05149faed1641b4b9d31"
+      },
+      "docs/ArcheryVisuals/archery-voxel.png": {
+        "previous": "477affc57b304c9bd51a3d12da188056083e20c93ffcb920ee86c22ca3aa954c",
+        "current": "448f17ecfb737cbdfa33ea6896448bab8c6e57bd9cbcc9f4677ba055b0279294"
+      }
+    },
+    "note": "Original M1 mob sources archived in docs/MobM11BaselineSources.json; historical benchmark values retained."
   }
 }

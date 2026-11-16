@@ -35,15 +35,15 @@
     "ApplicationSystem/public/MetaWorld/MetaWorldLoader.mjs": "f16a38a2aeccbc9bec7d62812d48e93a05e8ae238f23a44886d2df70fbbabce8",
     "ApplicationSystem/public/MetaWorld/Mobs/Assets.mjs": "6c266b9d339984932a145770ed239131cd2623227e1eeb81594b500aec149400",
     "ApplicationSystem/public/MetaWorld/Mobs/Authoring.mjs": "01f4e07267c6c17072e55c06cb0664e6c7465fd6c4c72a592d85a78fd0aa76f1",
-    "ApplicationSystem/public/MetaWorld/Mobs/Behavior.mjs": "f33df657d46edd90c3e6c13f7111539d1c2699de71a16f620ca89494cde63ccf",
+    "ApplicationSystem/public/MetaWorld/Mobs/Behavior.mjs": "9e162336790cb57919ca99d05bff85e4ae322797469700936e3e39ba0ff85104",
     "ApplicationSystem/public/MetaWorld/Mobs/Definition.mjs": "fe527a2e677638e6f6de91285c9c00f988c77c67f496ff1603c4d5ecb31154ae",
-    "ApplicationSystem/public/MetaWorld/Mobs/Ground.mjs": "30e76b5951c04513ae81e040b33952a57636459f60e1843a94bdfbffa22c5cd9",
+    "ApplicationSystem/public/MetaWorld/Mobs/Ground.mjs": "1d848d10b2f8ca547f9fbdf288f3e25cf6f0a05b9081d01abd46299cbff7b069",
     "ApplicationSystem/public/MetaWorld/Mobs/Mobs.test.mjs": "76904b05f514908e05a4681516eef624fce7e92334c426423f7046ce2fffbbbe",
     "ApplicationSystem/public/MetaWorld/Mobs/Placement.mjs": "4d33e941502a8a39c49360b8c6c4e7558e56afdc1aeb68d0bcfec4c71031643e",
     "ApplicationSystem/public/MetaWorld/Mobs/Properties.mjs": "dc5c5bf239fce4ce0e1888a906b6f94fd01c3db3a3c9530804ad54e12a05dc56",
     "ApplicationSystem/public/MetaWorld/Mobs/Registry.mjs": "1d4333e0d4571d92675652a35d3fb8dc2896bb2936fa475f59e88223a6763a85",
     "ApplicationSystem/public/MetaWorld/Mobs/Rendering.mjs": "dfdf45ee1e90f3fb908a76a56a29a66837b33a32b6e5cef5339f11d7bd53bd72",
-    "ApplicationSystem/public/MetaWorld/Mobs/Runtime.mjs": "2f476fa4d8b4034897d8f2e5e866659044b32c97006f73423f78cd2d9d1aec0f",
+    "ApplicationSystem/public/MetaWorld/Mobs/Runtime.mjs": "1805d7d2f29af98b2e7a0efd4eb2ba00186114a9b9205cfe4e25d86cc9281955",
     "ApplicationSystem/public/MetaWorld/WorldAuthoringPermissions.mjs": "00ca595e90ed59e1a641520d87c36ee707bccc1f294c64c6f0fca0582c3f32a9",
     "ApplicationSystem/public/PanelInstances/ViewPanels/GameView.mjs": "2d647eb016cef733af7e2405ca5e9eb9a0b607e43e3ebbb1847972c571d91031",
     "ApplicationSystem/public/PanelInstances/ViewPanels/GameViewDependencies/Abilities/InspectionModificationAbilities/ObjectGrabAbility.mjs": "ab91b2055217390a202efdb1b2ae1e4ef46939f71942580f0c43e11c2759d4cf",
@@ -58,14 +58,49 @@
     "ApplicationSystem/public/PanelInstances/ViewPanels/GameViewDependencies/worldLoading.mjs": "c89bfaea2cc9bf389795a2f788220b68e0160e1e972ae650b8d9abd1275f72fb",
     "ApplicationSystem/public/PanelInstances/ViewPanels/GameViewDependencies/worldSave.mjs": "6e0db6c5e3132a36bd0792d70a00aeaf57b8a0a79bad4bb28c5029b8efe15f17",
     "ApplicationSystem/public/ToolbarJSONfiles/worldShapeWidget.mjs": "0fb7e3a0299608379033ed6c7172f7987aee30c9c8539dc3efaaffce42562dce",
-    "docs/ArcheryVisuals/archery-hare.png": "52710c326f7497d510c6663a223eeeb9ddc48a323b7a395bb1efa077a822498c",
+    "docs/ArcheryVisuals/archery-hare.png": "c4102206515fff309140054e5852c0ab4409e207727767a8c5d5efb5b6410ae0",
     "docs/BuiltInMobs.md": "c0967c645fab72dfcb9757629a8b095887e37f4517a902261fa768f30dbf1fd8",
-    "docs/MobM1Browser.json": "364645c85f55cd957956d75873bc719406ac0b5e2ea8ab1f1b50976ebbb2be73",
+    "docs/MobM1Browser.json": "affd6625eb908e663ecd00de2d7be50ba610ad40675d0fa2d4d5617e8f9144dd",
     "docs/MobM1Performance.json": "bb46aca950ada1a05615c6b3694b6fdef04b4019a304c33d45be33d5985b96db",
-    "docs/MobPhaseM1BrownHare.md": "d536ac70e9562ccb3a30a8a4af3b18106d3f39964f1f8a7141e77a13d1e5b624",
+    "docs/MobPhaseM1BrownHare.md": "8bf959f55ed59e703247a39bfdc8524364e9fe5ab9ca7b3f19f64298056de2c3",
     "scripts/archery-chromium-input.mjs": "8feec0bc0cc4c484bf2ec0e3c6459b4f72d24eb89f3f586884eb8c8a923bbec3",
     "scripts/mob-m1-browser.mjs": "8c7a323d5c84d1c5e60cbf63a90167e894b1527151237bb412187b4f5f6fac8c",
     "scripts/mob-m1-performance.mjs": "0c32b3fda531b13deffdfb316d3d96b05d406fecb5dd98c4242751d97c63b6ff",
     "scripts/test-mob-m1.mjs": "c318fb2d9bceb283b56b2a6874df6e98725f6ddc90f2d73f62a3ae95857e1c25"
+  },
+  "navigationIntegrationRecheck": {
+    "metaWorldTests": 318,
+    "gameViewTests": 41,
+    "productionM1": true,
+    "productionArcheryTarget": true,
+    "productionBow": true,
+    "productionTeleporter": true,
+    "updatedEvidence": {
+      "ApplicationSystem/public/MetaWorld/Mobs/Behavior.mjs": {
+        "previous": "f33df657d46edd90c3e6c13f7111539d1c2699de71a16f620ca89494cde63ccf",
+        "current": "9e162336790cb57919ca99d05bff85e4ae322797469700936e3e39ba0ff85104"
+      },
+      "ApplicationSystem/public/MetaWorld/Mobs/Ground.mjs": {
+        "previous": "30e76b5951c04513ae81e040b33952a57636459f60e1843a94bdfbffa22c5cd9",
+        "current": "1d848d10b2f8ca547f9fbdf288f3e25cf6f0a05b9081d01abd46299cbff7b069"
+      },
+      "ApplicationSystem/public/MetaWorld/Mobs/Runtime.mjs": {
+        "previous": "2f476fa4d8b4034897d8f2e5e866659044b32c97006f73423f78cd2d9d1aec0f",
+        "current": "1805d7d2f29af98b2e7a0efd4eb2ba00186114a9b9205cfe4e25d86cc9281955"
+      },
+      "docs/ArcheryVisuals/archery-hare.png": {
+        "previous": "52710c326f7497d510c6663a223eeeb9ddc48a323b7a395bb1efa077a822498c",
+        "current": "c4102206515fff309140054e5852c0ab4409e207727767a8c5d5efb5b6410ae0"
+      },
+      "docs/MobM1Browser.json": {
+        "previous": "364645c85f55cd957956d75873bc719406ac0b5e2ea8ab1f1b50976ebbb2be73",
+        "current": "affd6625eb908e663ecd00de2d7be50ba610ad40675d0fa2d4d5617e8f9144dd"
+      },
+      "docs/MobPhaseM1BrownHare.md": {
+        "previous": "d536ac70e9562ccb3a30a8a4af3b18106d3f39964f1f8a7141e77a13d1e5b624",
+        "current": "8bf959f55ed59e703247a39bfdc8524364e9fe5ab9ca7b3f19f64298056de2c3"
+      }
+    },
+    "note": "Original M1 mob sources archived in docs/MobM11BaselineSources.json; historical benchmark values retained."
   }
 }

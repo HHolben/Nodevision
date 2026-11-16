@@ -20,8 +20,8 @@ await fs.writeFile(path.join(notebookDir,'world.html'),html.replace(raw,JSON.str
 const app=express();app.use(express.json({limit:'32mb'}));
 const ctx={notebookDir,userSettingsDir,serverSettingsDir:path.join(temp,'ServerSettings')};
 registerWorldRoutes(app,ctx);app.use('/api',createFileSaveRouter(ctx));
-app.post('/test/metrics',async(req,res)=>{await fs.writeFile(path.join(root,process.argv[2]==='performance'?'docs/MobM1Performance.json':'docs/MobM1Browser.json'),JSON.stringify(req.body,null,2));res.json({ok:true});});
-app.get('/',(req,res)=>res.type('html').send(`<div id="global-toolbar"></div><div id="sub-toolbar"></div><div id="editor"></div><pre id="result">RUNNING</pre><script type="module" src="/scripts/${process.argv[2]==='performance'?'mob-m1-performance.mjs':'mob-m1-browser.mjs'}"></script>`));
+app.post('/test/metrics',async(req,res)=>{await fs.writeFile(path.join(root,process.argv[2]==='gravity'?'docs/MobGravityBrowser.json':process.argv[2]==='performance'?'docs/MobM1Performance.json':'docs/MobM1Browser.json'),JSON.stringify(req.body,null,2));res.json({ok:true});});
+app.get('/',(req,res)=>res.type('html').send(`<div id="global-toolbar"></div><div id="sub-toolbar"></div><div id="editor"></div><pre id="result">RUNNING</pre><script type="module" src="/scripts/${process.argv[2]==='gravity'?'mob-gravity-browser.mjs':process.argv[2]==='performance'?'mob-m1-performance.mjs':'mob-m1-browser.mjs'}"></script>`));
 app.use('/Notebook',express.static(notebookDir));app.use('/scripts',express.static(path.join(root,'scripts')));app.use(express.static(path.join(root,'ApplicationSystem/public')));
 const server=app.listen(0,'127.0.0.1');await new Promise(r=>server.once('listening',r));
 try{
