@@ -32,6 +32,7 @@ export function installUseAttackCommandAbility(ctx) {
     if (ctx.api.tryUseFlyingCarpet()) return suppress(nowMs, 220);
     if (ctx.api.handleSelectedItemAction("use", { snapToGrid: !!inputState.snapPlace, nowMs })) return suppress(nowMs, 220);
     if (ctx.api.tryPaintTerrain()) return suppress(nowMs, 220);
+    if(!canRepeatUse){let target=ctx.api.getInspectHit()?.object;while(target&&!target.userData?.mobRuntime)target=target.parent;if(target?.userData.mobRuntime?.interact(window.VRWorldContext))return suppress(nowMs,220);}
     const useHit = ctx.api.findUseTarget(controls.getObject().position, performance.now());
     if (useHit) {
       for (const action of useHit.actions) ctx.api.applyCollisionAction(action);

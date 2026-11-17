@@ -1,3 +1,4 @@
+import {validateCreatureWorld} from '/MetaWorld/Creatures/Document.mjs';
 // Nodevision/ApplicationSystem/public/PanelInstances/ViewPanels/GameViewDependencies/worldSave.mjs
 // This file defines browser-side world Save logic for the Nodevision UI. It renders interface components and handles user interactions.
 
@@ -549,6 +550,7 @@ export function serializeMesh(mesh) {
 }
 
 function serializeMeshGeometry(mesh) {
+  if(mesh?.userData?.runtimeGenerated)return null;
   if(mesh?.userData?.mobRuntime)return mesh.userData.mobRuntime.serialize();
   if(mesh?.userData?.archeryTargetRuntime)return mesh.userData.archeryTargetRuntime.serialize();
   if(mesh?.userData?.constructionRuntime)return mesh.userData.constructionRuntime.serialize();
@@ -982,7 +984,7 @@ export function buildWorldDefinition({
     gravityModel,
     multiplayer,
     metadata,
-    objects: finalMeshDefs.concat(lightDefs)
+    objects: finalMeshDefs.concat(existing.metadata?.creature?[]:lightDefs)
   };
 }
 
@@ -992,7 +994,7 @@ ${JSON.stringify(worldDefinition, null, 2).replace(/</g, "\\u003c")}
 </script>`;
 }
 
-function injectWorldDefinitionIntoHtml(html, worldDefinition) {
+export function injectWorldDefinitionIntoHtml(html, worldDefinition) {
   const scriptBlock = makeWorldDefinitionScript(worldDefinition);
   const scriptPatterns = [
     /<script\b(?=[^>]*\bdata-nodevision-meta-world\b)[^>]*>[\s\S]*?<\/script>/i,
@@ -1026,6 +1028,7 @@ export async function saveCurrentWorldFile({
   }
 
   const worldPath = normalizeWorldPath(state?.currentWorldPath || window.selectedFilePath || "");
+  if (worldPath.startsWith("BuiltIn/")) { alert("Built-in creatures are read-only resources. Use Save As Creature to create a Notebook copy."); return false; }
   if (!worldPath) {
     alert("No world file is selected.");
     return false;
@@ -1060,6 +1063,7 @@ export async function saveCurrentWorldFile({
     movementState
   });
 
+  if(worldDefinition.metadata?.creature)validateCreatureWorld(worldDefinition,"/Notebook/"+worldPath);
   let existingHtml = "";
   try {
     const res = await fetch(`/Notebook/${encodeURI(worldPath)}`, { cache: "no-store" });
@@ -1087,6 +1091,7 @@ export async function saveCurrentWorldFile({
     state?.onWorldSaved?.(worldPath, updatedHtml);
     if (state) state.currentWorldDefinition = JSON.parse(JSON.stringify(worldDefinition));
     if (window.VRWorldContext) window.VRWorldContext.currentWorldDefinition = JSON.parse(JSON.stringify(worldDefinition));
+    window.VRWorldContext?.creatureDocumentSession?.saved(updatedHtml);
     return true;
   } catch (err) {
     console.error("Failed to save world HTML:", err);

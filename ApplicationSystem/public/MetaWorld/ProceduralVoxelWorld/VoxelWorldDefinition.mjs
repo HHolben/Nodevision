@@ -1,3 +1,4 @@
+import {validateWorldMap} from '../WorldMap/Definition.mjs';
 // Nodevision/ApplicationSystem/public/MetaWorld/ProceduralVoxelWorld/VoxelWorldDefinition.mjs
 // This module validates trusted declarative voxel terrain settings before any runtime allocation.
 import {validateWorldExtent} from './WorldExtent.mjs';
@@ -13,6 +14,7 @@ import { validateAuthoringTerrain } from "./VoxelAuthoringDefinition.mjs";
 export const PROCEDURAL_VOXEL_TYPE = "procedural-voxel-world";
 export function validateVoxelWorld(def) {
   validateWorldExtent(def);
+  validateWorldMap(def.worldMap);
   const fail = message => { throw new Error(`Procedural voxel world: ${message}`); };
   const vector = (v, label) => {
     if (!Array.isArray(v) || v.length !== 3 || !v.every(Number.isFinite)) fail(`${label} must contain three finite numbers`);

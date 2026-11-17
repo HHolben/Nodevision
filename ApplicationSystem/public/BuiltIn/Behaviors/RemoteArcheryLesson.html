@@ -1,0 +1,185 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>Remote Archery Lesson</title></head><body>
+<script id="nodevision-metaworld" type="application/json" data-nodevision-meta-world>
+{
+  "name": "Remote Archery Lesson",
+  "type": "meta-world",
+  "metadata": {
+    "behavior": {
+      "documentType": "behavior",
+      "id": "remote-archery-lesson",
+      "version": 1,
+      "name": "Remote Archery Lesson",
+      "description": "Offer a lesson, use a granted placement skill, wait for this target score and clean up.",
+      "author": "Nodevision",
+      "category": "Lesson",
+      "requirements": {
+        "capabilities": {
+          "capability": "communication"
+        },
+        "skills": [
+          "remote-target-placement"
+        ]
+      },
+      "parameters": [],
+      "outputs": [],
+      "entry": "remote-lesson",
+      "program": {
+        "version": 1,
+        "blocks": [
+          {
+            "id": "remote-lesson",
+            "type": "sequence",
+            "children": [
+              "greet",
+              "choice",
+              "branch",
+              "end"
+            ]
+          },
+          {
+            "id": "greet",
+            "type": "action",
+            "action": "say",
+            "text": "Would you like an archery lesson?"
+          },
+          {
+            "id": "choice",
+            "type": "action",
+            "action": "choices",
+            "choices": [
+              {
+                "id": "begin",
+                "text": "Begin lesson"
+              },
+              {
+                "id": "later",
+                "text": "Not now"
+              }
+            ]
+          },
+          {
+            "id": "branch",
+            "type": "if",
+            "condition": "begin",
+            "then": "training"
+          },
+          {
+            "id": "begin",
+            "type": "predicate",
+            "test": "choiceIs",
+            "value": "begin"
+          },
+          {
+            "id": "training",
+            "type": "sequence",
+            "children": [
+              "place",
+              "placed"
+            ]
+          },
+          {
+            "id": "place",
+            "type": "action",
+            "action": "useSkill",
+            "skill": "remote-target-placement",
+            "distance": 10
+          },
+          {
+            "id": "placed",
+            "type": "if",
+            "condition": "success",
+            "then": "shoot",
+            "else": "failure-sequence"
+          },
+          {
+            "id": "success",
+            "type": "predicate",
+            "test": "actionSucceeded"
+          },
+          {
+            "id": "shoot",
+            "type": "sequence",
+            "children": [
+              "instruction",
+              "wait-hit",
+              "hit-result"
+            ]
+          },
+          {
+            "id": "instruction",
+            "type": "action",
+            "action": "say",
+            "text": "Strike the target with your bow. Return focus to the world to aim and fire."
+          },
+          {
+            "id": "wait-hit",
+            "type": "action",
+            "action": "waitTargetHit",
+            "seconds": 120
+          },
+          {
+            "id": "hit-result",
+            "type": "if",
+            "condition": "success",
+            "then": "feedback-sequence",
+            "else": "failure-sequence"
+          },
+          {
+            "id": "feedback",
+            "type": "action",
+            "action": "say",
+            "scoreFeedback": true,
+            "text": "Target score"
+          },
+          {
+            "id": "failure",
+            "type": "action",
+            "action": "say",
+            "text": "The target could not be placed, or the lesson was canceled. Try a clear, loaded ground surface."
+          },
+          {
+            "id": "end",
+            "type": "action",
+            "action": "endConversation"
+          },
+          {
+            "id": "finish",
+            "type": "action",
+            "action": "choices",
+            "choices": [
+              {
+                "id": "complete",
+                "text": "Complete lesson"
+              }
+            ]
+          },
+          {
+            "id": "feedback-sequence",
+            "type": "sequence",
+            "children": [
+              "feedback",
+              "finish"
+            ]
+          },
+          {
+            "id": "failure-sequence",
+            "type": "sequence",
+            "children": [
+              "failure",
+              "finish"
+            ]
+          }
+        ],
+        "variables": [],
+        "events": [],
+        "procedures": {},
+        "lessons": {}
+      },
+      "dependencies": []
+    }
+  },
+  "objects": []
+}
+</script>
+</body></html>

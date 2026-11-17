@@ -1,13 +1,15 @@
+import {validateAnatomyGeometry} from './AnatomyGeometry.mjs';
 // Pure, reusable session condition processor. No AI, model, document or event ownership.
 export function createAnatomy(schema,targetId){
  const parts=new Map(),seen=new Set(),errors=[];let lastHit=null,revision=0,current;
- if(!schema?.parts?.length)throw Error('Anatomy requires parts');
- for(const p of schema.parts){if(!p.id||parts.has(p.id)||!(p.maxCondition>0)||p.hitRegion?.shape!=='box'||p.position?.length!==3||p.bounds?.length!==3||!p.position.every(Number.isFinite)||!p.bounds.every(v=>Number.isFinite(v)&&v>0))throw Error('Invalid anatomical definition');parts.set(p.id,{definition:p,condition:p.maxCondition});}
+ validateAnatomyGeometry(schema);
+ for(const p of schema.parts){if(!(p.maxCondition>0))throw Error('Invalid anatomical definition');parts.set(p.id,{definition:p,condition:p.initialCondition??p.maxCondition});}
  for(const {definition:p} of parts.values())if(p.parent&&!parts.has(p.parent))throw Error('Unknown anatomical parent');
  const fail=message=>{errors.push(message);if(errors.length>8)errors.shift();return {applied:false,error:message};};
  function calculate(){
-  const capabilities={},conditions={};let total=0,asymmetry=0,locomotors=0,functionalLocomotors=0;
-  for(const [id,s] of parts){const p=s.definition,n=s.condition/p.maxCondition,capacity=n<=p.response.disabledBelow?0:n**p.response.exponent;
+  const capabilities=Object.create(null),conditions=Object.create(null);let total=0,asymmetry=0,locomotors=0,functionalLocomotors=0;
+  const capacities=new Map();function capacityFor(id){if(capacities.has(id))return capacities.get(id);const s=parts.get(id),p=s.definition,n=s.condition/p.maxCondition;const capacity=(n<=p.response.disabledBelow?0:n**p.response.exponent)*Math.min(1,...(p.requires||[]).map(capacityFor));capacities.set(id,capacity);return capacity;}
+  for(const [id,s] of parts){const p=s.definition,n=s.condition/p.maxCondition,capacity=capacityFor(id);
    conditions[id]={condition:s.condition,maximum:p.maxCondition,capacity,enabled:capacity>0};total+=1-n;
    for(const [key,weight] of Object.entries(p.contributions)){capabilities[key]??=1;capabilities[key]-=weight*(1-capacity);}
    asymmetry+=(p.lateral||0)*(p.contributions.propulsion||0)*(1-capacity);
@@ -35,6 +37,7 @@ export function createAnatomy(schema,targetId){
    if(seen.size>=4096)return fail('Session damage source budget exhausted');seen.add(sourceId);
    const before=part.condition;part.condition=Math.max(0,before-amount*part.definition.maxCondition*multiplier);lastHit={bodyPartId,sourceId,damageType,amount:before-part.condition};calculate();return {applied:true,...lastHit,state:current.state};
   },
+  reset(){seen.clear();lastHit=null;errors.length=0;for(const s of parts.values())s.condition=s.definition.initialCondition??s.definition.maxCondition;calculate();},
   // Caller must guard authoring permissions. Debug repair is not gameplay damage or an undo entry.
   setCondition(id,value){const part=parts.get(id);if(!part||!Number.isFinite(value)||value<0||value>part.definition.maxCondition)return fail('Invalid debug condition');part.condition=value;calculate();return {applied:true};},
   snapshot(){return {...structuredClone(current),lastHit:lastHit&&{...lastHit},errors:[...errors],processedSources:seen.size,estimatedStateBytes:parts.size*32+seen.size*256+errors.length*256};},

@@ -335,6 +335,9 @@ importSpreadsheet: async () => {
   }
 },
 
+NewCreature: async () => {
+  try { await (await import('/MetaWorld/Creatures/Create.mjs')).createCreatureDocument(); } catch(e) { alert(e.message); }
+},
 NewFile: async () => {
   const module = await import("/TemplateSystem/NewDocumentController.mjs");
   await module.default();

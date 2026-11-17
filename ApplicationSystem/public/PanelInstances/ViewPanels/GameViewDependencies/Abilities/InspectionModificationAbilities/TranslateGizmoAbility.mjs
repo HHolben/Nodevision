@@ -1,3 +1,4 @@
+import {disposeGizmoHandles} from '/MetaWorld/Creatures/AnatomyGizmos.mjs';
 // Nodevision/ApplicationSystem/public/PanelInstances/ViewPanels/GameViewDependencies/Abilities/InspectionModificationAbilities/TranslateGizmoAbility.mjs
 // This file defines the translate gizmo ability for Game View editor objects. It owns translate handle creation, picking, drag movement, collider updates, and cleanup.
 
@@ -9,7 +10,7 @@ export function installTranslateGizmoAbility(ctx) {
   function disposeTranslateState() {
     if (!ctx.translateState) return;
     ctx.translateState.target?.userData?.mobRuntime?.suspend(false,'translate');
-    ctx.translateState.handles?.forEach((handle) => handle?.parent?.remove(handle));
+    disposeGizmoHandles(ctx.translateState.handles);
     ctx.translateState.group?.parent?.remove(ctx.translateState.group);
     window.removeEventListener("pointerdown", onTranslatePointerDown, true);
     window.removeEventListener("pointermove", onTranslatePointerMove, true);
@@ -83,8 +84,11 @@ export function installTranslateGizmoAbility(ctx) {
 
   function onTranslatePointerUp(event) {
     if (!ctx.translateState || event.button !== 0) return;
+    const handle=ctx.translateState.target?.userData?.anatomyHandle;
+    const changed=ctx.translateState.dragging;
     ctx.translateState.dragging = false;
     ctx.translateState.activeHandle = null;
+    if(changed)handle?.commit();
   }
 
   return installMovementApi(ctx, {

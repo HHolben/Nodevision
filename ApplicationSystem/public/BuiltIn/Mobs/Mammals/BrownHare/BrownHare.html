@@ -1,0 +1,707 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>Brown Hare</title></head><body><h1>Brown Hare</h1><p>Reusable Nodevision creature. See Models/licenseNotice.md for model attribution.</p>
+<script id="nodevision-metaworld" type="application/json" data-nodevision-meta-world>
+{
+  "name": "Brown Hare",
+  "type": "meta-world",
+  "version": 1,
+  "spawnPosition": {
+    "x": 0,
+    "y": 1,
+    "z": 2
+  },
+  "metadata": {
+    "objectGroundOnly": true,
+    "gravityModel": {
+      "mode": "none"
+    },
+    "playerRules": {
+      "allowInspect": true,
+      "allowToolUse": true
+    },
+    "environment": {
+      "skyColor": "#eef2f4",
+      "backgroundMode": "color"
+    },
+    "creature": {
+      "documentType": "creature",
+      "schemaVersion": 1,
+      "documentId": "nodevision:brown-hare",
+      "speciesId": "brown-hare",
+      "displayName": "Brown Hare",
+      "scientificName": "Lepus europaeus",
+      "author": "Nodevision",
+      "description": "Brown Hare with rigid-model locomotion, anatomical damage and sensory organs.",
+      "taxonomy": [
+        "Animal"
+      ],
+      "rootId": "creature-root",
+      "license": {
+        "name": "CC BY 3.0",
+        "notice": "Models/licenseNotice.md"
+      },
+      "dependencies": [
+        "Models/Rabbit%20by%20Poly%20by%20Google%20-%209OBTRVYUSmt.glb",
+        "Models/licenseNotice.md"
+      ],
+      "components": {
+        "appearance": "gltf-rigid",
+        "anatomy": "functional-boxes-v1",
+        "perception": "sensory-v1",
+        "locomotion": "ground-navigation-v1",
+        "behavior": "wander-flee-v1",
+        "animation": "procedural-rigid"
+      },
+      "definition": {
+        "id": "brown-hare",
+        "anatomy": {
+          "parts": [
+            {
+              "id": "torso",
+              "name": "Torso",
+              "classification": "core",
+              "parent": null,
+              "position": [
+                0,
+                0.225,
+                -0.065
+              ],
+              "bounds": [
+                0.255,
+                0.27,
+                0.36
+              ],
+              "hitRegion": {
+                "shape": "box"
+              },
+              "maxCondition": 1,
+              "response": {
+                "exponent": 2,
+                "disabledBelow": 0.1
+              },
+              "vulnerabilities": {
+                "piercing": 1,
+                "blunt": 0.8,
+                "cutting": 1,
+                "slashing": 1
+              },
+              "contributions": {
+                "propulsion": 0.15,
+                "jump": 0.1,
+                "acceleration": 0.1,
+                "endurance": 0.8,
+                "coordination": 0.1,
+                "vitality": 1
+              },
+              "animationBinding": "rigid-body",
+              "colliderBinding": "visual-pivot"
+            },
+            {
+              "id": "head",
+              "name": "Head",
+              "classification": "sensory",
+              "parent": "torso",
+              "position": [
+                0,
+                0.285,
+                0.21
+              ],
+              "bounds": [
+                0.15,
+                0.16,
+                0.23
+              ],
+              "hitRegion": {
+                "shape": "box"
+              },
+              "maxCondition": 1,
+              "response": {
+                "exponent": 2,
+                "disabledBelow": 0.1
+              },
+              "vulnerabilities": {
+                "piercing": 1,
+                "blunt": 0.8,
+                "cutting": 1,
+                "slashing": 1
+              },
+              "contributions": {
+                "perception": 1,
+                "coordination": 0.75,
+                "turning": 0.1,
+                "endurance": 0.1
+              },
+              "animationBinding": "rigid-body",
+              "colliderBinding": "visual-pivot"
+            },
+            {
+              "id": "tail",
+              "name": "Tail",
+              "classification": "appendage",
+              "parent": "torso",
+              "position": [
+                0,
+                0.19,
+                -0.302
+              ],
+              "bounds": [
+                0.1,
+                0.1,
+                0.046
+              ],
+              "hitRegion": {
+                "shape": "box"
+              },
+              "maxCondition": 1,
+              "response": {
+                "exponent": 2,
+                "disabledBelow": 0.1
+              },
+              "vulnerabilities": {
+                "piercing": 1,
+                "blunt": 0.8,
+                "cutting": 1,
+                "slashing": 1
+              },
+              "contributions": {
+                "balance": 0.04
+              },
+              "animationBinding": "rigid-body",
+              "colliderBinding": "visual-pivot"
+            },
+            {
+              "id": "foreleg-left",
+              "name": "Left Foreleg",
+              "classification": "limb",
+              "parent": "torso",
+              "position": [
+                0.073,
+                0.065,
+                0.135
+              ],
+              "bounds": [
+                0.075,
+                0.13,
+                0.17
+              ],
+              "hitRegion": {
+                "shape": "box"
+              },
+              "maxCondition": 1,
+              "response": {
+                "exponent": 2,
+                "disabledBelow": 0.1
+              },
+              "vulnerabilities": {
+                "piercing": 1,
+                "blunt": 0.8,
+                "cutting": 1,
+                "slashing": 1
+              },
+              "contributions": {
+                "balance": 0.18,
+                "turning": 0.28,
+                "recovery": 0.25
+              },
+              "animationBinding": "rigid-body",
+              "colliderBinding": "visual-pivot",
+              "lateral": 1
+            },
+            {
+              "id": "foreleg-right",
+              "name": "Right Foreleg",
+              "classification": "limb",
+              "parent": "torso",
+              "position": [
+                -0.073,
+                0.065,
+                0.135
+              ],
+              "bounds": [
+                0.075,
+                0.13,
+                0.17
+              ],
+              "hitRegion": {
+                "shape": "box"
+              },
+              "maxCondition": 1,
+              "response": {
+                "exponent": 2,
+                "disabledBelow": 0.1
+              },
+              "vulnerabilities": {
+                "piercing": 1,
+                "blunt": 0.8,
+                "cutting": 1,
+                "slashing": 1
+              },
+              "contributions": {
+                "balance": 0.18,
+                "turning": 0.28,
+                "recovery": 0.25
+              },
+              "animationBinding": "rigid-body",
+              "colliderBinding": "visual-pivot",
+              "lateral": -1
+            },
+            {
+              "id": "hindleg-left",
+              "name": "Left Hind Leg",
+              "classification": "limb",
+              "parent": "torso",
+              "position": [
+                0.105,
+                0.085,
+                -0.16
+              ],
+              "bounds": [
+                0.1,
+                0.17,
+                0.23
+              ],
+              "hitRegion": {
+                "shape": "box"
+              },
+              "maxCondition": 1,
+              "response": {
+                "exponent": 2,
+                "disabledBelow": 0.1
+              },
+              "vulnerabilities": {
+                "piercing": 1,
+                "blunt": 0.8,
+                "cutting": 1,
+                "slashing": 1
+              },
+              "contributions": {
+                "propulsion": 0.4,
+                "jump": 0.45,
+                "acceleration": 0.4,
+                "recovery": 0.2,
+                "balance": 0.12
+              },
+              "animationBinding": "rigid-body",
+              "colliderBinding": "visual-pivot",
+              "lateral": 1,
+              "locomotor": true
+            },
+            {
+              "id": "hindleg-right",
+              "name": "Right Hind Leg",
+              "classification": "limb",
+              "parent": "torso",
+              "position": [
+                -0.105,
+                0.085,
+                -0.16
+              ],
+              "bounds": [
+                0.1,
+                0.17,
+                0.23
+              ],
+              "hitRegion": {
+                "shape": "box"
+              },
+              "maxCondition": 1,
+              "response": {
+                "exponent": 2,
+                "disabledBelow": 0.1
+              },
+              "vulnerabilities": {
+                "piercing": 1,
+                "blunt": 0.8,
+                "cutting": 1,
+                "slashing": 1
+              },
+              "contributions": {
+                "propulsion": 0.4,
+                "jump": 0.45,
+                "acceleration": 0.4,
+                "recovery": 0.2,
+                "balance": 0.12
+              },
+              "animationBinding": "rigid-body",
+              "colliderBinding": "visual-pivot",
+              "lateral": -1,
+              "locomotor": true
+            },
+            {
+              "id": "eye-left",
+              "name": "Left Eye",
+              "classification": "sensory",
+              "parent": "head",
+              "position": [
+                0.082,
+                0.307,
+                0.215
+              ],
+              "bounds": [
+                0.035,
+                0.038,
+                0.048
+              ],
+              "hitRegion": {
+                "shape": "box"
+              },
+              "maxCondition": 1,
+              "response": {
+                "exponent": 2,
+                "disabledBelow": 0.1
+              },
+              "vulnerabilities": {
+                "piercing": 1,
+                "blunt": 0.8,
+                "cutting": 1,
+                "slashing": 1
+              },
+              "contributions": {
+                "visionLeft": 1
+              },
+              "animationBinding": "rigid-body",
+              "colliderBinding": "visual-pivot"
+            },
+            {
+              "id": "eye-right",
+              "name": "Right Eye",
+              "classification": "sensory",
+              "parent": "head",
+              "position": [
+                -0.082,
+                0.307,
+                0.215
+              ],
+              "bounds": [
+                0.035,
+                0.038,
+                0.048
+              ],
+              "hitRegion": {
+                "shape": "box"
+              },
+              "maxCondition": 1,
+              "response": {
+                "exponent": 2,
+                "disabledBelow": 0.1
+              },
+              "vulnerabilities": {
+                "piercing": 1,
+                "blunt": 0.8,
+                "cutting": 1,
+                "slashing": 1
+              },
+              "contributions": {
+                "visionRight": 1
+              },
+              "animationBinding": "rigid-body",
+              "colliderBinding": "visual-pivot"
+            },
+            {
+              "id": "ear-left",
+              "name": "Left Ear",
+              "classification": "sensory",
+              "parent": "head",
+              "position": [
+                0.042,
+                0.414,
+                0.17
+              ],
+              "bounds": [
+                0.052,
+                0.107,
+                0.075
+              ],
+              "hitRegion": {
+                "shape": "box"
+              },
+              "maxCondition": 1,
+              "response": {
+                "exponent": 2,
+                "disabledBelow": 0.1
+              },
+              "vulnerabilities": {
+                "piercing": 1,
+                "blunt": 0.8,
+                "cutting": 1,
+                "slashing": 1
+              },
+              "contributions": {
+                "hearingLeft": 1
+              },
+              "animationBinding": "rigid-body",
+              "colliderBinding": "visual-pivot"
+            },
+            {
+              "id": "ear-right",
+              "name": "Right Ear",
+              "classification": "sensory",
+              "parent": "head",
+              "position": [
+                -0.042,
+                0.414,
+                0.17
+              ],
+              "bounds": [
+                0.052,
+                0.107,
+                0.075
+              ],
+              "hitRegion": {
+                "shape": "box"
+              },
+              "maxCondition": 1,
+              "response": {
+                "exponent": 2,
+                "disabledBelow": 0.1
+              },
+              "vulnerabilities": {
+                "piercing": 1,
+                "blunt": 0.8,
+                "cutting": 1,
+                "slashing": 1
+              },
+              "contributions": {
+                "hearingRight": 1
+              },
+              "animationBinding": "rigid-body",
+              "colliderBinding": "visual-pivot"
+            },
+            {
+              "id": "nose",
+              "name": "Nose",
+              "classification": "sensory",
+              "parent": "head",
+              "position": [
+                0,
+                0.267,
+                0.315
+              ],
+              "bounds": [
+                0.065,
+                0.049,
+                0.024
+              ],
+              "hitRegion": {
+                "shape": "box"
+              },
+              "maxCondition": 1,
+              "response": {
+                "exponent": 2,
+                "disabledBelow": 0.1
+              },
+              "vulnerabilities": {
+                "piercing": 1,
+                "blunt": 0.8,
+                "cutting": 1,
+                "slashing": 1
+              },
+              "contributions": {
+                "smell": 1,
+                "scentDetection": 1
+              },
+              "animationBinding": "rigid-body",
+              "colliderBinding": "visual-pivot"
+            },
+            {
+              "id": "tongue",
+              "name": "Tongue",
+              "classification": "sensory",
+              "parent": "head",
+              "position": [
+                0,
+                0.239,
+                0.276
+              ],
+              "bounds": [
+                0.036,
+                0.014,
+                0.025
+              ],
+              "hitRegion": {
+                "shape": "box",
+                "exposed": false
+              },
+              "maxCondition": 1,
+              "response": {
+                "exponent": 2,
+                "disabledBelow": 0.1
+              },
+              "vulnerabilities": {
+                "piercing": 1,
+                "blunt": 0.8,
+                "cutting": 1,
+                "slashing": 1
+              },
+              "contributions": {
+                "taste": 1
+              },
+              "animationBinding": "rigid-body",
+              "colliderBinding": "visual-pivot"
+            }
+          ],
+          "senses": {
+            "vision": [
+              {
+                "id": "eye-left",
+                "capability": "visionLeft",
+                "yaw": 1.3962634015954636,
+                "field": 3.141592653589793,
+                "range": 10
+              },
+              {
+                "id": "eye-right",
+                "capability": "visionRight",
+                "yaw": -1.3962634015954636,
+                "field": 3.141592653589793,
+                "range": 10
+              }
+            ],
+            "hearing": {
+              "capabilities": [
+                "hearingLeft",
+                "hearingRight"
+              ],
+              "residual": 0.18,
+              "range": 16,
+              "threshold": 0.055,
+              "obstruction": 0.45
+            },
+            "smell": {
+              "capability": "smell",
+              "detection": "scentDetection",
+              "range": 6,
+              "threshold": 0.12
+            },
+            "taste": {
+              "capability": "taste",
+              "range": 0.3
+            },
+            "verticalField": 2.0943951023931953,
+            "behavior": {
+              "soundAlert": 0.15,
+              "soundFlee": 0.3,
+              "visualFleeDistance": 5,
+              "memory": 1.5
+            },
+            "eyeHeight": 0.31,
+            "maxSignals": 8
+          },
+          "viability": {
+            "fatalParts": [
+              "torso"
+            ],
+            "incapacitatingParts": [
+              "head"
+            ],
+            "incapacitatingBelow": 0.08,
+            "cumulativeIncapacitation": 0.72
+          },
+          "movement": {
+            "minimumPropulsion": 0.12,
+            "minimumCoordination": 0.12,
+            "roll": 0.1,
+            "recoveryPenalty": 1.5
+          },
+          "arrowDamage": 0.38
+        },
+        "name": "Brown Hare",
+        "scientificName": "Lepus europaeus",
+        "category": "Mammals",
+        "greek": "λαγώς",
+        "model": "Models/Rabbit%20by%20Poly%20by%20Google%20-%209OBTRVYUSmt.glb",
+        "attribution": "Models/licenseNotice.md",
+        "length": 0.65,
+        "forwardYaw": 0,
+        "animation": "procedural-rigid",
+        "animations": {
+          "idle": "procedural",
+          "grazing": "procedural",
+          "hopping": "procedural",
+          "running": "procedural"
+        },
+        "dimensions": [
+          0.3076,
+          0.468,
+          0.65
+        ],
+        "habitat": [
+          "grassland",
+          "scrub",
+          "woodland edge"
+        ],
+        "collision": {
+          "radius": 0.2,
+          "height": 0.45
+        },
+        "defaults": {
+          "enabled": true,
+          "wander": true,
+          "flee": true,
+          "animation": true,
+          "roamingRadius": 8,
+          "detectionRadius": 10,
+          "fleeRadius": 5,
+          "idleMin": 2,
+          "idleMax": 5,
+          "speed": 1.2,
+          "runSpeed": 4
+        },
+        "behaviorProgram": {
+          "version": 1,
+          "events": [
+            "init"
+          ],
+          "blocks": [
+            {
+              "id": "init",
+              "type": "event",
+              "event": "initialized",
+              "body": "instinct",
+              "layout": [
+                20,
+                20
+              ]
+            },
+            {
+              "id": "instinct",
+              "type": "action",
+              "action": "legacyInstinct",
+              "layout": [
+                20,
+                100
+              ]
+            }
+          ],
+          "variables": [],
+          "procedures": {},
+          "lessons": {}
+        }
+      }
+    }
+  },
+  "objects": [
+    {
+      "id": "creature-root",
+      "type": "mob",
+      "creatureRoot": true,
+      "speciesId": "brown-hare",
+      "position": [
+        0,
+        0,
+        0
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ]
+    }
+  ]
+}
+</script></body></html>

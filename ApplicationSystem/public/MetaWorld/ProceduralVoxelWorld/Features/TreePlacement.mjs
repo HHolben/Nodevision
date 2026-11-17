@@ -20,8 +20,9 @@ export function createTreePlacement(base,seed){
     const z=rz*P.cellSize+24+Math.floor((hash(2,0,treeSeed)*2-1)*P.jitter);
     const y=base.getTerrainHeight(x,z),species=treeSpeciesAt(x,z,base,seed);if(!species)return null;
     const cold=base.getBiome(x,z)==='snowy-pine-forest',biome=cold?BIOMES.snowy:BIOMES.temperate;
+    const authored=base.getAuthoredBiome?.(x,z);if(authored&&hash(3,0,treeSeed)>authored.density)return null;
     const forest=noise(x/192,z/192,seed^982451653);
-    if(forest<biome.forestThreshold||hash(3,0,treeSeed)>biome.pineBase+biome.pineField*forest)return null;
+    if(!authored&&(forest<biome.forestThreshold||hash(3,0,treeSeed)>biome.pineBase+biome.pineField*forest))return null;
     const slope=base.getSlope(x,z);if(slope>P[species.toLowerCase()+'Slope'])return null;
     if(y<(base.getWaterTop?.(x,z)??TERRAIN_V1.waterLevelVoxelY+1)||![1,2,12,MOSS_VOXEL].includes(base.getVoxel(x,y-1,z)))return null;
     const [parametersFor,sample]=shapes[species],parameters=parametersFor(treeSeed),r=species==='Pine'?12:Math.ceil(parameters.crownRadius*1.34);

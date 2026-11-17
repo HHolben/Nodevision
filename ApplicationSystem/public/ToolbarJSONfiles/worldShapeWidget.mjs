@@ -1,3 +1,4 @@
+import {creatureMenu} from '/MetaWorld/Creatures/Menu.mjs';
 // Nodevision/ApplicationSystem/public/ToolbarJSONfiles/worldShapeWidget.mjs
 // Renders the Insert > Shape sub-toolbar for adding primitive 3D solids to MetaWorld scenes.
 
@@ -17,7 +18,7 @@ const SHAPES = [
 const HOST_PAGE_IFRAME_SOURCE = "nodevision://host-page";
 
 const GAME_OBJECTS = [
-  {type:"mob",label:"Brown Hare",title:"Built-in mob · Mammals · Brown Hare"},
+  {type:"mob",label:"Mob"},
   {type:"archery-target",label:"Archery Target"},
   { type: "portal", label: "Portal", color: "#55ccff" },
   { type: "spawn", label: "Spawn Point", color: "#35d07f" },
@@ -291,7 +292,6 @@ function makeGameObjectButton(item) {
   button.addEventListener("click", async (event) => {
     event.preventDefault();
     event.stopPropagation();
-    if(item.type==='mob'){try{const added=await (await import('/MetaWorld/Mobs/Placement.mjs')).insertBrownHare();setStatus(added?'Brown Hare added.':'Mob insertion is unavailable here.');}catch(error){setStatus(error.message);}return;}
     if(item.type==='archery-target'){try{const added=await (await import('/MetaWorld/ArcheryTarget/Placement.mjs')).insertArcheryTarget();setStatus(added?'Archery Target added.':'Archery Target insertion is unavailable here.');}catch(error){setStatus(error.message);}return;}
     if (item.type === 'iframe' && item.variant !== 'host-page') {
       const { openIframeInsertion } = await import('./insertMediaIframe.mjs');
@@ -321,7 +321,7 @@ function renderGameObjects(hostElement) {
     return;
   }
 
-  GAME_OBJECTS.forEach((item) => hostElement.appendChild(makeGameObjectButton(item)));
+  GAME_OBJECTS.forEach((item) => hostElement.appendChild(item.type==='mob'?creatureMenu():makeGameObjectButton(item)));
 }
 
 export function initToolbarWidget(hostElement, item = {}) {

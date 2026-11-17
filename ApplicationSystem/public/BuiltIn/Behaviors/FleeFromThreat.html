@@ -1,0 +1,63 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>Flee From Threat</title></head><body>
+<script id="nodevision-metaworld" type="application/json" data-nodevision-meta-world>
+{
+  "name": "Flee From Threat",
+  "type": "meta-world",
+  "metadata": {
+    "behavior": {
+      "documentType": "behavior",
+      "id": "flee-from-threat",
+      "version": 1,
+      "name": "Flee From Threat",
+      "description": "Flee along the currently perceived threat direction using existing navigation.",
+      "author": "Nodevision",
+      "category": "Animal",
+      "requirements": {
+        "capabilities": {
+          "capability": "ground-locomotion"
+        }
+      },
+      "parameters": [
+        {
+          "name": "duration",
+          "valueType": "number",
+          "initial": 1.5
+        }
+      ],
+      "outputs": [],
+      "entry": "flee",
+      "program": {
+        "version": 1,
+        "blocks": [
+          {
+            "id": "flee",
+            "type": "action",
+            "action": "flee",
+            "duration": "duration-value"
+          },
+          {
+            "id": "duration-value",
+            "type": "variable",
+            "name": "duration"
+          }
+        ],
+        "variables": [
+          {
+            "name": "duration",
+            "valueType": "number",
+            "scope": "instance",
+            "initial": 1.5
+          }
+        ],
+        "events": [],
+        "procedures": {},
+        "lessons": {}
+      },
+      "dependencies": []
+    }
+  },
+  "objects": []
+}
+</script>
+</body></html>

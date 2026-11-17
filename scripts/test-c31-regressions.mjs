@@ -1,0 +1,3 @@
+// Sequential browser workflows prevent competing SwiftShader loads and preserve historical artifacts.
+import {spawn} from 'node:child_process';import fs from 'node:fs';
+for(const mode of ['browser','c3','c2','c1','m14','archery','target','teleporter']){const log='/tmp/c31-'+(mode==='browser'?'browser':'compatibility-'+mode)+'.log',fd=fs.openSync(log,'w');console.log('C31 regression: '+mode);const child=spawn(process.execPath,['scripts/test-c31.mjs',mode],{stdio:['ignore',fd,fd]});const code=await new Promise(resolve=>child.once('exit',resolve));fs.closeSync(fd);if(code!==0)throw Error(mode+' failed; see '+log);console.log('PASS: '+mode);}

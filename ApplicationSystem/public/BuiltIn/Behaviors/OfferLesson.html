@@ -1,0 +1,93 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>Offer Lesson</title></head><body>
+<script id="nodevision-metaworld" type="application/json" data-nodevision-meta-world>
+{
+  "name": "Offer Lesson",
+  "type": "meta-world",
+  "metadata": {
+    "behavior": {
+      "documentType": "behavior",
+      "id": "offer-lesson",
+      "version": 1,
+      "name": "Offer Lesson",
+      "description": "Offer a lesson and return the selected choice.",
+      "author": "Nodevision",
+      "category": "Lesson",
+      "requirements": {
+        "capabilities": {
+          "capability": "communication"
+        }
+      },
+      "parameters": [],
+      "outputs": [
+        {
+          "name": "choice",
+          "valueType": "string",
+          "initial": ""
+        }
+      ],
+      "entry": "offer",
+      "program": {
+        "version": 1,
+        "blocks": [
+          {
+            "id": "offer",
+            "type": "sequence",
+            "children": [
+              "greet",
+              "choice",
+              "remember"
+            ]
+          },
+          {
+            "id": "greet",
+            "type": "action",
+            "action": "say",
+            "text": "Would you like a lesson?"
+          },
+          {
+            "id": "choice",
+            "type": "action",
+            "action": "choices",
+            "choices": [
+              {
+                "id": "begin",
+                "text": "Begin lesson"
+              },
+              {
+                "id": "later",
+                "text": "Not now"
+              }
+            ]
+          },
+          {
+            "id": "remember",
+            "type": "set",
+            "name": "choice",
+            "value": "selected"
+          },
+          {
+            "id": "selected",
+            "type": "observation",
+            "field": "choice"
+          }
+        ],
+        "variables": [
+          {
+            "name": "choice",
+            "valueType": "string",
+            "scope": "instance",
+            "initial": ""
+          }
+        ],
+        "events": [],
+        "procedures": {},
+        "lessons": {}
+      },
+      "dependencies": []
+    }
+  },
+  "objects": []
+}
+</script>
+</body></html>

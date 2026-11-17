@@ -1,3 +1,4 @@
+import {disposeGizmoHandles} from '/MetaWorld/Creatures/AnatomyGizmos.mjs';
 // Nodevision/ApplicationSystem/public/PanelInstances/ViewPanels/GameViewDependencies/Abilities/InspectionModificationAbilities/RotateGizmoAbility.mjs
 // This file defines the rotate gizmo ability for Game View editor objects. It owns rotate handle creation, axis selection, drag rotation, scroll-compatible active-axis state, and cleanup.
 
@@ -9,7 +10,7 @@ export function installRotateGizmoAbility(ctx) {
   function disposeRotateState() {
     if (!ctx.rotateState) return;
     ctx.rotateState.target?.userData?.mobRuntime?.suspend(false,'rotate');
-    ctx.rotateState.handles?.forEach((handle) => handle?.parent?.remove(handle));
+    disposeGizmoHandles(ctx.rotateState.handles);
     ctx.rotateState.group?.parent?.remove(ctx.rotateState.group);
     window.removeEventListener("pointerdown", onRotatePointerDown, true);
     window.removeEventListener("pointermove", onRotatePointerMove, true);
@@ -85,9 +86,11 @@ export function installRotateGizmoAbility(ctx) {
 
   function onRotatePointerUp() {
     if (!ctx.rotateState) return;
+    const changed=ctx.rotateState.dragging,handle=ctx.rotateState.target?.userData?.anatomyHandle;
     ctx.rotateState.dragging = false;
     ctx.rotateState.activeHandle = null;
     ctx.rotateState.lastPointerPos = null;
+    if(changed)handle?.commit();
   }
 
   return installMovementApi(ctx, {

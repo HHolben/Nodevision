@@ -1,0 +1,45 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>Investigate Sound</title></head><body>
+<script id="nodevision-metaworld" type="application/json" data-nodevision-meta-world>
+{
+  "name": "Investigate Sound",
+  "type": "meta-world",
+  "metadata": {
+    "behavior": {
+      "documentType": "behavior",
+      "id": "investigate-sound",
+      "version": 1,
+      "name": "Investigate Sound",
+      "description": "Move briefly toward an estimated heard direction; identity remains unknown.",
+      "author": "Nodevision",
+      "category": "Animal",
+      "requirements": {
+        "capabilities": {
+          "capability": "hearing"
+        }
+      },
+      "parameters": [],
+      "outputs": [],
+      "entry": "approach",
+      "program": {
+        "version": 1,
+        "blocks": [
+          {
+            "id": "approach",
+            "type": "action",
+            "action": "moveToward",
+            "seconds": 1
+          }
+        ],
+        "variables": [],
+        "events": [],
+        "procedures": {},
+        "lessons": {}
+      },
+      "dependencies": []
+    }
+  },
+  "objects": []
+}
+</script>
+</body></html>

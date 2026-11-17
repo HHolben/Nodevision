@@ -13,3 +13,5 @@ The earlier M0 plan mentioned a Quaternius CC0 Bunny. The installed Google Rabbi
 The runtime URL prefix is `/BuiltIn/Mobs/Mammals/BrownHare/Models/`, served by the existing public static mount. Preserve original filenames and relative references. Separate Textures/Animations directories remain reserved for independent assets; this GLB embeds its texture and is animated procedurally by M1.
 
 See `docs/MobPhaseM1BrownHare.md` and `docs/BuiltInMobs.md` at the repository root. No automatic wildlife spawning is installed.
+
+Phase C1's authoritative species assembly is `BrownHare.html` in this directory. Open it through the Virtual World Editor/Viewer as `/BuiltIn/Mobs/Mammals/BrownHare/BrownHare.html` for a single-creature scene. `Mobs/Registry.mjs` and the anatomy compatibility export now derive their data from that HTML. Existing saved `brown-hare` instances remain supported. See `docs/CreatureDesignerHTMLArchitecture.md` for custom HTML creatures, discovery, editing, persistence and resource boundaries.

@@ -1,6 +1,7 @@
+import {resourcePath} from '../Creatures/Document.mjs';
 import {speciesById} from './Registry.mjs';
-export function mobDefinition(raw={}){
- const species=speciesById(raw.speciesId??'brown-hare');
+export function mobDefinition(raw={},worldPath,assemblySpecies){
+ const species=assemblySpecies||speciesById(raw.speciesId??'brown-hare',raw.creatureDocument?resourcePath(raw.creatureDocument,worldPath):undefined);
  const number=(n,min,max,key)=>{if(typeof n!=='number'||!Number.isFinite(n)||n<min||n>max)throw Error('Mob: invalid '+key);return n;};
  const vector=(v,fallback,key)=>{v??=fallback;if(!Array.isArray(v)||v.length!==3)throw Error('Mob: invalid '+key);return v.map(n=>number(n,key==='scale'?.05:-1e9,key==='scale'?10:1e9,key));};
  const config={...species.defaults,...raw.behavior};for(const k of ['enabled','wander','flee','animation'])if(typeof config[k]!=='boolean')throw Error('Mob: invalid '+k);

@@ -1,3 +1,10 @@
+import {installAnatomyEditor} from '/MetaWorld/Creatures/AnatomyEditor.mjs';
+import {speciesById as creatureSpeciesById} from '/MetaWorld/Mobs/Registry.mjs';
+import {installCreaturePreview} from '/MetaWorld/Creatures/Preview.mjs';
+import {readWorldHtml,readWorldDraft} from '/MetaWorld/WorldDocumentDrafts.mjs';
+import {startCreatureSession,captureCreatureSession} from '/MetaWorld/Creatures/Session.mjs';
+import {validateCreatureWorld,extractCreatureWorld} from '/MetaWorld/Creatures/Document.mjs';
+import {prepareCreatureWorld,builtInWorld,restoreCreatureMetadata} from '/MetaWorld/Creatures/WorldIntegration.mjs';
 import {createMob} from '/MetaWorld/Mobs/Runtime.mjs';
 import {installMobAuthoring} from '/MetaWorld/Mobs/Authoring.mjs';
 // Nodevision/ApplicationSystem/public/PanelInstances/ViewPanels/GameViewDependencies/worldLoading.mjs
@@ -1206,10 +1213,11 @@ export function registerMetaWorldLayerBridge({ state, filePath, worldData, layer
   const managedObject = def => def?.type === 'mob' || def?.type === 'archery-target' || def?.type === 'construction' || ['gox-model','model-asset'].includes(def?.type) || def?.type === 'image-plane' || def?.type === 'terrain-surface' || PRIMITIVE_WORLD_OBJECT_TYPES.has(def?.type) || def?.type === "world-text" || def?.type === "physical-path" || def?.type === "procedural-voxel-world" || def?.type === "iframe" || def?.equationCollider?.infinite === true;
   const snapshotWorldObjects = () => {
     const meshes = new Map(layerEntries.map(entry => [entry.def, entry.object3d]));
-    return JSON.stringify((worldData.objects || []).map(def => {
+    const definitions=(worldData.objects || []).map(def => {
       const mesh = meshes.get(def);
       return managedObject(def) && mesh ? { ...def, ...serializeMesh(mesh) } : def;
-    }));
+    });
+    return JSON.stringify(worldData.metadata?.creature?{objects:definitions,creature:worldData.metadata.creature}:definitions);
   };
   const recordHistorySnapshot = () => {
     if (history.isRestoring) return;
@@ -1288,6 +1296,7 @@ export function registerMetaWorldLayerBridge({ state, filePath, worldData, layer
     let restoredDefs = [];
     try {
       restoredDefs = JSON.parse(snapshot || "[]");
+      if(restoredDefs.creature){const value=restoredDefs;worldData.objects=value.objects;restoreCreatureMetadata(worldData,value.creature,filePath);restoredDefs=worldData.objects;}
     } catch (err) {
       console.warn("MetaWorld undo restore failed:", err);
       return false;
@@ -1328,6 +1337,11 @@ export function registerMetaWorldLayerBridge({ state, filePath, worldData, layer
         if(previousSources.get(entry.id)!==JSON.stringify(entry.def))bridge.regenerateExpressionLayer(entry.id);
         return;
       }
+      if(entry.def.creatureRoot&&entry.object3d?.userData.mobRuntime){
+        const runtime=entry.object3d.userData.mobRuntime,next=creatureSpeciesById(entry.def.speciesId,entry.object3d.userData.creatureDocument);
+        const appearance=s=>JSON.stringify([s.model,s.length,s.forwardYaw,s.collision]);
+        if(appearance(runtime.species)===appearance(next)&&runtime.species.id===next.id){runtime.replaceAnatomy(next);runtime.update(entry.def);previousSources.set(entry.id,JSON.stringify(entry.def));}
+      }
       if (managedObject(entry.def) && previousSources.get(entry.id) !== JSON.stringify(entry.def)) {
         if (entry.object3d) {
           removeColliderRef(entry.object3d); removeGameObjectRuntimeRefs(entry.object3d);
@@ -1338,7 +1352,7 @@ export function registerMetaWorldLayerBridge({ state, filePath, worldData, layer
         const mesh = PRIMITIVE_WORLD_OBJECT_TYPES.has(def.type) ? createPrimitiveWorldMesh(THREE,def,{color:def.color})
           : ['gox-model','model-asset'].includes(def.type) ? createModelWorldObject(def)
           : def.type === 'image-plane' ? createDownloadedImagePlane(THREE, def)
-          : def.type === 'mob' ? createMob(THREE,def,colliders)
+          : def.type === 'mob' ? createMob(THREE,def,colliders,{worldPath:filePath})
           : def.type === 'archery-target' ? createArcheryTarget(THREE,def,colliders)
           : def.type === 'world-text' ? createTextObject(THREE, def)
           : def.type === 'construction' ? createConstruction(THREE,def,filePath,colliders)
@@ -1380,6 +1394,7 @@ export function registerMetaWorldLayerBridge({ state, filePath, worldData, layer
       if (selected) inspector.inspectTarget(selected);
       else inspector.hide?.();
     }
+    if(worldData.metadata?.creature){installCreaturePreview(window.VRWorldContext);installAnatomyEditor(window.VRWorldContext);}
     notifyMetaWorldLayersChanged({ reason: "historyRestored" });
     return true;
   };
@@ -1390,6 +1405,7 @@ export function registerMetaWorldLayerBridge({ state, filePath, worldData, layer
     recordSessionTransaction(transaction){history.undoStack.push(transaction);if(history.undoStack.length>history.limit)history.undoStack.shift();history.redoStack.length=0;},
     commitCapture(install,promotion,source){bridge.sessionVoxels.finish();const before=snapshotWorldObjects();try{install();promotion.redo();bridge.sessionVoxels.flush();const after=snapshotWorldObjects();history.undoStack.push({kind:'capture',before,after,promotion});if(history.undoStack.length>history.limit)history.undoStack.shift();history.redoStack.length=0;return source;}catch(error){promotion.undo();restoreWorldObjectsSnapshot(before);bridge.syncConstructions();throw error;}},
     recordObjectTransform(mesh) {
+      if(mesh?.userData.anatomyHandle)return;
       const entry = layerEntries.find(item => item.object3d === mesh);
       if (!entry || !managedObject(entry.def)) return;
       recordHistorySnapshot();
@@ -1418,10 +1434,20 @@ export function registerMetaWorldLayerBridge({ state, filePath, worldData, layer
       history.isRestoring = false;
       return restored;
     },
+    updateCreature(patch) {
+      if(!worldData.metadata?.creature)throw Error('Not a creature document');
+      const candidate=structuredClone(worldData),c=candidate.metadata.creature;
+      Object.assign(c,patch);c.definition={...worldData.metadata.creature.definition,...patch.definition,id:c.speciesId,name:c.displayName,scientificName:c.scientificName};
+      candidate.name=c.displayName;for(const def of candidate.objects){delete def.creatureDocument;delete def.behavior;def.speciesId=c.speciesId;def.name=c.displayName;def.creatureRevision=(def.creatureRevision||0)+1;}
+      // Validate before recording history or mutating the live document.
+      validateCreatureWorld(candidate,filePath);recordHistorySnapshot();worldData.name=c.displayName;
+      restoreWorldObjectsSnapshot(JSON.stringify({objects:candidate.objects,creature:c}));return true;
+    },
     sourcePath: filePath || "",
     worldData,
     listObjects() {
-      return layerEntries.map((entry, index) => ({
+      const anatomy=window.VRWorldContext?.anatomyEditor;
+      return [...layerEntries.map((entry, index) => ({
         id: entry.id,
         name: readLayerObjectName(entry.def, entry.id, index),
         type: readLayerObjectType(entry.def, entry.object3d),
@@ -1435,9 +1461,10 @@ export function registerMetaWorldLayerBridge({ state, filePath, worldData, layer
         error: entry.def?.error || "",
         equationCollider: entry.def?.equationCollider || null,
         soundProperty: entry.def?.soundProperty || null,
-      }));
+      })),...(anatomy?.layers()||[])];
     },
     selectObject(objectId) {
+      if(objectId.startsWith("anatomy:"))return window.VRWorldContext?.anatomyEditor?.select(objectId.slice(8));
       const entry = layerEntries.find((candidate) => candidate.id === objectId);
       if (!entry?.object3d) return false;
       if (window.VRWorldContext?.objectInspector?.inspectTarget && Array.isArray(window.VRWorldContext.objects) && window.VRWorldContext.objects.includes(entry.object3d)) {
@@ -1523,7 +1550,7 @@ export function registerMetaWorldLayerBridge({ state, filePath, worldData, layer
     },
     removeExpressionLayer(objectId) {
       const index = layerEntries.findIndex((candidate) => candidate.id === objectId);
-      if (index < 0) return false;
+      if (index < 0 || layerEntries[index].def?.creatureRoot) return false;
       this.recordHistory();
       const [entry] = layerEntries.splice(index, 1);
       if (entry.object3d) {
@@ -1561,7 +1588,7 @@ export function registerMetaWorldLayerBridge({ state, filePath, worldData, layer
       this.recordHistory();
       worldData.objects = Array.isArray(worldData.objects) ? worldData.objects : [];
       worldData.objects.push(def);
-      mesh.position.set(...def.position);
+      mesh.position.set(...(def.position || [0, 0, 0]));
       mesh.userData.nvType = def.type;
       mesh.userData.metaWorldLayerId = objectId;
       if(def.educationalLinks)mesh.userData.educationalLinks=structuredClone(def.educationalLinks);
@@ -1665,7 +1692,7 @@ export function registerMetaWorldLayerBridge({ state, filePath, worldData, layer
       this.recordHistory();
       worldData.objects = Array.isArray(worldData.objects) ? worldData.objects : [];
       worldData.objects.push(def);
-      mesh.position.set(...def.position);
+      mesh.position.set(...(def.position || [0, 0, 0]));
       mesh.userData.nvType = def.type;
       mesh.userData.metaWorldLayerId = objectId;
       if(def.educationalLinks)mesh.userData.educationalLinks=structuredClone(def.educationalLinks);
@@ -1791,7 +1818,7 @@ export function registerMetaWorldLayerBridge({ state, filePath, worldData, layer
       this.recordHistory();
       worldData.objects = Array.isArray(worldData.objects) ? worldData.objects : [];
       worldData.objects.push(def);
-      mesh.position.set(...def.position);
+      mesh.position.set(...(def.position || [0, 0, 0]));
       mesh.userData.nvType = "object-file";
       mesh.userData.metaWorldLayerId = objectId;
       if(def.educationalLinks)mesh.userData.educationalLinks=structuredClone(def.educationalLinks);
@@ -1843,7 +1870,7 @@ export function registerMetaWorldLayerBridge({ state, filePath, worldData, layer
       this.recordHistory();
       worldData.objects = Array.isArray(worldData.objects) ? worldData.objects : [];
       worldData.objects.push(def);
-      mesh.position.set(...def.position);
+      mesh.position.set(...(def.position || [0, 0, 0]));
       mesh.userData.nvType = "sound-object";
       mesh.userData.metaWorldLayerId = objectId;
       if(def.educationalLinks)mesh.userData.educationalLinks=structuredClone(def.educationalLinks);
@@ -1903,7 +1930,7 @@ export function registerMetaWorldLayerBridge({ state, filePath, worldData, layer
     },
     removeObjectLayer(objectId) {
       const index = layerEntries.findIndex((candidate) => candidate.id === objectId);
-      if (index < 0) return false;
+      if (index < 0 || layerEntries[index].def?.creatureRoot) return false;
       this.recordHistory();
       const [entry] = layerEntries.splice(index, 1);
       if (entry.object3d) {
@@ -1984,7 +2011,7 @@ export function registerMetaWorldLayerBridge({ state, filePath, worldData, layer
 }
 
 function convertMetaWorldToLegacyWorld(world) {
-  if (!world || world.worldType !== "NodevisionMetaWorld") return world;
+  if (!world || world.worldType !== "NodevisionMetaWorld" || world.metadata?.creature) return world;
 
   const modeHint = String(world.worldMode || world.metadata?.worldMode || "3d").toLowerCase();
   const viewHint = String(world.viewMode || world.metadata?.viewMode || "").toLowerCase();
@@ -2380,7 +2407,7 @@ export async function detectWorldKind(filePath) {
   if (ext !== "html" && ext !== "htm") return { kind: "legacy" };
   const worldPath = normalizeWorldPath(filePath);
   try {
-    const res = await fetch("/Notebook/" + encodeURI(worldPath), { cache: "no-store" });
+    const res = await fetch(filePath.startsWith("/BuiltIn/") ? filePath : "/Notebook/" + encodeURI(worldPath), { cache: "no-store" });
     if (!res.ok) return { kind: "unknown", reason: `fetch failed ${res.status}` };
     const htmlText = await res.text();
     const metaWorldDoc = parseMetaWorldDocument(htmlText);
@@ -2571,6 +2598,8 @@ export async function loadWorldFromFile(filePath, state, THREE, options = {}) {
   try {
     if (!filePath) return;
     if(!confirmWorldSessionReplacement(filePath))return false;
+    captureCreatureSession(window.VRWorldContext);
+    window.VRWorldContext?.creaturePreview?.dispose();window.VRWorldContext?.anatomyEditor?.dispose();window.VRWorldContext?.behaviorEditor?.dispose();
     window.VRWorldContext?.cancelConstructionCapture?.();window.VRWorldContext?.captureCommandAbort?.abort();
     const ext = String(filePath).split(".").pop()?.toLowerCase() || "";
     state.currentWorldPath = filePath;
@@ -2600,6 +2629,7 @@ export async function loadWorldFromFile(filePath, state, THREE, options = {}) {
     }
 
     const worldPath = normalizeWorldPath(filePath);
+    if (!options.worldDefinition && filePath.startsWith('/BuiltIn/')) options.worldDefinition = await builtInWorld(filePath);
     const res = options.worldDefinition ? { ok: true, json: async () => ({ worldDefinition: structuredClone(options.worldDefinition) }) } : await fetch("/api/load-world", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -2622,6 +2652,9 @@ export async function loadWorldFromFile(filePath, state, THREE, options = {}) {
 
     const data = await res.json();
     let worldData = data?.worldDefinition || null;
+    let creatureSourceHtml=null,creatureDraftRestored=false;
+    if(worldData?.metadata?.creature){creatureSourceHtml=await readWorldHtml(filePath);extractCreatureWorld(creatureSourceHtml);const draft=readWorldDraft(filePath,creatureSourceHtml);if(draft){worldData=draft;creatureDraftRestored=true;}}
+    if (worldData) await prepareCreatureWorld(worldData,filePath);
     if (worldData?.worldType === "NodevisionMetaWorld") {
       worldData = convertMetaWorldToLegacyWorld(worldData);
     }
@@ -3396,7 +3429,7 @@ export async function loadWorldFromFile(filePath, state, THREE, options = {}) {
           })();
         }
       } else if (def.type === 'mob') {
-        mesh=createMob(THREE,def,colliders);
+        mesh=createMob(THREE,def,colliders,{worldPath:filePath});
       } else if (def.type === 'archery-target') {
         mesh=createArcheryTarget(THREE,def,colliders);
       } else if (def.type === 'world-text') {
@@ -3474,7 +3507,7 @@ export async function loadWorldFromFile(filePath, state, THREE, options = {}) {
 
       if (mesh) {
         if (!isEquationObjectDefinition(def) || def.equationCollider?.infinite || !(def.equationCollider && typeof def.equationCollider === "object")) {
-          mesh.position.set(...def.position);
+          mesh.position.set(...(def.position || [0, 0, 0]));
         }
         if (Array.isArray(def.rotation)) mesh.rotation.set(...def.rotation);
         if ((def.preserveLocalTransform === true || def.equationCollider?.infinite) && Array.isArray(def.scale)) mesh.scale.set(...def.scale);
@@ -3491,6 +3524,7 @@ export async function loadWorldFromFile(filePath, state, THREE, options = {}) {
           : (isExpressionLayerType(def.type)
             ? def.collider?.enabled === true
             : (isEquationObjectDefinition(def) ? (!isEquationInequalityDefinition && def.collider !== false) : (def.isSolid === true || def.collidable === true)));
+        if(mesh.userData.mobRuntime?.missing)mesh.userData.isSolid=false;
         mesh.userData.breakable = isExpressionLayerType(def.type)
           ? def.locked !== true
           : (isEquationObjectDefinition(def) ? false : (def.breakable !== false && !isPortal && !isSpawnPoint && !isLiquidDefinition));
@@ -3823,6 +3857,8 @@ export async function loadWorldFromFile(filePath, state, THREE, options = {}) {
       worldPath,
       settings: movementState?.multiplayer || {}
     });
+    if (worldData.metadata?.creature) {const target=new THREE.Vector3(...worldData.objects[0].position).add(new THREE.Vector3(0,.25,0));camera.lookAt(target);}
+    if (worldData.metadata?.creature) {installCreaturePreview(window.VRWorldContext);installAnatomyEditor(window.VRWorldContext);startCreatureSession(window.VRWorldContext,filePath,creatureSourceHtml,creatureDraftRestored);}
     if (window.VRWorldContext) window.VRWorldContext.worldLoadComplete = true;
   } catch (err) {
     console.error("Failed to load world:", err);

@@ -27,7 +27,9 @@ export function registerWorldRoutes(app, ctx) {
       const filePath = validateAndNormalizePath(worldPath, NOTEBOOK_DIR);
       const fileContent = await fsPromises.readFile(filePath, "utf8");
       const $ = cheerio.load(fileContent);
-      const worldScript = $('script[data-nodevision-meta-world], script#nodevision-metaworld, script[type="application/json"]').first().html();
+      const canonical = $('script#nodevision-metaworld');
+      if (canonical.length > 1) return res.status(400).json({error:'Ambiguous nodevision-metaworld blocks'});
+      const worldScript = canonical.length ? canonical.first().html() : $('script[data-nodevision-meta-world], script[type="application/json"]').first().html();
       if (!worldScript) {
         if (!/\.html?$/i.test(worldPath)) return res.status(400).json({ error: "No world definition found in file" });
         return res.json({ worldDefinition: createDefaultHtmlWorld(worldPath) });

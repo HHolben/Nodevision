@@ -405,6 +405,7 @@ function moveMetaWorldLayer(objectId, direction) {
 
 function renameMetaWorldLayer(objectId, nextName) {
   const bridge = getActiveMetaWorldLayerBridge();
+  if(objectId.startsWith('anatomy:'))return window.VRWorldContext?.anatomyEditor?.edit({type:'patch',id:objectId.slice(8),patch:{name:String(nextName||'').trim()}});
   if (bridge?.getConstructionDefinition?.(objectId)) return bridge.updateConstruction(objectId,{name:String(nextName || '').trim() || 'Construction'});
   if (bridge?.getPathDefinition?.(objectId)) return bridge.updatePath(objectId,{name:String(nextName || '').trim() || 'Path'});
   if (typeof bridge?.updateExpressionLayer === "function") {
@@ -462,6 +463,7 @@ function renderMetaWorldSvgStylePanel(panelEl) {
   renderFlatLayerPanel({
     panelEl,
     layers: entries,
+    reverse: !bridge?.worldData?.metadata?.creature,
     activeLayerId: selectedMetaWorldLayerId,
     selectedLayerId: selectedMetaWorldLayerId,
     emptyText: bridge ? "No layers found in this MetaWorld." : "Open a MetaWorld in Virtual World Editing to show layers.",
@@ -472,7 +474,7 @@ function renderMetaWorldSvgStylePanel(panelEl) {
     getLayerTitle: (entry) => layerTypeText(entry),
     isLayerVisible: (entry) => entry.visible !== false,
     onAddLayer: () => addMetaWorldExpressionLayer(),
-    onToggleVisible: (entry) => setMetaWorldObjectVisibility(entry.id, entry.visible === false),
+    onToggleVisible: (entry) => entry.anatomyId ? false : setMetaWorldObjectVisibility(entry.id, entry.visible === false),
     onSelectLayer: (entry) => {
       selectedMetaWorldLayerId = entry.id;
       selectMetaWorldObject(entry.id);
@@ -485,7 +487,7 @@ function renderMetaWorldSvgStylePanel(panelEl) {
       if (!next) return;
       renameMetaWorldLayer(entry.id, next);
     },
-    onDeleteLayer: (entry) => removeMetaWorldLayerObject(entry.id),
+    onDeleteLayer: (entry) => {if(entry.anatomyId){if(confirm('Delete this anatomical subtree and its capability/sensory references?'))window.VRWorldContext?.anatomyEditor?.edit({type:'delete',id:entry.anatomyId});return;}removeMetaWorldLayerObject(entry.id);},
     renderLayerDetails: (wrapper,entry)=>{renderExpressionLayerDetails(wrapper,entry);renderSoundProperty(wrapper,entry,bridge);},
     deleteDisabled: () => !(bridge && (typeof bridge.removeObjectLayer === "function" || typeof bridge.removeExpressionLayer === "function")),
   });

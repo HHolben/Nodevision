@@ -1,3 +1,4 @@
+import {captureCreatureSession,allowCreatureSwitch} from '/MetaWorld/Creatures/Session.mjs';
 import {disposeWorldSensorySignals} from '/MetaWorld/Mobs/SensorySignals.mjs';
 // Nodevision/ApplicationSystem/public/PanelInstances/ViewPanels/GameView.mjs
 // This file defines browser-side Game View logic for the Nodevision UI. It hosts either the legacy GameView engine or the reusable MetaWorld runtime.
@@ -38,6 +39,7 @@ async function ensureMetaWorldLayersPanelVisible(panel) {
 }
 
 function cleanupLegacyGameView(panel, state = {}) {
+  if(window.VRWorldContext?.panel===panel){captureCreatureSession(window.VRWorldContext);window.VRWorldContext.creaturePreview?.dispose();window.VRWorldContext.anatomyEditor?.dispose();window.VRWorldContext.behaviorEditor?.dispose();}
   try { if (window.VRWorldContext?.panel === panel) state.beforeWorldDispose?.(window.VRWorldContext); }
   catch (error) { console.warn("World draft capture failed during cleanup:", error); }
   if(window.VRWorldContext?.panel===panel){window.VRWorldContext.cancelConstructionCapture?.();window.VRWorldContext.captureCommandAbort?.abort();window.VRWorldContext.stopSessionVoxelTools?.();window.VRWorldContext.sessionVoxels?.detach();}
@@ -237,6 +239,7 @@ export async function setupPanel(panel, instanceVars = {}) {
       console.warn("GameView: no file selected. Select a world HTML under /Notebook.");
       return false;
     }
+    if(!allowCreatureSwitch(window.VRWorldContext,filePath))return false;
     state.currentWorldPath = filePath;
     try {
       const detected = await detectWorldKind(filePath);

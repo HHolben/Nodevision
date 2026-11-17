@@ -1,0 +1,111 @@
+{
+  "checks": [
+    "Sword registered",
+    "Concealment disabled default",
+    "Inventory card enables concealment",
+    "Cached visual awareness cleared immediately",
+    "Concealed proximity and attributed movement effects do not reveal player",
+    "Existing flight naturally recovers",
+    "Walking/running cannot reacquire concealed player",
+    "One hindleg-left hit per held Use press: [{\"type\":\"sword-hit\",\"attackId\":\"sword-1-1\",\"actorId\":\"session-player\",\"point\":[20.144265296054577,1.04,19.725],\"normal\":[0,0,-1],\"entityId\":\"101cd1d9-8ec0-4c79-9e8d-5fed21a7f938\",\"bodyPartId\":\"hindleg-left\",\"damage\":{\"applied\":true,\"bodyPartId\":\"hindleg-left\",\"sourceId\":\"sword-1-1\",\"damageType\":\"slashing\",\"amount\":0.35,\"state\":\"Impaired\"},\"anatomyUncertain\":false}]",
+    "Exact hindleg-left intersection: {\"type\":\"sword-hit\",\"attackId\":\"sword-1-1\",\"actorId\":\"session-player\",\"point\":[20.144265296054577,1.04,19.725],\"normal\":[0,0,-1],\"entityId\":\"101cd1d9-8ec0-4c79-9e8d-5fed21a7f938\",\"bodyPartId\":\"hindleg-left\",\"damage\":{\"applied\":true,\"bodyPartId\":\"hindleg-left\",\"sourceId\":\"sword-1-1\",\"damageType\":\"slashing\",\"amount\":0.35,\"state\":\"Impaired\"},\"anatomyUncertain\":false}",
+    "Slashing uses shared anatomy damage",
+    "Hind leg condition .65",
+    "Hind leg injury reduces propulsion and hopping",
+    "One ear-left hit per held Use press: [{\"type\":\"sword-hit\",\"attackId\":\"sword-1-2\",\"actorId\":\"session-player\",\"point\":[20.055590598035128,1.414,20.1325],\"normal\":[0,0,-1],\"entityId\":\"101cd1d9-8ec0-4c79-9e8d-5fed21a7f938\",\"bodyPartId\":\"ear-left\",\"damage\":{\"applied\":true,\"bodyPartId\":\"ear-left\",\"sourceId\":\"sword-1-2\",\"damageType\":\"slashing\",\"amount\":0.35,\"state\":\"Impaired\"},\"anatomyUncertain\":false}]",
+    "Exact ear-left intersection: {\"type\":\"sword-hit\",\"attackId\":\"sword-1-2\",\"actorId\":\"session-player\",\"point\":[20.055590598035128,1.414,20.1325],\"normal\":[0,0,-1],\"entityId\":\"101cd1d9-8ec0-4c79-9e8d-5fed21a7f938\",\"bodyPartId\":\"ear-left\",\"damage\":{\"applied\":true,\"bodyPartId\":\"ear-left\",\"sourceId\":\"sword-1-2\",\"damageType\":\"slashing\",\"amount\":0.35,\"state\":\"Impaired\"},\"anatomyUncertain\":false}",
+    "Slashing uses shared anatomy damage",
+    "Ear condition .65",
+    "Physical injury grants no player sensory fix",
+    "Combat and modifiers leave authored mob unchanged",
+    "Sword inactive with Bow",
+    "Teleporter selection cancels sword",
+    "Pause cancels swing",
+    "Save temporary Notebook",
+    "World-close disposes mob and sword resources",
+    "Reopen resets temporary injury and modifier",
+    "Viewer anatomy debugging denied",
+    "Read-only Viewer does not gain tool permission",
+    "Opt-in Viewer honors world tool-use rule",
+    "Gameplay Viewer cannot save authored content"
+  ],
+  "afterLeg": {
+    "mobile": true,
+    "speed": 0.769,
+    "acceleration": 0.769,
+    "jump": 0.740125,
+    "turning": 0.99307,
+    "recovery": 1.17325,
+    "roll": 0.0231,
+    "sway": 0.0017325000000000007,
+    "asymmetry": 0.23099999999999998
+  },
+  "afterEar": {
+    "eyes": [
+      {
+        "id": "eye-left",
+        "capacity": 1,
+        "field": 3.141592653589793,
+        "range": 10,
+        "yaw": 1.3962634015954636
+      },
+      {
+        "id": "eye-right",
+        "capacity": 1,
+        "field": 3.141592653589793,
+        "range": 10,
+        "yaw": -1.3962634015954636
+      }
+    ],
+    "visualDetection": 1,
+    "visualFieldCoverage": 5.934119456780721,
+    "visualDetectionDistance": 10,
+    "hearingSensitivity": 0.763225,
+    "hearingBias": -0.5774999999999999,
+    "soundLocalization": 0.5957500000000001,
+    "smellSensitivity": 1,
+    "scentDetection": 1,
+    "tasteDiscrimination": 1
+  },
+  "modifiers": {
+    "active": [],
+    "revision": 2,
+    "suppressedSignals": 44,
+    "awarenessInvalidations": 1
+  },
+  "sword": {
+    "attacks": 3,
+    "queries": 409,
+    "queryMs": 11.500000000116415,
+    "duplicateRejections": 17,
+    "discardedSeconds": 0,
+    "lastHit": {
+      "entityId": "101cd1d9-8ec0-4c79-9e8d-5fed21a7f938",
+      "bodyPartId": "ear-left",
+      "damage": {
+        "applied": true,
+        "bodyPartId": "ear-left",
+        "sourceId": "sword-1-2",
+        "damageType": "slashing",
+        "amount": 0.35,
+        "state": "Impaired"
+      },
+      "anatomyUncertain": false
+    },
+    "attackId": null,
+    "phase": "ready",
+    "elapsed": 0,
+    "duration": 0.65,
+    "trackedTargets": 0,
+    "equipped": false,
+    "disposed": false,
+    "collisionQueries": 409,
+    "resources": {
+      "geometries": 5,
+      "materials": 3,
+      "visible": false,
+      "geometryBytes": 5024
+    }
+  },
+  "passed": true
+}

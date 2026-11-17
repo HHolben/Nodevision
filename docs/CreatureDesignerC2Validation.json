@@ -1,0 +1,139 @@
+{
+  "generatedAt": "2026-11-17T00:33:09.240Z",
+  "passed": true,
+  "logs": {
+    "construction": [
+      "ℹ tests 18",
+      "ℹ pass 18",
+      "ℹ fail 0",
+      "ℹ duration_ms 53.378516"
+    ],
+    "metaworld": [
+      "ℹ tests 69",
+      "ℹ pass 69",
+      "ℹ fail 0",
+      "ℹ duration_ms 17764.21701"
+    ],
+    "gameview": [
+      "ℹ tests 11",
+      "ℹ pass 11",
+      "ℹ fail 0",
+      "ℹ duration_ms 2537.540297"
+    ],
+    "browser": {
+      "passed": true,
+      "result": "PASS: {\"checks\":[\"Open /BuiltIn/Mobs/Mammals/BrownHare/BrownHare.html\",\"GLB ready\",\"Thirteen anatomy rows in existing Layers\",\"Shared selection hindleg-right\",\"Anatomy inspector synchronized\",\"Legacy geometry converted without source mutation\",\"Opening does not dirty built-in anatomy\",\"Open C2Hare.html\",\"GLB ready\",\"Built-in Save As forks identity\",\"Shared selection hindleg-right\",\"Anatomy inspector synchronized\",\"Inspector field name\",\"Rename preserves ID\",\"Anatomical edit preserves runtime/mod"
+    },
+    "performance": {
+      "passed": true,
+      "result": "PASS: C2 performance {\"environment\":\"Chromium SwiftShader; CPU timings measured separately from RAF pacing. Temporary Notebook, actual GameView/HTML/history/helper adapters.\",\"cases\":[{\"trial\":0,\"count\":13,\"editorChangeMs\":{\"mean\":8.179999999993015,\"p95\":13.399999999906868,\"max\":14.199999999720603,\"samples\":40},\"narrowQueryMs\":{\"mean\":0.0024249999999301506,\"p95\":0.0075,\"max\":0.0075,\"samples\":20},\"broadMissMs\":{\"mean\":0,\"p95\":0,\"max\":0,\"samples\":20},\"capabilityRecalculationMs\":{\"mean\":0.007400000"
+    },
+    "c1": {
+      "passed": true,
+      "result": "PASS: C1 canonical Editor/Viewer, one empty root, custom creation/import/properties/history/save/reopen/Save As/discovery, metadata-driven insertion, independent anatomy, persistence and cleanup"
+    },
+    "m14": {
+      "passed": true,
+      "result": "PASS: M1.4 production inventory concealment, awareness recovery, movement, trusted sword hits, anatomy, bow, tool switching, pause, save/reopen, Viewer and cleanup"
+    },
+    "archery": {
+      "passed": true,
+      "result": "PASS: production Archery Bow inventory, trusted Use/G, draw animation, dotted prediction, both terrain modes, unlimited arrows, collision embedding, cancellation, persistence, Viewer and cleanup"
+    },
+    "target": {
+      "passed": true,
+      "result": "PASS: production Archery Target insertion, inspector Unicode, transforms, duplication/history, trusted live bow scoring in both modes, embedding/following/deletion, source preservation, save/reopen and Viewer"
+    },
+    "teleporter": {
+      "passed": true,
+      "result": "PASS: production inventory, trusted primary and controller input, geographic coarse and detailed voxel/polygonal travel, physics, cancellation, permissions, imported GOX/STL/glTF/GLB, constructions, cleanup and save/reopen"
+    }
+  },
+  "preserved": {
+    "Notebook/test.html": "75533dd604cbacc1de34bd42e1e3c5a5faeef5f4779b51c520a2e0c0edd81292",
+    "ApplicationSystem/public/BuiltIn/Mobs/Mammals/BrownHare/Models/Mesh_Rabbit.obj": "a1b98fae32e84b69ad03fc95031b49581771dc104bfdc94e91bafba8a395acec",
+    "ApplicationSystem/public/BuiltIn/Mobs/Mammals/BrownHare/Models/Mesh_Rabbit.mtl": "40b9d69ff8e1e870f79ce57712958a6f906ee26ae60a62311c6f98ba48a8d175",
+    "ApplicationSystem/public/BuiltIn/Mobs/Mammals/BrownHare/Models/Rabbit by Poly by Google - 9OBTRVYUSmt.glb": "b58fac979a8606d60948625783794e3afbbcb6edfe2f8c98284bbcedaa6cee3a",
+    "ApplicationSystem/public/BuiltIn/Mobs/Mammals/BrownHare/Models/Tex_Rabbit.png": "43ab3622a46b45f15cdf442ce3ae1f2e1b48e4f50420285bfe071bbf9f5630a1",
+    "ApplicationSystem/public/BuiltIn/Mobs/Mammals/BrownHare/Models/licenseNotice.md": "dc816165d5f96006bd96a8b0cae929083f78f49dcdd76728595c395cb0271140",
+    "ApplicationSystem/public/BuiltIn/Mobs/Mammals/BrownHare/BrownHare.html": "8b1a8c555cad956e930e6a88d6a3ec56d947884ad586cdcd46050d003b9ca6fc"
+  },
+  "sourceHashes": {
+    "ApplicationSystem/public/MetaWorld/Creatures/AnatomyConstruction.test.mjs": "379453cddb19e59afafab86a8ce0d3e4eeebbbc98082762c4360da7b946f03a8",
+    "ApplicationSystem/public/MetaWorld/Creatures/AnatomyEditor.mjs": "1045ed18bf2f9b6c9b7c7dcbb157ce3482b3db5a300f330d5d1da1df9470ba2a",
+    "ApplicationSystem/public/MetaWorld/Creatures/AnatomyGizmos.mjs": "91a681cc040f340d5a844bb08d87dcde3bed7b4e38dce2afc785fba55eb7e571",
+    "ApplicationSystem/public/MetaWorld/Creatures/AnatomyInspector.mjs": "6dafc77f613abe7d09de991c404522d86041ee57ca2c4b7703b44e35016e1ae2",
+    "ApplicationSystem/public/MetaWorld/Creatures/AnatomyOperations.mjs": "ee110fe706a70bdfdc7d23e58cf899f70b823fd385b72156a5655b8ceec5dc2d",
+    "ApplicationSystem/public/MetaWorld/Creatures/Create.mjs": "f13a4a5b9fc9a733390b7e42cefc13390db03a0dcfb5d423f747e84ecb6ccfc3",
+    "ApplicationSystem/public/MetaWorld/Creatures/Creature.test.mjs": "b9ee62451ea336638e451193bcc7ceddb31f32cd9c57a530e90fc575c761111a",
+    "ApplicationSystem/public/MetaWorld/Creatures/Discovery.mjs": "79e8607bb746bb4d94e3ea33accde3a4e957bab2414fcc24c7fc5c7e3e2e7946",
+    "ApplicationSystem/public/MetaWorld/Creatures/Document.mjs": "ba1b8b3c73545fe63899741cb2ff639895de72dd5bf6cc3150136d5defeaa770",
+    "ApplicationSystem/public/MetaWorld/Creatures/Menu.mjs": "f2c84beaef4aae90f586f04e36306a6521934feebbd07f5a6a2b3899c61d1a8a",
+    "ApplicationSystem/public/MetaWorld/Creatures/Missing.mjs": "cbe8b6f753b23d1ea327f004a3e050031ff542003d8dca7f0a5e2d340f6b4dad",
+    "ApplicationSystem/public/MetaWorld/Creatures/Preview.mjs": "ccbabed8cd7a397c0cb0d45f233839f9f48371d7a68cd49830251ab618c6a970",
+    "ApplicationSystem/public/MetaWorld/Creatures/Properties.mjs": "73b3b4bbde18df659bdf4fb68c72773782c8d38091a638d55de41dd9dd8c24d0",
+    "ApplicationSystem/public/MetaWorld/Creatures/Read.mjs": "2d26748a1a9b287282e4e38fdc318acba0e989a5a755f72bb3990a7c594de48a",
+    "ApplicationSystem/public/MetaWorld/Creatures/Session.mjs": "379dd36e9ee32c0153e61ba6e0e7831c8e5081d6ee901f5538a2b3db23cf4cd2",
+    "ApplicationSystem/public/MetaWorld/Creatures/WorldIntegration.mjs": "11fc49a7a6b72741c41864e6a6504badd4931c3c9c3250ba397aa5312f61b86e",
+    "ApplicationSystem/public/MetaWorld/Mobs/AimPlacement.mjs": "90216c247edbeacb2e797f42720f43cd1a3bd1dfe0a2bfbda18073fb0b6f23a9",
+    "ApplicationSystem/public/MetaWorld/Mobs/AimPlacement.test.mjs": "3d7ab3c30ae97442652eb7cd5e5a5033595f7ffb0328cb5cdecfd2dc088b7d7f",
+    "ApplicationSystem/public/MetaWorld/Mobs/Anatomy.mjs": "bf88c931fd521c0c63e795874c2ccf19a9cf9524092741c1b41d917c0c26e09f",
+    "ApplicationSystem/public/MetaWorld/Mobs/Anatomy.test.mjs": "e584926b4977aa4893b3ea1e60b35cb1ab74ece7667228eb62ebfd3bf7586548",
+    "ApplicationSystem/public/MetaWorld/Mobs/AnatomyCollision.mjs": "4d698d2ee5d5a424c165f282e640b22d5244296921102dfcfb490e085e4e2975",
+    "ApplicationSystem/public/MetaWorld/Mobs/AnatomyGeometry.mjs": "46090ac1fb94ad1cf8962b7dd14ac65a4e5171bddcba8eba532e25165e9b5c01",
+    "ApplicationSystem/public/MetaWorld/Mobs/AnatomyProperties.mjs": "5171d31a2dcb84168c54ab77377226fb6f2bef22db9f4678b2a5fa9cd91342cf",
+    "ApplicationSystem/public/MetaWorld/Mobs/Assets.mjs": "bc499d2267846c9045c656837e6a1df9dd04411ab73c3ae842de6e220e982f00",
+    "ApplicationSystem/public/MetaWorld/Mobs/Authoring.mjs": "eef025a26e514ea1ff8fde4cd225cc4a8858e7452ef3e5f21b8c203e38ed3d84",
+    "ApplicationSystem/public/MetaWorld/Mobs/Behavior.mjs": "f42029ad4db627197e97b5be015104da6e1b397dc97a083fa4b9f3172998aa17",
+    "ApplicationSystem/public/MetaWorld/Mobs/BrownHareAnatomy.mjs": "6a14e01275bab2a2d021e5f8831ae3e508efb622b768aacc1a7beb7387abf04e",
+    "ApplicationSystem/public/MetaWorld/Mobs/Definition.mjs": "d1236a2749d464832ba56672dcad418ac6f28686eccd62dab5bb90ee512fb447",
+    "ApplicationSystem/public/MetaWorld/Mobs/Ground.mjs": "712fb0721a8c98d91915b86e0d2aa8492a2449b0f706c44b6bcf7d8e932bc7a4",
+    "ApplicationSystem/public/MetaWorld/Mobs/Mobs.test.mjs": "22d60fa5b48d6786b2f9aec9aa99cb7e664197fb94b43cf07c193928f1437049",
+    "ApplicationSystem/public/MetaWorld/Mobs/Navigation.mjs": "36171a109783e0f0cae27ce6b154f80e6b62d3f0861e55c765b7dd955dc70ecb",
+    "ApplicationSystem/public/MetaWorld/Mobs/Navigation.test.mjs": "485820f68e6c9944a7427ceed7639c9a74860f09d5b802a5a8f1c85eedd580cc",
+    "ApplicationSystem/public/MetaWorld/Mobs/Perception.mjs": "6ae6713fdc69d3b0c258fc02250b4121a246a840a93f7396884841c3bcea11ce",
+    "ApplicationSystem/public/MetaWorld/Mobs/Placement.mjs": "43462b7947aca7efd6b474412b07b1640d63d6e97a7f16436083deab544adb44",
+    "ApplicationSystem/public/MetaWorld/Mobs/Properties.mjs": "48970aeff2897ca16c73f0bbb718d1530506c09a2e2d0120d28c2eb6bb1f60a0",
+    "ApplicationSystem/public/MetaWorld/Mobs/Registry.mjs": "574a493c60a6c1f300a75733b9b005e6d12455c850f0db2a5d4c722414f4d87d",
+    "ApplicationSystem/public/MetaWorld/Mobs/Rendering.mjs": "90b75c81648897aea8be796ae9679ea3f796e87b91e9a24de3c73e3c517fc508",
+    "ApplicationSystem/public/MetaWorld/Mobs/Runtime.mjs": "9fae374d7d5528da7f5372dec003daa0be1ff9e7aff66429a1f60f19cc8e85d0",
+    "ApplicationSystem/public/MetaWorld/Mobs/Sensory.test.mjs": "d9c27bb780c9ea82dc426490c1b99055ac9c919c25fcdd84287d9540fee62ce5",
+    "ApplicationSystem/public/MetaWorld/Mobs/SensoryOcclusion.mjs": "9563cfc08081665573aa6618ccc91d53218b93857ea57ff09191f65eed13f7b8",
+    "ApplicationSystem/public/MetaWorld/Mobs/SensorySignals.mjs": "dc50b8fb8bb3fdf059b83e45a48e9c1f887c26f3ef8acc845c6636450668b8e8",
+    "ApplicationSystem/public/PanelInstances/ViewPanels/GameViewDependencies/Abilities/InspectionModificationAbilities/ConsoleInspectionAbility.mjs": "0f5dd16043086cc591af3fc6d816eb81faa0210b49a8b2244c9066a937f40c86",
+    "ApplicationSystem/public/PanelInstances/ViewPanels/GameViewDependencies/Abilities/InspectionModificationAbilities/InspectionTargetingAbility.mjs": "3f8ae5afd04be5a940cc971259305a98c9bd31fc5ad19e9961a6ce5e73f11535",
+    "ApplicationSystem/public/PanelInstances/ViewPanels/GameViewDependencies/Abilities/InspectionModificationAbilities/ObjectGrabAbility.mjs": "04353c4dad14974898e8aa908643b9f1d55548a8d0cc6180eb6135ae535e75a6",
+    "ApplicationSystem/public/PanelInstances/ViewPanels/GameViewDependencies/Abilities/InspectionModificationAbilities/PickingAbility.mjs": "cc419e52fd94fb44247176c66ef7e2c02811d707572d85ebfc7e6b2228d93354",
+    "ApplicationSystem/public/PanelInstances/ViewPanels/GameViewDependencies/Abilities/InspectionModificationAbilities/RotateGizmoAbility.mjs": "02307fac76548ff578f66f90191dce2d3c04fd9b3f73db551aee0759a6d19e0c",
+    "ApplicationSystem/public/PanelInstances/ViewPanels/GameViewDependencies/Abilities/InspectionModificationAbilities/StlVertexEditingAbility.mjs": "169b49170a9767aa09d91575f2a9685670ffe5cfd7f2f1723e0e4588d3061dab",
+    "ApplicationSystem/public/PanelInstances/ViewPanels/GameViewDependencies/Abilities/InspectionModificationAbilities/StretchGizmoAbility.mjs": "c36ceebc7c64e0c4dffca1f93ff37c4e0df32190f63e7b669083236cc7112ec9",
+    "ApplicationSystem/public/PanelInstances/ViewPanels/GameViewDependencies/Abilities/InspectionModificationAbilities/SvgCameraAbility.mjs": "afc383de0dd78b1ed66d918b8d4593a08afcbfb908483a41008802a82fba20be",
+    "ApplicationSystem/public/PanelInstances/ViewPanels/GameViewDependencies/Abilities/InspectionModificationAbilities/TapeMeasureAbility.mjs": "22cef808a5811171ebdf8081b46d7a43e0fb17dd5b0a705757b64fdf04b8735f",
+    "ApplicationSystem/public/PanelInstances/ViewPanels/GameViewDependencies/Abilities/InspectionModificationAbilities/TerrainPaintAbility.mjs": "43e3080182570d9e2d44bbb97c0454193f0d48701a38788047ac921ebd055c91",
+    "ApplicationSystem/public/PanelInstances/ViewPanels/GameViewDependencies/Abilities/InspectionModificationAbilities/TransformGizmoAbility.mjs": "74d08bfedd9e3d28fde04d17200f4040af20581f9bb386d98c496ffc2d8ed5a5",
+    "ApplicationSystem/public/PanelInstances/ViewPanels/GameViewDependencies/Abilities/InspectionModificationAbilities/TransformGizmoVisualAbility.mjs": "76d71ff18bf4020b59d6e69499271c269f7071a16b4bffeacbd5471cb4d4d65e",
+    "ApplicationSystem/public/PanelInstances/ViewPanels/GameViewDependencies/Abilities/InspectionModificationAbilities/TranslateGizmoAbility.mjs": "640c5fca15074f0ca478d2aa274885eae0fc7193f85f2dfdc0e35c32a8bd2efe",
+    "ApplicationSystem/public/MetaWorld/MetaWorldLayerState.mjs": "bb25f35193a9f39db650b30c3c0c638c36e076107c84ca2592237ad57edcadc5",
+    "ApplicationSystem/public/PanelInstances/ViewPanels/GameViewDependencies/worldLoading.mjs": "a8a9080f877e9b4a5d1f9887a8c067f695248147199f4abcab526cbaa0933a88",
+    "ApplicationSystem/public/PanelInstances/ViewPanels/GameViewDependencies/objectInspector.mjs": "309eef4eff24f842c73b4622f1af86e3285d4b6dcd0b899cc1f9030a169ccb0a",
+    "ApplicationSystem/public/PanelInstances/ViewPanels/GameViewDependencies/Abilities/InteractAbilities/RuntimeReferenceAbility.mjs": "bf77e2ac4062759ef9f2d4b606f19d106484b6d06a0a64653f875bc07b8d80eb",
+    "scripts/test-c2.mjs": "af33f750a1416f8048f3f152e59deeb1783dc714369eb251fa4b48ffbfb9362d",
+    "scripts/c2-browser.mjs": "3022702b5677bf56b1222c676e4e6c4452c2718194f37624e5bd5d37bc10e0f7",
+    "scripts/c2-performance.mjs": "11040481126540a80d8b220db5ebba388bab18fea789471c3c7bf79cba0971bb"
+  },
+  "limitations": [
+    "Chromium/SwiftShader CPU and browser integration; no separate native desktop C2 scenario or hardware GPU performance claim",
+    "Rigid visual-pivot bindings; no skeletal deformation or mesh/bone association editor",
+    "Species sensory eye height and explicit yaw/field; moving a collider does not infer a new sensory origin",
+    "Existing injury-weight aggregation and ground-controller defaults retained; no new locomotion engines or combat capabilities",
+    "Resource ownership checks cover helper detachment and shared model leases; no exhaustive JavaScript heap proof"
+  ],
+  "docs/CreatureDesignerC2Browser.json": {
+    "passed": true,
+    "checks": 122
+  },
+  "docs/CreatureDesignerC2Performance.json": {
+    "passed": true,
+    "cases": 8
+  }
+}

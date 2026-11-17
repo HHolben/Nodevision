@@ -1,0 +1,58 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>Investigate Scent</title></head><body>
+<script id="nodevision-metaworld" type="application/json" data-nodevision-meta-world>
+{
+  "name": "Investigate Scent",
+  "type": "meta-world",
+  "metadata": {
+    "behavior": {
+      "documentType": "behavior",
+      "id": "investigate-scent",
+      "version": 1,
+      "name": "Investigate Scent",
+      "description": "Verify functional smell and become alert after an existing bounded scent observation.",
+      "author": "Nodevision",
+      "category": "Animal",
+      "requirements": {
+        "capabilities": {
+          "capability": "smell"
+        }
+      },
+      "parameters": [],
+      "outputs": [],
+      "entry": "sniff-sequence",
+      "program": {
+        "version": 1,
+        "blocks": [
+          {
+            "id": "sniff-sequence",
+            "type": "sequence",
+            "children": [
+              "sniff",
+              "alert"
+            ]
+          },
+          {
+            "id": "sniff",
+            "type": "action",
+            "action": "sniff"
+          },
+          {
+            "id": "alert",
+            "type": "action",
+            "action": "alert",
+            "seconds": 1
+          }
+        ],
+        "variables": [],
+        "events": [],
+        "procedures": {},
+        "lessons": {}
+      },
+      "dependencies": []
+    }
+  },
+  "objects": []
+}
+</script>
+</body></html>

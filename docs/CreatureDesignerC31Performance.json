@@ -1,0 +1,5296 @@
+{
+  "environment": "Chromium SwiftShader 640x480. Actual Rabbit GLB and mob runtime; no rendered terrain. Two reverse-order trials, 30 warm + 180 measured RAF at fixed 30Hz simulation. CPU and frame pacing reported separately.",
+  "cases": [
+    {
+      "trial": 0,
+      "count": 1,
+      "kind": "compatibility",
+      "warmFrames": 30,
+      "measuredFrames": 180,
+      "frameMs": {
+        "mean": 16.66777777777752,
+        "p95": 17.300000000046566
+      },
+      "runtimeAndIndexMs": {
+        "mean": 0.3527777777738973,
+        "p95": 1
+      },
+      "programCpuTotalMs": 0.6000000003259629,
+      "blockDispatches": 1,
+      "events": 1,
+      "cancellations": 0,
+      "maxQueue": 0,
+      "maxTrace": 3,
+      "estimatedBytesPerInstance": 1792,
+      "navigationPlans": 4,
+      "modelRequests": 1,
+      "documentReadsDuringFrames": 0,
+      "drawCalls": 1,
+      "triangles": 674,
+      "estimatedCapabilityBytesPerInstance": 7424,
+      "capabilityResolution": [
+        {
+          "recomputes": 1,
+          "cpuMs": 0.9000000001396984
+        }
+      ],
+      "skillStats": [
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        }
+      ],
+      "libraryReadsDuringFrames": 0,
+      "cleanup": {
+        "geometries": 0,
+        "textures": 0,
+        "activeLeases": 0,
+        "liveEntries": 0,
+        "dialogues": 0
+      }
+    },
+    {
+      "trial": 0,
+      "count": 5,
+      "kind": "compatibility",
+      "warmFrames": 30,
+      "measuredFrames": 180,
+      "frameMs": {
+        "mean": 16.66777777777752,
+        "p95": 17.300000000046566
+      },
+      "runtimeAndIndexMs": {
+        "mean": 0.8616666666814126,
+        "p95": 1.5
+      },
+      "programCpuTotalMs": 2.3999999999068677,
+      "blockDispatches": 5,
+      "events": 5,
+      "cancellations": 0,
+      "maxQueue": 0,
+      "maxTrace": 3,
+      "estimatedBytesPerInstance": 1792,
+      "navigationPlans": 24,
+      "modelRequests": 1,
+      "documentReadsDuringFrames": 0,
+      "drawCalls": 5,
+      "triangles": 3370,
+      "estimatedCapabilityBytesPerInstance": 7424,
+      "capabilityResolution": [
+        {
+          "recomputes": 1,
+          "cpuMs": 0.19999999995343387
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0.19999999995343387
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0.09999999986030161
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0.5
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0.19999999995343387
+        }
+      ],
+      "skillStats": [
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        }
+      ],
+      "libraryReadsDuringFrames": 0,
+      "cleanup": {
+        "geometries": 0,
+        "textures": 0,
+        "activeLeases": 0,
+        "liveEntries": 0,
+        "dialogues": 0
+      }
+    },
+    {
+      "trial": 0,
+      "count": 20,
+      "kind": "compatibility",
+      "warmFrames": 30,
+      "measuredFrames": 180,
+      "frameMs": {
+        "mean": 16.663888888888888,
+        "p95": 17
+      },
+      "runtimeAndIndexMs": {
+        "mean": 1.673888888887854,
+        "p95": 2.800000000046566
+      },
+      "programCpuTotalMs": 4.199999999254942,
+      "blockDispatches": 20,
+      "events": 20,
+      "cancellations": 0,
+      "maxQueue": 0,
+      "maxTrace": 3,
+      "estimatedBytesPerInstance": 1792,
+      "navigationPlans": 72,
+      "modelRequests": 1,
+      "documentReadsDuringFrames": 0,
+      "drawCalls": 20,
+      "triangles": 13480,
+      "estimatedCapabilityBytesPerInstance": 7424,
+      "capabilityResolution": [
+        {
+          "recomputes": 1,
+          "cpuMs": 0
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0.09999999986030161
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0.10000000009313226
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0.10000000009313226
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0.10000000009313226
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0.09999999986030161
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0.09999999986030161
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0.10000000009313226
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0.10000000009313226
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0.09999999986030161
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0.09999999986030161
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0
+        }
+      ],
+      "skillStats": [
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        }
+      ],
+      "libraryReadsDuringFrames": 0,
+      "cleanup": {
+        "geometries": 0,
+        "textures": 0,
+        "activeLeases": 0,
+        "liveEntries": 0,
+        "dialogues": 0
+      }
+    },
+    {
+      "trial": 0,
+      "count": 50,
+      "kind": "compatibility",
+      "warmFrames": 30,
+      "measuredFrames": 180,
+      "frameMs": {
+        "mean": 16.66777777777752,
+        "p95": 17.5
+      },
+      "runtimeAndIndexMs": {
+        "mean": 2.643333333338766,
+        "p95": 4.699999999953434
+      },
+      "programCpuTotalMs": 5.5,
+      "blockDispatches": 50,
+      "events": 50,
+      "cancellations": 0,
+      "maxQueue": 0,
+      "maxTrace": 3,
+      "estimatedBytesPerInstance": 1792,
+      "navigationPlans": 156,
+      "modelRequests": 1,
+      "documentReadsDuringFrames": 0,
+      "drawCalls": 50,
+      "triangles": 33700,
+      "estimatedCapabilityBytesPerInstance": 7424,
+      "capabilityResolution": [
+        {
+          "recomputes": 1,
+          "cpuMs": 0
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0.10000000009313226
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0.10000000009313226
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0.10000000009313226
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0.09999999986030161
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0.10000000009313226
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0.10000000009313226
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0.10000000009313226
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0.10000000009313226
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0.09999999986030161
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0.09999999986030161
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0.09999999986030161
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0.10000000009313226
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0.10000000009313226
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0.09999999986030161
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0.09999999986030161
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0.19999999995343387
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0.10000000009313226
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0.19999999995343387
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0.20000000018626451
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0.19999999995343387
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0.19999999995343387
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0.10000000009313226
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0.09999999986030161
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0.10000000009313226
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0
+        }
+      ],
+      "skillStats": [
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        }
+      ],
+      "libraryReadsDuringFrames": 0,
+      "cleanup": {
+        "geometries": 0,
+        "textures": 0,
+        "activeLeases": 0,
+        "liveEntries": 0,
+        "dialogues": 0
+      }
+    },
+    {
+      "trial": 0,
+      "count": 50,
+      "kind": "legacy",
+      "warmFrames": 30,
+      "measuredFrames": 180,
+      "frameMs": {
+        "mean": 16.66777777777752,
+        "p95": 17.9000000001397
+      },
+      "runtimeAndIndexMs": {
+        "mean": 2.362777777792265,
+        "p95": 3.8999999999068677
+      },
+      "programCpuTotalMs": 0,
+      "blockDispatches": 0,
+      "events": 0,
+      "cancellations": 0,
+      "maxQueue": 0,
+      "maxTrace": 0,
+      "estimatedBytesPerInstance": 0,
+      "navigationPlans": 156,
+      "modelRequests": 1,
+      "documentReadsDuringFrames": 0,
+      "drawCalls": 50,
+      "triangles": 33700,
+      "estimatedCapabilityBytesPerInstance": 7424,
+      "capabilityResolution": [
+        {
+          "recomputes": 1,
+          "cpuMs": 0.19999999995343387
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0.10000000009313226
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0.10000000009313226
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0.10000000009313226
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0.09999999986030161
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0.09999999986030161
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0.20000000018626451
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0.09999999986030161
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0.10000000009313226
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0.09999999986030161
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0.10000000009313226
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0.10000000009313226
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0.09999999986030161
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0.10000000009313226
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0.09999999986030161
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0.09999999986030161
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0.10000000009313226
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0.09999999986030161
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0.10000000009313226
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0.09999999986030161
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0
+        }
+      ],
+      "skillStats": [
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        }
+      ],
+      "libraryReadsDuringFrames": 0,
+      "cleanup": {
+        "geometries": 0,
+        "textures": 0,
+        "activeLeases": 0,
+        "liveEntries": 0,
+        "dialogues": 0
+      }
+    },
+    {
+      "trial": 0,
+      "count": 1,
+      "kind": "lesson",
+      "warmFrames": 30,
+      "measuredFrames": 180,
+      "frameMs": {
+        "mean": 16.665555555555816,
+        "p95": 17.100000000093132
+      },
+      "runtimeAndIndexMs": {
+        "mean": 0.174444444433579,
+        "p95": 0.5
+      },
+      "programCpuTotalMs": 0.599999999627471,
+      "blockDispatches": 0,
+      "events": 0,
+      "cancellations": 0,
+      "maxQueue": 0,
+      "maxTrace": 0,
+      "estimatedBytesPerInstance": 1280,
+      "navigationPlans": 0,
+      "modelRequests": 1,
+      "documentReadsDuringFrames": 0,
+      "drawCalls": 1,
+      "triangles": 674,
+      "estimatedCapabilityBytesPerInstance": 7424,
+      "capabilityResolution": [
+        {
+          "recomputes": 1,
+          "cpuMs": 0.10000000009313226
+        }
+      ],
+      "skillStats": [
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        }
+      ],
+      "libraryReadsDuringFrames": 0,
+      "repeatedDialogues": {
+        "count": 10,
+        "wallMs": {
+          "mean": 69.99000000001396,
+          "p95": 99.70000000018626
+        },
+        "remainingSessions": 0
+      },
+      "cleanup": {
+        "geometries": 0,
+        "textures": 0,
+        "activeLeases": 0,
+        "liveEntries": 0,
+        "dialogues": 0
+      }
+    },
+    {
+      "trial": 0,
+      "count": 10,
+      "kind": "lesson",
+      "warmFrames": 30,
+      "measuredFrames": 180,
+      "frameMs": {
+        "mean": 16.663333333332815,
+        "p95": 17.199999999953434
+      },
+      "runtimeAndIndexMs": {
+        "mean": 0.8522222222126503,
+        "p95": 1.3999999999068677
+      },
+      "programCpuTotalMs": 3.3000000005122274,
+      "blockDispatches": 0,
+      "events": 0,
+      "cancellations": 0,
+      "maxQueue": 0,
+      "maxTrace": 0,
+      "estimatedBytesPerInstance": 1280,
+      "navigationPlans": 0,
+      "modelRequests": 1,
+      "documentReadsDuringFrames": 0,
+      "drawCalls": 10,
+      "triangles": 6740,
+      "estimatedCapabilityBytesPerInstance": 7424,
+      "capabilityResolution": [
+        {
+          "recomputes": 1,
+          "cpuMs": 0.09999999986030161
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0.19999999995343387
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0.19999999995343387
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0.10000000009313226
+        }
+      ],
+      "skillStats": [
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        }
+      ],
+      "libraryReadsDuringFrames": 0,
+      "cleanup": {
+        "geometries": 0,
+        "textures": 0,
+        "activeLeases": 0,
+        "liveEntries": 0,
+        "dialogues": 0
+      }
+    },
+    {
+      "trial": 0,
+      "count": 20,
+      "kind": "storm",
+      "warmFrames": 30,
+      "measuredFrames": 180,
+      "frameMs": {
+        "mean": 16.666666666666668,
+        "p95": 20
+      },
+      "runtimeAndIndexMs": {
+        "mean": 7.188888888897943,
+        "p95": 13.199999999953434
+      },
+      "programCpuTotalMs": 8.799999999580905,
+      "blockDispatches": 875,
+      "events": 168964,
+      "cancellations": 160,
+      "maxQueue": 14,
+      "maxTrace": 64,
+      "estimatedBytesPerInstance": 24832,
+      "navigationPlans": 227,
+      "modelRequests": 1,
+      "documentReadsDuringFrames": 0,
+      "drawCalls": 14,
+      "triangles": 9436,
+      "estimatedCapabilityBytesPerInstance": 7424,
+      "capabilityResolution": [
+        {
+          "recomputes": 1,
+          "cpuMs": 0.10000000009313226
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0
+        }
+      ],
+      "skillStats": [
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        }
+      ],
+      "libraryReadsDuringFrames": 0,
+      "cleanup": {
+        "geometries": 0,
+        "textures": 0,
+        "activeLeases": 0,
+        "liveEntries": 0,
+        "dialogues": 0
+      }
+    },
+    {
+      "trial": 0,
+      "count": 1,
+      "kind": "library",
+      "warmFrames": 30,
+      "measuredFrames": 180,
+      "frameMs": {
+        "mean": 16.66611111111189,
+        "p95": 17.300000000046566
+      },
+      "runtimeAndIndexMs": {
+        "mean": 0.18888888889794342,
+        "p95": 0.5
+      },
+      "programCpuTotalMs": 2.700000000419095,
+      "blockDispatches": 5,
+      "events": 1,
+      "cancellations": 0,
+      "maxQueue": 0,
+      "maxTrace": 7,
+      "estimatedBytesPerInstance": 2816,
+      "navigationPlans": 4,
+      "modelRequests": 1,
+      "documentReadsDuringFrames": 0,
+      "drawCalls": 1,
+      "triangles": 674,
+      "estimatedCapabilityBytesPerInstance": 7424,
+      "capabilityResolution": [
+        {
+          "recomputes": 1,
+          "cpuMs": 0.09999999986030161
+        }
+      ],
+      "skillStats": [
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        }
+      ],
+      "libraryReadsDuringFrames": 0,
+      "libraryReload": {
+        "count": 5,
+        "wallMs": 25.100000000093132,
+        "reads": 5,
+        "activeProgramRetained": true
+      },
+      "cleanup": {
+        "geometries": 0,
+        "textures": 0,
+        "activeLeases": 0,
+        "liveEntries": 0,
+        "dialogues": 0
+      }
+    },
+    {
+      "trial": 0,
+      "count": 5,
+      "kind": "library",
+      "warmFrames": 30,
+      "measuredFrames": 180,
+      "frameMs": {
+        "mean": 16.666666666666668,
+        "p95": 17
+      },
+      "runtimeAndIndexMs": {
+        "mean": 0.6038888888925107,
+        "p95": 1
+      },
+      "programCpuTotalMs": 3.8000000002793968,
+      "blockDispatches": 25,
+      "events": 5,
+      "cancellations": 0,
+      "maxQueue": 0,
+      "maxTrace": 7,
+      "estimatedBytesPerInstance": 2816,
+      "navigationPlans": 24,
+      "modelRequests": 1,
+      "documentReadsDuringFrames": 0,
+      "drawCalls": 5,
+      "triangles": 3370,
+      "estimatedCapabilityBytesPerInstance": 7424,
+      "capabilityResolution": [
+        {
+          "recomputes": 1,
+          "cpuMs": 0.10000000009313226
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0.09999999986030161
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0.19999999995343387
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0.09999999986030161
+        }
+      ],
+      "skillStats": [
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        }
+      ],
+      "libraryReadsDuringFrames": 0,
+      "cleanup": {
+        "geometries": 0,
+        "textures": 0,
+        "activeLeases": 0,
+        "liveEntries": 0,
+        "dialogues": 0
+      }
+    },
+    {
+      "trial": 0,
+      "count": 20,
+      "kind": "library",
+      "warmFrames": 30,
+      "measuredFrames": 180,
+      "frameMs": {
+        "mean": 16.666666666666668,
+        "p95": 17.199999999953434
+      },
+      "runtimeAndIndexMs": {
+        "mean": 1.691111111101539,
+        "p95": 2.5
+      },
+      "programCpuTotalMs": 4.000000000232831,
+      "blockDispatches": 100,
+      "events": 20,
+      "cancellations": 0,
+      "maxQueue": 0,
+      "maxTrace": 7,
+      "estimatedBytesPerInstance": 2816,
+      "navigationPlans": 72,
+      "modelRequests": 1,
+      "documentReadsDuringFrames": 0,
+      "drawCalls": 20,
+      "triangles": 13480,
+      "estimatedCapabilityBytesPerInstance": 7424,
+      "capabilityResolution": [
+        {
+          "recomputes": 1,
+          "cpuMs": 0.20000000018626451
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0.19999999995343387
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0.10000000009313226
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0.09999999986030161
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0.09999999986030161
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0.09999999986030161
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0.19999999995343387
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0.10000000009313226
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0.10000000009313226
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0.10000000009313226
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0.09999999986030161
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0
+        }
+      ],
+      "skillStats": [
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        }
+      ],
+      "libraryReadsDuringFrames": 0,
+      "cleanup": {
+        "geometries": 0,
+        "textures": 0,
+        "activeLeases": 0,
+        "liveEntries": 0,
+        "dialogues": 0
+      }
+    },
+    {
+      "trial": 0,
+      "count": 50,
+      "kind": "library",
+      "warmFrames": 30,
+      "measuredFrames": 180,
+      "frameMs": {
+        "mean": 16.665555555555816,
+        "p95": 18.399999999906868
+      },
+      "runtimeAndIndexMs": {
+        "mean": 2.7855555555640925,
+        "p95": 5.099999999860302
+      },
+      "programCpuTotalMs": 6.5,
+      "blockDispatches": 250,
+      "events": 50,
+      "cancellations": 0,
+      "maxQueue": 0,
+      "maxTrace": 7,
+      "estimatedBytesPerInstance": 2816,
+      "navigationPlans": 156,
+      "modelRequests": 1,
+      "documentReadsDuringFrames": 0,
+      "drawCalls": 50,
+      "triangles": 33700,
+      "estimatedCapabilityBytesPerInstance": 7424,
+      "capabilityResolution": [
+        {
+          "recomputes": 1,
+          "cpuMs": 0.10000000009313226
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0.09999999986030161
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0.10000000009313226
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0.09999999986030161
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0.10000000009313226
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0.09999999986030161
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0.10000000009313226
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0.09999999986030161
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0.10000000009313226
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0.10000000009313226
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0.09999999986030161
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0.10000000009313226
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0.09999999986030161
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0.10000000009313226
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0
+        }
+      ],
+      "skillStats": [
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        }
+      ],
+      "libraryReadsDuringFrames": 0,
+      "cleanup": {
+        "geometries": 0,
+        "textures": 0,
+        "activeLeases": 0,
+        "liveEntries": 0,
+        "dialogues": 0
+      }
+    },
+    {
+      "trial": 0,
+      "count": 1,
+      "kind": "skills",
+      "warmFrames": 30,
+      "measuredFrames": 180,
+      "frameMs": {
+        "mean": 16.66611111111189,
+        "p95": 17.300000000046566
+      },
+      "runtimeAndIndexMs": {
+        "mean": 0.21277777776898196,
+        "p95": 0.6000000000931323
+      },
+      "programCpuTotalMs": 0.8000000000465661,
+      "blockDispatches": 1,
+      "events": 1,
+      "cancellations": 0,
+      "maxQueue": 0,
+      "maxTrace": 3,
+      "estimatedBytesPerInstance": 1792,
+      "navigationPlans": 0,
+      "modelRequests": 1,
+      "documentReadsDuringFrames": 0,
+      "drawCalls": 1,
+      "triangles": 674,
+      "estimatedCapabilityBytesPerInstance": 7424,
+      "capabilityResolution": [
+        {
+          "recomputes": 1,
+          "cpuMs": 0.09999999986030161
+        }
+      ],
+      "skillStats": [
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        }
+      ],
+      "libraryReadsDuringFrames": 0,
+      "repeatedSkills": {
+        "blocked": "blocked-location",
+        "blockedMs": 0.6999999999534339,
+        "count": 20,
+        "executionMs": {
+          "mean": 1.5400000000023284,
+          "p95": 9.899999999906868
+        },
+        "results": [
+          "success",
+          "success",
+          "success",
+          "success",
+          "success",
+          "success",
+          "success",
+          "success",
+          "success",
+          "success",
+          "success",
+          "success",
+          "success",
+          "success",
+          "success",
+          "success",
+          "success",
+          "success",
+          "success",
+          "success"
+        ],
+        "failure": "out-of-range",
+        "activeTargets": 0
+      },
+      "cleanup": {
+        "geometries": 0,
+        "textures": 0,
+        "activeLeases": 0,
+        "liveEntries": 0,
+        "dialogues": 0
+      }
+    },
+    {
+      "trial": 0,
+      "count": 20,
+      "kind": "injury",
+      "warmFrames": 30,
+      "measuredFrames": 180,
+      "frameMs": {
+        "mean": 16.665555555555816,
+        "p95": 17.399999999906868
+      },
+      "runtimeAndIndexMs": {
+        "mean": 3.0294444444408226,
+        "p95": 4.599999999860302
+      },
+      "programCpuTotalMs": 5.999999999068677,
+      "blockDispatches": 100,
+      "events": 20,
+      "cancellations": 0,
+      "maxQueue": 0,
+      "maxTrace": 7,
+      "estimatedBytesPerInstance": 2816,
+      "navigationPlans": 72,
+      "modelRequests": 1,
+      "documentReadsDuringFrames": 0,
+      "drawCalls": 20,
+      "triangles": 13480,
+      "estimatedCapabilityBytesPerInstance": 7424,
+      "capabilityResolution": [
+        {
+          "recomputes": 210,
+          "cpuMs": 17.000000000931323
+        },
+        {
+          "recomputes": 210,
+          "cpuMs": 12.99999999976717
+        },
+        {
+          "recomputes": 210,
+          "cpuMs": 8.799999999813735
+        },
+        {
+          "recomputes": 210,
+          "cpuMs": 8.999999999534339
+        },
+        {
+          "recomputes": 210,
+          "cpuMs": 8.800000000512227
+        },
+        {
+          "recomputes": 210,
+          "cpuMs": 11.800000000512227
+        },
+        {
+          "recomputes": 210,
+          "cpuMs": 9.90000000060536
+        },
+        {
+          "recomputes": 210,
+          "cpuMs": 11.100000000325963
+        },
+        {
+          "recomputes": 210,
+          "cpuMs": 9.800000000046566
+        },
+        {
+          "recomputes": 210,
+          "cpuMs": 8.399999999441206
+        },
+        {
+          "recomputes": 210,
+          "cpuMs": 9.000000000698492
+        },
+        {
+          "recomputes": 210,
+          "cpuMs": 8.800000000046566
+        },
+        {
+          "recomputes": 210,
+          "cpuMs": 6.90000000060536
+        },
+        {
+          "recomputes": 210,
+          "cpuMs": 9.59999999916181
+        },
+        {
+          "recomputes": 210,
+          "cpuMs": 8.500000001629815
+        },
+        {
+          "recomputes": 210,
+          "cpuMs": 6.699999999953434
+        },
+        {
+          "recomputes": 210,
+          "cpuMs": 9.700000001583248
+        },
+        {
+          "recomputes": 210,
+          "cpuMs": 6.000000000465661
+        },
+        {
+          "recomputes": 210,
+          "cpuMs": 8.500000000465661
+        },
+        {
+          "recomputes": 210,
+          "cpuMs": 6.400000000139698
+        }
+      ],
+      "skillStats": [
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        }
+      ],
+      "libraryReadsDuringFrames": 0,
+      "cleanup": {
+        "geometries": 0,
+        "textures": 0,
+        "activeLeases": 0,
+        "liveEntries": 0,
+        "dialogues": 0
+      }
+    },
+    {
+      "trial": 1,
+      "count": 20,
+      "kind": "injury",
+      "warmFrames": 30,
+      "measuredFrames": 180,
+      "frameMs": {
+        "mean": 16.667222222221447,
+        "p95": 17.5
+      },
+      "runtimeAndIndexMs": {
+        "mean": 2.9494444444452204,
+        "p95": 4.5
+      },
+      "programCpuTotalMs": 4.5000000016298145,
+      "blockDispatches": 100,
+      "events": 20,
+      "cancellations": 0,
+      "maxQueue": 0,
+      "maxTrace": 7,
+      "estimatedBytesPerInstance": 2816,
+      "navigationPlans": 72,
+      "modelRequests": 1,
+      "documentReadsDuringFrames": 0,
+      "drawCalls": 20,
+      "triangles": 13480,
+      "estimatedCapabilityBytesPerInstance": 7424,
+      "capabilityResolution": [
+        {
+          "recomputes": 210,
+          "cpuMs": 16.699999999487773
+        },
+        {
+          "recomputes": 210,
+          "cpuMs": 11.199999998090789
+        },
+        {
+          "recomputes": 210,
+          "cpuMs": 10.099999998463318
+        },
+        {
+          "recomputes": 210,
+          "cpuMs": 9.099999997764826
+        },
+        {
+          "recomputes": 210,
+          "cpuMs": 8.600000000791624
+        },
+        {
+          "recomputes": 210,
+          "cpuMs": 7.999999998137355
+        },
+        {
+          "recomputes": 210,
+          "cpuMs": 7.600000001024455
+        },
+        {
+          "recomputes": 210,
+          "cpuMs": 8.199999999022111
+        },
+        {
+          "recomputes": 210,
+          "cpuMs": 8.599999998928979
+        },
+        {
+          "recomputes": 210,
+          "cpuMs": 7.3999999994412065
+        },
+        {
+          "recomputes": 210,
+          "cpuMs": 7.7999999998137355
+        },
+        {
+          "recomputes": 210,
+          "cpuMs": 10.300000000977889
+        },
+        {
+          "recomputes": 210,
+          "cpuMs": 8.999999998603016
+        },
+        {
+          "recomputes": 210,
+          "cpuMs": 7.699999999953434
+        },
+        {
+          "recomputes": 210,
+          "cpuMs": 7.399999999674037
+        },
+        {
+          "recomputes": 210,
+          "cpuMs": 7.000000000931323
+        },
+        {
+          "recomputes": 210,
+          "cpuMs": 7.599999998463318
+        },
+        {
+          "recomputes": 210,
+          "cpuMs": 9.500000000931323
+        },
+        {
+          "recomputes": 210,
+          "cpuMs": 7.899999999674037
+        },
+        {
+          "recomputes": 210,
+          "cpuMs": 7.100000001722947
+        }
+      ],
+      "skillStats": [
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        }
+      ],
+      "libraryReadsDuringFrames": 0,
+      "cleanup": {
+        "geometries": 0,
+        "textures": 0,
+        "activeLeases": 0,
+        "liveEntries": 0,
+        "dialogues": 0
+      }
+    },
+    {
+      "trial": 1,
+      "count": 1,
+      "kind": "skills",
+      "warmFrames": 30,
+      "measuredFrames": 180,
+      "frameMs": {
+        "mean": 16.666666666666668,
+        "p95": 17.199999999953434
+      },
+      "runtimeAndIndexMs": {
+        "mean": 0.16388888888371486,
+        "p95": 0.5
+      },
+      "programCpuTotalMs": 0.5,
+      "blockDispatches": 1,
+      "events": 1,
+      "cancellations": 0,
+      "maxQueue": 0,
+      "maxTrace": 3,
+      "estimatedBytesPerInstance": 1792,
+      "navigationPlans": 0,
+      "modelRequests": 1,
+      "documentReadsDuringFrames": 0,
+      "drawCalls": 1,
+      "triangles": 674,
+      "estimatedCapabilityBytesPerInstance": 7424,
+      "capabilityResolution": [
+        {
+          "recomputes": 1,
+          "cpuMs": 0.19999999995343387
+        }
+      ],
+      "skillStats": [
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        }
+      ],
+      "libraryReadsDuringFrames": 0,
+      "repeatedSkills": {
+        "blocked": "blocked-location",
+        "blockedMs": 0.19999999995343387,
+        "count": 20,
+        "executionMs": {
+          "mean": 1.0199999999953433,
+          "p95": 2.199999999953434
+        },
+        "results": [
+          "success",
+          "success",
+          "success",
+          "success",
+          "success",
+          "success",
+          "success",
+          "success",
+          "success",
+          "success",
+          "success",
+          "success",
+          "success",
+          "success",
+          "success",
+          "success",
+          "success",
+          "success",
+          "success",
+          "success"
+        ],
+        "failure": "out-of-range",
+        "activeTargets": 0
+      },
+      "cleanup": {
+        "geometries": 0,
+        "textures": 0,
+        "activeLeases": 0,
+        "liveEntries": 0,
+        "dialogues": 0
+      }
+    },
+    {
+      "trial": 1,
+      "count": 50,
+      "kind": "library",
+      "warmFrames": 30,
+      "measuredFrames": 180,
+      "frameMs": {
+        "mean": 16.67388888888915,
+        "p95": 17.899999999906868
+      },
+      "runtimeAndIndexMs": {
+        "mean": 2.642222222220153,
+        "p95": 4.699999999953434
+      },
+      "programCpuTotalMs": 7.200000000419095,
+      "blockDispatches": 250,
+      "events": 50,
+      "cancellations": 0,
+      "maxQueue": 0,
+      "maxTrace": 7,
+      "estimatedBytesPerInstance": 2816,
+      "navigationPlans": 156,
+      "modelRequests": 1,
+      "documentReadsDuringFrames": 0,
+      "drawCalls": 50,
+      "triangles": 33700,
+      "estimatedCapabilityBytesPerInstance": 7424,
+      "capabilityResolution": [
+        {
+          "recomputes": 1,
+          "cpuMs": 0
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0.09999999986030161
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0.09999999986030161
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0.09999999986030161
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0.10000000009313226
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0.10000000009313226
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0.10000000009313226
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0.09999999986030161
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0.10000000009313226
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0.09999999986030161
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0.09999999986030161
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0.10000000009313226
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0.09999999986030161
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0.09999999986030161
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0.10000000009313226
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0.09999999986030161
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0.09999999986030161
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0.10000000009313226
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0.10000000009313226
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0
+        }
+      ],
+      "skillStats": [
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        }
+      ],
+      "libraryReadsDuringFrames": 0,
+      "cleanup": {
+        "geometries": 0,
+        "textures": 0,
+        "activeLeases": 0,
+        "liveEntries": 0,
+        "dialogues": 0
+      }
+    },
+    {
+      "trial": 1,
+      "count": 20,
+      "kind": "library",
+      "warmFrames": 30,
+      "measuredFrames": 180,
+      "frameMs": {
+        "mean": 16.666111111110595,
+        "p95": 17.100000000093132
+      },
+      "runtimeAndIndexMs": {
+        "mean": 1.5944444444496184,
+        "p95": 2.5
+      },
+      "programCpuTotalMs": 3.099999999627471,
+      "blockDispatches": 100,
+      "events": 20,
+      "cancellations": 0,
+      "maxQueue": 0,
+      "maxTrace": 7,
+      "estimatedBytesPerInstance": 2816,
+      "navigationPlans": 72,
+      "modelRequests": 1,
+      "documentReadsDuringFrames": 0,
+      "drawCalls": 20,
+      "triangles": 13480,
+      "estimatedCapabilityBytesPerInstance": 7424,
+      "capabilityResolution": [
+        {
+          "recomputes": 1,
+          "cpuMs": 0
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0.10000000009313226
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0.10000000009313226
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0.09999999986030161
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0.10000000009313226
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0.10000000009313226
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0.09999999986030161
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0.10000000009313226
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0.10000000009313226
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0.10000000009313226
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0
+        }
+      ],
+      "skillStats": [
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        }
+      ],
+      "libraryReadsDuringFrames": 0,
+      "cleanup": {
+        "geometries": 0,
+        "textures": 0,
+        "activeLeases": 0,
+        "liveEntries": 0,
+        "dialogues": 0
+      }
+    },
+    {
+      "trial": 1,
+      "count": 5,
+      "kind": "library",
+      "warmFrames": 30,
+      "measuredFrames": 180,
+      "frameMs": {
+        "mean": 16.66611111111189,
+        "p95": 17.0999999998603
+      },
+      "runtimeAndIndexMs": {
+        "mean": 0.6422222222330877,
+        "p95": 1.1000000000931323
+      },
+      "programCpuTotalMs": 2.4000000008381903,
+      "blockDispatches": 25,
+      "events": 5,
+      "cancellations": 0,
+      "maxQueue": 0,
+      "maxTrace": 7,
+      "estimatedBytesPerInstance": 2816,
+      "navigationPlans": 24,
+      "modelRequests": 1,
+      "documentReadsDuringFrames": 0,
+      "drawCalls": 5,
+      "triangles": 3370,
+      "estimatedCapabilityBytesPerInstance": 7424,
+      "capabilityResolution": [
+        {
+          "recomputes": 1,
+          "cpuMs": 0
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0.19999999995343387
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0.10000000009313226
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0.19999999995343387
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0
+        }
+      ],
+      "skillStats": [
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        }
+      ],
+      "libraryReadsDuringFrames": 0,
+      "cleanup": {
+        "geometries": 0,
+        "textures": 0,
+        "activeLeases": 0,
+        "liveEntries": 0,
+        "dialogues": 0
+      }
+    },
+    {
+      "trial": 1,
+      "count": 1,
+      "kind": "library",
+      "warmFrames": 30,
+      "measuredFrames": 180,
+      "frameMs": {
+        "mean": 16.667222222221447,
+        "p95": 17.200000000186265
+      },
+      "runtimeAndIndexMs": {
+        "mean": 0.19222222222662014,
+        "p95": 0.5999999998603016
+      },
+      "programCpuTotalMs": 0.599999999627471,
+      "blockDispatches": 5,
+      "events": 1,
+      "cancellations": 0,
+      "maxQueue": 0,
+      "maxTrace": 7,
+      "estimatedBytesPerInstance": 2816,
+      "navigationPlans": 4,
+      "modelRequests": 1,
+      "documentReadsDuringFrames": 0,
+      "drawCalls": 1,
+      "triangles": 674,
+      "estimatedCapabilityBytesPerInstance": 7424,
+      "capabilityResolution": [
+        {
+          "recomputes": 1,
+          "cpuMs": 0.19999999995343387
+        }
+      ],
+      "skillStats": [
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        }
+      ],
+      "libraryReadsDuringFrames": 0,
+      "libraryReload": {
+        "count": 5,
+        "wallMs": 21.800000000046566,
+        "reads": 5,
+        "activeProgramRetained": true
+      },
+      "cleanup": {
+        "geometries": 0,
+        "textures": 0,
+        "activeLeases": 0,
+        "liveEntries": 0,
+        "dialogues": 0
+      }
+    },
+    {
+      "trial": 1,
+      "count": 20,
+      "kind": "storm",
+      "warmFrames": 30,
+      "measuredFrames": 180,
+      "frameMs": {
+        "mean": 16.67222222222222,
+        "p95": 20.300000000046566
+      },
+      "runtimeAndIndexMs": {
+        "mean": 6.854444444442116,
+        "p95": 13.800000000046566
+      },
+      "programCpuTotalMs": 7.59999999939464,
+      "blockDispatches": 875,
+      "events": 168964,
+      "cancellations": 160,
+      "maxQueue": 14,
+      "maxTrace": 64,
+      "estimatedBytesPerInstance": 24832,
+      "navigationPlans": 227,
+      "modelRequests": 1,
+      "documentReadsDuringFrames": 0,
+      "drawCalls": 14,
+      "triangles": 9436,
+      "estimatedCapabilityBytesPerInstance": 7424,
+      "capabilityResolution": [
+        {
+          "recomputes": 1,
+          "cpuMs": 0.09999999986030161
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0.10000000009313226
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0.10000000009313226
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0.09999999986030161
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0.10000000009313226
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0
+        }
+      ],
+      "skillStats": [
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        }
+      ],
+      "libraryReadsDuringFrames": 0,
+      "cleanup": {
+        "geometries": 0,
+        "textures": 0,
+        "activeLeases": 0,
+        "liveEntries": 0,
+        "dialogues": 0
+      }
+    },
+    {
+      "trial": 1,
+      "count": 10,
+      "kind": "lesson",
+      "warmFrames": 30,
+      "measuredFrames": 180,
+      "frameMs": {
+        "mean": 16.667777777778813,
+        "p95": 17.300000000046566
+      },
+      "runtimeAndIndexMs": {
+        "mean": 0.9050000000007761,
+        "p95": 1.5
+      },
+      "programCpuTotalMs": 3.100000000325963,
+      "blockDispatches": 0,
+      "events": 0,
+      "cancellations": 0,
+      "maxQueue": 0,
+      "maxTrace": 0,
+      "estimatedBytesPerInstance": 1280,
+      "navigationPlans": 0,
+      "modelRequests": 1,
+      "documentReadsDuringFrames": 0,
+      "drawCalls": 10,
+      "triangles": 6740,
+      "estimatedCapabilityBytesPerInstance": 7424,
+      "capabilityResolution": [
+        {
+          "recomputes": 1,
+          "cpuMs": 0
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0.10000000009313226
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0.10000000009313226
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0.09999999986030161
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0.09999999986030161
+        }
+      ],
+      "skillStats": [
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        }
+      ],
+      "libraryReadsDuringFrames": 0,
+      "cleanup": {
+        "geometries": 0,
+        "textures": 0,
+        "activeLeases": 0,
+        "liveEntries": 0,
+        "dialogues": 0
+      }
+    },
+    {
+      "trial": 1,
+      "count": 1,
+      "kind": "lesson",
+      "warmFrames": 30,
+      "measuredFrames": 180,
+      "frameMs": {
+        "mean": 16.66722222222274,
+        "p95": 17.200000000186265
+      },
+      "runtimeAndIndexMs": {
+        "mean": 0.1649999999945673,
+        "p95": 0.5
+      },
+      "programCpuTotalMs": 0.6000000000931323,
+      "blockDispatches": 0,
+      "events": 0,
+      "cancellations": 0,
+      "maxQueue": 0,
+      "maxTrace": 0,
+      "estimatedBytesPerInstance": 1280,
+      "navigationPlans": 0,
+      "modelRequests": 1,
+      "documentReadsDuringFrames": 0,
+      "drawCalls": 1,
+      "triangles": 674,
+      "estimatedCapabilityBytesPerInstance": 7424,
+      "capabilityResolution": [
+        {
+          "recomputes": 1,
+          "cpuMs": 0.2999999998137355
+        }
+      ],
+      "skillStats": [
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        }
+      ],
+      "libraryReadsDuringFrames": 0,
+      "repeatedDialogues": {
+        "count": 10,
+        "wallMs": {
+          "mean": 66.61000000000931,
+          "p95": 67.30000000004657
+        },
+        "remainingSessions": 0
+      },
+      "cleanup": {
+        "geometries": 0,
+        "textures": 0,
+        "activeLeases": 0,
+        "liveEntries": 0,
+        "dialogues": 0
+      }
+    },
+    {
+      "trial": 1,
+      "count": 50,
+      "kind": "legacy",
+      "warmFrames": 30,
+      "measuredFrames": 180,
+      "frameMs": {
+        "mean": 16.666666666666668,
+        "p95": 18
+      },
+      "runtimeAndIndexMs": {
+        "mean": 2.3566666666599403,
+        "p95": 3.8999999999068677
+      },
+      "programCpuTotalMs": 0,
+      "blockDispatches": 0,
+      "events": 0,
+      "cancellations": 0,
+      "maxQueue": 0,
+      "maxTrace": 0,
+      "estimatedBytesPerInstance": 0,
+      "navigationPlans": 156,
+      "modelRequests": 1,
+      "documentReadsDuringFrames": 0,
+      "drawCalls": 50,
+      "triangles": 33700,
+      "estimatedCapabilityBytesPerInstance": 7424,
+      "capabilityResolution": [
+        {
+          "recomputes": 1,
+          "cpuMs": 0.10000000009313226
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0.19999999995343387
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0.10000000009313226
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0.09999999986030161
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0.10000000009313226
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0.09999999986030161
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0.10000000009313226
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0.09999999986030161
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0.09999999986030161
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0.10000000009313226
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0.09999999986030161
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0.09999999986030161
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0.09999999986030161
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0.10000000009313226
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0.09999999986030161
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0
+        }
+      ],
+      "skillStats": [
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        }
+      ],
+      "libraryReadsDuringFrames": 0,
+      "cleanup": {
+        "geometries": 0,
+        "textures": 0,
+        "activeLeases": 0,
+        "liveEntries": 0,
+        "dialogues": 0
+      }
+    },
+    {
+      "trial": 1,
+      "count": 50,
+      "kind": "compatibility",
+      "warmFrames": 30,
+      "measuredFrames": 180,
+      "frameMs": {
+        "mean": 16.756111111110336,
+        "p95": 19.399999999906868
+      },
+      "runtimeAndIndexMs": {
+        "mean": 2.5577777777772606,
+        "p95": 4.5
+      },
+      "programCpuTotalMs": 6.59999999939464,
+      "blockDispatches": 50,
+      "events": 50,
+      "cancellations": 0,
+      "maxQueue": 0,
+      "maxTrace": 3,
+      "estimatedBytesPerInstance": 1792,
+      "navigationPlans": 156,
+      "modelRequests": 1,
+      "documentReadsDuringFrames": 0,
+      "drawCalls": 50,
+      "triangles": 33700,
+      "estimatedCapabilityBytesPerInstance": 7424,
+      "capabilityResolution": [
+        {
+          "recomputes": 1,
+          "cpuMs": 0.09999999986030161
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0.10000000009313226
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0.09999999986030161
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0.09999999986030161
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0.10000000009313226
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0.09999999986030161
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0.10000000009313226
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0.10000000009313226
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0.09999999986030161
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0.10000000009313226
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0
+        }
+      ],
+      "skillStats": [
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        }
+      ],
+      "libraryReadsDuringFrames": 0,
+      "cleanup": {
+        "geometries": 0,
+        "textures": 0,
+        "activeLeases": 0,
+        "liveEntries": 0,
+        "dialogues": 0
+      }
+    },
+    {
+      "trial": 1,
+      "count": 20,
+      "kind": "compatibility",
+      "warmFrames": 30,
+      "measuredFrames": 180,
+      "frameMs": {
+        "mean": 16.665555555555816,
+        "p95": 17.100000000093132
+      },
+      "runtimeAndIndexMs": {
+        "mean": 1.624999999994826,
+        "p95": 2.5999999998603016
+      },
+      "programCpuTotalMs": 4.199999999720603,
+      "blockDispatches": 20,
+      "events": 20,
+      "cancellations": 0,
+      "maxQueue": 0,
+      "maxTrace": 3,
+      "estimatedBytesPerInstance": 1792,
+      "navigationPlans": 72,
+      "modelRequests": 1,
+      "documentReadsDuringFrames": 0,
+      "drawCalls": 20,
+      "triangles": 13480,
+      "estimatedCapabilityBytesPerInstance": 7424,
+      "capabilityResolution": [
+        {
+          "recomputes": 1,
+          "cpuMs": 0.09999999986030161
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0.09999999986030161
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0.10000000009313226
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0.10000000009313226
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0.10000000009313226
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0.10000000009313226
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0.09999999986030161
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0.10000000009313226
+        }
+      ],
+      "skillStats": [
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        }
+      ],
+      "libraryReadsDuringFrames": 0,
+      "cleanup": {
+        "geometries": 0,
+        "textures": 0,
+        "activeLeases": 0,
+        "liveEntries": 0,
+        "dialogues": 0
+      }
+    },
+    {
+      "trial": 1,
+      "count": 5,
+      "kind": "compatibility",
+      "warmFrames": 30,
+      "measuredFrames": 180,
+      "frameMs": {
+        "mean": 16.665555555555816,
+        "p95": 17.5
+      },
+      "runtimeAndIndexMs": {
+        "mean": 0.5583333333307463,
+        "p95": 1
+      },
+      "programCpuTotalMs": 1.3999999999068677,
+      "blockDispatches": 5,
+      "events": 5,
+      "cancellations": 0,
+      "maxQueue": 0,
+      "maxTrace": 3,
+      "estimatedBytesPerInstance": 1792,
+      "navigationPlans": 24,
+      "modelRequests": 1,
+      "documentReadsDuringFrames": 0,
+      "drawCalls": 5,
+      "triangles": 3370,
+      "estimatedCapabilityBytesPerInstance": 7424,
+      "capabilityResolution": [
+        {
+          "recomputes": 1,
+          "cpuMs": 0.09999999986030161
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0.10000000009313226
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0.09999999986030161
+        },
+        {
+          "recomputes": 1,
+          "cpuMs": 0
+        }
+      ],
+      "skillStats": [
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        },
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        }
+      ],
+      "libraryReadsDuringFrames": 0,
+      "cleanup": {
+        "geometries": 0,
+        "textures": 0,
+        "activeLeases": 0,
+        "liveEntries": 0,
+        "dialogues": 0
+      }
+    },
+    {
+      "trial": 1,
+      "count": 1,
+      "kind": "compatibility",
+      "warmFrames": 30,
+      "measuredFrames": 180,
+      "frameMs": {
+        "mean": 16.666666666666668,
+        "p95": 17.100000000093132
+      },
+      "runtimeAndIndexMs": {
+        "mean": 0.22444444444910105,
+        "p95": 0.6000000000931323
+      },
+      "programCpuTotalMs": 2.599999999627471,
+      "blockDispatches": 1,
+      "events": 1,
+      "cancellations": 0,
+      "maxQueue": 0,
+      "maxTrace": 3,
+      "estimatedBytesPerInstance": 1792,
+      "navigationPlans": 4,
+      "modelRequests": 1,
+      "documentReadsDuringFrames": 0,
+      "drawCalls": 1,
+      "triangles": 674,
+      "estimatedCapabilityBytesPerInstance": 7424,
+      "capabilityResolution": [
+        {
+          "recomputes": 1,
+          "cpuMs": 0.5
+        }
+      ],
+      "skillStats": [
+        {
+          "invocations": 0,
+          "cpuMs": 0
+        }
+      ],
+      "libraryReadsDuringFrames": 0,
+      "cleanup": {
+        "geometries": 0,
+        "textures": 0,
+        "activeLeases": 0,
+        "liveEntries": 0,
+        "dialogues": 0
+      }
+    }
+  ],
+  "passed": true,
+  "runtimeSourceHashes": {
+    "ApplicationSystem/public/MetaWorld/Creatures/Capabilities/Resolver.mjs": "f8ecfcb794b1ca0658097a859df9774e50f26db2d17e701c10175e981ec5a51b",
+    "ApplicationSystem/public/MetaWorld/Creatures/Skills/Skills.mjs": "0dd3c53fd29c0439cddaccbd6e8389bac83769fb9ed59d722e5489b02107404b",
+    "ApplicationSystem/public/MetaWorld/Creatures/Skills/RemoteTarget.mjs": "91cf4d0ffb369e9f670b7795e64ed948fce6acc50df1ec6fda6d2a2d864baf4a",
+    "ApplicationSystem/public/MetaWorld/Creatures/Behaviors/Schema.mjs": "529caab08e594e780097cc7f89848d6bdfef992b6189f746c3c8b77d575be89f",
+    "ApplicationSystem/public/MetaWorld/Creatures/Behaviors/Interpreter.mjs": "2eae39db4f9ef34e56c7cfee245cd9a43bd27136cc928774bf4d29913543d320",
+    "ApplicationSystem/public/MetaWorld/Creatures/Behaviors/Adapter.mjs": "9fb77870d71b768f2fe815772304b4a7a13947d78baa51051ab6bf6b321bcbb9",
+    "ApplicationSystem/public/MetaWorld/Creatures/Behaviors/Library.mjs": "ce65dd4222a06bffa236882632cc57dba144c7e762cb70dd76465ad794dbd3e9",
+    "ApplicationSystem/public/MetaWorld/Mobs/Runtime.mjs": "dc5655e92f155ff6da37268e051167f76688b164aefb3164662f34c7b46edf47",
+    "ApplicationSystem/public/MetaWorld/Mobs/Ground.mjs": "ff83c270226d9a13e560b7e4bd93a0d55b5227d977e88223e0806d7087d7f347",
+    "ApplicationSystem/public/MetaWorld/Mobs/Perception.mjs": "43e72b83a1bf4b62b94639e351b4c3524fbbbf8f9165df451565a17443237df4"
+  }
+}

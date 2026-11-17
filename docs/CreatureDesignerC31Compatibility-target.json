@@ -1,0 +1,130 @@
+{
+  "hits": [
+    {
+      "arrowId": "arrow-1-1",
+      "shooterId": "session-player",
+      "launchForce": 58.99583333333334,
+      "launchSpeed": 38.40437258090976,
+      "flightDuration": 0.06512175307561383,
+      "traveledDistance": 2.502241919276022,
+      "point": [
+        21,
+        1.7081944442820176,
+        15.071999999999997
+      ],
+      "normal": [
+        0,
+        0,
+        1
+      ],
+      "part": "face",
+      "incomingVelocity": [
+        0,
+        -2.8121790762187597,
+        -38.3749541662847
+      ],
+      "simulationTime": 0.06512175307561383,
+      "ringId": "bullseye",
+      "score": 10,
+      "radialDistance": 0.07650462976498251,
+      "normalizedRadialDistance": 0.12750771627497087,
+      "localPoint": [
+        0,
+        1.4234953702350175,
+        0.05999999999999872
+      ],
+      "targetId": "e4266480-3c79-4d5a-9313-be3a509c097d",
+      "targetLabel": "β",
+      "greekLetter": "β",
+      "timestamp": 1794886758018
+    },
+    {
+      "arrowId": "arrow-1-2",
+      "shooterId": "session-player",
+      "launchForce": 60.08666666667947,
+      "launchSpeed": 38.75779491491985,
+      "flightDuration": 0.06452794176448291,
+      "traveledDistance": 2.502165730589038,
+      "point": [
+        21,
+        1.7097973553435213,
+        15.071999999999997
+      ],
+      "normal": [
+        0,
+        0,
+        1
+      ],
+      "part": "face",
+      "incomingVelocity": [
+        0,
+        -2.7865355722245413,
+        -38.72810668438222
+      ],
+      "simulationTime": 0.06452794176448291,
+      "ringId": "bullseye",
+      "score": 10,
+      "radialDistance": 0.07516887054706278,
+      "normalizedRadialDistance": 0.1252814509117713,
+      "localPoint": [
+        0,
+        1.4248311294529372,
+        0.05999999999999872
+      ],
+      "targetId": "e4266480-3c79-4d5a-9313-be3a509c097d",
+      "targetLabel": "β",
+      "greekLetter": "β",
+      "timestamp": 1794886761100
+    }
+  ],
+  "modes": [
+    {
+      "mode": "voxel",
+      "score": 10,
+      "snapshot": {
+        "lastForce": 58.99583333333334,
+        "lastSpeed": 38.40437258090976,
+        "physicsMs": 3.5,
+        "steps": 0,
+        "discardedSeconds": 0,
+        "flying": 0,
+        "embedded": 1,
+        "predictionMs": 0,
+        "dots": 0,
+        "recomputations": 0,
+        "collisionQueries": 9,
+        "bufferBytes": 8292
+      }
+    },
+    {
+      "mode": "polygonal",
+      "score": 10,
+      "snapshot": {
+        "lastForce": 60.08666666667947,
+        "lastSpeed": 38.75779491491985,
+        "physicsMs": 0.09999999986030161,
+        "steps": 0,
+        "discardedSeconds": 0,
+        "flying": 0,
+        "embedded": 2,
+        "predictionMs": 0,
+        "dots": 0,
+        "recomputations": 0,
+        "collisionQueries": 18,
+        "bufferBytes": 8292
+      }
+    }
+  ],
+  "runtimeSourceHashes": {
+    "ApplicationSystem/public/MetaWorld/Creatures/Capabilities/Resolver.mjs": "f8ecfcb794b1ca0658097a859df9774e50f26db2d17e701c10175e981ec5a51b",
+    "ApplicationSystem/public/MetaWorld/Creatures/Skills/Skills.mjs": "0dd3c53fd29c0439cddaccbd6e8389bac83769fb9ed59d722e5489b02107404b",
+    "ApplicationSystem/public/MetaWorld/Creatures/Skills/RemoteTarget.mjs": "91cf4d0ffb369e9f670b7795e64ed948fce6acc50df1ec6fda6d2a2d864baf4a",
+    "ApplicationSystem/public/MetaWorld/Creatures/Behaviors/Schema.mjs": "529caab08e594e780097cc7f89848d6bdfef992b6189f746c3c8b77d575be89f",
+    "ApplicationSystem/public/MetaWorld/Creatures/Behaviors/Interpreter.mjs": "2eae39db4f9ef34e56c7cfee245cd9a43bd27136cc928774bf4d29913543d320",
+    "ApplicationSystem/public/MetaWorld/Creatures/Behaviors/Adapter.mjs": "cdf84095795167dcbc4bd3f07e92e4d3e4e527b8c1ed02bd243d368b4c9018e0",
+    "ApplicationSystem/public/MetaWorld/Creatures/Behaviors/Library.mjs": "ce65dd4222a06bffa236882632cc57dba144c7e762cb70dd76465ad794dbd3e9",
+    "ApplicationSystem/public/MetaWorld/Mobs/Runtime.mjs": "dc5655e92f155ff6da37268e051167f76688b164aefb3164662f34c7b46edf47",
+    "ApplicationSystem/public/MetaWorld/Mobs/Ground.mjs": "ff83c270226d9a13e560b7e4bd93a0d55b5227d977e88223e0806d7087d7f347",
+    "ApplicationSystem/public/MetaWorld/Mobs/Perception.mjs": "43e72b83a1bf4b62b94639e351b4c3524fbbbf8f9165df451565a17443237df4"
+  }
+}

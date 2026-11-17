@@ -9,7 +9,7 @@ function buildGround(ctx,self,stats){
    if(terrain){const d=terrain.definition,inf=terrain.generator.dimensions.infinite;if(!inf&&(x<root.position.x||z<root.position.z||x>=root.position.x+d.size[0]||z>=root.position.z+d.size[2]))continue;covered=true;if(!terrainPointCovered(terrain,x,z)||!terrain.mapSampleReady([x,y,z])){failure='Source coverage or readiness';return NaN;}}
    // Existing world boxes are authoritative broad-phase bounds; avoid raycasting unrelated objects.
    if(c.box&&(x<c.box.min.x||x>c.box.max.x||z<c.box.min.z||z>c.box.max.z||c.box.min.y>y+step||c.box.max.y<y-step))continue;
-   let h;if(c.sampleGroundY)h=c.sampleGroundY(x,z,y+step);else if(root){ray.set(point.set(x,y+step,z),new THREE.Vector3(0,-1,0));ray.near=0;ray.far=step*2+.1;h=surfaceHits(THREE,ray,root)[0]?.point.y;}
+   let h;if(!root&&c.type==='box'&&c.box)h=c.box.max.y;else if(c.sampleGroundY)h=c.sampleGroundY(x,z,y+step);else if(root){ray.set(point.set(x,y+step,z),new THREE.Vector3(0,-1,0));ray.near=0;ray.far=step*2+.1;h=surfaceHits(THREE,ray,root)[0]?.point.y;}
    if(Number.isFinite(h)&&h<=y+step+.001)best=Math.max(best,h);
   }
   if(!covered&&ctx.objects.some(o=>o.userData.terrainRuntime)){failure='Source coverage or readiness';return NaN;}

@@ -1,3 +1,4 @@
+import {composeWorldMap} from '../WorldMap/Composition.mjs';
 // Nodevision/ApplicationSystem/public/MetaWorld/ProceduralVoxelWorld/VoxelTerrainGenerator.mjs
 // This module composes base terrain and bounded procedural features into a deterministic final voxel field shared by rendering, collision, and future overrides.
 import {usesMap} from '../TerrainMaps/Source.mjs';
@@ -16,7 +17,7 @@ import { chunkToVoxel, voxelIndex, containsVoxel } from './VoxelCoordinates.mjs'
 const priority=featureMaterialPriority;
 export function createVoxelGenerator(source,terrainSource=null) {
   const def={...source,environment:source.environment?{...source.environment}:undefined};
-  const original=createBaseTerrain(def,terrainSource),base=createPathTerrainField(original,def),providers=def.terrainSource==='geographic'||usesMap(def)?geographicVegetation(original,def):[def.environment?.id==='aegean'?createAegeanPlacement(original,def):createTreePlacement(original,def.generator.seed)];
+  const original=composeWorldMap(createBaseTerrain(def,terrainSource),def),base=createPathTerrainField(original,def),providers=def.terrainSource==='geographic'||usesMap(def)?geographicVegetation(original,def):[def.environment?.id==='aegean'?createAegeanPlacement(original,def):createTreePlacement(original,def.generator.seed)];
   const provider={reach:Math.max(...providers.map(p=>p.reach)),maxHeight:Math.max(...providers.map(p=>p.maxHeight))};
   const filtered=providers.map(provider=>({...provider,candidate(x,z){const f=provider.candidate(x,z);return (base.allowsFeature&&!base.allowsFeature(f))||base.excludesFeature(f)||excludesProtectedFeature(def,f)?null:f;}}));
   const features=createFeatureField(def.generation?.vegetation === false ? [] : filtered,priority);
@@ -55,6 +56,7 @@ export function createVoxelGenerator(source,terrainSource=null) {
       if(!['spring','summer','autumn','winter'].includes(season))throw Error('Unsupported season.');
       def.environment.season=season;base.clearColumns();features.clear();levels=createChunkLevelQuery(base,features);return true;
     },
+    setWorldMap(value){original.setWorldMap(value);base.clearColumns();features.clear();levels=createChunkLevelQuery(base,features);},
     invalidateTerrainSource(){base.clearColumns();features.clear();levels=createChunkLevelQuery(base,features);},
     pathFeatureReach:provider.reach*2,
     setPathConstraints(paths){base.setPathConstraints(paths);features.clear();levels=createChunkLevelQuery(base,features);},

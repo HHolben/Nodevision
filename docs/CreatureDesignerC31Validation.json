@@ -1,0 +1,127 @@
+{
+  "generatedAt": "2026-11-17T05:35:31.011Z",
+  "passed": true,
+  "logs": {
+    "focused": [
+      "ℹ tests 14",
+      "ℹ pass 14",
+      "ℹ fail 0",
+      "ℹ duration_ms 191.846158"
+    ],
+    "c3-focused": [
+      "ℹ tests 29",
+      "ℹ pass 29",
+      "ℹ fail 0",
+      "ℹ duration_ms 290.691196"
+    ],
+    "metaworld": [
+      "ℹ tests 71",
+      "ℹ pass 71",
+      "ℹ fail 0",
+      "ℹ duration_ms 19758.19656"
+    ],
+    "gameview": [
+      "ℹ tests 11",
+      "ℹ pass 11",
+      "ℹ fail 0",
+      "ℹ duration_ms 3776.901015"
+    ],
+    "browser": {
+      "passed": true,
+      "result": "PASS: C31 capabilities, HTML library, injury/restoration, granted skill, real bow target scoring, permissions, transient persistence and cleanup"
+    },
+    "performance": {
+      "passed": true,
+      "result": "PASS: C31 shared library hares, controlled C3 baseline, NPCs, repeated skills, injuries, reload and cleanup"
+    },
+    "compatibility-c3": {
+      "passed": true,
+      "result": "PASS: C3 visual blocks, sensory recognition, compatible navigation, independent programs, Greek lesson, trusted Use, persistence, permissions and cleanup"
+    },
+    "compatibility-c2": {
+      "passed": true,
+      "result": "PASS: {\"checks\":[\"Open /BuiltIn/Mobs/Mammals/BrownHare/BrownHare.html\",\"GLB ready\",\"Thirteen anatomy rows in existing Layers\",\"Shared selection hindleg-right\",\"Anatomy inspector synchronized\",\"Legacy geometry converted without source mutation\",\"Opening does not dirty built-in anatomy\",\"Open C2Hare.html\",\"GLB ready\",\"Built-in Save As forks identity\",\"Shared selection hindleg-right\",\"Anatomy inspect"
+    },
+    "compatibility-c1": {
+      "passed": true,
+      "result": "PASS: C1 canonical Editor/Viewer, one empty root, custom creation/import/properties/history/save/reopen/Save As/discovery, metadata-driven insertion, independent anatomy, persistence and cleanup"
+    },
+    "compatibility-m14": {
+      "passed": true,
+      "result": "PASS: M1.4 production inventory concealment, awareness recovery, movement, trusted sword hits, anatomy, bow, tool switching, pause, save/reopen, Viewer and cleanup"
+    },
+    "compatibility-archery": {
+      "passed": true,
+      "result": "PASS: production Archery Bow inventory, trusted Use/G, draw animation, dotted prediction, both terrain modes, unlimited arrows, collision embedding, cancellation, persistence, Viewer and cleanup"
+    },
+    "compatibility-target": {
+      "passed": true,
+      "result": "PASS: production Archery Target insertion, inspector Unicode, transforms, duplication/history, trusted live bow scoring in both modes, embedding/following/deletion, source preservation, save/reopen and Viewer"
+    },
+    "compatibility-teleporter": {
+      "passed": true,
+      "result": "PASS: production inventory, trusted primary and controller input, geographic coarse and detailed voxel/polygonal travel, physics, cancellation, permissions, imported GOX/STL/glTF/GLB, constructions, cleanup and save/reopen"
+    }
+  },
+  "preserved": {
+    "Notebook/test.html": "75533dd604cbacc1de34bd42e1e3c5a5faeef5f4779b51c520a2e0c0edd81292",
+    "ApplicationSystem/public/BuiltIn/Mobs/Mammals/BrownHare/Models/Mesh_Rabbit.obj": "a1b98fae32e84b69ad03fc95031b49581771dc104bfdc94e91bafba8a395acec",
+    "ApplicationSystem/public/BuiltIn/Mobs/Mammals/BrownHare/Models/Mesh_Rabbit.mtl": "40b9d69ff8e1e870f79ce57712958a6f906ee26ae60a62311c6f98ba48a8d175",
+    "ApplicationSystem/public/BuiltIn/Mobs/Mammals/BrownHare/Models/Rabbit by Poly by Google - 9OBTRVYUSmt.glb": "b58fac979a8606d60948625783794e3afbbcb6edfe2f8c98284bbcedaa6cee3a",
+    "ApplicationSystem/public/BuiltIn/Mobs/Mammals/BrownHare/Models/Tex_Rabbit.png": "43ab3622a46b45f15cdf442ce3ae1f2e1b48e4f50420285bfe071bbf9f5630a1",
+    "ApplicationSystem/public/BuiltIn/Mobs/Mammals/BrownHare/Models/licenseNotice.md": "dc816165d5f96006bd96a8b0cae929083f78f49dcdd76728595c395cb0271140",
+    "ApplicationSystem/public/BuiltIn/Mobs/Mammals/BrownHare/BrownHare.html": "1e5fa08042b462588d672a7a8426285dc4c85e093113dfeff8b9ab561bb48adc"
+  },
+  "sourceHashes": {
+    "ApplicationSystem/public/MetaWorld/Creatures/Capabilities/CapabilitiesSkills.test.mjs": "7f739fa94a40349e5c6a578052ac4b9ff672f95490b137ca27fdfea3d2ab3747",
+    "ApplicationSystem/public/MetaWorld/Creatures/Capabilities/Resolver.mjs": "f8ecfcb794b1ca0658097a859df9774e50f26db2d17e701c10175e981ec5a51b",
+    "ApplicationSystem/public/MetaWorld/Creatures/Skills/RemoteTarget.mjs": "91cf4d0ffb369e9f670b7795e64ed948fce6acc50df1ec6fda6d2a2d864baf4a",
+    "ApplicationSystem/public/MetaWorld/Creatures/Skills/Skills.mjs": "0dd3c53fd29c0439cddaccbd6e8389bac83769fb9ed59d722e5489b02107404b",
+    "ApplicationSystem/public/MetaWorld/Creatures/Behaviors/Adapter.mjs": "9fb77870d71b768f2fe815772304b4a7a13947d78baa51051ab6bf6b321bcbb9",
+    "ApplicationSystem/public/MetaWorld/Creatures/Behaviors/BehaviorPrograms.test.mjs": "68e1f055f358aed590d8e3940035dbd321e9d9391c1ec558d309c51f723c070c",
+    "ApplicationSystem/public/MetaWorld/Creatures/Behaviors/Dialogue.mjs": "2b2a7997bcc64c46e8b8c7714cf8a96983855843b4ed0126ecf7776d8b9e1ec3",
+    "ApplicationSystem/public/MetaWorld/Creatures/Behaviors/Editor.mjs": "04afd83c15fc7c728c8adbb6c517aa02136d0cf751ac24252aef8cd30ff88199",
+    "ApplicationSystem/public/MetaWorld/Creatures/Behaviors/Entities.mjs": "415043cd201d763980481c1e9ab14ef9e243b908bea0c6a968da6bdb8213d67b",
+    "ApplicationSystem/public/MetaWorld/Creatures/Behaviors/Examples.mjs": "155861a08428ca6220580bab42924cc3b97e964ee22ed742be4303929bbdee02",
+    "ApplicationSystem/public/MetaWorld/Creatures/Behaviors/Interpreter.mjs": "2eae39db4f9ef34e56c7cfee245cd9a43bd27136cc928774bf4d29913543d320",
+    "ApplicationSystem/public/MetaWorld/Creatures/Behaviors/Lessons.mjs": "b801492d9c42c5b02ec2ad2bc79e015effd357ff4c0cdcddb187406d8d4a77cd",
+    "ApplicationSystem/public/MetaWorld/Creatures/Behaviors/Library.mjs": "ce65dd4222a06bffa236882632cc57dba144c7e762cb70dd76465ad794dbd3e9",
+    "ApplicationSystem/public/MetaWorld/Creatures/Behaviors/LibraryEditor.mjs": "5079d56b8fe95fa4b3cec280c3e2124d382b6e2072c013f57397180cb7da26d6",
+    "ApplicationSystem/public/MetaWorld/Creatures/Behaviors/Requirements.mjs": "3706ba0714b5d308d0791953f4cfd7dabd72f2580d1d28d507c25a58d22d1156",
+    "ApplicationSystem/public/MetaWorld/Creatures/Behaviors/Schema.mjs": "529caab08e594e780097cc7f89848d6bdfef992b6189f746c3c8b77d575be89f",
+    "ApplicationSystem/public/BuiltIn/Behaviors/AdministerLesson.html": "e321349c556faaa6f6fc40386fbf7de1bad399a92f2474e1f4e5bc0bc6cce613",
+    "ApplicationSystem/public/BuiltIn/Behaviors/CompatibleInstincts.html": "dee3cfa70302b4c4e1e83731dab232f28d0952b7700b54bd50e2d106f9ea7c18",
+    "ApplicationSystem/public/BuiltIn/Behaviors/FleeFromThreat.html": "d5807878b690406eb183098544c4738ac103ad04f31673a73173a140de6b2266",
+    "ApplicationSystem/public/BuiltIn/Behaviors/InvestigateScent.html": "6939b2303bc789aad8422f5263368649559999ed934c3da9a31fc5393cee2666",
+    "ApplicationSystem/public/BuiltIn/Behaviors/InvestigateSound.html": "4f547ac65c6eef8e92e527fb7c6207809060504526880842225c47681a06c0ee",
+    "ApplicationSystem/public/BuiltIn/Behaviors/OfferLesson.html": "4896bbbaebccbb1448be494fa51182a13742678556efabf43c2fb44bf9f19e6d",
+    "ApplicationSystem/public/BuiltIn/Behaviors/RemoteArcheryLesson.html": "5c3d1ecfceabd09dac7a5631f4e0b3d261c3cb8eb196d7e7ba6020665717567e",
+    "ApplicationSystem/public/MetaWorld/Creatures/Document.mjs": "b43e980ee405bc7ded941cd697e01266749e6b714f90ea5ac1797748375fde0e",
+    "ApplicationSystem/public/MetaWorld/Creatures/Create.mjs": "4ba51078a2c10e029eaf9bf57f6631356772a242d859d8388701900a44bfbb4e",
+    "ApplicationSystem/public/MetaWorld/Creatures/Properties.mjs": "6f9289d17d2ac471c726bb90ddad158edea9abf9fca7ee68e09e1b6c6d680db3",
+    "ApplicationSystem/public/MetaWorld/Mobs/Registry.mjs": "f547ee25f32affd7dcffc633e7e277aec5e240c5b8b79404ecdf00724187407c",
+    "ApplicationSystem/public/MetaWorld/Mobs/Runtime.mjs": "dc5655e92f155ff6da37268e051167f76688b164aefb3164662f34c7b46edf47",
+    "ApplicationSystem/public/MetaWorld/Mobs/Ground.mjs": "ff83c270226d9a13e560b7e4bd93a0d55b5227d977e88223e0806d7087d7f347",
+    "ApplicationSystem/public/PanelInstances/ViewPanels/GameViewDependencies/worldSave.mjs": "60722002fb75ad85c7c13ef28f5fd63cd46569c80cc3b22be5f09cbead63aad1",
+    "scripts/c31-browser.mjs": "92d4ae9db3361d15c0cc18e7d42b6f8a67847f94d665059edf9fc967fc4d7063",
+    "scripts/c31-performance.mjs": "8bea2e238cd00f39244c92b20b5139da01db10e78f1cfd453271a3b600732be2",
+    "scripts/test-c31.mjs": "1d689fb4facd614ed118d910dea1149697c02dff8e1a1926a1f3d54cb72bb448",
+    "scripts/test-c31-regressions.mjs": "9822fa02069763d4ac21291d8fe2f22a63468380a07c2d65f8b79cbb1f633ef4"
+  },
+  "limitations": [
+    "Chromium SwiftShader, no native desktop/hardware GPU performance claim",
+    "Memory figures are accounting estimates, not exhaustive heap proof",
+    "No swimming/flight locomotion, oxygen simulation, full RPG progression, inventory trading or centaur model",
+    "Graphical library export creates a new HTML entry; later metadata/version edits use the existing HTML editor",
+    "Legacy C3 inline dialogue remains compatible; new lesson libraries require explicit communication",
+    "Default destination is relative world +Z; explicit typed locations/orientations supported"
+  ],
+  "docs/CreatureDesignerC31Browser.json": {
+    "passed": true,
+    "checks": 55
+  },
+  "docs/CreatureDesignerC31Performance.json": {
+    "passed": true,
+    "cases": 28
+  }
+}

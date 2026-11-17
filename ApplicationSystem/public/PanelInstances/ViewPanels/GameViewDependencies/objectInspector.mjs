@@ -9,7 +9,7 @@ import { openTextEditor } from '../../../MetaWorld/Text/TextEditor.mjs';
 import { createVoxelWorldProperties } from "../../../MetaWorld/ProceduralVoxelWorld/VoxelWorldProperties.mjs";
 import { createPathProperties } from "../../../MetaWorld/Paths/PathProperties.mjs";
 import { createFloatingInventoryPanel } from "/PanelInstances/InfoPanels/PlayerInventory.mjs";
-import { getActiveMetaWorldLayerBridge, notifyMetaWorldLayersChanged } from "/MetaWorld/MetaWorldLayerState.mjs";
+import { getActiveMetaWorldLayerBridge, notifyMetaWorldLayersChanged,selectMetaWorldObject } from "/MetaWorld/MetaWorldLayerState.mjs";
 import { updateToolbarState } from "/panels/createToolbar.mjs";
 import { normalizePlaneEquationConfig, resizeEquationColliderPlaneMesh, syncPlaneColliderRef, makePlaneColliderRef } from "./equationColliderTool.mjs";
 import { resolveLinkedWorldResource } from "./embeddedResourceEditor.mjs";
@@ -1161,6 +1161,7 @@ export function createObjectInspector({ THREE, panel, scene, sceneObjects, colli
 
   function applyFormToTarget() {
     if (!activeTarget) return;
+    if(activeTarget.userData.anatomyHandle)return;
     if(activeTarget.userData.mobRuntime){try{getActiveMetaWorldLayerBridge().updateMob(activeTarget.userData.metaWorldLayerId,{scale:[Number(sxInput.value),Number(syInput.value),Number(szInput.value)]});}catch(error){infoLine.textContent=error.message;}return;}
     if(activeTarget.userData.archeryTargetRuntime){try{getActiveMetaWorldLayerBridge().updateArcheryTarget(activeTarget.userData.metaWorldLayerId,{scale:[Number(sxInput.value),Number(syInput.value),Number(szInput.value)]});}catch(error){infoLine.textContent=error.message;}return;}
     window.VRWorldContext?.recordObjectTransform?.(activeTarget);
@@ -1264,6 +1265,18 @@ export function createObjectInspector({ THREE, panel, scene, sceneObjects, colli
   return {
     showConstructionEditing(section){root.style.display="none";constructionProperties.hide();terrainProperties.hide();pathProperties.hide();root.style.display="none";floatingPanel.content.append(section);floatingPanel.setVisible(true);floatingPanel.undock();},
     inspectTarget(target, distance = null) {
+      const anatomyId=target?.userData?.anatomyPart||target?.userData?.anatomyHandle?.part;
+      const anatomy=window.VRWorldContext?.anatomyEditor;
+      let anatomySection=floatingPanel.content.querySelector('[data-anatomy-inspector]');
+      if(anatomyId&&anatomy){
+        if(anatomy.selected!==anatomyId)return selectMetaWorldObject("anatomy:"+anatomyId);
+        mobPanel.hide();archeryProperties.hide();pathProperties.hide();constructionProperties.hide();terrainProperties.hide();
+        root.style.display='none';activeTarget=target;stopPreviewLoop();
+        if(!anatomySection){anatomySection=document.createElement('section');floatingPanel.content.append(anatomySection);}
+        anatomySection.hidden=false;anatomy.properties(anatomySection,anatomyId);floatingPanel.setVisible(true);floatingPanel.undock();return true;
+      }
+      if(anatomySection)anatomySection.hidden=true;root.style.display='';
+      anatomy?.closeSelection();
       mobPanel.hide();
       archeryProperties.hide();if(target?.userData.archeryTargetRuntime)archeryProperties.show(target);
       if(target?.userData.mobRuntime)mobPanel.show(target);
@@ -1297,6 +1310,7 @@ export function createObjectInspector({ THREE, panel, scene, sceneObjects, colli
       return true;
     },
     hide() {
+      window.VRWorldContext?.anatomyEditor?.closeSelection();
       mobPanel.hide();
       archeryProperties.hide();
       associations.show(null);

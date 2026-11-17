@@ -24,7 +24,9 @@ export function installObjectGrabAbility(ctx) {
 
   function releaseGrabbedObject() {
     ctx.grabbedState?.object?.userData?.mobRuntime?.suspend(false,'grab');
+    const handle=ctx.grabbedState?.object?.userData?.anatomyHandle;
     ctx.grabbedState = null;
+    handle?.commit();
   }
 
   function updateGrabbedObjectFollow() {
@@ -58,6 +60,7 @@ export function installObjectGrabAbility(ctx) {
       ctx.rotateState.target.rotateOnAxis(activeAxis, angle);
       ctx.rotateState.activeAxis = activeAxis.clone?.() || activeAxis;
       ctx.api.updateColliderForTarget(ctx.rotateState.target);
+      ctx.rotateState.target.userData?.anatomyHandle?.commit();
       event.preventDefault?.();
       event.stopPropagation?.();
       return;

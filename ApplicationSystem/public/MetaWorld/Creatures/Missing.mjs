@@ -1,0 +1,6 @@
+// Visible, non-solid unresolved reference. Keep the authored instance so relinking is possible.
+export function missingCreature(THREE,source){
+ const root=new THREE.Mesh(new THREE.BoxGeometry(.3,.45,.6),new THREE.MeshBasicMaterial({color:0xb05070,wireframe:true}));root.name='Unavailable creature: '+(source.name||source.speciesId);root.position.fromArray(source.position||[0,0,0]);root.rotation.set(...(source.rotation||[0,0,0]));root.scale.fromArray(source.scale||[1,1,1]);let disposed=false;const error=source.creatureError||'Missing creature definition';
+ root.userData={nvType:'mob',id:source.id,metaWorldLayerId:source.id,creatureDocument:source.creatureDocument,isSolid:false};
+ root.userData.mobRuntime={missing:true,visual:{error},get ready(){return Promise.resolve(false);},get disposed(){return disposed;},state:'Unavailable',tick(){},refresh(){},suspend(){},forgetActor(){return 0;},serialize(){const result={...source,position:root.position.toArray(),rotation:root.rotation.toArray().slice(0,3),scale:root.scale.toArray()};delete result.creatureError;return result;},applyDamage(){return {applied:false,error};},snapshot(){return {state:'Unavailable',error};},dispose(){if(disposed)return;disposed=true;root.removeFromParent();root.geometry.dispose();root.material.dispose();}};return root;
+}

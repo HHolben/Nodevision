@@ -1,0 +1,47 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>Administer Lesson</title></head><body>
+<script id="nodevision-metaworld" type="application/json" data-nodevision-meta-world>
+{
+  "name": "Administer Lesson",
+  "type": "meta-world",
+  "metadata": {
+    "behavior": {
+      "documentType": "behavior",
+      "id": "administer-lesson",
+      "version": 1,
+      "name": "Administer Lesson",
+      "description": "Administer the original Greek Alpha lesson using the shared lesson UI.",
+      "author": "Nodevision",
+      "category": "Lesson",
+      "requirements": {
+        "capabilities": {
+          "capability": "communication"
+        }
+      },
+      "parameters": [],
+      "outputs": [],
+      "entry": "lesson",
+      "program": {
+        "version": 1,
+        "blocks": [
+          {
+            "id": "lesson",
+            "type": "action",
+            "action": "lesson",
+            "lesson": "alphabet"
+          }
+        ],
+        "variables": [],
+        "events": [],
+        "procedures": {},
+        "lessons": {
+          "alphabet": "/BuiltIn/Lessons/GreekAlphabet.html"
+        }
+      },
+      "dependencies": []
+    }
+  },
+  "objects": []
+}
+</script>
+</body></html>

@@ -1,0 +1,120 @@
+{
+  "checks": [
+    "Open /BuiltIn/Mobs/Mammals/BrownHare/BrownHare.html Editor",
+    "Real GLB ready",
+    "Exactly one standalone semantic root",
+    "Standalone has no terrain or default floor",
+    "Existing scene lights",
+    "Usable existing camera",
+    "Creature properties in existing inspector",
+    "Existing anatomy inspector reused",
+    "Standalone cleanup",
+    "Open /BuiltIn/Mobs/Mammals/BrownHare/BrownHare.html Viewer",
+    "Real GLB ready",
+    "Viewer standalone is also empty and singular",
+    "Viewer definition editing denied",
+    "Viewer nonauthoring simulation control",
+    "Viewer preview uses normal simulation",
+    "Temporary support removed",
+    "Open Custom.html Editor",
+    "Real GLB ready",
+    "Editable author",
+    "Definition edit marks creature dirty",
+    "Open Custom.html Editor",
+    "Unsaved creature draft restored after closure",
+    "Editable taxonomy",
+    "Editable forwardYaw",
+    "Model orientation edit",
+    "Creature metadata undo",
+    "Undo restores appearance",
+    "Creature metadata redo",
+    "Redo restores appearance",
+    "Real GLB ready",
+    "Production HTML save",
+    "Metadata/root saved without preview helpers",
+    "Root scale saved",
+    "Open Custom.html Viewer",
+    "Real GLB ready",
+    "Custom Viewer reopen retains scale",
+    "Open Custom.html Editor",
+    "Save As path",
+    "Save As preserves unrelated HTML",
+    "Delete old relocated document through existing API",
+    "User discovery from HTML metadata",
+    "Open world.html Editor",
+    "Existing Mob insertion slot",
+    "Real GLB ready",
+    "Real GLB ready",
+    "Inserted roots exclude preview role",
+    "Existing anatomy damage accepts slashing",
+    "Second instance healthy",
+    "Independent functional impairment",
+    "User classification entry",
+    "Real GLB ready",
+    "Insertion adopts creature root scale",
+    "Custom compatible runtime without class code",
+    "Explicit referenced-definition reload",
+    "Explicit reload resets injuries without affecting another instance",
+    "Production HTML save",
+    "Open world.html Editor",
+    "Reopen three referenced instances",
+    "Stable instance IDs",
+    "Session injury policy unchanged",
+    "References instead of embedded definitions",
+    "Instances do not copy species defaults as overrides",
+    "Open world.html Editor",
+    "Deleted definition shows explicit placeholder",
+    "Unresolved creature is non-solid",
+    "Production HTML save",
+    "Restored document reloads without replacing instance identity",
+    "Missing reference recovers to real runtime"
+  ],
+  "openings": [
+    {
+      "path": "/BuiltIn/Mobs/Mammals/BrownHare/BrownHare.html",
+      "viewer": false,
+      "worldReadyMs": 836.2000000000698
+    },
+    {
+      "path": "/BuiltIn/Mobs/Mammals/BrownHare/BrownHare.html",
+      "viewer": true,
+      "worldReadyMs": 210
+    },
+    {
+      "path": "Custom.html",
+      "viewer": false,
+      "worldReadyMs": 163.40000000002328
+    },
+    {
+      "path": "Custom.html",
+      "viewer": false,
+      "worldReadyMs": 209.09999999997672
+    },
+    {
+      "path": "Custom.html",
+      "viewer": true,
+      "worldReadyMs": 125.19999999995343
+    },
+    {
+      "path": "Custom.html",
+      "viewer": false,
+      "worldReadyMs": 149.59999999997672
+    },
+    {
+      "path": "world.html",
+      "viewer": false,
+      "worldReadyMs": 176.5
+    },
+    {
+      "path": "world.html",
+      "viewer": false,
+      "worldReadyMs": 216.30000000004657
+    },
+    {
+      "path": "world.html",
+      "viewer": false,
+      "worldReadyMs": 234.70000000006985
+    }
+  ],
+  "passed": true
+}

@@ -1,3 +1,4 @@
+import {disposeGizmoHandles} from '/MetaWorld/Creatures/AnatomyGizmos.mjs';
 // Nodevision/ApplicationSystem/public/PanelInstances/ViewPanels/GameViewDependencies/Abilities/InspectionModificationAbilities/StretchGizmoAbility.mjs
 // This file defines the stretch gizmo ability for editor-mode Game View objects. It owns scale handles and their pointer lifecycle so construction tools can stay focused on placing objects.
 
@@ -9,7 +10,7 @@ export function installStretchGizmoAbility(ctx) {
   function disposeStretchState() {
     if (!ctx.stretchState) return;
     ctx.stretchState.target?.userData?.mobRuntime?.suspend(false,'stretch');
-    ctx.stretchState.handles?.forEach((h) => h?.parent?.remove(h));
+    disposeGizmoHandles(ctx.stretchState.handles);
     ctx.stretchState.group?.parent?.remove(ctx.stretchState.group);
     window.removeEventListener("pointerdown", onStretchPointerDown, true);
     window.removeEventListener("pointermove", onStretchPointerMove, true);
@@ -47,6 +48,7 @@ export function installStretchGizmoAbility(ctx) {
     };
     axes.forEach((axis) => makeHandle(axis, false));
     corners.forEach((corner) => makeHandle(corner, true));
+    handleMat.dispose();
     target.add(group);
     ctx.stretchState = { target, group, handles, dragging: false, activeHandle: null, startScale: null };
     window.addEventListener("pointerdown", onStretchPointerDown, true);
@@ -100,8 +102,11 @@ export function installStretchGizmoAbility(ctx) {
 
   function onStretchPointerUp(e) {
     if (!ctx.stretchState || e.button !== 0) return;
+    const handle=ctx.stretchState.target?.userData?.anatomyHandle;
+    const changed=ctx.stretchState.dragging;
     ctx.stretchState.dragging = false;
     ctx.stretchState.activeHandle = null;
+    if(changed)handle?.commit();
   }
 
   return installMovementApi(ctx, {

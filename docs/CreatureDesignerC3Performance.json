@@ -1,0 +1,566 @@
+{
+  "environment": "Chromium SwiftShader 640x480. Actual Rabbit GLB and mob runtime; no rendered terrain. Two reverse-order trials, 30 warm + 180 measured RAF at fixed 30Hz simulation. CPU and frame pacing reported separately.",
+  "cases": [
+    {
+      "trial": 0,
+      "count": 1,
+      "kind": "compatibility",
+      "warmFrames": 30,
+      "measuredFrames": 180,
+      "frameMs": {
+        "mean": 16.662222222218084,
+        "p95": 17.200000001117587
+      },
+      "runtimeAndIndexMs": {
+        "mean": 0.3927777777322464,
+        "p95": 0.900000000372529
+      },
+      "programCpuTotalMs": 2.5,
+      "blockDispatches": 1,
+      "events": 1,
+      "cancellations": 0,
+      "maxQueue": 0,
+      "maxTrace": 3,
+      "estimatedBytesPerInstance": 1792,
+      "navigationPlans": 4,
+      "modelRequests": 1,
+      "documentReadsDuringFrames": 0,
+      "drawCalls": 1,
+      "triangles": 674,
+      "cleanup": {
+        "geometries": 0,
+        "textures": 0,
+        "activeLeases": 0,
+        "liveEntries": 0,
+        "dialogues": 0
+      }
+    },
+    {
+      "trial": 0,
+      "count": 5,
+      "kind": "compatibility",
+      "warmFrames": 30,
+      "measuredFrames": 180,
+      "frameMs": {
+        "mean": 16.665555555549346,
+        "p95": 17.200000001117587
+      },
+      "runtimeAndIndexMs": {
+        "mean": 0.912777777802613,
+        "p95": 1.599999999627471
+      },
+      "programCpuTotalMs": 2.8000000063329935,
+      "blockDispatches": 5,
+      "events": 5,
+      "cancellations": 0,
+      "maxQueue": 0,
+      "maxTrace": 3,
+      "estimatedBytesPerInstance": 1792,
+      "navigationPlans": 24,
+      "modelRequests": 1,
+      "documentReadsDuringFrames": 0,
+      "drawCalls": 5,
+      "triangles": 3370,
+      "cleanup": {
+        "geometries": 0,
+        "textures": 0,
+        "activeLeases": 0,
+        "liveEntries": 0,
+        "dialogues": 0
+      }
+    },
+    {
+      "trial": 0,
+      "count": 20,
+      "kind": "compatibility",
+      "warmFrames": 30,
+      "measuredFrames": 180,
+      "frameMs": {
+        "mean": 16.663888888888888,
+        "p95": 17.09999999962747
+      },
+      "runtimeAndIndexMs": {
+        "mean": 1.8138888888474969,
+        "p95": 2.900000000372529
+      },
+      "programCpuTotalMs": 4.299999997019768,
+      "blockDispatches": 20,
+      "events": 20,
+      "cancellations": 0,
+      "maxQueue": 0,
+      "maxTrace": 3,
+      "estimatedBytesPerInstance": 1792,
+      "navigationPlans": 72,
+      "modelRequests": 1,
+      "documentReadsDuringFrames": 0,
+      "drawCalls": 20,
+      "triangles": 13480,
+      "cleanup": {
+        "geometries": 0,
+        "textures": 0,
+        "activeLeases": 0,
+        "liveEntries": 0,
+        "dialogues": 0
+      }
+    },
+    {
+      "trial": 0,
+      "count": 50,
+      "kind": "compatibility",
+      "warmFrames": 30,
+      "measuredFrames": 180,
+      "frameMs": {
+        "mean": 16.675555555553487,
+        "p95": 19.40000000037253
+      },
+      "runtimeAndIndexMs": {
+        "mean": 2.7188888888392184,
+        "p95": 4.400000000372529
+      },
+      "programCpuTotalMs": 5.399999992921948,
+      "blockDispatches": 50,
+      "events": 50,
+      "cancellations": 0,
+      "maxQueue": 0,
+      "maxTrace": 3,
+      "estimatedBytesPerInstance": 1792,
+      "navigationPlans": 156,
+      "modelRequests": 1,
+      "documentReadsDuringFrames": 0,
+      "drawCalls": 50,
+      "triangles": 33700,
+      "cleanup": {
+        "geometries": 0,
+        "textures": 0,
+        "activeLeases": 0,
+        "liveEntries": 0,
+        "dialogues": 0
+      }
+    },
+    {
+      "trial": 0,
+      "count": 50,
+      "kind": "legacy",
+      "warmFrames": 30,
+      "measuredFrames": 180,
+      "frameMs": {
+        "mean": 16.671111111115252,
+        "p95": 19.09999999962747
+      },
+      "runtimeAndIndexMs": {
+        "mean": 2.411111111111111,
+        "p95": 3.799999998882413
+      },
+      "programCpuTotalMs": 0,
+      "blockDispatches": 0,
+      "events": 0,
+      "cancellations": 0,
+      "maxQueue": 0,
+      "maxTrace": 0,
+      "estimatedBytesPerInstance": 0,
+      "navigationPlans": 156,
+      "modelRequests": 1,
+      "documentReadsDuringFrames": 0,
+      "drawCalls": 50,
+      "triangles": 33700,
+      "cleanup": {
+        "geometries": 0,
+        "textures": 0,
+        "activeLeases": 0,
+        "liveEntries": 0,
+        "dialogues": 0
+      }
+    },
+    {
+      "trial": 0,
+      "count": 1,
+      "kind": "lesson",
+      "warmFrames": 30,
+      "measuredFrames": 180,
+      "frameMs": {
+        "mean": 16.665555555559695,
+        "p95": 17.09999999962747
+      },
+      "runtimeAndIndexMs": {
+        "mean": 0.1977777777446641,
+        "p95": 0.6000000014901161
+      },
+      "programCpuTotalMs": 0.900000000372529,
+      "blockDispatches": 0,
+      "events": 0,
+      "cancellations": 0,
+      "maxQueue": 0,
+      "maxTrace": 0,
+      "estimatedBytesPerInstance": 1280,
+      "navigationPlans": 0,
+      "modelRequests": 1,
+      "documentReadsDuringFrames": 0,
+      "drawCalls": 1,
+      "triangles": 674,
+      "repeatedDialogues": {
+        "count": 10,
+        "wallMs": {
+          "mean": 69.98000000007451,
+          "p95": 100.59999999962747
+        },
+        "remainingSessions": 0
+      },
+      "cleanup": {
+        "geometries": 0,
+        "textures": 0,
+        "activeLeases": 0,
+        "liveEntries": 0,
+        "dialogues": 0
+      }
+    },
+    {
+      "trial": 0,
+      "count": 10,
+      "kind": "lesson",
+      "warmFrames": 30,
+      "measuredFrames": 180,
+      "frameMs": {
+        "mean": 16.656666666662527,
+        "p95": 17
+      },
+      "runtimeAndIndexMs": {
+        "mean": 0.915555555632131,
+        "p95": 1.400000000372529
+      },
+      "programCpuTotalMs": 3.3999999966472387,
+      "blockDispatches": 0,
+      "events": 0,
+      "cancellations": 0,
+      "maxQueue": 0,
+      "maxTrace": 0,
+      "estimatedBytesPerInstance": 1280,
+      "navigationPlans": 0,
+      "modelRequests": 1,
+      "documentReadsDuringFrames": 0,
+      "drawCalls": 10,
+      "triangles": 6740,
+      "cleanup": {
+        "geometries": 0,
+        "textures": 0,
+        "activeLeases": 0,
+        "liveEntries": 0,
+        "dialogues": 0
+      }
+    },
+    {
+      "trial": 0,
+      "count": 20,
+      "kind": "storm",
+      "warmFrames": 30,
+      "measuredFrames": 180,
+      "frameMs": {
+        "mean": 16.951666666660458,
+        "p95": 20.700000001117587
+      },
+      "runtimeAndIndexMs": {
+        "mean": 6.716111111061441,
+        "p95": 12.799999998882413
+      },
+      "programCpuTotalMs": 7.400000000372529,
+      "blockDispatches": 875,
+      "events": 168964,
+      "cancellations": 160,
+      "maxQueue": 14,
+      "maxTrace": 64,
+      "estimatedBytesPerInstance": 24832,
+      "navigationPlans": 227,
+      "modelRequests": 1,
+      "documentReadsDuringFrames": 0,
+      "drawCalls": 14,
+      "triangles": 9436,
+      "cleanup": {
+        "geometries": 0,
+        "textures": 0,
+        "activeLeases": 0,
+        "liveEntries": 0,
+        "dialogues": 0
+      }
+    },
+    {
+      "trial": 1,
+      "count": 20,
+      "kind": "storm",
+      "warmFrames": 30,
+      "measuredFrames": 180,
+      "frameMs": {
+        "mean": 16.943333333327125,
+        "p95": 21
+      },
+      "runtimeAndIndexMs": {
+        "mean": 7.022222222325703,
+        "p95": 12.900000000372529
+      },
+      "programCpuTotalMs": 3.9000000059604645,
+      "blockDispatches": 875,
+      "events": 168964,
+      "cancellations": 160,
+      "maxQueue": 14,
+      "maxTrace": 64,
+      "estimatedBytesPerInstance": 24832,
+      "navigationPlans": 227,
+      "modelRequests": 1,
+      "documentReadsDuringFrames": 0,
+      "drawCalls": 14,
+      "triangles": 9436,
+      "cleanup": {
+        "geometries": 0,
+        "textures": 0,
+        "activeLeases": 0,
+        "liveEntries": 0,
+        "dialogues": 0
+      }
+    },
+    {
+      "trial": 1,
+      "count": 10,
+      "kind": "lesson",
+      "warmFrames": 30,
+      "measuredFrames": 180,
+      "frameMs": {
+        "mean": 16.665555555559695,
+        "p95": 17.299999998882413
+      },
+      "runtimeAndIndexMs": {
+        "mean": 0.9266666666604578,
+        "p95": 1.5
+      },
+      "programCpuTotalMs": 2.5000000037252903,
+      "blockDispatches": 0,
+      "events": 0,
+      "cancellations": 0,
+      "maxQueue": 0,
+      "maxTrace": 0,
+      "estimatedBytesPerInstance": 1280,
+      "navigationPlans": 0,
+      "modelRequests": 1,
+      "documentReadsDuringFrames": 0,
+      "drawCalls": 10,
+      "triangles": 6740,
+      "cleanup": {
+        "geometries": 0,
+        "textures": 0,
+        "activeLeases": 0,
+        "liveEntries": 0,
+        "dialogues": 0
+      }
+    },
+    {
+      "trial": 1,
+      "count": 1,
+      "kind": "lesson",
+      "warmFrames": 30,
+      "measuredFrames": 180,
+      "frameMs": {
+        "mean": 16.668888888890958,
+        "p95": 17.09999999962747
+      },
+      "runtimeAndIndexMs": {
+        "mean": 0.1922222221373684,
+        "p95": 0.5
+      },
+      "programCpuTotalMs": 0.599999999627471,
+      "blockDispatches": 0,
+      "events": 0,
+      "cancellations": 0,
+      "maxQueue": 0,
+      "maxTrace": 0,
+      "estimatedBytesPerInstance": 1280,
+      "navigationPlans": 0,
+      "modelRequests": 1,
+      "documentReadsDuringFrames": 0,
+      "drawCalls": 1,
+      "triangles": 674,
+      "repeatedDialogues": {
+        "count": 10,
+        "wallMs": {
+          "mean": 66.5699999999255,
+          "p95": 68.09999999962747
+        },
+        "remainingSessions": 0
+      },
+      "cleanup": {
+        "geometries": 0,
+        "textures": 0,
+        "activeLeases": 0,
+        "liveEntries": 0,
+        "dialogues": 0
+      }
+    },
+    {
+      "trial": 1,
+      "count": 50,
+      "kind": "legacy",
+      "warmFrames": 30,
+      "measuredFrames": 180,
+      "frameMs": {
+        "mean": 16.667222222220154,
+        "p95": 18.40000000037253
+      },
+      "runtimeAndIndexMs": {
+        "mean": 2.222777777682576,
+        "p95": 3.5
+      },
+      "programCpuTotalMs": 0,
+      "blockDispatches": 0,
+      "events": 0,
+      "cancellations": 0,
+      "maxQueue": 0,
+      "maxTrace": 0,
+      "estimatedBytesPerInstance": 0,
+      "navigationPlans": 156,
+      "modelRequests": 1,
+      "documentReadsDuringFrames": 0,
+      "drawCalls": 50,
+      "triangles": 33700,
+      "cleanup": {
+        "geometries": 0,
+        "textures": 0,
+        "activeLeases": 0,
+        "liveEntries": 0,
+        "dialogues": 0
+      }
+    },
+    {
+      "trial": 1,
+      "count": 50,
+      "kind": "compatibility",
+      "warmFrames": 30,
+      "measuredFrames": 180,
+      "frameMs": {
+        "mean": 16.66500000000621,
+        "p95": 19.199999999254942
+      },
+      "runtimeAndIndexMs": {
+        "mean": 2.5333333333747254,
+        "p95": 4.199999999254942
+      },
+      "programCpuTotalMs": 7.099999995902181,
+      "blockDispatches": 50,
+      "events": 50,
+      "cancellations": 0,
+      "maxQueue": 0,
+      "maxTrace": 3,
+      "estimatedBytesPerInstance": 1792,
+      "navigationPlans": 156,
+      "modelRequests": 1,
+      "documentReadsDuringFrames": 0,
+      "drawCalls": 50,
+      "triangles": 33700,
+      "cleanup": {
+        "geometries": 0,
+        "textures": 0,
+        "activeLeases": 0,
+        "liveEntries": 0,
+        "dialogues": 0
+      }
+    },
+    {
+      "trial": 1,
+      "count": 20,
+      "kind": "compatibility",
+      "warmFrames": 30,
+      "measuredFrames": 180,
+      "frameMs": {
+        "mean": 16.788888888888888,
+        "p95": 17.199999999254942
+      },
+      "runtimeAndIndexMs": {
+        "mean": 1.6605555556404095,
+        "p95": 2.5
+      },
+      "programCpuTotalMs": 5.300000002607703,
+      "blockDispatches": 20,
+      "events": 20,
+      "cancellations": 0,
+      "maxQueue": 0,
+      "maxTrace": 3,
+      "estimatedBytesPerInstance": 1792,
+      "navigationPlans": 72,
+      "modelRequests": 1,
+      "documentReadsDuringFrames": 0,
+      "drawCalls": 20,
+      "triangles": 13480,
+      "cleanup": {
+        "geometries": 0,
+        "textures": 0,
+        "activeLeases": 0,
+        "liveEntries": 0,
+        "dialogues": 0
+      }
+    },
+    {
+      "trial": 1,
+      "count": 5,
+      "kind": "compatibility",
+      "warmFrames": 30,
+      "measuredFrames": 180,
+      "frameMs": {
+        "mean": 16.66611111111318,
+        "p95": 17.09999999962747
+      },
+      "runtimeAndIndexMs": {
+        "mean": 0.6644444444113308,
+        "p95": 1.099999999627471
+      },
+      "programCpuTotalMs": 2.100000001490116,
+      "blockDispatches": 5,
+      "events": 5,
+      "cancellations": 0,
+      "maxQueue": 0,
+      "maxTrace": 3,
+      "estimatedBytesPerInstance": 1792,
+      "navigationPlans": 24,
+      "modelRequests": 1,
+      "documentReadsDuringFrames": 0,
+      "drawCalls": 5,
+      "triangles": 3370,
+      "cleanup": {
+        "geometries": 0,
+        "textures": 0,
+        "activeLeases": 0,
+        "liveEntries": 0,
+        "dialogues": 0
+      }
+    },
+    {
+      "trial": 1,
+      "count": 1,
+      "kind": "compatibility",
+      "warmFrames": 30,
+      "measuredFrames": 180,
+      "frameMs": {
+        "mean": 16.66777777777364,
+        "p95": 17.09999999962747
+      },
+      "runtimeAndIndexMs": {
+        "mean": 0.21222222222843104,
+        "p95": 0.599999999627471
+      },
+      "programCpuTotalMs": 1.0999999977648258,
+      "blockDispatches": 1,
+      "events": 1,
+      "cancellations": 0,
+      "maxQueue": 0,
+      "maxTrace": 3,
+      "estimatedBytesPerInstance": 1792,
+      "navigationPlans": 4,
+      "modelRequests": 1,
+      "documentReadsDuringFrames": 0,
+      "drawCalls": 1,
+      "triangles": 674,
+      "cleanup": {
+        "geometries": 0,
+        "textures": 0,
+        "activeLeases": 0,
+        "liveEntries": 0,
+        "dialogues": 0
+      }
+    }
+  ],
+  "passed": true
+}

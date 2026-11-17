@@ -9,6 +9,7 @@ function worldMarkup(html) {
     .join("\n");
 }
 export async function readWorldHtml(path) {
+  if(String(path).startsWith('/BuiltIn/')){const response=await fetch(path,{cache:'no-store'});if(!response.ok)throw Error('Built-in creature unavailable');return response.text();}
   const live = getLiveFileContentForPath(path);
   if (live && typeof live.content === "string") return live.content;
   const response = await fetch("/Notebook/" + normalizeLiveFilePath(path).split("/").map(encodeURIComponent).join("/"), { cache: "no-store" });
@@ -29,7 +30,7 @@ export function clearWorldDraft(path) { drafts.delete(normalizeLiveFilePath(path
 export function readEmbeddedWorld(html, Parser = DOMParser) {
   const doc = new Parser().parseFromString(html, "text/html");
   // Recognize the same legacy candidates as the existing server loader; ambiguous JSON is never replaced.
-  const script = doc.querySelector('script[data-nodevision-meta-world], script#nodevision-metaworld, script[type="application/json"]');
+  const script = doc.querySelector('script#nodevision-metaworld') || doc.querySelector('script[data-nodevision-meta-world], script[type="application/json"]');
   if (!script) return null;
   try {
     const json = script.textContent.replace(/"(?:\\.|[^"\\])*"|\/\*[\s\S]*?\*\/|\/\/[^\r\n]*/g,

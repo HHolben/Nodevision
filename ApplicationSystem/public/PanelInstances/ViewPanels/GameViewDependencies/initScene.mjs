@@ -1,3 +1,4 @@
+import {updateBehaviorEntities} from '/MetaWorld/Creatures/Behaviors/Entities.mjs';
 import {worldSensorySignals} from '/MetaWorld/Mobs/SensorySignals.mjs';
 // Nodevision/ApplicationSystem/public/PanelInstances/ViewPanels/GameViewDependencies/initScene.mjs
 // This file builds the scene context and wires input, rendering, and resizing.
@@ -615,6 +616,7 @@ export function initScene({ THREE, PointerLockControls, panel, canvas, state, lo
     temporalController.update();
     window.VRWorldContext?.updatePathTransforms?.();
     if(window.VRWorldContext)worldSensorySignals(window.VRWorldContext).update(performance.now());
+    if(window.VRWorldContext)updateBehaviorEntities(window.VRWorldContext);
     objects.forEach(object=>object.userData?.mobRuntime?.tick(performance.now(),window.VRWorldContext));
     objects.forEach(object => object.userData?.proceduralVoxelRuntime?.update((viewController.getActiveCamera() || camera).getWorldPosition(voxelStreamPosition),window.VRWorldContext?.astronomy??null));
     if (movementState.paused) { window.VRWorldContext?.sword?.suspend(); window.VRWorldContext?.archeryBow?.suspend(); flashlightTool.update(); hangGliderTool.update(); return; }

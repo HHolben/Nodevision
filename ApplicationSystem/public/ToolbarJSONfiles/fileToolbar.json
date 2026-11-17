@@ -69,6 +69,18 @@
   },
   {
     "ToolbarCategory": "File",
+    "heading": "New",
+    "preventDropdown": true
+  },
+  {
+    "ToolbarCategory": "File",
+    "parentHeading": "New",
+    "heading": "Creature",
+    "callbackKey": "NewCreature",
+    "preventAutoSubToolbar": true
+  },
+  {
+    "ToolbarCategory": "File",
     "heading": "New File",
     "hotkeyText": "",
     "callbackKey": "NewFile",

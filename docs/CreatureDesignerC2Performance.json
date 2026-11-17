@@ -1,0 +1,390 @@
+{
+  "environment": "Chromium SwiftShader; CPU timings measured separately from RAF pacing. Temporary Notebook, actual GameView/HTML/history/helper adapters.",
+  "cases": [
+    {
+      "trial": 0,
+      "count": 13,
+      "editorChangeMs": {
+        "mean": 8.179999999993015,
+        "p95": 13.399999999906868,
+        "max": 14.199999999720603,
+        "samples": 40
+      },
+      "narrowQueryMs": {
+        "mean": 0.0024249999999301506,
+        "p95": 0.0075,
+        "max": 0.0075,
+        "samples": 20
+      },
+      "broadMissMs": {
+        "mean": 0,
+        "p95": 0,
+        "max": 0,
+        "samples": 20
+      },
+      "capabilityRecalculationMs": {
+        "mean": 0.007400000000023282,
+        "p95": 0.0125,
+        "max": 0.0125,
+        "samples": 20
+      },
+      "rafWaitMs": {
+        "mean": 17.71166666666201,
+        "p95": 18,
+        "max": 79.39999999990687,
+        "samples": 60
+      },
+      "helperGroups": 13,
+      "helperGeometryShared": true,
+      "rendererMemory": {
+        "geometries": 5,
+        "textures": 1
+      },
+      "drawCalls": 14,
+      "triangles": 674,
+      "cleanup": {
+        "editor": false,
+        "activeLeases": 0,
+        "liveEntries": 0,
+        "helperParent": false
+      }
+    },
+    {
+      "trial": 0,
+      "count": 32,
+      "editorChangeMs": {
+        "mean": 9.477499999990687,
+        "p95": 12.799999999813735,
+        "max": 15.800000000279397,
+        "samples": 40
+      },
+      "narrowQueryMs": {
+        "mean": 0.0033500000002095473,
+        "p95": 0.006999999999534339,
+        "max": 0.006999999999534339,
+        "samples": 20
+      },
+      "broadMissMs": {
+        "mean": 0.00015000000013969838,
+        "p95": 0.001500000001396984,
+        "max": 0.001500000001396984,
+        "samples": 20
+      },
+      "capabilityRecalculationMs": {
+        "mean": 0.010074999999604189,
+        "p95": 0.013000000000465662,
+        "max": 0.013000000000465662,
+        "samples": 20
+      },
+      "rafWaitMs": {
+        "mean": 17.05,
+        "p95": 18.100000000093132,
+        "max": 52.60000000009313,
+        "samples": 60
+      },
+      "helperGroups": 32,
+      "helperGeometryShared": true,
+      "rendererMemory": {
+        "geometries": 5,
+        "textures": 1
+      },
+      "drawCalls": 30,
+      "triangles": 674,
+      "cleanup": {
+        "editor": false,
+        "activeLeases": 0,
+        "liveEntries": 0,
+        "helperParent": false
+      }
+    },
+    {
+      "trial": 0,
+      "count": 64,
+      "editorChangeMs": {
+        "mean": 12.694999999995343,
+        "p95": 17.199999999720603,
+        "max": 20.200000000186265,
+        "samples": 40
+      },
+      "narrowQueryMs": {
+        "mean": 0.0054499999997206046,
+        "p95": 0.011499999999068677,
+        "max": 0.011499999999068677,
+        "samples": 20
+      },
+      "broadMissMs": {
+        "mean": 0,
+        "p95": 0,
+        "max": 0,
+        "samples": 20
+      },
+      "capabilityRecalculationMs": {
+        "mean": 0.014700000000186264,
+        "p95": 0.017999999998137353,
+        "max": 0.017999999998137353,
+        "samples": 20
+      },
+      "rafWaitMs": {
+        "mean": 16.90166666666822,
+        "p95": 17.5,
+        "max": 47,
+        "samples": 60
+      },
+      "helperGroups": 64,
+      "helperGeometryShared": true,
+      "rendererMemory": {
+        "geometries": 5,
+        "textures": 1
+      },
+      "drawCalls": 44,
+      "triangles": 674,
+      "cleanup": {
+        "editor": false,
+        "activeLeases": 0,
+        "liveEntries": 0,
+        "helperParent": false
+      }
+    },
+    {
+      "trial": 0,
+      "count": 128,
+      "editorChangeMs": {
+        "mean": 19.36500000000233,
+        "p95": 25.399999999906868,
+        "max": 32.89999999990687,
+        "samples": 40
+      },
+      "narrowQueryMs": {
+        "mean": 0.009024999999906866,
+        "p95": 0.010999999998603016,
+        "max": 0.010999999998603016,
+        "samples": 20
+      },
+      "broadMissMs": {
+        "mean": 0.00015000000002328307,
+        "p95": 0.0005000000004656613,
+        "max": 0.0005000000004656613,
+        "samples": 20
+      },
+      "capabilityRecalculationMs": {
+        "mean": 0.027650000000139695,
+        "p95": 0.03449999999953434,
+        "max": 0.03449999999953434,
+        "samples": 20
+      },
+      "rafWaitMs": {
+        "mean": 17.393333333342646,
+        "p95": 19.799999999813735,
+        "max": 65.90000000037253,
+        "samples": 60
+      },
+      "helperGroups": 128,
+      "helperGeometryShared": true,
+      "rendererMemory": {
+        "geometries": 5,
+        "textures": 1
+      },
+      "drawCalls": 44,
+      "triangles": 674,
+      "cleanup": {
+        "editor": false,
+        "activeLeases": 0,
+        "liveEntries": 0,
+        "helperParent": false
+      }
+    },
+    {
+      "trial": 1,
+      "count": 128,
+      "editorChangeMs": {
+        "mean": 18.43499999998603,
+        "p95": 21.899999999906868,
+        "max": 22.300000000279397,
+        "samples": 40
+      },
+      "narrowQueryMs": {
+        "mean": 0.009400000000023282,
+        "p95": 0.0125,
+        "max": 0.0125,
+        "samples": 20
+      },
+      "broadMissMs": {
+        "mean": 0.000050000000046566127,
+        "p95": 0.0005000000004656613,
+        "max": 0.0005000000004656613,
+        "samples": 20
+      },
+      "capabilityRecalculationMs": {
+        "mean": 0.027875000000000004,
+        "p95": 0.031499999999068676,
+        "max": 0.031499999999068676,
+        "samples": 20
+      },
+      "rafWaitMs": {
+        "mean": 17.05166666666046,
+        "p95": 18.699999999720603,
+        "max": 52,
+        "samples": 60
+      },
+      "helperGroups": 128,
+      "helperGeometryShared": true,
+      "rendererMemory": {
+        "geometries": 5,
+        "textures": 1
+      },
+      "drawCalls": 44,
+      "triangles": 674,
+      "cleanup": {
+        "editor": false,
+        "activeLeases": 0,
+        "liveEntries": 0,
+        "helperParent": false
+      }
+    },
+    {
+      "trial": 1,
+      "count": 64,
+      "editorChangeMs": {
+        "mean": 11.977499999990687,
+        "p95": 14.5,
+        "max": 15.5,
+        "samples": 40
+      },
+      "narrowQueryMs": {
+        "mean": 0.005075000000069848,
+        "p95": 0.007000000001862645,
+        "max": 0.007000000001862645,
+        "samples": 20
+      },
+      "broadMissMs": {
+        "mean": 0.000025000000023283063,
+        "p95": 0.0005000000004656613,
+        "max": 0.0005000000004656613,
+        "samples": 20
+      },
+      "capabilityRecalculationMs": {
+        "mean": 0.014649999999906868,
+        "p95": 0.016500000001396984,
+        "max": 0.016500000001396984,
+        "samples": 20
+      },
+      "rafWaitMs": {
+        "mean": 17.044999999995344,
+        "p95": 17.5,
+        "max": 48,
+        "samples": 60
+      },
+      "helperGroups": 64,
+      "helperGeometryShared": true,
+      "rendererMemory": {
+        "geometries": 5,
+        "textures": 1
+      },
+      "drawCalls": 44,
+      "triangles": 674,
+      "cleanup": {
+        "editor": false,
+        "activeLeases": 0,
+        "liveEntries": 0,
+        "helperParent": false
+      }
+    },
+    {
+      "trial": 1,
+      "count": 32,
+      "editorChangeMs": {
+        "mean": 8.022500000009313,
+        "p95": 8.399999999906868,
+        "max": 10.799999999813735,
+        "samples": 40
+      },
+      "narrowQueryMs": {
+        "mean": 0.0032750000001396987,
+        "p95": 0.008500000000931323,
+        "max": 0.008500000000931323,
+        "samples": 20
+      },
+      "broadMissMs": {
+        "mean": 0.00007500000006984919,
+        "p95": 0.0005000000004656613,
+        "max": 0.0005000000004656613,
+        "samples": 20
+      },
+      "capabilityRecalculationMs": {
+        "mean": 0.0100999999998603,
+        "p95": 0.015500000000465662,
+        "max": 0.015500000000465662,
+        "samples": 20
+      },
+      "rafWaitMs": {
+        "mean": 17.183333333333334,
+        "p95": 18.300000000279397,
+        "max": 49.40000000037253,
+        "samples": 60
+      },
+      "helperGroups": 32,
+      "helperGeometryShared": true,
+      "rendererMemory": {
+        "geometries": 5,
+        "textures": 1
+      },
+      "drawCalls": 30,
+      "triangles": 674,
+      "cleanup": {
+        "editor": false,
+        "activeLeases": 0,
+        "liveEntries": 0,
+        "helperParent": false
+      }
+    },
+    {
+      "trial": 1,
+      "count": 13,
+      "editorChangeMs": {
+        "mean": 7.115000000002328,
+        "p95": 8.700000000186265,
+        "max": 10.599999999627471,
+        "samples": 40
+      },
+      "narrowQueryMs": {
+        "mean": 0.0016250000008149073,
+        "p95": 0.004500000001862645,
+        "max": 0.004500000001862645,
+        "samples": 20
+      },
+      "broadMissMs": {
+        "mean": 0.00017499999993015082,
+        "p95": 0.0005000000004656613,
+        "max": 0.0005000000004656613,
+        "samples": 20
+      },
+      "capabilityRecalculationMs": {
+        "mean": 0.006899999999208375,
+        "p95": 0.015,
+        "max": 0.015,
+        "samples": 20
+      },
+      "rafWaitMs": {
+        "mean": 17.071666666671323,
+        "p95": 17.700000000186265,
+        "max": 55.59999999962747,
+        "samples": 60
+      },
+      "helperGroups": 13,
+      "helperGeometryShared": true,
+      "rendererMemory": {
+        "geometries": 5,
+        "textures": 1
+      },
+      "drawCalls": 14,
+      "triangles": 674,
+      "cleanup": {
+        "editor": false,
+        "activeLeases": 0,
+        "liveEntries": 0,
+        "helperParent": false
+      }
+    }
+  ],
+  "passed": true
+}

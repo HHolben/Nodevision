@@ -1,0 +1,130 @@
+{
+  "passed": true,
+  "generatedAt": "2026-11-16T18:59:50.796Z",
+  "logs": {
+    "creature-cases": {
+      "passed": true,
+      "summary": [
+        "ℹ tests 9",
+        "ℹ pass 9",
+        "ℹ fail 0",
+        "ℹ duration_ms 125.374532"
+      ]
+    },
+    "metaworld": {
+      "passed": true,
+      "summary": [
+        "ℹ tests 68",
+        "ℹ pass 68",
+        "ℹ fail 0",
+        "ℹ duration_ms 29145.524476"
+      ]
+    },
+    "gameview": {
+      "passed": true,
+      "summary": [
+        "ℹ tests 11",
+        "ℹ pass 11",
+        "ℹ fail 0",
+        "ℹ duration_ms 4421.680362"
+      ]
+    },
+    "production-creatures": {
+      "passed": true,
+      "summary": [
+        "PASS: C1 canonical Editor/Viewer, one empty root, custom creation/import/properties/history/save/reopen/Save As/discovery, metadata-driven insertion, independent anatomy, persistence and cleanup"
+      ]
+    },
+    "performance": {
+      "passed": true,
+      "summary": [
+        "PASS: C1 standalone/multiple/shared-document GLB benchmarks, definition resolution/assembly/loading, CPU, rendering and complete GPU lease cleanup"
+      ]
+    },
+    "legacy-hare-melee-concealment": {
+      "passed": true,
+      "summary": [
+        "PASS: M1.4 production inventory concealment, awareness recovery, movement, trusted sword hits, anatomy, bow, tool switching, pause, save/reopen, Viewer and cleanup"
+      ]
+    },
+    "archery": {
+      "passed": true,
+      "summary": [
+        "PASS: production Archery Bow inventory, trusted Use/G, draw animation, dotted prediction, both terrain modes, unlimited arrows, collision embedding, cancellation, persistence, Viewer and cleanup"
+      ]
+    },
+    "target": {
+      "passed": true,
+      "summary": [
+        "PASS: production Archery Target insertion, inspector Unicode, transforms, duplication/history, trusted live bow scoring in both modes, embedding/following/deletion, source preservation, save/reopen and Viewer"
+      ]
+    },
+    "teleporter": {
+      "passed": true,
+      "summary": [
+        "PASS: production inventory, trusted primary and controller input, geographic coarse and detailed voxel/polygonal travel, physics, cancellation, permissions, imported GOX/STL/glTF/GLB, constructions, cleanup and save/reopen"
+      ]
+    }
+  },
+  "reports": {
+    "Browser": {
+      "file": "docs/CreatureDesignerBrowser.json",
+      "sha256": "a9121bf46642396442b21cddf35b2c124f4bf7c063ebf81861c712c01a1e0af7"
+    },
+    "Performance": {
+      "file": "docs/CreatureDesignerPerformance.json",
+      "sha256": "4ef8f3c8318f82e443a195489dd923a5771e23b3bcf7a608f5c6f73d3bb7ac5f"
+    }
+  },
+  "preserved": {
+    "Notebook/test.html": "75533dd604cbacc1de34bd42e1e3c5a5faeef5f4779b51c520a2e0c0edd81292",
+    "ApplicationSystem/public/BuiltIn/Mobs/Mammals/BrownHare/Models/Mesh_Rabbit.obj": "a1b98fae32e84b69ad03fc95031b49581771dc104bfdc94e91bafba8a395acec",
+    "ApplicationSystem/public/BuiltIn/Mobs/Mammals/BrownHare/Models/Mesh_Rabbit.mtl": "40b9d69ff8e1e870f79ce57712958a6f906ee26ae60a62311c6f98ba48a8d175",
+    "ApplicationSystem/public/BuiltIn/Mobs/Mammals/BrownHare/Models/Rabbit by Poly by Google - 9OBTRVYUSmt.glb": "b58fac979a8606d60948625783794e3afbbcb6edfe2f8c98284bbcedaa6cee3a",
+    "ApplicationSystem/public/BuiltIn/Mobs/Mammals/BrownHare/Models/Tex_Rabbit.png": "43ab3622a46b45f15cdf442ce3ae1f2e1b48e4f50420285bfe071bbf9f5630a1",
+    "ApplicationSystem/public/BuiltIn/Mobs/Mammals/BrownHare/Models/licenseNotice.md": "dc816165d5f96006bd96a8b0cae929083f78f49dcdd76728595c395cb0271140"
+  },
+  "sourceHashes": {
+    "ApplicationSystem/public/MetaWorld/Creatures/Create.mjs": "f13a4a5b9fc9a733390b7e42cefc13390db03a0dcfb5d423f747e84ecb6ccfc3",
+    "ApplicationSystem/public/MetaWorld/Creatures/Creature.test.mjs": "b9ee62451ea336638e451193bcc7ceddb31f32cd9c57a530e90fc575c761111a",
+    "ApplicationSystem/public/MetaWorld/Creatures/Discovery.mjs": "79e8607bb746bb4d94e3ea33accde3a4e957bab2414fcc24c7fc5c7e3e2e7946",
+    "ApplicationSystem/public/MetaWorld/Creatures/Document.mjs": "69cc7517a36dd6625652824b23b425ae92d2620c2c1df0f464fb80b981cd7c16",
+    "ApplicationSystem/public/MetaWorld/Creatures/Menu.mjs": "f2c84beaef4aae90f586f04e36306a6521934feebbd07f5a6a2b3899c61d1a8a",
+    "ApplicationSystem/public/MetaWorld/Creatures/Missing.mjs": "cbe8b6f753b23d1ea327f004a3e050031ff542003d8dca7f0a5e2d340f6b4dad",
+    "ApplicationSystem/public/MetaWorld/Creatures/Preview.mjs": "c656105aeed838be88a1a0ebd8bde823ac59cb43d39c542d281519c3eb85fb6c",
+    "ApplicationSystem/public/MetaWorld/Creatures/Properties.mjs": "0f42c78671813a2d86131f5ba484fd4140dd3d289885b2d88dbdb543933a7f15",
+    "ApplicationSystem/public/MetaWorld/Creatures/Read.mjs": "2d26748a1a9b287282e4e38fdc318acba0e989a5a755f72bb3990a7c594de48a",
+    "ApplicationSystem/public/MetaWorld/Creatures/Session.mjs": "379dd36e9ee32c0153e61ba6e0e7831c8e5081d6ee901f5538a2b3db23cf4cd2",
+    "ApplicationSystem/public/MetaWorld/Creatures/WorldIntegration.mjs": "11fc49a7a6b72741c41864e6a6504badd4931c3c9c3250ba397aa5312f61b86e",
+    "ApplicationSystem/public/MetaWorld/Mobs/Assets.mjs": "bc499d2267846c9045c656837e6a1df9dd04411ab73c3ae842de6e220e982f00",
+    "ApplicationSystem/public/MetaWorld/Mobs/Authoring.mjs": "eef025a26e514ea1ff8fde4cd225cc4a8858e7452ef3e5f21b8c203e38ed3d84",
+    "ApplicationSystem/public/MetaWorld/Mobs/BrownHareAnatomy.mjs": "6a14e01275bab2a2d021e5f8831ae3e508efb622b768aacc1a7beb7387abf04e",
+    "ApplicationSystem/public/MetaWorld/Mobs/Definition.mjs": "d1236a2749d464832ba56672dcad418ac6f28686eccd62dab5bb90ee512fb447",
+    "ApplicationSystem/public/MetaWorld/Mobs/Placement.mjs": "43462b7947aca7efd6b474412b07b1640d63d6e97a7f16436083deab544adb44",
+    "ApplicationSystem/public/MetaWorld/Mobs/Properties.mjs": "48970aeff2897ca16c73f0bbb718d1530506c09a2e2d0120d28c2eb6bb1f60a0",
+    "ApplicationSystem/public/MetaWorld/Mobs/Registry.mjs": "574a493c60a6c1f300a75733b9b005e6d12455c850f0db2a5d4c722414f4d87d",
+    "ApplicationSystem/public/MetaWorld/Mobs/Runtime.mjs": "91c163e5565dac95f6b264fb0abfdfe09452cd6bcdfa9ca144e22002afdbd1bd",
+    "ApplicationSystem/public/BuiltIn/Mobs/Mammals/BrownHare/BrownHare.html": "8b1a8c555cad956e930e6a88d6a3ec56d947884ad586cdcd46050d003b9ca6fc",
+    "ApplicationSystem/public/MetaWorld/WorldDocumentDrafts.mjs": "a670b55e3dace3e288b8595037a83ba3754824c0a830c9f46b1010826f822666",
+    "ApplicationSystem/public/PanelInstances/ViewPanels/GameView.mjs": "c04a4a0e438b4e573f9a39480f19a5e4b9a4c807485ff2ebf4b965e374f133b1",
+    "ApplicationSystem/public/PanelInstances/ViewPanels/GameViewDependencies/worldLoading.mjs": "5a569f97192e9d5ce132a845223613272bec94b2e17ea57f1f3d59785a8f62c6",
+    "ApplicationSystem/public/PanelInstances/ViewPanels/GameViewDependencies/worldSave.mjs": "db3f0128fabdd5dce09af0112e8ff462029fabd4b2589ea08f773d1a18d8a87c",
+    "ApplicationSystem/public/ToolbarJSONfiles/worldShapeWidget.mjs": "4bdd7e4fafbd7d7d6e832f1f4adff495a07010e6a59caaec1ddc10fbffc56352",
+    "ApplicationSystem/public/ToolbarJSONfiles/fileToolbar.json": "6a3a14e457a825f350a9e8b11e36c7073fbe9cd7d497a08e23e170dea2b74941",
+    "ApplicationSystem/public/ToolbarCallbacks/fileCallbacks.js": "250533d18a9a46ff8a045bd9ae240f5346d1ec7bceab78c23c3a88544862db8c",
+    "ApplicationSystem/server/routes/worldRoutes.mjs": "39c544587cb7af547091abf318c66629b223414a06b72301cadddb8a88386cfd",
+    "scripts/test-c1.mjs": "1d5caf16bdb3979ccb60075a1a0ea78d6bc6b8e5d6214da093ade21ba19f4ce3",
+    "scripts/c1-browser.mjs": "40d6b35fc8575c68ae2d1acbd4bf6fcd04a86a6d9f96f22af31593c5f6c3e0e6",
+    "scripts/c1-performance.mjs": "16d69edb99ab82a0ce91d5d1a24230177aeb6ec396cfefa5dc1cbf1ab8e77c11",
+    "scripts/validate-c1.mjs": "9dc7c64c3134cc5ae35f83906c63c3ba7986c0864593c953495cf746e99df467",
+    "docs/CreatureDesignerHTMLArchitecture.md": "ca248d484322975b1c0175330916b32e17b1b28f0508400fc8c36590f4d1c573"
+  },
+  "limitations": [
+    "Production browser workflow exercised in Chromium; no separate native C1 desktop scenario",
+    "SwiftShader component benchmark, not hardware GPU or full terrain/vegetation profiling",
+    "Compatible rigid-GLB/anatomy/movement component template; composition and skeletal binding editor deferred",
+    "Path-based references use explicit relinking after external moves; no automatic package exporter",
+    "Definition metadata cached for page lifecycle; GPU/lease cleanup measured, no full JS heap ownership proof",
+    "Full MetaWorld execution uses --test-concurrency=2 to avoid heavy-suite process contention"
+  ]
+}

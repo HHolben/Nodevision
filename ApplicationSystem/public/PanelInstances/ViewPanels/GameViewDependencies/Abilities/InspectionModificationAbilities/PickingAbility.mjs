@@ -34,6 +34,8 @@ export function installPickingAbility(ctx) {
     if (controls?.isLocked || !event || typeof event.clientX !== "number" || typeof event.clientY !== "number") {
       return { x: 0, y: 0 };
     }
+    const canvas=ctx.renderer?.domElement||window.VRWorldContext?.renderer?.domElement,rect=canvas?.getBoundingClientRect();
+    if(rect?.width>0&&rect?.height>0)return {x:((event.clientX-rect.left)/rect.width)*2-1,y:-((event.clientY-rect.top)/rect.height)*2+1};
     const w = window.innerWidth || 1;
     const h = window.innerHeight || 1;
     return { x: (event.clientX / w) * 2 - 1, y: -(event.clientY / h) * 2 + 1 };

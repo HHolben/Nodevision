@@ -1,0 +1,228 @@
+{
+  "complete": true,
+  "environment": "Chromium SwiftShader 640x480, real Rabbit GLB. Two reversed-order trials: standalone 1, 20 instances/one document, 30 instances/three documents. 30 warm + 180 measured RAF, 30Hz simulation. Flat synthetic support, no terrain/vegetation rendering. Document resolution includes HTML fetch and dependency HEAD checks; model ready is request/decode wall time; runtime CPU and frame pacing are software-environment-specific.",
+  "results": [
+    {
+      "trial": 0,
+      "count": 1,
+      "differentDocuments": 1,
+      "standalone": true,
+      "resolveMs": 17.200000002980232,
+      "assemblyMs": 4.5,
+      "modelReadyMs": 36.899999998509884,
+      "warmFrames": 30,
+      "measuredFrames": 180,
+      "frameMs": {
+        "mean": 16.66500000001656,
+        "p95": 17.200000002980232
+      },
+      "runtimeMs": {
+        "mean": 0.11777777779433463,
+        "p95": 0.20000000298023224
+      },
+      "documentReads": 1,
+      "parseAndValidationMs": 2.5,
+      "dependencyCheckMs": 7.899999998509884,
+      "modelRequests": 1,
+      "activeAssetLeases": 1,
+      "liveAssetEntries": 1,
+      "drawCalls": 1,
+      "triangles": 674,
+      "resources": {
+        "geometries": 2,
+        "textures": 1
+      },
+      "cleanup": {
+        "geometries": 0,
+        "textures": 0,
+        "activeLeases": 0,
+        "liveEntries": 0
+      }
+    },
+    {
+      "trial": 0,
+      "count": 20,
+      "differentDocuments": 1,
+      "standalone": false,
+      "resolveMs": 64.5,
+      "assemblyMs": 26.200000002980232,
+      "modelReadyMs": 20.399999998509884,
+      "warmFrames": 30,
+      "measuredFrames": 180,
+      "frameMs": {
+        "mean": 16.666666666666668,
+        "p95": 17.099999994039536
+      },
+      "runtimeMs": {
+        "mean": 1.4622222221973868,
+        "p95": 2.8000000044703484
+      },
+      "documentReads": 1,
+      "parseAndValidationMs": 5.699999995529652,
+      "dependencyCheckMs": 23.200000002980232,
+      "modelRequests": 1,
+      "activeAssetLeases": 20,
+      "liveAssetEntries": 1,
+      "drawCalls": 20,
+      "triangles": 13480,
+      "resources": {
+        "geometries": 21,
+        "textures": 1
+      },
+      "cleanup": {
+        "geometries": 0,
+        "textures": 0,
+        "activeLeases": 0,
+        "liveEntries": 0
+      }
+    },
+    {
+      "trial": 0,
+      "count": 30,
+      "differentDocuments": 3,
+      "standalone": false,
+      "resolveMs": 40.19999999552965,
+      "assemblyMs": 11.200000002980232,
+      "modelReadyMs": 13.099999994039536,
+      "warmFrames": 30,
+      "measuredFrames": 180,
+      "frameMs": {
+        "mean": 16.666111111144225,
+        "p95": 17
+      },
+      "runtimeMs": {
+        "mean": 1.598888888458411,
+        "p95": 3
+      },
+      "documentReads": 3,
+      "parseAndValidationMs": 3.600000001490116,
+      "dependencyCheckMs": 15.899999991059303,
+      "modelRequests": 1,
+      "activeAssetLeases": 30,
+      "liveAssetEntries": 1,
+      "drawCalls": 30,
+      "triangles": 20220,
+      "resources": {
+        "geometries": 31,
+        "textures": 1
+      },
+      "cleanup": {
+        "geometries": 0,
+        "textures": 0,
+        "activeLeases": 0,
+        "liveEntries": 0
+      }
+    },
+    {
+      "trial": 1,
+      "count": 30,
+      "differentDocuments": 3,
+      "standalone": false,
+      "resolveMs": 40.5,
+      "assemblyMs": 5.299999997019768,
+      "modelReadyMs": 12,
+      "warmFrames": 30,
+      "measuredFrames": 180,
+      "frameMs": {
+        "mean": 16.664444444452723,
+        "p95": 17
+      },
+      "runtimeMs": {
+        "mean": 1.60388888898823,
+        "p95": 3.1999999955296516
+      },
+      "documentReads": 3,
+      "parseAndValidationMs": 3.2000000029802322,
+      "dependencyCheckMs": 16,
+      "modelRequests": 1,
+      "activeAssetLeases": 30,
+      "liveAssetEntries": 1,
+      "drawCalls": 30,
+      "triangles": 20220,
+      "resources": {
+        "geometries": 31,
+        "textures": 1
+      },
+      "cleanup": {
+        "geometries": 0,
+        "textures": 0,
+        "activeLeases": 0,
+        "liveEntries": 0
+      }
+    },
+    {
+      "trial": 1,
+      "count": 20,
+      "differentDocuments": 1,
+      "standalone": false,
+      "resolveMs": 20.899999998509884,
+      "assemblyMs": 4.399999998509884,
+      "modelReadyMs": 12.400000005960464,
+      "warmFrames": 30,
+      "measuredFrames": 180,
+      "frameMs": {
+        "mean": 16.664444444452723,
+        "p95": 17.099999994039536
+      },
+      "runtimeMs": {
+        "mean": 1.116666666749451,
+        "p95": 2.2000000029802322
+      },
+      "documentReads": 1,
+      "parseAndValidationMs": 1.1000000014901161,
+      "dependencyCheckMs": 5.700000002980232,
+      "modelRequests": 1,
+      "activeAssetLeases": 20,
+      "liveAssetEntries": 1,
+      "drawCalls": 20,
+      "triangles": 13480,
+      "resources": {
+        "geometries": 21,
+        "textures": 1
+      },
+      "cleanup": {
+        "geometries": 0,
+        "textures": 0,
+        "activeLeases": 0,
+        "liveEntries": 0
+      }
+    },
+    {
+      "trial": 1,
+      "count": 1,
+      "differentDocuments": 1,
+      "standalone": true,
+      "resolveMs": 18.899999998509884,
+      "assemblyMs": 0.8999999985098839,
+      "modelReadyMs": 10.899999998509884,
+      "warmFrames": 30,
+      "measuredFrames": 180,
+      "frameMs": {
+        "mean": 16.666666666666668,
+        "p95": 17.100000001490116
+      },
+      "runtimeMs": {
+        "mean": 0.06833333319260014,
+        "p95": 0.19999999552965164
+      },
+      "documentReads": 1,
+      "parseAndValidationMs": 1.1000000014901161,
+      "dependencyCheckMs": 5.9000000059604645,
+      "modelRequests": 1,
+      "activeAssetLeases": 1,
+      "liveAssetEntries": 1,
+      "drawCalls": 1,
+      "triangles": 674,
+      "resources": {
+        "geometries": 2,
+        "textures": 1
+      },
+      "cleanup": {
+        "geometries": 0,
+        "textures": 0,
+        "activeLeases": 0,
+        "liveEntries": 0
+      }
+    }
+  ]
+}
